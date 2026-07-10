@@ -85,12 +85,10 @@ fun MainScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .pixelShift(uiState.burnInLevel)
-                .padding(bottom = 16.dp) // Space for subtle update text
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = 20.dp) // Leave space for the Last Updated text
                     .graphicsLayer(alpha = screenAlpha)
             ) {
                 // Header Bar
@@ -197,20 +195,20 @@ fun MainScreen(
                             .padding(6.dp)
                     )
                 }
+
+                // Subtle Last Updated at the bottom, in layout flow so it never overlaps the panels
+                Text(
+                    text = stringResource(R.string.last_updated, uiState.lastUpdated),
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                    ),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                        .padding(top = 2.dp, bottom = 4.dp)
+                )
             }
-            
-            // Subtle Last Updated at the bottom
-            Text(
-                text = stringResource(R.string.last_updated, uiState.lastUpdated),
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 10.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(bottom = 4.dp)
-            )
         }
     }
 }
