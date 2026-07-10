@@ -1,0 +1,86 @@
+<resources>
+    <string name="app_name">EnturStopptavle</string>
+    <string name="settings_title">Innstillinger</string>
+    <string name="back">Tilbake</string>
+    <string name="theme_settings">Tema</string>
+    <string name="day_night_mode">Dag/natt-modus</string>
+    <string name="refresh_interval">Oppdateringsintervall</string>
+    <string name="auto_update_schedule">Automatisk oppdateringsplan</string>
+    <string name="oled_screen_care">OLED-skjermbeskyttelse</string>
+    <string name="pixel_shift_level">Pikselforskyvning (hindrer innbrenning)</string>
+    <string name="power_refresh">Strøm og oppdatering</string>
+    <string name="wake_proximity">Vekk skjerm med nærhetssensor</string>
+    <string name="not_available">Ikke tilgjengelig på denne enheten</string>
+    <string name="wake_camera">Vekk skjerm med bevegelse (frontkamera)</string>
+    <string name="recommended_alt">Anbefalt alternativ</string>
+    <string name="dynamic_refresh">Dynamisk oppdatering (tregere om natten/når tom)</string>
+    <string name="transport_info">Transportinformasjon</string>
+    <string name="show_delays">Vis forsinkelser</string>
+    <string name="show_messages">Vis informasjonsmeldinger</string>
+    <string name="location_config">Posisjonsinnstillinger</string>
+    <string name="current_coords">Nåværende koordinater</string>
+    <string name="latitude_val">Breddegrad: %1$s</string>
+    <string name="longitude_val">Lengdegrad: %1$s</string>
+    <string name="not_set">Ikke satt</string>
+    <string name="location_status">Status: %1$s</string>
+    <string name="detect_location">Hent posisjon automatisk</string>
+    <string name="enter_manual">Skriv inn koordinater manuelt:</string>
+    <string name="latitude_label">Breddegrad</string>
+    <string name="longitude_label">Lengdegrad</string>
+    <string name="save_coords">Lagre koordinater</string>
+    <string name="add_stop_places">Legg til stoppesteder</string>
+    <string name="search_hint">Søk på navn...</string>
+    <string name="nearby_stops">Stoppesteder i nærheten</string>
+    <string name="search_results">Søkeresultater</string>
+    <string name="no_stops_found">Ingen stoppesteder funnet</string>
+    <string name="remove">Fjern</string>
+    <string name="add">Legg til</string>
+    <string name="favorite_stops">Favoritter (%1$d)</string>
+    <string name="no_favorites">Ingen favoritter lagt til ennå</string>
+    <string name="directions_quays">Retninger / plattformer:</string>
+    <string name="showing_all_directions">Viser alle retninger</string>
+    <string name="platform_destination">%1$s: %2$s</string>
+    <string name="towards_destination">Mot %1$s</string>
+    <string name="platform_label">Plattform %1$s</string>
+    <string name="direction_id">Retning %1$s</string>
+    <string name="delete">Slett</string>
+    <string name="last_updated">Sist oppdatert: %1$s</string>
+    <string name="no_stops_configured">Ingen stoppesteder er konfigurert.</string>
+    <string name="open_settings_to_add">Åpne innstillinger for å legge til stopp</string>
+    <string name="no_departures">Ingen kommende avganger</string>
+    <string name="now">Nå</string>
+    <string name="unit_minute">min</string>
+    <string name="refresh">Oppdater</string>
+
+    <!-- Refresh Intervals -->
+    <string name="refresh_30s">30 sek</string>
+    <string name="refresh_1m">1 min</string>
+    <string name="refresh_2m">2 min</string>
+    <string name="refresh_5m">5 min</string>
+
+    <!-- Theme Modes -->
+    <string name="theme_system">System</string>
+    <string name="theme_light">Lys</string>
+    <string name="theme_dark">Mørk</string>
+    <string name="theme_auto">Auto</string>
+
+    <!-- Burn In Levels -->
+    <string name="burn_in_off">Av</string>
+    <string name="burn_in_low">Lav</string>
+    <string name="burn_in_medium">Middels</string>
+    <string name="burn_in_high">Høy</string>
+
+    <!-- Location Status -->
+    <string name="loc_not_requested">Ikke forespurt</string>
+    <string name="loc_requesting_gps">Forespør GPS (nøyaktig)...</string>
+    <string name="loc_requesting_network">GPS feilet. Forespør nettverk (omtrentlig)...</string>
+    <string name="loc_failed">Kunne ikke hente posisjon.</string>
+    <string name="loc_denied">Posisjonstilgang avslått.</string>
+    <string name="loc_error">Feil ved henting av posisjon: %1$s</string>
+    <string name="loc_success">Suksess via %1$s</string>
+    <string name="gps_source">GPS</string>
+    <string name="network_source">Nettverk</string>
+    <string name="loc_manual">Satt manuelt</string>
+    <string name="loc_invalid_format">Ugyldig format for manuelle koordinater.</string>
+    <string name="loc_manual_prompt">Vennligst skriv inn koordinater manuelt.</string>
+</resources>
