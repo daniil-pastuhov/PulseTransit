@@ -62,7 +62,11 @@ class SettingsViewModel(
         val proximityWake: Boolean = false,
         val cameraMotionWake: Boolean = false,
         val dynamicRefresh: Boolean = true,
-        val isProximityAvailable: Boolean = true
+        val isProximityAvailable: Boolean = true,
+        val destinationStation: StopPlace? = null,
+        val destinationQuery: String = "",
+        val destinationResults: List<StopPlace> = emptyList(),
+        val isSearchingDestination: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -91,7 +95,8 @@ class SettingsViewModel(
                 showMessages = settingsRepository.isShowMessages(),
                 proximityWake = settingsRepository.isProximityWakeEnabled(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
-                dynamicRefresh = settingsRepository.isDynamicRefreshEnabled()
+                dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
+                destinationStation = settingsRepository.getDestinationStation()
             )
         }
         
@@ -302,5 +307,29 @@ class SettingsViewModel(
     fun updateRefreshInterval(seconds: Int) {
         settingsRepository.setRefreshIntervalSeconds(seconds)
         _uiState.update { it.copy(refreshIntervalSeconds = seconds) }
+    }
+
+    fun updateDestinationStation(stopPlace: StopPlace?) {
+        settingsRepository.setDestinationStation(stopPlace)
+        _uiState.update {
+            it.copy(
+                destinationStation = stopPlace,
+                destinationQuery = "",
+                destinationResults = emptyList()
+            )
+        }
+    }
+
+    fun onDestinationQueryChanged(newQuery: String) {
+        _uiState.update { it.copy(destinationQuery = newQuery) }
+        if (newQuery.isBlank()) {
+            _uiState.update { it.copy(destinationResults = emptyList(), isSearchingDestination = false) }
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSearchingDestination = true) }
+            val results = enturRepository.searchStopPlaces(newQuery)
+            _uiState.update { it.copy(destinationResults = results, isSearchingDestination = false) }
+        }
     }
 }

@@ -52,6 +52,18 @@
     <string name="unit_minute">m</string>
     <string name="refresh">Refresh</string>
 
+    <!-- Fastest Route -->
+    <string name="fastest_route_destination">Fastest Route Destination</string>
+    <string name="no_destination_set">No destination set</string>
+    <string name="select">Select</string>
+    <string name="fastest_route_to">Fastest to %1$s</string>
+    <string name="fastest_route_info">Line %1$s from %2$s</string>
+    <string name="leg_walk">🚶 %1$d min</string>
+    <string name="leg_from">from %1$s</string>
+    <string name="expand">Show full route</string>
+    <string name="collapse">Collapse route</string>
+    <string name="duration_min">%1$d min</string>
+
     <!-- Refresh Intervals -->
     <string name="refresh_30s">30 Sec</string>
     <string name="refresh_1m">1 Min</string>

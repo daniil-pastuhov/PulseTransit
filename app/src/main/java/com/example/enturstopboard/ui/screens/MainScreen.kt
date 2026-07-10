@@ -1,11 +1,16 @@
 package com.example.enturstopboard.ui.screens
 
 import android.content.res.Configuration
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +28,7 @@ import com.example.enturstopboard.R
 import com.example.enturstopboard.theme.EnturStopBoardTheme
 import androidx.compose.ui.graphics.graphicsLayer
 import com.example.enturstopboard.ui.components.StopBoardPanel
+import com.example.enturstopboard.ui.components.getTransportEmoji
 import com.example.enturstopboard.ui.pixelshift.pixelShift
 import com.example.enturstopboard.ui.viewmodel.StopBoardViewModel
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -158,6 +164,11 @@ fun MainScreen(
                             )
                         }
                     }
+                }
+
+                // Fastest route banner (only when a destination station is set in Settings)
+                uiState.fastestTrip?.let { trip ->
+                    FastestTripBanner(trip = trip)
                 }
 
                 // Body Area (Equal screen division between favorite stops)
@@ -376,6 +387,81 @@ fun ReorderableFavoriteList(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun FastestTripBanner(
+    trip: com.example.enturstopboard.data.TripInfo,
+    modifier: Modifier = Modifier
+) {
+    val departureTime = try {
+        trip.expectedStartTime.substring(11, 16)
+    } catch (e: Exception) { "--:--" }
+
+    var expanded by remember { mutableStateOf(false) }
+    var hasOverflow by remember { mutableStateOf(false) }
+    val canExpand = hasOverflow || expanded
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .clickable(enabled = canExpand) { expanded = !expanded }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = departureTime,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.fastest_route_to, trip.destinationName),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            val routeText = if (trip.legs.isNotEmpty()) {
+                trip.legs.mapNotNull { leg ->
+                    when {
+                        leg.lineName != null -> {
+                            val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
+                            leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
+                        }
+                        leg.durationMinutes > 0 ->
+                            stringResource(R.string.leg_walk, leg.durationMinutes)
+                        else -> null // skip 0-minute foot legs (quay transfers)
+                    }
+                }.joinToString("  →  ")
+            } else {
+                stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
+            }
+            Text(
+                text = routeText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                maxLines = if (expanded) Int.MAX_VALUE else 1,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { result ->
+                    if (!expanded) hasOverflow = result.hasVisualOverflow
+                }
+            )
+        }
+        Text(
+            text = stringResource(R.string.duration_min, trip.durationMinutes),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        if (canExpand) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }

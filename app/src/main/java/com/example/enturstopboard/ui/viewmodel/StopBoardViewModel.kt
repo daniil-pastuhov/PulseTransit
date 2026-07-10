@@ -34,7 +34,9 @@ class StopBoardViewModel(
         val isScreenDimmed: Boolean = false,
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
-        val activeTheme: ThemeMode = ThemeMode.SYSTEM
+        val activeTheme: ThemeMode = ThemeMode.SYSTEM,
+        val fastestTrip: TripInfo? = null,
+        val destinationStation: StopPlace? = null
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -58,6 +60,7 @@ class StopBoardViewModel(
         val interval = settingsRepository.getRefreshIntervalSeconds()
         val showDelays = settingsRepository.isShowDelays()
         val showMessages = settingsRepository.isShowMessages()
+        val destination = settingsRepository.getDestinationStation()
 
         _uiState.update {
             it.copy(
@@ -67,7 +70,9 @@ class StopBoardViewModel(
                 burnInLevel = burnIn,
                 refreshIntervalSeconds = interval,
                 showDelays = showDelays,
-                showMessages = showMessages
+                showMessages = showMessages,
+                destinationStation = destination,
+                fastestTrip = if (destination == null) null else it.fastestTrip
             )
         }
     }
@@ -165,6 +170,7 @@ class StopBoardViewModel(
 
     fun refreshData() {
         refreshDepartures()
+        refreshFastestTrip()
         
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastWeatherUpdateTime >= weatherRefreshIntervalMs) {
@@ -200,6 +206,20 @@ class StopBoardViewModel(
                     lastUpdated = updateTime
                 )
             }
+        }
+    }
+
+    private fun refreshFastestTrip() {
+        val destination = _uiState.value.destinationStation ?: return
+        val favorites = _uiState.value.favorites
+        if (favorites.isEmpty()) return
+
+        viewModelScope.launch {
+            val trip = enturRepository.getFastestTrip(
+                fromIds = favorites.map { it.id },
+                toId = destination.id
+            )
+            _uiState.update { it.copy(fastestTrip = trip?.copy(destinationName = destination.name)) }
         }
     }
 

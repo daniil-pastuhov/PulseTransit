@@ -188,6 +188,79 @@ fun SettingsScreen(
                         }
                     }
 
+                    // Section: Fastest Route Destination
+                    SettingsCard(title = stringResource(R.string.fastest_route_destination)) {
+                        val destination = uiState.destinationStation
+                        if (destination != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(destination.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                    destination.locality?.let {
+                                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                IconButton(onClick = { viewModel.updateDestinationStation(null) }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = stringResource(R.string.remove),
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        } else {
+                            Text(
+                                stringResource(R.string.no_destination_set),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = uiState.destinationQuery,
+                            onValueChange = { viewModel.onDestinationQueryChanged(it) },
+                            label = { Text(stringResource(R.string.search_hint)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+
+                        if (uiState.isSearchingDestination) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            }
+                        } else if (uiState.destinationResults.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            uiState.destinationResults.forEach { stop ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.surface)
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                        stop.locality?.let {
+                                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Button(onClick = { viewModel.updateDestinationStation(stop) }) {
+                                        Text(stringResource(R.string.select), fontSize = 12.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Section 4: Location Settings
                     SettingsCard(title = stringResource(R.string.location_config)) {
                         Text(stringResource(R.string.current_coords), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))

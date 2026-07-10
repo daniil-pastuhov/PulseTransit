@@ -38,4 +38,7 @@ interface SettingsRepository {
 
     fun isDynamicRefreshEnabled(): Boolean
     fun setDynamicRefreshEnabled(enabled: Boolean)
+
+    fun getDestinationStation(): StopPlace?
+    fun setDestinationStation(stopPlace: StopPlace?)
 }

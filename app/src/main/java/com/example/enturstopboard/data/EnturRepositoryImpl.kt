@@ -78,6 +78,36 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
     )
 
     @Serializable
+    private data class TripData(
+        val trip: TripGraphQL? = null
+    )
+
+    @Serializable
+    private data class TripGraphQL(
+        val tripPatterns: List<TripPatternGraphQL> = emptyList()
+    )
+
+    @Serializable
+    private data class TripPatternGraphQL(
+        val expectedStartTime: String,
+        val duration: Long,
+        val legs: List<LegGraphQL> = emptyList()
+    )
+
+    @Serializable
+    private data class LegGraphQL(
+        val mode: String? = null,
+        val duration: Long = 0,
+        val line: LineGraphQL? = null,
+        val fromPlace: TripPlaceGraphQL? = null
+    )
+
+    @Serializable
+    private data class TripPlaceGraphQL(
+        val name: String? = null
+    )
+
+    @Serializable
     private data class StopPlaceGraphQL(
         val id: String,
         val name: String,
@@ -332,5 +362,80 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
             e.printStackTrace()
             null
         }
+    }
+
+    override suspend fun getFastestTrip(fromIds: List<String>, toId: String): TripInfo? {
+        if (fromIds.isEmpty()) return null
+        
+        var fastestTrip: TripInfo? = null
+
+        for (fromId in fromIds) {
+            val queryStr = """
+                query GetTrip(${'$'}from: String!, ${'$'}to: String!) {
+                  trip(
+                    from: { place: ${'$'}from }
+                    to: { place: ${'$'}to }
+                    numTripPatterns: 1
+                  ) {
+                    tripPatterns {
+                      expectedStartTime
+                      duration
+                      legs {
+                        mode
+                        duration
+                        line {
+                          publicCode
+                          name
+                        }
+                        fromPlace {
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+            """.trimIndent()
+
+            val variables = buildJsonObject {
+                put("from", fromId)
+                put("to", toId)
+            }
+
+            try {
+                val response: GraphQLResponse<TripData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
+                    header(clientNameHeader, clientNameValue)
+                    contentType(ContentType.Application.Json)
+                    setBody(GraphQLRequest(queryStr, variables))
+                }.body()
+
+                val pattern = response.data?.trip?.tripPatterns?.firstOrNull() ?: continue
+
+                // The first leg may be a foot leg (line == null); use the first transit leg for line/origin
+                val transitLeg = pattern.legs.firstOrNull { it.line != null }
+                val tripInfo = TripInfo(
+                    destinationName = "", // Will be filled by ViewModel or if we query for destination separately
+                    expectedStartTime = pattern.expectedStartTime,
+                    lineName = transitLeg?.line?.publicCode ?: transitLeg?.line?.name ?: "?",
+                    durationMinutes = (pattern.duration / 60).toInt(),
+                    originName = transitLeg?.fromPlace?.name ?: pattern.legs.firstOrNull()?.fromPlace?.name ?: "Unknown",
+                    legs = pattern.legs.map { leg ->
+                        TripLeg(
+                            mode = leg.mode,
+                            lineName = leg.line?.publicCode ?: leg.line?.name,
+                            fromName = leg.fromPlace?.name,
+                            durationMinutes = (leg.duration / 60).toInt()
+                        )
+                    }
+                )
+
+                if (fastestTrip == null || tripInfo.expectedStartTime < fastestTrip.expectedStartTime) {
+                    fastestTrip = tripInfo
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        
+        return fastestTrip
     }
 }

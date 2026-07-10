@@ -215,7 +215,7 @@ fun DepartureRow(
     }
 }
 
-private fun getTransportEmoji(mode: String?): String {
+internal fun getTransportEmoji(mode: String?): String {
     return when (mode?.lowercase()) {
         "bus" -> "🚌"
         "tram" -> "🚃"

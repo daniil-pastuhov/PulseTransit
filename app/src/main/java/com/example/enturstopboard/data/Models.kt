@@ -42,6 +42,24 @@ data class WeatherInfo(
     val precipitation: Double = 0.0
 )
 
+@Serializable
+data class TripLeg(
+    val mode: String? = null,       // "foot", "bus", "metro", ...
+    val lineName: String? = null,   // null for foot legs
+    val fromName: String? = null,
+    val durationMinutes: Int = 0
+)
+
+@Serializable
+data class TripInfo(
+    val destinationName: String,
+    val expectedStartTime: String,
+    val lineName: String,
+    val durationMinutes: Int,
+    val originName: String,
+    val legs: List<TripLeg> = emptyList()
+)
+
 enum class ThemeMode {
     SYSTEM, LIGHT, DARK, AUTO
 }

@@ -52,6 +52,18 @@
     <string name="unit_minute">min</string>
     <string name="refresh">Oppdater</string>
 
+    <!-- Fastest Route -->
+    <string name="fastest_route_destination">Reisemål for raskeste rute</string>
+    <string name="no_destination_set">Ingen destinasjon valgt</string>
+    <string name="select">Velg</string>
+    <string name="fastest_route_to">Raskest til %1$s</string>
+    <string name="fastest_route_info">Linje %1$s fra %2$s</string>
+    <string name="leg_walk">🚶 %1$d min</string>
+    <string name="leg_from">fra %1$s</string>
+    <string name="expand">Vis hele ruten</string>
+    <string name="collapse">Skjul ruten</string>
+    <string name="duration_min">%1$d min</string>
+
     <!-- Refresh Intervals -->
     <string name="refresh_30s">30 sek</string>
     <string name="refresh_1m">1 min</string>

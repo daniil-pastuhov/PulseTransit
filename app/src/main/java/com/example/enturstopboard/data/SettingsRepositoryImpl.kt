@@ -3,6 +3,7 @@ package com.example.enturstopboard.data
 import android.content.Context
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import androidx.core.content.edit
 
 class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -122,4 +123,21 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
 
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
     override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit().putBoolean("dynamic_refresh", enabled).apply()
+
+    override fun getDestinationStation(): StopPlace? {
+        val jsonStr = prefs.getString("destination_station", null) ?: return null
+        return try {
+            json.decodeFromString<StopPlace>(jsonStr)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    override fun setDestinationStation(stopPlace: StopPlace?) {
+        if (stopPlace == null) {
+            prefs.edit { remove("destination_station") }
+        } else {
+            prefs.edit { putString("destination_station", json.encodeToString(stopPlace)) }
+        }
+    }
 }
