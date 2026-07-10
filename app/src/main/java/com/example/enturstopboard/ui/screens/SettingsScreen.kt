@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,26 +67,15 @@ fun SettingsScreen(
             modifier = modifier.fillMaxSize(),
             contentWindowInsets = WindowInsets.navigationBars
         ) { innerPadding ->
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                // Left Column: Configuration & Location
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
-                ) {
+            val isCompact = LocalConfiguration.current.screenWidthDp < 600
+
+            // Section groups shared by the compact (phone) and wide (tablet) layouts
+            val configSections: @Composable ColumnScope.() -> Unit = {
                     // Section 1: Theme Settings
                     SettingsCard(title = stringResource(R.string.theme_settings)) {
                         Text(stringResource(R.string.day_night_mode), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
                         Spacer(modifier = Modifier.height(8.dp))
-                        Row(
+                        FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -116,7 +106,7 @@ fun SettingsScreen(
                             R.string.refresh_2m to 120,
                             R.string.refresh_5m to 300
                         )
-                        Row(
+                        FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -135,7 +125,7 @@ fun SettingsScreen(
                     SettingsCard(title = stringResource(R.string.oled_screen_care)) {
                         Text(stringResource(R.string.pixel_shift_level), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
                         Spacer(modifier = Modifier.height(8.dp))
-                        Row(
+                        FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -265,16 +255,10 @@ fun SettingsScreen(
                             }
                         }
                     }
-                }
+            }
 
-                // Right Column: Search & Favorites Management
-                Column(
-                    modifier = Modifier
-                        .weight(1.2f)
-                        .fillMaxHeight()
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+            // Search & Favorites Management
+            val stopsSections: @Composable ColumnScope.() -> Unit = {
                     // Section: Search Stops
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -351,6 +335,48 @@ fun SettingsScreen(
                                 }
                             }
                         }
+                    }
+            }
+
+            if (isCompact) {
+                // Phone: single scrollable column
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                ) {
+                    configSections()
+                    stopsSections()
+                }
+            } else {
+                // Tablet / wide: two columns side by side
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        configSections()
+                    }
+                    Column(
+                        modifier = Modifier
+                            .weight(1.2f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        stopsSections()
                     }
                 }
             }
