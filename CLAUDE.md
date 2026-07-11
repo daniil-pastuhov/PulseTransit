@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-EnturStopBoard — an Android app (Kotlin, Jetpack Compose) that shows a live public-transport departure board for Norwegian stops using the Entur APIs, plus weather from MET Norway. It is designed to run as an always-on wall display, so a lot of the code is about burn-in protection, sensor-driven screen wake/dim, and adaptive refresh rates.
+PulseTransit — an Android app (Kotlin, Jetpack Compose) that shows a live public-transport departure board for Norwegian stops using the Entur APIs, plus weather from MET Norway. It is designed to run as an always-on wall display, so a lot of the code is about burn-in protection, sensor-driven screen wake/dim, and adaptive refresh rates.
 
 ## Commands
 
@@ -14,7 +14,7 @@ Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Single 
 ./gradlew assembleDebug          # build debug APK
 ./gradlew installDebug           # build + install on connected device/emulator
 ./gradlew test                   # local unit tests
-./gradlew test --tests "com.example.enturstopboard.ui.main.MainScreenViewModelTest"  # single test class
+./gradlew test --tests "com.example.pulsetransit.ui.main.MainScreenViewModelTest"  # single test class
 ./gradlew connectedAndroidTest   # instrumented tests (needs device/emulator)
 ./gradlew lint                   # Android lint
 ```

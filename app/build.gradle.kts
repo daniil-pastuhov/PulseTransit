@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.example.enturstopboard"
+    namespace = "com.example.pulsetransit"
     compileSdk = 37
     defaultConfig {
-        applicationId = "com.example.enturstopboard"
+        applicationId = "com.example.pulsetransit"
         minSdk = 24
         targetSdk = 37
         versionCode = 1

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">EnturStopBoard</string>
+    <string name="app_name">PulseTransit</string>
     <string name="settings_title">Settings</string>
     <string name="back">Back</string>
     <string name="theme_settings">Theme Settings</string>
