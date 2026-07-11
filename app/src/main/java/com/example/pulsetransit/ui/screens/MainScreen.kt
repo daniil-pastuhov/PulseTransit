@@ -198,6 +198,7 @@ fun MainScreen(
                         departures = uiState.departures,
                         showDelays = uiState.showDelays,
                         showMessages = uiState.showMessages,
+                        isLoading = uiState.isLoading,
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
                         modifier = Modifier
@@ -253,6 +254,7 @@ fun ReorderableFavoriteList(
     departures: Map<String, List<com.example.pulsetransit.data.Departure>>,
     showDelays: Boolean,
     showMessages: Boolean,
+    isLoading: Boolean,
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
     modifier: Modifier = Modifier
@@ -336,6 +338,7 @@ fun ReorderableFavoriteList(
                             departures = departures[stop.id] ?: emptyList(),
                             showDelays = showDelays,
                             showMessages = showMessages,
+                            isLoading = isLoading,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -405,6 +408,7 @@ fun ReorderableFavoriteList(
                             departures = departures[stop.id] ?: emptyList(),
                             showDelays = showDelays,
                             showMessages = showMessages,
+                            isLoading = isLoading,
                             modifier = Modifier.fillMaxSize()
                         )
                     }

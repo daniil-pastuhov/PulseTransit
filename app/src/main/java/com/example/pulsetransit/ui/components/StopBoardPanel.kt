@@ -1,5 +1,6 @@
 package com.example.pulsetransit.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -7,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +31,7 @@ fun StopBoardPanel(
     departures: List<Departure>,
     showDelays: Boolean = true,
     showMessages: Boolean = true,
+    isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -79,7 +82,9 @@ fun StopBoardPanel(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Departures list
-            if (departures.isEmpty()) {
+            if (isLoading) {
+                LoadingPlaceholderList()
+            } else if (departures.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -105,6 +110,77 @@ fun StopBoardPanel(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun LoadingPlaceholderList() {
+    val infiniteTransition = rememberInfiniteTransition(label = "loading")
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 0.1f,
+        targetValue = 0.3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        repeat(6) {
+            DepartureRowPlaceholder(alpha = alpha)
+        }
+    }
+}
+
+@Composable
+fun DepartureRowPlaceholder(alpha: Float) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Line badge placeholder
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(24.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+            )
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            // Destination placeholder
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Time placeholder
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+            )
         }
     }
 }
@@ -221,7 +297,7 @@ internal fun getTransportEmoji(mode: String?): String {
         "tram" -> "🚃"
         "metro" -> "🚇"
         "rail" -> "🚆"
-        "water" -> " Ferry ⛴️"
+        "water" -> "⛴️"
         else -> "🚌" // fallback
     }
 }
