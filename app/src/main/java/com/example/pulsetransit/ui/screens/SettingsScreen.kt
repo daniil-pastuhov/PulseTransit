@@ -16,7 +16,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +68,9 @@ fun SettingsScreen(
             modifier = modifier.fillMaxSize(),
             contentWindowInsets = WindowInsets.navigationBars
         ) { innerPadding ->
-            val isCompact = LocalConfiguration.current.screenWidthDp < 600
+            val containerSizePx = LocalWindowInfo.current.containerSize
+            val containerWidthDp = with(LocalDensity.current) { containerSizePx.width.toDp() }
+            val isCompact = containerWidthDp < 600.dp
 
             // Section groups shared by the compact (phone) and wide (tablet) layouts
             val configSections: @Composable ColumnScope.() -> Unit = {
@@ -79,7 +82,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            ThemeMode.values().forEach { mode ->
+                            ThemeMode.entries.forEach { mode ->
                                 val isSelected = uiState.themeMode == mode
                                 val labelId = when (mode) {
                                     ThemeMode.SYSTEM -> R.string.theme_system
@@ -336,14 +339,7 @@ fun SettingsScreen(
             // Search & Favorites Management
             val stopsSections: @Composable ColumnScope.() -> Unit = {
                     // Section: Search Stops
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(stringResource(R.string.add_stop_places), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            
+                    SettingsCard(title = stringResource(R.string.add_stop_places)) {
                             OutlinedTextField(
                                 value = uiState.query,
                                 onValueChange = { viewModel.onQueryChanged(it) },
@@ -358,7 +354,7 @@ fun SettingsScreen(
                             val listData = if (showNearby) uiState.nearbyStops else uiState.searchResults
                             val isLoadingList = if (showNearby) uiState.isSearchingNearby else uiState.isSearching
 
-                            if (isLoadingList || listData.isNotEmpty() || !showNearby) {
+                            if (!showNearby || listData.isNotEmpty()) {
                                 val listTitle = if (showNearby) stringResource(R.string.nearby_stops) else stringResource(R.string.search_results)
                                 Text(listTitle, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                                 Spacer(modifier = Modifier.height(6.dp))
@@ -386,18 +382,10 @@ fun SettingsScreen(
                                     }
                                 }
                             }
-                        }
                     }
 
                     // Section: Current Favorites
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(stringResource(R.string.favorite_stops, uiState.favorites.size), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                            Spacer(modifier = Modifier.height(8.dp))
-
+                    SettingsCard(title = stringResource(R.string.favorite_stops, uiState.favorites.size)) {
                             if (uiState.favorites.isEmpty()) {
                                 Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
                                     Text(stringResource(R.string.no_favorites), style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
@@ -417,7 +405,6 @@ fun SettingsScreen(
                                     }
                                 }
                             }
-                        }
                     }
             }
 
@@ -477,9 +464,16 @@ fun SettingsCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            content = content
-        )
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            content()
+        }
     }
 }
 
