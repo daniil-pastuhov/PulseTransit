@@ -95,4 +95,8 @@
     <string name="loc_manual">Set manually</string>
     <string name="loc_invalid_format">Invalid manual coordinates format.</string>
     <string name="loc_manual_prompt">Please enter coordinates manually.</string>
+
+    <!-- Attribution -->
+    <string name="attribution_entur">Data from Entur</string>
+    <string name="attribution_met">Weather from MET Norway</string>
 </resources>

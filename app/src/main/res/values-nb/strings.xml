@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">EnturStopptavle</string>
+    <string name="app_name">PulseTransit</string>
     <string name="settings_title">Innstillinger</string>
     <string name="back">Tilbake</string>
     <string name="theme_settings">Tema</string>
@@ -95,4 +95,8 @@
     <string name="loc_manual">Satt manuelt</string>
     <string name="loc_invalid_format">Ugyldig format for manuelle koordinater.</string>
     <string name="loc_manual_prompt">Vennligst skriv inn koordinater manuelt.</string>
+
+    <!-- Attribution -->
+    <string name="attribution_entur">Data fra Entur</string>
+    <string name="attribution_met">Værdata fra MET Norway</string>
 </resources>

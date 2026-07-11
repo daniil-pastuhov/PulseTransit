@@ -62,7 +62,7 @@ class WeatherRepositoryImpl(private val client: HttpClient) : WeatherRepository 
     override suspend fun getWeather(lat: Double, lon: Double): List<WeatherInfo> {
         return try {
             val response: MetResponse = client.get("https://api.met.no/weatherapi/locationforecast/2.0/compact") {
-                header("User-Agent", "PulseTransit/1.0 github.com/user/PulseTransit")
+                header("User-Agent", "PulseTransit/1.0 github.com/daniil-pastuhov")
                 parameter("lat", lat)
                 parameter("lon", lon)
             }.body()
