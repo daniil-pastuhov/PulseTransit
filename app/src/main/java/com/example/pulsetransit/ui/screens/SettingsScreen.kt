@@ -101,6 +101,7 @@ fun SettingsScreen(
                         Text(stringResource(R.string.auto_update_schedule), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
                         Spacer(modifier = Modifier.height(8.dp))
                         val intervals = listOf(
+                            R.string.refresh_none to 0,
                             R.string.refresh_30s to 30,
                             R.string.refresh_1m to 60,
                             R.string.refresh_2m to 120,
@@ -129,7 +130,7 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            BurnInProtectionLevel.values().forEach { level ->
+                            BurnInProtectionLevel.entries.forEach { level ->
                                 val isSelected = uiState.burnInLevel == level
                                 val labelId = when (level) {
                                     BurnInProtectionLevel.OFF -> R.string.burn_in_off

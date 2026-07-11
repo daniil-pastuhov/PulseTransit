@@ -145,6 +145,7 @@ class StopBoardViewModel(
             while (true) {
                 refreshData()
                 val seconds = calculateNextRefreshInterval()
+                if (seconds <= 0) break
                 delay(seconds * 1000L)
             }
         }
