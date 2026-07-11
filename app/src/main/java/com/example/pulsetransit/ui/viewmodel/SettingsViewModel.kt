@@ -125,15 +125,25 @@ class SettingsViewModel(
 
     fun toggleQuay(stopId: String, quayId: String) {
         val current = _uiState.value.selectedQuays[stopId] ?: emptySet()
-        val next = if (current.contains(quayId)) {
+        val allQuayIds = _uiState.value.favoriteStopsWithQuays[stopId]?.quays?.map { it.id }?.toSet() ?: emptySet()
+
+        val next = if (current.isEmpty() && allQuayIds.isNotEmpty()) {
+            // When none are explicitly selected, they are all active by default.
+            // Clicking one should deselect it, meaning we select all others.
+            allQuayIds - quayId
+        } else if (current.contains(quayId)) {
             current - quayId
         } else {
             current + quayId
         }
-        
-        settingsRepository.setSelectedQuays(stopId, if (next.isEmpty()) null else next)
+
+        // Normalize: if everything or nothing is selected, treat it as "All" (empty set in UI, null in DB)
+        val isAll = next.isEmpty() || (allQuayIds.isNotEmpty() && next.size == allQuayIds.size)
+        val finalNext = if (isAll) emptySet() else next
+
+        settingsRepository.setSelectedQuays(stopId, if (finalNext.isEmpty()) null else finalNext)
         _uiState.update {
-            it.copy(selectedQuays = it.selectedQuays + (stopId to next))
+            it.copy(selectedQuays = it.selectedQuays + (stopId to finalNext))
         }
     }
 
@@ -286,12 +296,20 @@ class SettingsViewModel(
 
     fun addFavorite(stopPlace: StopPlace) {
         settingsRepository.addFavorite(stopPlace)
-        loadSettings()
+        val currentFavs = settingsRepository.getFavorites()
+        _uiState.update { it.copy(favorites = currentFavs) }
+        fetchQuaysForStop(stopPlace.id)
     }
 
     fun removeFavorite(stopId: String) {
         settingsRepository.removeFavorite(stopId)
-        loadSettings()
+        _uiState.update { 
+            it.copy(
+                favorites = it.favorites.filter { f -> f.id != stopId },
+                favoriteStopsWithQuays = it.favoriteStopsWithQuays - stopId,
+                selectedQuays = it.selectedQuays - stopId
+            )
+        }
     }
 
     fun updateThemeMode(mode: ThemeMode) {

@@ -228,7 +228,7 @@ fun SettingsScreen(
                             singleLine = true
                         )
 
-                        if (uiState.isSearchingDestination) {
+                        if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -236,25 +236,27 @@ fun SettingsScreen(
                         } else if (uiState.destinationResults.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             uiState.destinationResults.forEach { stop ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.surface)
-                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                        stop.locality?.let {
-                                            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                key(stop.id) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(MaterialTheme.colorScheme.surface)
+                                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                            stop.locality?.let {
+                                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
                                         }
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Button(onClick = { viewModel.updateDestinationStation(stop) }) {
-                                        Text(stringResource(R.string.select), fontSize = 12.sp)
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Button(onClick = { viewModel.updateDestinationStation(stop) }) {
+                                            Text(stringResource(R.string.select), fontSize = 12.sp)
+                                        }
                                     }
                                 }
                             }
@@ -352,29 +354,34 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.height(12.dp))
 
                             val showNearby = uiState.query.isBlank()
-                            val listTitle = if (showNearby) stringResource(R.string.nearby_stops) else stringResource(R.string.search_results)
                             val listData = if (showNearby) uiState.nearbyStops else uiState.searchResults
+                            val isLoadingList = if (showNearby) uiState.isSearchingNearby else uiState.isSearching
 
-                            Text(listTitle, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                            Spacer(modifier = Modifier.height(6.dp))
+                            if (isLoadingList || listData.isNotEmpty() || !showNearby) {
+                                val listTitle = if (showNearby) stringResource(R.string.nearby_stops) else stringResource(R.string.search_results)
+                                Text(listTitle, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                            if (uiState.isSearching || uiState.isSearchingNearby) {
-                                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator()
-                                }
-                            } else if (listData.isEmpty()) {
-                                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                                    Text(stringResource(R.string.no_stops_found), style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
-                                }
-                            } else {
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    listData.forEach { stop ->
-                                        StopSearchResultRow(
-                                            stop = stop,
-                                            isFav = uiState.favorites.any { it.id == stop.id },
-                                            onAdd = { viewModel.addFavorite(stop) },
-                                            onRemove = { viewModel.removeFavorite(stop.id) }
-                                        )
+                                if (isLoadingList && listData.isEmpty()) {
+                                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                        CircularProgressIndicator()
+                                    }
+                                } else if (listData.isEmpty()) {
+                                    Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                                        Text(stringResource(R.string.no_stops_found), style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant))
+                                    }
+                                } else {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        listData.forEach { stop ->
+                                            key(stop.id) {
+                                                StopSearchResultRow(
+                                                    stop = stop,
+                                                    isFav = uiState.favorites.any { it.id == stop.id },
+                                                    onAdd = { viewModel.addFavorite(stop) },
+                                                    onRemove = { viewModel.removeFavorite(stop.id) }
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -397,13 +404,15 @@ fun SettingsScreen(
                             } else {
                                 Column(modifier = Modifier.fillMaxWidth()) {
                                     uiState.favorites.forEach { stop ->
-                                        FavoriteStopRow(
-                                            stop = stop,
-                                            stopWithQuays = uiState.favoriteStopsWithQuays[stop.id],
-                                            selectedQuays = uiState.selectedQuays[stop.id] ?: emptySet(),
-                                            onToggleQuay = { viewModel.toggleQuay(stop.id, it) },
-                                            onRemove = { viewModel.removeFavorite(stop.id) }
-                                        )
+                                        key(stop.id) {
+                                            FavoriteStopRow(
+                                                stop = stop,
+                                                stopWithQuays = uiState.favoriteStopsWithQuays[stop.id],
+                                                selectedQuays = uiState.selectedQuays[stop.id] ?: emptySet(),
+                                                onToggleQuay = { viewModel.toggleQuay(stop.id, it) },
+                                                onRemove = { viewModel.removeFavorite(stop.id) }
+                                            )
+                                        }
                                     }
                                 }
                             }

@@ -82,7 +82,7 @@ fun StopBoardPanel(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Departures list
-            if (isLoading) {
+            if (isLoading && departures.isEmpty()) {
                 LoadingPlaceholderList()
             } else if (departures.isEmpty()) {
                 Box(
@@ -105,7 +105,10 @@ fun StopBoardPanel(
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(departures) { departure ->
+                    items(
+                        items = departures,
+                        key = { it.line + it.destination + it.expectedTime + (it.quayId ?: "") }
+                    ) { departure ->
                         DepartureRow(departure, showDelays, showMessages)
                     }
                 }

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.IntOffset
 import kotlin.math.roundToInt
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -283,64 +284,66 @@ fun ReorderableFavoriteList(
                     }
             ) {
                 favorites.forEachIndexed { index, stop ->
-                    val isDragging = draggingIndex == index
-                    
-                    val visualOffset = remember(index, draggingIndex, currentTargetIndex) {
-                        if (draggingIndex == null || currentTargetIndex == null || isDragging) {
-                            Offset.Zero
-                        } else {
-                            val start = draggingIndex!!
-                            val target = currentTargetIndex
-                            if (index in (minOf(start, target)..maxOf(start, target))) {
-                                val direction = if (start < target) -1f else 1f
-                                Offset(x = direction * itemSize.width.toFloat(), y = 0f)
-                            } else {
+                    key(stop.id) {
+                        val isDragging = draggingIndex == index
+                        
+                        val visualOffset = remember(index, draggingIndex, currentTargetIndex) {
+                            if (draggingIndex == null || currentTargetIndex == null || isDragging) {
                                 Offset.Zero
+                            } else {
+                                val start = draggingIndex!!
+                                val target = currentTargetIndex
+                                if (index in (minOf(start, target)..maxOf(start, target))) {
+                                    val direction = if (start < target) -1f else 1f
+                                    Offset(x = direction * itemSize.width.toFloat(), y = 0f)
+                                } else {
+                                    Offset.Zero
+                                }
                             }
                         }
-                    }
 
-                    val animatedOffset by animateOffsetAsState(
-                        targetValue = if (isDragging) dragOffset else visualOffset,
-                        animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
-                        label = "itemOffset"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .zIndex(if (isDragging) 1f else 0f)
-                            .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
-                            .pointerInput(Unit) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { draggingIndex = index },
-                                    onDragEnd = {
-                                        currentTargetIndex?.let { target ->
-                                            if (target != index) onReorder(index, target)
-                                        }
-                                        draggingIndex = null
-                                        dragOffset = Offset.Zero
-                                    },
-                                    onDragCancel = {
-                                        draggingIndex = null
-                                        dragOffset = Offset.Zero
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        dragOffset += dragAmount
-                                    }
-                                )
-                            }
-                    ) {
-                        StopBoardPanel(
-                            stopPlace = stop,
-                            departures = departures[stop.id] ?: emptyList(),
-                            showDelays = showDelays,
-                            showMessages = showMessages,
-                            isLoading = isLoading,
-                            modifier = Modifier.fillMaxSize()
+                        val animatedOffset by animateOffsetAsState(
+                            targetValue = if (isDragging) dragOffset else visualOffset,
+                            animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
+                            label = "itemOffset"
                         )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .zIndex(if (isDragging) 1f else 0f)
+                                .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
+                                .pointerInput(Unit) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { draggingIndex = index },
+                                        onDragEnd = {
+                                            currentTargetIndex?.let { target ->
+                                                if (target != index) onReorder(index, target)
+                                            }
+                                            draggingIndex = null
+                                            dragOffset = Offset.Zero
+                                        },
+                                        onDragCancel = {
+                                            draggingIndex = null
+                                            dragOffset = Offset.Zero
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragOffset += dragAmount
+                                        }
+                                    )
+                                }
+                        ) {
+                            StopBoardPanel(
+                                stopPlace = stop,
+                                departures = departures[stop.id] ?: emptyList(),
+                                showDelays = showDelays,
+                                showMessages = showMessages,
+                                isLoading = isLoading,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
@@ -353,64 +356,66 @@ fun ReorderableFavoriteList(
                     }
             ) {
                 favorites.forEachIndexed { index, stop ->
-                    val isDragging = draggingIndex == index
-                    
-                    val visualOffset = remember(index, draggingIndex, currentTargetIndex) {
-                        if (draggingIndex == null || currentTargetIndex == null || isDragging) {
-                            Offset.Zero
-                        } else {
-                            val start = draggingIndex!!
-                            val target = currentTargetIndex
-                            if (index in (minOf(start, target)..maxOf(start, target))) {
-                                val direction = if (start < target) -1f else 1f
-                                Offset(x = 0f, y = direction * itemSize.height.toFloat())
-                            } else {
+                    key(stop.id) {
+                        val isDragging = draggingIndex == index
+                        
+                        val visualOffset = remember(index, draggingIndex, currentTargetIndex) {
+                            if (draggingIndex == null || currentTargetIndex == null || isDragging) {
                                 Offset.Zero
+                            } else {
+                                val start = draggingIndex!!
+                                val target = currentTargetIndex
+                                if (index in (minOf(start, target)..maxOf(start, target))) {
+                                    val direction = if (start < target) -1f else 1f
+                                    Offset(x = 0f, y = direction * itemSize.height.toFloat())
+                                } else {
+                                    Offset.Zero
+                                }
                             }
                         }
-                    }
 
-                    val animatedOffset by animateOffsetAsState(
-                        targetValue = if (isDragging) dragOffset else visualOffset,
-                        animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
-                        label = "itemOffset"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .zIndex(if (isDragging) 1f else 0f)
-                            .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
-                            .pointerInput(Unit) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { draggingIndex = index },
-                                    onDragEnd = {
-                                        currentTargetIndex?.let { target ->
-                                            if (target != index) onReorder(index, target)
-                                        }
-                                        draggingIndex = null
-                                        dragOffset = Offset.Zero
-                                    },
-                                    onDragCancel = {
-                                        draggingIndex = null
-                                        dragOffset = Offset.Zero
-                                    },
-                                    onDrag = { change, dragAmount ->
-                                        change.consume()
-                                        dragOffset += dragAmount
-                                    }
-                                )
-                            }
-                    ) {
-                        StopBoardPanel(
-                            stopPlace = stop,
-                            departures = departures[stop.id] ?: emptyList(),
-                            showDelays = showDelays,
-                            showMessages = showMessages,
-                            isLoading = isLoading,
-                            modifier = Modifier.fillMaxSize()
+                        val animatedOffset by animateOffsetAsState(
+                            targetValue = if (isDragging) dragOffset else visualOffset,
+                            animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
+                            label = "itemOffset"
                         )
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .zIndex(if (isDragging) 1f else 0f)
+                                .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
+                                .pointerInput(Unit) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { draggingIndex = index },
+                                        onDragEnd = {
+                                            currentTargetIndex?.let { target ->
+                                                if (target != index) onReorder(index, target)
+                                            }
+                                            draggingIndex = null
+                                            dragOffset = Offset.Zero
+                                        },
+                                        onDragCancel = {
+                                            draggingIndex = null
+                                            dragOffset = Offset.Zero
+                                        },
+                                        onDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragOffset += dragAmount
+                                        }
+                                    )
+                                }
+                        ) {
+                            StopBoardPanel(
+                                stopPlace = stop,
+                                departures = departures[stop.id] ?: emptyList(),
+                                showDelays = showDelays,
+                                showMessages = showMessages,
+                                isLoading = isLoading,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
                 }
             }
