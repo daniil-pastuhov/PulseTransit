@@ -178,6 +178,10 @@ fun SettingsScreen(
                             Checkbox(checked = uiState.dynamicRefresh, onCheckedChange = { viewModel.updateDynamicRefresh(it) })
                             Text(stringResource(R.string.dynamic_refresh))
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.isFullScreenMode, onCheckedChange = { viewModel.updateFullScreenMode(it) })
+                            Text(stringResource(R.string.full_screen_mode))
+                        }
                     }
 
                     // Section: Transport Info

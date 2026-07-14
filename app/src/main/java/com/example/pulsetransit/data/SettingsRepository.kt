@@ -1,5 +1,7 @@
 package com.example.pulsetransit.data
 
+import kotlinx.coroutines.flow.Flow
+
 interface SettingsRepository {
     fun getFavorites(): List<StopPlace>
     fun addFavorite(stopPlace: StopPlace)
@@ -41,4 +43,8 @@ interface SettingsRepository {
 
     fun getDestinationStation(): StopPlace?
     fun setDestinationStation(stopPlace: StopPlace?)
+
+    fun isFullScreenMode(): Boolean
+    fun setFullScreenMode(enabled: Boolean)
+    fun getFullScreenModeFlow(): Flow<Boolean>
 }

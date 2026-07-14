@@ -1,13 +1,18 @@
 package com.example.pulsetransit.data
 
 import android.content.Context
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import androidx.core.content.edit
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true }
+
+    private val _fullScreenMode = MutableStateFlow(isFullScreenMode())
+    override fun getFullScreenModeFlow(): Flow<Boolean> = _fullScreenMode.asStateFlow()
 
     override fun getFavorites(): List<StopPlace> {
         val jsonStr = prefs.getString("favorites", null) ?: return emptyList()
@@ -139,5 +144,11 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         } else {
             prefs.edit { putString("destination_station", json.encodeToString(stopPlace)) }
         }
+    }
+
+    override fun isFullScreenMode(): Boolean = prefs.getBoolean("full_screen_mode", false)
+    override fun setFullScreenMode(enabled: Boolean) {
+        prefs.edit { putBoolean("full_screen_mode", enabled) }
+        _fullScreenMode.value = enabled
     }
 }

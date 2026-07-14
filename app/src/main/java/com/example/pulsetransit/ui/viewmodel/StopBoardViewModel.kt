@@ -36,7 +36,8 @@ class StopBoardViewModel(
         val showMessages: Boolean = true,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
         val fastestTrip: TripInfo? = null,
-        val destinationStation: StopPlace? = null
+        val destinationStation: StopPlace? = null,
+        val isFullScreenMode: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -51,6 +52,15 @@ class StopBoardViewModel(
         startClock()
         startAutoRefresh()
         setupSensors()
+        observeSettings()
+    }
+
+    private fun observeSettings() {
+        settingsRepository.getFullScreenModeFlow()
+            .onEach { isFullScreen ->
+                _uiState.update { it.copy(isFullScreenMode = isFullScreen) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun loadSettings() {
@@ -61,6 +71,7 @@ class StopBoardViewModel(
         val showDelays = settingsRepository.isShowDelays()
         val showMessages = settingsRepository.isShowMessages()
         val destination = settingsRepository.getDestinationStation()
+        val isFullScreen = settingsRepository.isFullScreenMode()
 
         _uiState.update {
             it.copy(
@@ -72,7 +83,8 @@ class StopBoardViewModel(
                 showDelays = showDelays,
                 showMessages = showMessages,
                 destinationStation = destination,
-                fastestTrip = if (destination == null) null else it.fastestTrip
+                fastestTrip = if (destination == null) null else it.fastestTrip,
+                isFullScreenMode = isFullScreen
             )
         }
     }

@@ -14,6 +14,7 @@
     <string name="wake_camera">Vekk skjerm med bevegelse (frontkamera)</string>
     <string name="recommended_alt">Anbefalt alternativ</string>
     <string name="dynamic_refresh">Dynamisk oppdatering (tregere om natten/når tom)</string>
+    <string name="full_screen_mode">Fullskjermmodus (skjuler systemlinjer)</string>
     <string name="transport_info">Transportinformasjon</string>
     <string name="show_delays">Vis forsinkelser</string>
     <string name="show_messages">Vis informasjonsmeldinger</string>

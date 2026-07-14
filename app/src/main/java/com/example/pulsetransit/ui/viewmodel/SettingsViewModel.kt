@@ -62,6 +62,7 @@ class SettingsViewModel(
         val proximityWake: Boolean = false,
         val cameraMotionWake: Boolean = false,
         val dynamicRefresh: Boolean = true,
+        val isFullScreenMode: Boolean = false,
         val isProximityAvailable: Boolean = true,
         val destinationStation: StopPlace? = null,
         val destinationQuery: String = "",
@@ -96,6 +97,7 @@ class SettingsViewModel(
                 proximityWake = settingsRepository.isProximityWakeEnabled(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
+                isFullScreenMode = settingsRepository.isFullScreenMode(),
                 destinationStation = settingsRepository.getDestinationStation()
             )
         }
@@ -170,6 +172,11 @@ class SettingsViewModel(
     fun updateDynamicRefresh(enabled: Boolean) {
         settingsRepository.setDynamicRefreshEnabled(enabled)
         _uiState.update { it.copy(dynamicRefresh = enabled) }
+    }
+
+    fun updateFullScreenMode(enabled: Boolean) {
+        settingsRepository.setFullScreenMode(enabled)
+        _uiState.update { it.copy(isFullScreenMode = enabled) }
     }
 
     fun onQueryChanged(newQuery: String) {
