@@ -23,6 +23,13 @@ class StopBoardViewModel(
     private val cameraMotionDetector: CameraMotionDetector,
 ) : ViewModel() {
 
+    private companion object {
+        // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
+        // and the gap in between is a dead zone that holds the current theme to avoid flapping.
+        const val AUTO_THEME_DARK_LUX = 10f
+        const val AUTO_THEME_LIGHT_LUX = 40f
+    }
+
     data class UiState(
         val favorites: List<StopPlace> = emptyList(),
         val departures: List<StopDepartures> = emptyList(),
@@ -165,8 +172,18 @@ class StopBoardViewModel(
         if (_uiState.value.themeMode == ThemeMode.AUTO) {
             sensorManager.getLightFlow()
                 .onEach { lux ->
-                    val autoTheme = if (lux < 20) ThemeMode.DARK else ThemeMode.LIGHT
-                    _uiState.update { it.copy(activeTheme = autoTheme) }
+                    // Hysteresis: switch to light only when clearly bright, and to dark only
+                    // when clearly dim. The dead zone between the two thresholds prevents the
+                    // theme from flapping when ambient light hovers near a single edge.
+                    val current = _uiState.value.activeTheme
+                    val autoTheme = when {
+                        lux <= AUTO_THEME_DARK_LUX -> ThemeMode.DARK
+                        lux >= AUTO_THEME_LIGHT_LUX -> ThemeMode.LIGHT
+                        else -> current // within dead zone: keep the current theme
+                    }
+                    if (autoTheme != current) {
+                        _uiState.update { it.copy(activeTheme = autoTheme) }
+                    }
                 }
                 .launchIn(viewModelScope)
         }
