@@ -208,6 +208,7 @@ fun MainScreen(
                         isLoading = uiState.isLoading,
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
+                        onFilterOut = { line -> viewModel.filterOutLine(line) },
                         modifier = Modifier
                             .fillMaxSize()
                             .weight(1f)
@@ -276,6 +277,7 @@ fun ReorderableFavoriteList(
     isLoading: Boolean,
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
+    onFilterOut: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
@@ -360,6 +362,7 @@ fun ReorderableFavoriteList(
                                 showMessages = showMessages,
                                 showCancelled = showCancelled,
                                 isLoading = isLoading,
+                                onFilterOut = onFilterOut,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -433,6 +436,7 @@ fun ReorderableFavoriteList(
                                 showMessages = showMessages,
                                 showCancelled = showCancelled,
                                 isLoading = isLoading,
+                                onFilterOut = onFilterOut,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

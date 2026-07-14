@@ -20,6 +20,9 @@
     <string name="show_delays">Show delay information</string>
     <string name="show_messages">Show informational messages</string>
     <string name="show_cancelled">Show canceled departures</string>
+    <string name="filter_out_line">Filter out line %1$s</string>
+    <string name="filtered_lines">Filtered Out Lines</string>
+    <string name="no_filtered_lines">No lines filtered out</string>
     <string name="location_config">Location Configuration</string>
     <string name="current_coords">Current Coordinates</string>
     <string name="latitude_val">Lat: %1$s</string>

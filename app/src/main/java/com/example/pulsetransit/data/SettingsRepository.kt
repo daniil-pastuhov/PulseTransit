@@ -57,4 +57,9 @@ interface SettingsRepository {
     fun isShowCancelledLines(): Boolean
     fun setShowCancelledLines(show: Boolean)
     fun getShowCancelledLinesFlow(): Flow<Boolean>
+
+    fun getFilteredLines(): Set<String>
+    fun addFilteredLine(line: String)
+    fun removeFilteredLine(line: String)
+    fun getFilteredLinesFlow(): Flow<Set<String>>
 }

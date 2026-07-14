@@ -39,7 +39,8 @@ class StopBoardViewModel(
         val fastestTrip: TripInfo? = null,
         val destinationStation: StopPlace? = null,
         val isFullScreenMode: Boolean = false,
-        val isAlwaysOnEnabled: Boolean = false
+        val isAlwaysOnEnabled: Boolean = false,
+        val filteredLines: Set<String> = emptySet()
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -87,6 +88,13 @@ class StopBoardViewModel(
                 _uiState.update { it.copy(showMessages = showMessages) }
             }
             .launchIn(viewModelScope)
+
+        settingsRepository.getFilteredLinesFlow()
+            .onEach { filteredLines ->
+                _uiState.update { it.copy(filteredLines = filteredLines) }
+                refreshDepartures()
+            }
+            .launchIn(viewModelScope)
     }
 
     fun loadSettings() {
@@ -100,6 +108,7 @@ class StopBoardViewModel(
         val destination = settingsRepository.getDestinationStation()
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
+        val filtered = settingsRepository.getFilteredLines()
 
         _uiState.update {
             it.copy(
@@ -114,7 +123,8 @@ class StopBoardViewModel(
                 destinationStation = destination,
                 fastestTrip = if (destination == null) null else it.fastestTrip,
                 isFullScreenMode = isFullScreen,
-                isAlwaysOnEnabled = alwaysOn
+                isAlwaysOnEnabled = alwaysOn,
+                filteredLines = filtered
             )
         }
     }
@@ -236,7 +246,8 @@ class StopBoardViewModel(
             for (stop in favs) {
                 val quayIds = settingsRepository.getSelectedQuays(stop.id)
                 val list = enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds)
-                newDepartures[stop.id] = list
+                val filteredList = list.filter { it.line !in _uiState.value.filteredLines }
+                newDepartures[stop.id] = filteredList
             }
 
             val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
@@ -292,5 +303,13 @@ class StopBoardViewModel(
         
         _uiState.update { it.copy(favorites = currentList) }
         settingsRepository.reorderFavorites(currentList.map { it.id })
+    }
+
+    fun filterOutLine(line: String) {
+        settingsRepository.addFilteredLine(line)
+    }
+
+    fun removeFilteredLine(line: String) {
+        settingsRepository.removeFilteredLine(line)
     }
 }

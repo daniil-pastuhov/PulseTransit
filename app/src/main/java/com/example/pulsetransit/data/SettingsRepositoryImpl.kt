@@ -26,6 +26,9 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val _showMessages = MutableStateFlow(isShowMessages())
     override fun getShowMessagesFlow(): Flow<Boolean> = _showMessages.asStateFlow()
 
+    private val _filteredLines = MutableStateFlow(getFilteredLines())
+    override fun getFilteredLinesFlow(): Flow<Set<String>> = _filteredLines.asStateFlow()
+
     override fun getFavorites(): List<StopPlace> {
         val jsonStr = prefs.getString("favorites", null) ?: return emptyList()
         return try {
@@ -180,5 +183,22 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun setShowCancelledLines(show: Boolean) {
         prefs.edit { putBoolean("show_cancelled_lines", show) }
         _showCancelledLines.value = show
+    }
+
+    override fun getFilteredLines(): Set<String> = prefs.getStringSet("filtered_lines", emptySet()) ?: emptySet()
+    override fun addFilteredLine(line: String) {
+        val current = getFilteredLines().toMutableSet()
+        if (current.add(line)) {
+            prefs.edit { putStringSet("filtered_lines", current) }
+            _filteredLines.value = current
+        }
+    }
+
+    override fun removeFilteredLine(line: String) {
+        val current = getFilteredLines().toMutableSet()
+        if (current.remove(line)) {
+            prefs.edit { putStringSet("filtered_lines", current) }
+            _filteredLines.value = current
+        }
     }
 }

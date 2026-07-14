@@ -204,6 +204,42 @@ fun SettingsScreen(
                         }
                     }
 
+                    // Section: Filtered Lines
+                    SettingsCard(title = stringResource(R.string.filtered_lines)) {
+                        if (uiState.filteredLines.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.no_filtered_lines),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                uiState.filteredLines.sorted().forEach { line ->
+                                    InputChip(
+                                        selected = false,
+                                        onClick = { },
+                                        label = { Text(line) },
+                                        trailingIcon = {
+                                            IconButton(
+                                                onClick = { viewModel.removeFilteredLine(line) },
+                                                modifier = Modifier.size(18.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Delete,
+                                                    contentDescription = stringResource(R.string.remove),
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // Section: Fastest Route Destination
                     SettingsCard(title = stringResource(R.string.fastest_route_destination)) {
                         val destination = uiState.destinationStation

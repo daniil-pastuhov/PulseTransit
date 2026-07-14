@@ -2,14 +2,13 @@ package com.example.pulsetransit.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +34,7 @@ fun StopBoardPanel(
     showMessages: Boolean = true,
     showCancelled: Boolean = false,
     isLoading: Boolean = false,
+    onFilterOut: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val filteredDepartures = remember(departures, showCancelled) {
@@ -116,7 +116,7 @@ fun StopBoardPanel(
                         items = filteredDepartures,
                         key = { it.line + it.destination + it.expectedTime + (it.quayId ?: "") }
                     ) { departure ->
-                        DepartureRow(departure, showDelays, showMessages)
+                        DepartureRow(departure, showDelays, showMessages, onFilterOut)
                     }
                 }
             }
@@ -199,7 +199,8 @@ fun DepartureRowPlaceholder(alpha: Float) {
 fun DepartureRow(
     departure: Departure,
     showDelays: Boolean,
-    showMessages: Boolean
+    showMessages: Boolean,
+    onFilterOut: (String) -> Unit
 ) {
     val transportEmoji = getTransportEmoji(departure.transportMode)
     val pillColor = if (departure.isCancelled) Color.Gray else getTransportColor(departure.transportMode)
@@ -208,11 +209,14 @@ fun DepartureRow(
     val minUnit = stringResource(R.string.unit_minute)
     val remainingTime = if (departure.isCancelled) cancelledText else formatDepartureTime(departure.expectedTime, nowText, minUnit)
 
+    var showMenu by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (departure.isCancelled) 0.2f else 0.5f))
+            .clickable { showMenu = true }
             .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Row(
@@ -305,6 +309,19 @@ fun DepartureRow(
                     )
                 }
             }
+        }
+
+        DropdownMenu(
+            expanded = showMenu,
+            onDismissRequest = { showMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.filter_out_line, departure.line)) },
+                onClick = {
+                    onFilterOut(departure.line)
+                    showMenu = false
+                }
+            )
         }
     }
 }

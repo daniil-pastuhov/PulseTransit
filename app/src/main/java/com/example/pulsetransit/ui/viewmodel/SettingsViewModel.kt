@@ -66,6 +66,7 @@ class SettingsViewModel(
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
         val isProximityAvailable: Boolean = true,
+        val filteredLines: Set<String> = emptySet(),
         val destinationStation: StopPlace? = null,
         val destinationQuery: String = "",
         val destinationResults: List<StopPlace> = emptyList(),
@@ -102,7 +103,8 @@ class SettingsViewModel(
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
                 isFullScreenMode = settingsRepository.isFullScreenMode(),
                 isAlwaysOnEnabled = settingsRepository.isAlwaysOnEnabled(),
-                destinationStation = settingsRepository.getDestinationStation()
+                destinationStation = settingsRepository.getDestinationStation(),
+                filteredLines = settingsRepository.getFilteredLines()
             )
         }
         
@@ -370,5 +372,10 @@ class SettingsViewModel(
             val results = enturRepository.searchStopPlaces(newQuery)
             _uiState.update { it.copy(destinationResults = results, isSearchingDestination = false) }
         }
+    }
+
+    fun removeFilteredLine(line: String) {
+        settingsRepository.removeFilteredLine(line)
+        _uiState.update { it.copy(filteredLines = settingsRepository.getFilteredLines()) }
     }
 }
