@@ -57,8 +57,9 @@
     <string name="refresh">Refresh</string>
 
     <!-- Fastest Route -->
-    <string name="fastest_route_destination">Fastest Route Destination</string>
-    <string name="no_destination_set">No destination set</string>
+    <string name="fastest_route_destination">Fastest Route Destinations</string>
+    <string name="no_destination_set">No destinations set</string>
+    <string name="max_destinations_reached">Maximum of %1$d destinations reached. Remove one to add another.</string>
     <string name="select">Select</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
     <string name="fastest_route_info">Line %1$s from %2$s</string>

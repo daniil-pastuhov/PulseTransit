@@ -169,9 +169,11 @@ fun MainScreen(
                     }
                 }
 
-                // Fastest route banner (only when a destination station is set in Settings)
-                uiState.fastestTrip?.let { trip ->
-                    FastestTripBanner(trip = trip)
+                // Fastest route banners (one per destination station set in Settings)
+                uiState.fastestTrips.forEach { trip ->
+                    key(trip.destinationName) {
+                        FastestTripBanner(trip = trip)
+                    }
                 }
 
                 // Body Area (Equal screen division between favorite stops)

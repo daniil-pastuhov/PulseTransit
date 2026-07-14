@@ -188,21 +188,27 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
     override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit { putBoolean("dynamic_refresh", enabled) }
 
-    override fun getDestinationStation(): StopPlace? {
-        val jsonStr = prefs.getString("destination_station", null) ?: return null
+    override fun getDestinationStations(): List<StopPlace> {
+        val jsonStr = prefs.getString("destination_stations", null) ?: return emptyList()
         return try {
-            json.decodeFromString<StopPlace>(jsonStr)
+            json.decodeFromString<List<StopPlace>>(jsonStr)
         } catch (_: Exception) {
-            null
+            emptyList()
         }
     }
 
-    override fun setDestinationStation(stopPlace: StopPlace?) {
-        if (stopPlace == null) {
-            prefs.edit { remove("destination_station") }
-        } else {
-            prefs.edit { putString("destination_station", json.encodeToString(stopPlace)) }
+    override fun addDestinationStation(stopPlace: StopPlace) {
+        val current = getDestinationStations().toMutableList()
+        if (current.none { it.id == stopPlace.id } &&
+            current.size < SettingsRepository.MAX_DESTINATION_STATIONS) {
+            current.add(stopPlace)
+            prefs.edit { putString("destination_stations", json.encodeToString(current)) }
         }
+    }
+
+    override fun removeDestinationStation(stopId: String) {
+        val current = getDestinationStations().filter { it.id != stopId }
+        prefs.edit { putString("destination_stations", json.encodeToString(current)) }
     }
 
     override fun isFullScreenMode(): Boolean = prefs.getBoolean("full_screen_mode", false)

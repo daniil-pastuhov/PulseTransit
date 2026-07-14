@@ -58,7 +58,8 @@
 
     <!-- Fastest Route -->
     <string name="fastest_route_destination">Reisemål for raskeste rute</string>
-    <string name="no_destination_set">Ingen destinasjon valgt</string>
+    <string name="no_destination_set">Ingen destinasjoner valgt</string>
+    <string name="max_destinations_reached">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</string>
     <string name="select">Velg</string>
     <string name="fastest_route_to">Raskest til %1$s</string>
     <string name="fastest_route_info">Linje %1$s fra %2$s</string>

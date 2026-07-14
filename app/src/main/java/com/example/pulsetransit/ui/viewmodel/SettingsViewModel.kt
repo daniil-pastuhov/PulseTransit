@@ -67,7 +67,7 @@ class SettingsViewModel(
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
         val filteredLines: Set<String> = emptySet(),
-        val destinationStation: StopPlace? = null,
+        val destinationStations: List<StopPlace> = emptyList(),
         val destinationQuery: String = "",
         val destinationResults: List<StopPlace> = emptyList(),
         val isSearchingDestination: Boolean = false
@@ -102,7 +102,7 @@ class SettingsViewModel(
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
                 isFullScreenMode = settingsRepository.isFullScreenMode(),
                 isAlwaysOnEnabled = settingsRepository.isAlwaysOnEnabled(),
-                destinationStation = settingsRepository.getDestinationStation(),
+                destinationStations = settingsRepository.getDestinationStations(),
                 filteredLines = settingsRepository.getFilteredLines()
             )
         }
@@ -357,14 +357,21 @@ class SettingsViewModel(
         _uiState.update { it.copy(autoDimSeconds = seconds) }
     }
 
-    fun updateDestinationStation(stopPlace: StopPlace?) {
-        settingsRepository.setDestinationStation(stopPlace)
+    fun addDestinationStation(stopPlace: StopPlace) {
+        settingsRepository.addDestinationStation(stopPlace)
         _uiState.update {
             it.copy(
-                destinationStation = stopPlace,
+                destinationStations = settingsRepository.getDestinationStations(),
                 destinationQuery = "",
                 destinationResults = emptyList()
             )
+        }
+    }
+
+    fun removeDestinationStation(stopId: String) {
+        settingsRepository.removeDestinationStation(stopId)
+        _uiState.update {
+            it.copy(destinationStations = settingsRepository.getDestinationStations())
         }
     }
 

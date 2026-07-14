@@ -3,6 +3,10 @@ package com.example.pulsetransit.data
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
+    companion object {
+        const val MAX_DESTINATION_STATIONS = 5
+    }
+
     fun getFavorites(): List<StopPlace>
     fun addFavorite(stopPlace: StopPlace)
     fun removeFavorite(stopId: String)
@@ -48,8 +52,9 @@ interface SettingsRepository {
     fun isDynamicRefreshEnabled(): Boolean
     fun setDynamicRefreshEnabled(enabled: Boolean)
 
-    fun getDestinationStation(): StopPlace?
-    fun setDestinationStation(stopPlace: StopPlace?)
+    fun getDestinationStations(): List<StopPlace>
+    fun addDestinationStation(stopPlace: StopPlace)
+    fun removeDestinationStation(stopId: String)
 
     fun isFullScreenMode(): Boolean
     fun setFullScreenMode(enabled: Boolean)

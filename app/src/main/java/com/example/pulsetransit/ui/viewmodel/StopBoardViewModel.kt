@@ -38,8 +38,8 @@ class StopBoardViewModel(
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
-        val fastestTrip: TripInfo? = null,
-        val destinationStation: StopPlace? = null,
+        val fastestTrips: List<TripInfo> = emptyList(),
+        val destinationStations: List<StopPlace> = emptyList(),
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
         val autoDimSeconds: Int = 30,
@@ -133,7 +133,7 @@ class StopBoardViewModel(
         val showDelays = settingsRepository.isShowDelays()
         val showMessages = settingsRepository.isShowMessages()
         val showCancelledLines = settingsRepository.isShowCancelledLines()
-        val destination = settingsRepository.getDestinationStation()
+        val destinations = settingsRepository.getDestinationStations()
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
         val autoDim = settingsRepository.getAutoDimSeconds()
@@ -150,8 +150,8 @@ class StopBoardViewModel(
                 showDelays = showDelays,
                 showMessages = showMessages,
                 showCancelledLines = showCancelledLines,
-                destinationStation = destination,
-                fastestTrip = if (destination == null) null else it.fastestTrip,
+                destinationStations = destinations,
+                fastestTrips = if (destinations.isEmpty()) emptyList() else it.fastestTrips,
                 isFullScreenMode = isFullScreen,
                 isAlwaysOnEnabled = alwaysOn,
                 autoDimSeconds = autoDim,
@@ -321,16 +321,17 @@ class StopBoardViewModel(
     }
 
     private fun refreshFastestTrip() {
-        val destination = _uiState.value.destinationStation ?: return
+        val destinations = _uiState.value.destinationStations
         val favorites = _uiState.value.favorites
-        if (favorites.isEmpty()) return
+        if (destinations.isEmpty() || favorites.isEmpty()) return
 
         viewModelScope.launch {
-            val trip = enturRepository.getFastestTrip(
-                fromIds = favorites.map { it.id },
-                toId = destination.id
-            )
-            _uiState.update { it.copy(fastestTrip = trip?.copy(destinationName = destination.name)) }
+            val fromIds = favorites.map { it.id }
+            val trips = destinations.mapNotNull { destination ->
+                enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+                    ?.copy(destinationName = destination.name)
+            }
+            _uiState.update { it.copy(fastestTrips = trips) }
         }
     }
 

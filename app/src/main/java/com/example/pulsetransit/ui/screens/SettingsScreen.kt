@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
+import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -274,27 +275,33 @@ fun SettingsScreen(
                         }
                     }
 
-                    // Section: Fastest Route Destination
+                    // Section: Fastest Route Destinations
                     SettingsCard(title = stringResource(R.string.fastest_route_destination)) {
-                        val destination = uiState.destinationStation
-                        if (destination != null) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(destination.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                    destination.locality?.let {
-                                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        val destinations = uiState.destinationStations
+                        if (destinations.isNotEmpty()) {
+                            destinations.forEach { destination ->
+                                key(destination.id) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(destination.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                            destination.locality?.let {
+                                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                        IconButton(onClick = { viewModel.removeDestinationStation(destination.id) }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = stringResource(R.string.remove),
+                                                tint = MaterialTheme.colorScheme.error
+                                            )
+                                        }
                                     }
-                                }
-                                IconButton(onClick = { viewModel.updateDestinationStation(null) }) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = stringResource(R.string.remove),
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
                                 }
                             }
                         } else {
@@ -305,46 +312,57 @@ fun SettingsScreen(
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = uiState.destinationQuery,
-                            onValueChange = { viewModel.onDestinationQueryChanged(it) },
-                            label = { Text(stringResource(R.string.search_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-
-                        if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
+                        if (destinations.size >= SettingsRepository.MAX_DESTINATION_STATIONS) {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            }
-                        } else if (uiState.destinationResults.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            uiState.destinationResults.forEach { stop ->
-                                key(stop.id) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(MaterialTheme.colorScheme.surface)
-                                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                            stop.locality?.let {
-                                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                stringResource(R.string.max_destinations_reached, SettingsRepository.MAX_DESTINATION_STATIONS),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = uiState.destinationQuery,
+                                onValueChange = { viewModel.onDestinationQueryChanged(it) },
+                                label = { Text(stringResource(R.string.search_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+
+                            if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                }
+                            } else if (uiState.destinationResults.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                uiState.destinationResults
+                                    .filter { result -> destinations.none { it.id == result.id } }
+                                    .forEach { stop ->
+                                        key(stop.id) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp)
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.surface)
+                                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                                    stop.locality?.let {
+                                                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Button(onClick = { viewModel.addDestinationStation(stop) }) {
+                                                    Text(stringResource(R.string.select), fontSize = 12.sp)
+                                                }
                                             }
                                         }
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Button(onClick = { viewModel.updateDestinationStation(stop) }) {
-                                            Text(stringResource(R.string.select), fontSize = 12.sp)
-                                        }
                                     }
-                                }
                             }
                         }
                     }
