@@ -34,6 +34,7 @@ class StopBoardViewModel(
         val isScreenDimmed: Boolean = false,
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
+        val showCancelledLines: Boolean = false,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
         val fastestTrip: TripInfo? = null,
         val destinationStation: StopPlace? = null,
@@ -68,6 +69,24 @@ class StopBoardViewModel(
                 _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn) }
             }
             .launchIn(viewModelScope)
+
+        settingsRepository.getShowCancelledLinesFlow()
+            .onEach { showCancelled ->
+                _uiState.update { it.copy(showCancelledLines = showCancelled) }
+            }
+            .launchIn(viewModelScope)
+
+        settingsRepository.getShowDelaysFlow()
+            .onEach { showDelays ->
+                _uiState.update { it.copy(showDelays = showDelays) }
+            }
+            .launchIn(viewModelScope)
+
+        settingsRepository.getShowMessagesFlow()
+            .onEach { showMessages ->
+                _uiState.update { it.copy(showMessages = showMessages) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun loadSettings() {
@@ -77,6 +96,7 @@ class StopBoardViewModel(
         val interval = settingsRepository.getRefreshIntervalSeconds()
         val showDelays = settingsRepository.isShowDelays()
         val showMessages = settingsRepository.isShowMessages()
+        val showCancelledLines = settingsRepository.isShowCancelledLines()
         val destination = settingsRepository.getDestinationStation()
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
@@ -90,6 +110,7 @@ class StopBoardViewModel(
                 refreshIntervalSeconds = interval,
                 showDelays = showDelays,
                 showMessages = showMessages,
+                showCancelledLines = showCancelledLines,
                 destinationStation = destination,
                 fastestTrip = if (destination == null) null else it.fastestTrip,
                 isFullScreenMode = isFullScreen,

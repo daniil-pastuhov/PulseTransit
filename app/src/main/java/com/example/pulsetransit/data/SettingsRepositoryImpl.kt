@@ -17,6 +17,15 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val _alwaysOnEnabled = MutableStateFlow(isAlwaysOnEnabled())
     override fun getAlwaysOnEnabledFlow(): Flow<Boolean> = _alwaysOnEnabled.asStateFlow()
 
+    private val _showCancelledLines = MutableStateFlow(isShowCancelledLines())
+    override fun getShowCancelledLinesFlow(): Flow<Boolean> = _showCancelledLines.asStateFlow()
+
+    private val _showDelays = MutableStateFlow(isShowDelays())
+    override fun getShowDelaysFlow(): Flow<Boolean> = _showDelays.asStateFlow()
+
+    private val _showMessages = MutableStateFlow(isShowMessages())
+    override fun getShowMessagesFlow(): Flow<Boolean> = _showMessages.asStateFlow()
+
     override fun getFavorites(): List<StopPlace> {
         val jsonStr = prefs.getString("favorites", null) ?: return emptyList()
         return try {
@@ -106,10 +115,16 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun isShowDelays(): Boolean = prefs.getBoolean("show_delays", true)
-    override fun setShowDelays(show: Boolean) = prefs.edit().putBoolean("show_delays", show).apply()
+    override fun setShowDelays(show: Boolean) {
+        prefs.edit { putBoolean("show_delays", show) }
+        _showDelays.value = show
+    }
 
     override fun isShowMessages(): Boolean = prefs.getBoolean("show_messages", true)
-    override fun setShowMessages(show: Boolean) = prefs.edit().putBoolean("show_messages", show).apply()
+    override fun setShowMessages(show: Boolean) {
+        prefs.edit { putBoolean("show_messages", show) }
+        _showMessages.value = show
+    }
 
     override fun getSelectedQuays(stopId: String): Set<String>? {
         return prefs.getStringSet("quays_$stopId", null)
@@ -117,9 +132,9 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
 
     override fun setSelectedQuays(stopId: String, quayIds: Set<String>?) {
         if (quayIds == null) {
-            prefs.edit().remove("quays_$stopId").apply()
+            prefs.edit { remove("quays_$stopId") }
         } else {
-            prefs.edit().putStringSet("quays_$stopId", quayIds).apply()
+            prefs.edit { putStringSet("quays_$stopId", quayIds) }
         }
     }
 
@@ -159,5 +174,11 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun setAlwaysOnEnabled(enabled: Boolean) {
         prefs.edit { putBoolean("always_on_enabled", enabled) }
         _alwaysOnEnabled.value = enabled
+    }
+
+    override fun isShowCancelledLines(): Boolean = prefs.getBoolean("show_cancelled_lines", false)
+    override fun setShowCancelledLines(show: Boolean) {
+        prefs.edit { putBoolean("show_cancelled_lines", show) }
+        _showCancelledLines.value = show
     }
 }

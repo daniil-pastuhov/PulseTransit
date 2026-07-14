@@ -19,6 +19,7 @@
     <string name="transport_info">Transportinformasjon</string>
     <string name="show_delays">Vis forsinkelser</string>
     <string name="show_messages">Vis informasjonsmeldinger</string>
+    <string name="show_cancelled">Vis kansellerte avganger</string>
     <string name="location_config">Posisjonsinnstillinger</string>
     <string name="current_coords">Nåværende koordinater</string>
     <string name="latitude_val">Breddegrad: %1$s</string>
@@ -51,6 +52,7 @@
     <string name="open_settings_to_add">Åpne innstillinger for å legge til stopp</string>
     <string name="no_departures">Ingen kommende avganger</string>
     <string name="now">Nå</string>
+    <string name="cancelled">Kansellert</string>
     <string name="unit_minute">min</string>
     <string name="refresh">Oppdater</string>
 

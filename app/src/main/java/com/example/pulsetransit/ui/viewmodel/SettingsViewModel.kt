@@ -59,6 +59,7 @@ class SettingsViewModel(
         
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
+        val showCancelledLines: Boolean = false,
         val proximityWake: Boolean = false,
         val cameraMotionWake: Boolean = false,
         val dynamicRefresh: Boolean = true,
@@ -95,6 +96,7 @@ class SettingsViewModel(
                 selectedQuays = quaysMap,
                 showDelays = settingsRepository.isShowDelays(),
                 showMessages = settingsRepository.isShowMessages(),
+                showCancelledLines = settingsRepository.isShowCancelledLines(),
                 proximityWake = settingsRepository.isProximityWakeEnabled(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
@@ -159,6 +161,11 @@ class SettingsViewModel(
     fun updateShowMessages(show: Boolean) {
         settingsRepository.setShowMessages(show)
         _uiState.update { it.copy(showMessages = show) }
+    }
+
+    fun updateShowCancelledLines(show: Boolean) {
+        settingsRepository.setShowCancelledLines(show)
+        _uiState.update { it.copy(showCancelledLines = show) }
     }
 
     fun updateProximityWake(enabled: Boolean) {

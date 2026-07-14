@@ -128,6 +128,8 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
     private data class EstimatedCallGraphQL(
         val expectedDepartureTime: String? = null,
         val aimedDepartureTime: String? = null,
+        val cancellation: Boolean = false,
+        val realtimeState: String? = null,
         val destinationDisplay: DestinationDisplayGraphQL? = null,
         val serviceJourney: ServiceJourneyGraphQL? = null,
         val notices: List<NoticeGraphQL> = emptyList(),
@@ -229,9 +231,11 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
               stopPlace(id: ${'$'}id) {
                 id
                 name
-                estimatedCalls(numberOfDepartures: ${'$'}limit) {
+                estimatedCalls(numberOfDepartures: ${'$'}limit, includeCancelledTrips: true) {
                   expectedDepartureTime
                   aimedDepartureTime
+                  cancellation
+                  realtimeState
                   destinationDisplay {
                     frontText
                   }
@@ -287,9 +291,10 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
                     Departure(
                         line = call.serviceJourney?.line?.publicCode ?: call.serviceJourney?.line?.name ?: "?",
                         destination = call.destinationDisplay?.frontText ?: "Unknown",
-                        expectedTime = call.expectedDepartureTime ?: "",
+                        expectedTime = call.expectedDepartureTime ?: call.aimedDepartureTime ?: "",
                         aimedTime = call.aimedDepartureTime ?: "",
-                        isRealtime = call.expectedDepartureTime != null && call.expectedDepartureTime != call.aimedDepartureTime,
+                        isRealtime = call.realtimeState != null && call.realtimeState != "scheduled",
+                        isCancelled = call.cancellation,
                         transportMode = call.serviceJourney?.line?.transportMode,
                         delayMinutes = delay,
                         notices = notices,

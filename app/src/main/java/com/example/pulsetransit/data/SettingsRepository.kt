@@ -25,9 +25,11 @@ interface SettingsRepository {
     // New settings
     fun isShowDelays(): Boolean
     fun setShowDelays(show: Boolean)
-    
+    fun getShowDelaysFlow(): Flow<Boolean>
+
     fun isShowMessages(): Boolean
     fun setShowMessages(show: Boolean)
+    fun getShowMessagesFlow(): Flow<Boolean>
 
     fun getSelectedQuays(stopId: String): Set<String>?
     fun setSelectedQuays(stopId: String, quayIds: Set<String>?)
@@ -51,4 +53,8 @@ interface SettingsRepository {
     fun isAlwaysOnEnabled(): Boolean
     fun setAlwaysOnEnabled(enabled: Boolean)
     fun getAlwaysOnEnabledFlow(): Flow<Boolean>
+
+    fun isShowCancelledLines(): Boolean
+    fun setShowCancelledLines(show: Boolean)
+    fun getShowCancelledLinesFlow(): Flow<Boolean>
 }

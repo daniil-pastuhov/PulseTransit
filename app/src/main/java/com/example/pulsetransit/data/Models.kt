@@ -28,6 +28,7 @@ data class Departure(
     val expectedTime: String, // ISO timestamp
     val aimedTime: String,    // ISO timestamp
     val isRealtime: Boolean,
+    val isCancelled: Boolean = false,
     val transportMode: String? = null,
     val delayMinutes: Int = 0,
     val notices: List<String> = emptyList(),

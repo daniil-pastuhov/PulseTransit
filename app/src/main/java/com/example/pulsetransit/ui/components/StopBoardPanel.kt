@@ -9,12 +9,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,9 +33,14 @@ fun StopBoardPanel(
     departures: List<Departure>,
     showDelays: Boolean = true,
     showMessages: Boolean = true,
+    showCancelled: Boolean = false,
     isLoading: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val filteredDepartures = remember(departures, showCancelled) {
+        if (showCancelled) departures else departures.filter { !it.isCancelled }
+    }
+
     Card(
         modifier = modifier
             .fillMaxSize()
@@ -82,9 +89,9 @@ fun StopBoardPanel(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Departures list
-            if (isLoading && departures.isEmpty()) {
+            if (isLoading && filteredDepartures.isEmpty()) {
                 LoadingPlaceholderList()
-            } else if (departures.isEmpty()) {
+            } else if (filteredDepartures.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -106,7 +113,7 @@ fun StopBoardPanel(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(
-                        items = departures,
+                        items = filteredDepartures,
                         key = { it.line + it.destination + it.expectedTime + (it.quayId ?: "") }
                     ) { departure ->
                         DepartureRow(departure, showDelays, showMessages)
@@ -195,16 +202,17 @@ fun DepartureRow(
     showMessages: Boolean
 ) {
     val transportEmoji = getTransportEmoji(departure.transportMode)
-    val pillColor = getTransportColor(departure.transportMode)
+    val pillColor = if (departure.isCancelled) Color.Gray else getTransportColor(departure.transportMode)
     val nowText = stringResource(R.string.now)
+    val cancelledText = stringResource(R.string.cancelled)
     val minUnit = stringResource(R.string.unit_minute)
-    val remainingTime = formatDepartureTime(departure.expectedTime, nowText, minUnit)
+    val remainingTime = if (departure.isCancelled) cancelledText else formatDepartureTime(departure.expectedTime, nowText, minUnit)
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (departure.isCancelled) 0.2f else 0.5f))
             .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Row(
@@ -224,7 +232,8 @@ fun DepartureRow(
                     text = departure.line,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        textDecoration = if (departure.isCancelled) TextDecoration.LineThrough else null
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -237,7 +246,9 @@ fun DepartureRow(
             Text(
                 text = "$transportEmoji  ${departure.destination}",
                 style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    color = if (departure.isCancelled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
+                    textDecoration = if (departure.isCancelled) TextDecoration.LineThrough else null
                 ),
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
@@ -247,7 +258,7 @@ fun DepartureRow(
             Spacer(modifier = Modifier.width(8.dp))
 
             // Delay indicator
-            if (showDelays && departure.delayMinutes > 0) {
+            if (!departure.isCancelled && showDelays && departure.delayMinutes > 0) {
                 Text(
                     text = "+${departure.delayMinutes}",
                     style = MaterialTheme.typography.bodySmall.copy(
@@ -264,7 +275,11 @@ fun DepartureRow(
                 text = remainingTime,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    color = if (isNow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    color = when {
+                        departure.isCancelled -> MaterialTheme.colorScheme.error
+                        isNow -> MaterialTheme.colorScheme.primary
+                        else -> MaterialTheme.colorScheme.onSurface
+                    }
                 ),
                 modifier = Modifier.padding(end = 4.dp)
             )

@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
 import com.example.pulsetransit.theme.PulseTransitTheme
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.pixelshift.pixelShift
@@ -84,13 +87,15 @@ fun MainScreen(
         }
     }
 
+    val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
     val screenAlpha = if (uiState.isScreenDimmed) 0.05f else 1f
 
-    PulseTransitTheme(themeMode = uiState.activeTheme) {
+    PulseTransitTheme(themeMode = effectiveTheme) {
+        val backgroundColor = if (uiState.isScreenDimmed) Color.Black else MaterialTheme.colorScheme.background
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(backgroundColor)
                 .pixelShift(uiState.burnInLevel)
         ) {
             Column(
@@ -199,6 +204,7 @@ fun MainScreen(
                         departures = uiState.departures,
                         showDelays = uiState.showDelays,
                         showMessages = uiState.showMessages,
+                        showCancelled = uiState.showCancelledLines,
                         isLoading = uiState.isLoading,
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
@@ -245,6 +251,17 @@ fun MainScreen(
                     }
                 }
             }
+
+            if (uiState.isScreenDimmed) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { viewModel.wakeScreen() }
+                )
+            }
         }
     }
 }
@@ -255,6 +272,7 @@ fun ReorderableFavoriteList(
     departures: Map<String, List<com.example.pulsetransit.data.Departure>>,
     showDelays: Boolean,
     showMessages: Boolean,
+    showCancelled: Boolean,
     isLoading: Boolean,
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
@@ -340,6 +358,7 @@ fun ReorderableFavoriteList(
                                 departures = departures[stop.id] ?: emptyList(),
                                 showDelays = showDelays,
                                 showMessages = showMessages,
+                                showCancelled = showCancelled,
                                 isLoading = isLoading,
                                 modifier = Modifier.fillMaxSize()
                             )
@@ -412,6 +431,7 @@ fun ReorderableFavoriteList(
                                 departures = departures[stop.id] ?: emptyList(),
                                 showDelays = showDelays,
                                 showMessages = showMessages,
+                                showCancelled = showCancelled,
                                 isLoading = isLoading,
                                 modifier = Modifier.fillMaxSize()
                             )

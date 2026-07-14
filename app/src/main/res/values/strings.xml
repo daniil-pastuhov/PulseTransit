@@ -19,6 +19,7 @@
     <string name="transport_info">Transport Information</string>
     <string name="show_delays">Show delay information</string>
     <string name="show_messages">Show informational messages</string>
+    <string name="show_cancelled">Show canceled departures</string>
     <string name="location_config">Location Configuration</string>
     <string name="current_coords">Current Coordinates</string>
     <string name="latitude_val">Lat: %1$s</string>
@@ -51,6 +52,7 @@
     <string name="open_settings_to_add">Open Settings to Add Stops</string>
     <string name="no_departures">No upcoming departures</string>
     <string name="now">Now</string>
+    <string name="cancelled">Cancelled</string>
     <string name="unit_minute">m</string>
     <string name="refresh">Refresh</string>
 

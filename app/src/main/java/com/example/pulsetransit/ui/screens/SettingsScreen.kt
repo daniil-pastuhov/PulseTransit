@@ -198,6 +198,10 @@ fun SettingsScreen(
                             Checkbox(checked = uiState.showMessages, onCheckedChange = { viewModel.updateShowMessages(it) })
                             Text(stringResource(R.string.show_messages))
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.showCancelledLines, onCheckedChange = { viewModel.updateShowCancelledLines(it) })
+                            Text(stringResource(R.string.show_cancelled))
+                        }
                     }
 
                     // Section: Fastest Route Destination
