@@ -29,7 +29,7 @@ import com.example.pulsetransit.theme.PulseTransitTheme
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.*
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.pixelshift.pixelShift
@@ -54,6 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import java.text.SimpleDateFormat
+import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @Composable
 fun MainScreen(
@@ -204,7 +207,6 @@ fun MainScreen(
                         departures = uiState.departures,
                         showDelays = uiState.showDelays,
                         showMessages = uiState.showMessages,
-                        showCancelled = uiState.showCancelledLines,
                         isLoading = uiState.isLoading,
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
@@ -269,11 +271,10 @@ fun MainScreen(
 
 @Composable
 fun ReorderableFavoriteList(
-    favorites: List<com.example.pulsetransit.data.StopPlace>,
-    departures: Map<String, List<com.example.pulsetransit.data.Departure>>,
+    favorites: List<StopPlace>,
+    departures: List<StopDepartures>,
     showDelays: Boolean,
     showMessages: Boolean,
-    showCancelled: Boolean,
     isLoading: Boolean,
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
@@ -357,10 +358,9 @@ fun ReorderableFavoriteList(
                         ) {
                             StopBoardPanel(
                                 stopPlace = stop,
-                                departures = departures[stop.id] ?: emptyList(),
+                                departureGroups = departures.find { it.stopId == stop.id }?.groups ?: emptyList(),
                                 showDelays = showDelays,
                                 showMessages = showMessages,
-                                showCancelled = showCancelled,
                                 isLoading = isLoading,
                                 onFilterOut = onFilterOut,
                                 modifier = Modifier.fillMaxSize()
@@ -431,10 +431,9 @@ fun ReorderableFavoriteList(
                         ) {
                             StopBoardPanel(
                                 stopPlace = stop,
-                                departures = departures[stop.id] ?: emptyList(),
+                                departureGroups = departures.find { it.stopId == stop.id }?.groups ?: emptyList(),
                                 showDelays = showDelays,
                                 showMessages = showMessages,
-                                showCancelled = showCancelled,
                                 isLoading = isLoading,
                                 onFilterOut = onFilterOut,
                                 modifier = Modifier.fillMaxSize()
@@ -449,7 +448,7 @@ fun ReorderableFavoriteList(
 
 @Composable
 fun FastestTripBanner(
-    trip: com.example.pulsetransit.data.TripInfo,
+    trip: TripInfo,
     modifier: Modifier = Modifier
 ) {
     val departureTime = try {
@@ -523,13 +522,13 @@ fun FastestTripBanner(
 }
 
 @Composable
-fun WeatherItem(weather: com.example.pulsetransit.data.WeatherInfo) {
+fun WeatherItem(weather: WeatherInfo) {
+    val locale = SimpleDateFormat("HH", LocalLocale.current.platformLocale)
     val hour = try {
-        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US)
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
         val date = sdf.parse(weather.time.substring(0, 19))
         if (date != null) {
-            val hourSdf = java.text.SimpleDateFormat("HH", java.util.Locale.getDefault())
-            hourSdf.format(date)
+            locale.format(date)
         } else "??"
     } catch (e: Exception) { "??" }
 

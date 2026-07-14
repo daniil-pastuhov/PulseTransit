@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
@@ -225,12 +226,12 @@ fun SettingsScreen(
                                         trailingIcon = {
                                             IconButton(
                                                 onClick = { viewModel.removeFilteredLine(line) },
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(32.dp)
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Delete,
+                                                    imageVector = Icons.Default.Close,
                                                     contentDescription = stringResource(R.string.remove),
-                                                    modifier = Modifier.size(14.dp)
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
                                         }

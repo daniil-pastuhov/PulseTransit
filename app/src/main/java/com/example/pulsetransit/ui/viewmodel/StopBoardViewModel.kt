@@ -23,7 +23,7 @@ class StopBoardViewModel(
 
     data class UiState(
         val favorites: List<StopPlace> = emptyList(),
-        val departures: Map<String, List<Departure>> = emptyMap(),
+        val departures: List<StopDepartures> = emptyList(),
         val weather: List<WeatherInfo> = emptyList(),
         val isLoading: Boolean = false,
         val lastUpdated: String = "",
@@ -50,6 +50,8 @@ class StopBoardViewModel(
     private var lastWeatherUpdateTime: Long = 0
     private val weatherRefreshIntervalMs = 30 * 60 * 1000L // 30 minutes
 
+    private var rawDepartures: Map<String, List<Departure>> = emptyMap()
+
     init {
         loadSettings()
         startClock()
@@ -74,6 +76,7 @@ class StopBoardViewModel(
         settingsRepository.getShowCancelledLinesFlow()
             .onEach { showCancelled ->
                 _uiState.update { it.copy(showCancelledLines = showCancelled) }
+                updateGroupedDepartures()
             }
             .launchIn(viewModelScope)
 
@@ -235,32 +238,62 @@ class StopBoardViewModel(
     fun refreshDepartures() {
         val favs = _uiState.value.favorites
         if (favs.isEmpty()) {
-            _uiState.update { it.copy(departures = emptyMap(), lastUpdated = "No favorites") }
+            rawDepartures = emptyMap()
+            _uiState.update { it.copy(departures = emptyList(), lastUpdated = "No favorites") }
             return
         }
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val newDepartures = mutableMapOf<String, List<Departure>>()
+            val newRawDepartures = mutableMapOf<String, List<Departure>>()
             
             for (stop in favs) {
                 val quayIds = settingsRepository.getSelectedQuays(stop.id)
                 val list = enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds)
                 val filteredList = list.filter { it.line !in _uiState.value.filteredLines }
-                newDepartures[stop.id] = filteredList
+                newRawDepartures[stop.id] = filteredList
             }
 
+            rawDepartures = newRawDepartures
             val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
             val updateTime = timeFormat.format(Date())
 
             _uiState.update {
                 it.copy(
-                    departures = newDepartures,
                     isLoading = false,
                     lastUpdated = updateTime
                 )
             }
+            updateGroupedDepartures()
         }
+    }
+
+    private fun updateGroupedDepartures() {
+        val showCancelled = _uiState.value.showCancelledLines
+        val grouped = rawDepartures.map { (stopId, deps) ->
+            StopDepartures(stopId, groupDepartures(deps, showCancelled))
+        }
+        _uiState.update { it.copy(departures = grouped) }
+    }
+
+    private fun groupDepartures(departures: List<Departure>, showCancelled: Boolean): List<DepartureGroup> {
+        val filtered = if (showCancelled) departures else departures.filter { !it.isCancelled }
+        val result = mutableListOf<DepartureGroup>()
+        if (filtered.isNotEmpty()) {
+            var currentList = mutableListOf(filtered[0])
+            for (i in 1 until filtered.size) {
+                val dep = filtered[i]
+                val prev = filtered[i - 1]
+                if (dep.line == prev.line && dep.destination == prev.destination) {
+                    currentList.add(dep)
+                } else {
+                    result.add(DepartureGroup(currentList))
+                    currentList = mutableListOf(dep)
+                }
+            }
+            result.add(DepartureGroup(currentList))
+        }
+        return result
     }
 
     private fun refreshFastestTrip() {

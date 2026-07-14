@@ -35,6 +35,15 @@ data class Departure(
     val quayId: String? = null
 )
 
+data class DepartureGroup(
+    val departures: List<Departure>
+)
+
+data class StopDepartures(
+    val stopId: String,
+    val groups: List<DepartureGroup>
+)
+
 @Serializable
 data class WeatherInfo(
     val time: String,

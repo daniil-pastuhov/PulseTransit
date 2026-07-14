@@ -20,8 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
-import com.example.pulsetransit.data.Departure
-import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.*
 import com.example.pulsetransit.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -29,18 +28,13 @@ import java.util.*
 @Composable
 fun StopBoardPanel(
     stopPlace: StopPlace,
-    departures: List<Departure>,
+    departureGroups: List<DepartureGroup>,
     showDelays: Boolean = true,
     showMessages: Boolean = true,
-    showCancelled: Boolean = false,
     isLoading: Boolean = false,
     onFilterOut: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val filteredDepartures = remember(departures, showCancelled) {
-        if (showCancelled) departures else departures.filter { !it.isCancelled }
-    }
-
     Card(
         modifier = modifier
             .fillMaxSize()
@@ -89,9 +83,9 @@ fun StopBoardPanel(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Departures list
-            if (isLoading && filteredDepartures.isEmpty()) {
+            if (isLoading && departureGroups.isEmpty()) {
                 LoadingPlaceholderList()
-            } else if (filteredDepartures.isEmpty()) {
+            } else if (departureGroups.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -113,10 +107,13 @@ fun StopBoardPanel(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(
-                        items = filteredDepartures,
-                        key = { it.line + it.destination + it.expectedTime + (it.quayId ?: "") }
-                    ) { departure ->
-                        DepartureRow(departure, showDelays, showMessages, onFilterOut)
+                        items = departureGroups,
+                        key = { group -> 
+                            val first = group.departures.first()
+                            "${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
+                        }
+                    ) { group ->
+                        DepartureRow(group, showDelays, showMessages, onFilterOut)
                     }
                 }
             }
@@ -197,17 +194,22 @@ fun DepartureRowPlaceholder(alpha: Float) {
 
 @Composable
 fun DepartureRow(
-    departure: Departure,
+    group: DepartureGroup,
     showDelays: Boolean,
     showMessages: Boolean,
     onFilterOut: (String) -> Unit
 ) {
-    val transportEmoji = getTransportEmoji(departure.transportMode)
-    val pillColor = if (departure.isCancelled) Color.Gray else getTransportColor(departure.transportMode)
+    val departures = group.departures
+    val firstDeparture = departures.first()
+    val transportEmoji = getTransportEmoji(firstDeparture.transportMode)
+    val pillColor = if (firstDeparture.isCancelled) Color.Gray else getTransportColor(firstDeparture.transportMode)
     val nowText = stringResource(R.string.now)
     val cancelledText = stringResource(R.string.cancelled)
     val minUnit = stringResource(R.string.unit_minute)
-    val remainingTime = if (departure.isCancelled) cancelledText else formatDepartureTime(departure.expectedTime, nowText, minUnit)
+    
+    val formattedTimes = departures.map { dep ->
+        if (dep.isCancelled) cancelledText else formatDepartureTime(dep.expectedTime, nowText, minUnit)
+    }.distinct()
 
     var showMenu by remember { mutableStateOf(false) }
 
@@ -215,7 +217,7 @@ fun DepartureRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (departure.isCancelled) 0.2f else 0.5f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (firstDeparture.isCancelled) 0.2f else 0.5f))
             .clickable { showMenu = true }
             .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
@@ -233,11 +235,11 @@ fun DepartureRow(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = departure.line,
+                    text = firstDeparture.line,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
-                        textDecoration = if (departure.isCancelled) TextDecoration.LineThrough else null
+                        textDecoration = if (firstDeparture.isCancelled) TextDecoration.LineThrough else null
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -248,11 +250,11 @@ fun DepartureRow(
 
             // Transport Icon & Destination
             Text(
-                text = "$transportEmoji  ${departure.destination}",
+                text = "$transportEmoji  ${firstDeparture.destination}",
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Medium,
-                    color = if (departure.isCancelled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (departure.isCancelled) TextDecoration.LineThrough else null
+                    color = if (firstDeparture.isCancelled) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
+                    textDecoration = if (firstDeparture.isCancelled) TextDecoration.LineThrough else null
                 ),
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
@@ -262,9 +264,9 @@ fun DepartureRow(
             Spacer(modifier = Modifier.width(8.dp))
 
             // Delay indicator
-            if (!departure.isCancelled && showDelays && departure.delayMinutes > 0) {
+            if (!firstDeparture.isCancelled && showDelays && firstDeparture.delayMinutes > 0) {
                 Text(
-                    text = "+${departure.delayMinutes}",
+                    text = "+${firstDeparture.delayMinutes}",
                     style = MaterialTheme.typography.bodySmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.error
@@ -273,14 +275,16 @@ fun DepartureRow(
                 )
             }
 
-            // Remaining/Departure Time
-            val isNow = remainingTime == stringResource(R.string.now)
+            // Primary Departure Time
+            val primaryTime = formattedTimes.first()
+            val isNow = primaryTime == nowText
+            
             Text(
-                text = remainingTime,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold,
+                text = primaryTime,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.ExtraBold,
                     color = when {
-                        departure.isCancelled -> MaterialTheme.colorScheme.error
+                        firstDeparture.isCancelled -> MaterialTheme.colorScheme.error
                         isNow -> MaterialTheme.colorScheme.primary
                         else -> MaterialTheme.colorScheme.onSurface
                     }
@@ -289,9 +293,25 @@ fun DepartureRow(
             )
         }
 
-        if (showMessages && departure.notices.isNotEmpty()) {
+        // Secondary Departure Times
+        if (formattedTimes.size > 1) {
+            val secondaryTimes = formattedTimes.drop(1)
+            Text(
+                text = secondaryTimes.joinToString("    "),
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 58.dp, top = 2.dp, end = 4.dp)
+            )
+        }
+
+        val allNotices = departures.flatMap { it.notices }.distinct()
+        if (showMessages && allNotices.isNotEmpty()) {
             Spacer(modifier = Modifier.height(4.dp))
-            departure.notices.forEach { notice ->
+            allNotices.forEach { notice ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "⚠️",
@@ -316,9 +336,9 @@ fun DepartureRow(
             onDismissRequest = { showMenu = false }
         ) {
             DropdownMenuItem(
-                text = { Text(stringResource(R.string.filter_out_line, departure.line)) },
+                text = { Text(stringResource(R.string.filter_out_line, firstDeparture.line)) },
                 onClick = {
-                    onFilterOut(departure.line)
+                    onFilterOut(firstDeparture.line)
                     showMenu = false
                 }
             )
