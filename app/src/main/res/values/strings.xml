@@ -9,10 +9,7 @@
     <string name="oled_screen_care">OLED Screen Care</string>
     <string name="pixel_shift_level">Pixel shift level (prevents burn-in)</string>
     <string name="power_refresh">Power &amp; Refresh</string>
-    <string name="wake_proximity">Wake screen by proximity sensor</string>
-    <string name="not_available">Not available on this device</string>
     <string name="wake_camera">Wake screen by front camera motion</string>
-    <string name="recommended_alt">Recommended alternative</string>
     <string name="dynamic_refresh">Dynamic refresh (slower at night/empty)</string>
     <string name="full_screen_mode">Full screen mode (hides system bars)</string>
     <string name="always_on_display">Always on display (prevents screen timeout)</string>
@@ -22,7 +19,7 @@
     <string name="show_cancelled">Show canceled departures</string>
     <string name="filter_out_line">Filter out line %1$s</string>
     <string name="filtered_lines">Filtered Out Lines</string>
-    <string name="no_filtered_lines">No lines filtered out</string>
+    <string name="no_filtered_lines">To filter out a line, tap its departure on the main screen and select the filter option.</string>
     <string name="location_config">Location Configuration</string>
     <string name="current_coords">Current Coordinates</string>
     <string name="latitude_val">Lat: %1$s</string>
@@ -103,6 +100,15 @@
     <string name="loc_manual">Set manually</string>
     <string name="loc_invalid_format">Invalid manual coordinates format.</string>
     <string name="loc_manual_prompt">Please enter coordinates manually.</string>
+
+    <!-- Auto-dim Delay -->
+    <string name="auto_dim_delay">Auto-dim Delay</string>
+    <string name="auto_dim_hint">Time before screen dims after motion</string>
+    <string name="dim_15s">15 Sec</string>
+    <string name="dim_30s">30 Sec</string>
+    <string name="dim_1m">1 Min</string>
+    <string name="dim_2m">2 Min</string>
+    <string name="dim_never">Never</string>
 
     <!-- Attribution -->
     <string name="attribution_entur">Data from Entur</string>

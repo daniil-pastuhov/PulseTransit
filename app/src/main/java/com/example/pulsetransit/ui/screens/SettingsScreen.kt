@@ -154,26 +154,8 @@ fun SettingsScreen(
                     // Section: Power & Refresh
                     SettingsCard(title = stringResource(R.string.power_refresh)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = uiState.proximityWake, 
-                                onCheckedChange = { viewModel.updateProximityWake(it) },
-                                enabled = uiState.isProximityAvailable
-                            )
-                            Column {
-                                Text(stringResource(R.string.wake_proximity))
-                                if (!uiState.isProximityAvailable) {
-                                    Text(stringResource(R.string.not_available), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
-                                }
-                            }
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = uiState.cameraMotionWake, onCheckedChange = { viewModel.updateCameraMotionWake(it) })
-                            Column {
-                                Text(stringResource(R.string.wake_camera))
-                                if (!uiState.isProximityAvailable) {
-                                    Text(stringResource(R.string.recommended_alt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                }
-                            }
+                            Text(stringResource(R.string.wake_camera))
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = uiState.dynamicRefresh, onCheckedChange = { viewModel.updateDynamicRefresh(it) })
@@ -186,6 +168,33 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = uiState.isAlwaysOnEnabled, onCheckedChange = { viewModel.updateAlwaysOnMode(it) })
                             Text(stringResource(R.string.always_on_display))
+                        }
+
+                        if (uiState.cameraMotionWake) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(stringResource(R.string.auto_dim_delay), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                            Text(stringResource(R.string.auto_dim_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val dimIntervals = listOf(
+                                R.string.dim_15s to 15,
+                                R.string.dim_30s to 30,
+                                R.string.dim_1m to 60,
+                                R.string.dim_2m to 120,
+                                R.string.dim_never to 0
+                            )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                dimIntervals.forEach { (labelId, seconds) ->
+                                    val isSelected = uiState.autoDimSeconds == seconds
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { viewModel.updateAutoDimSeconds(seconds) },
+                                        label = { Text(stringResource(labelId)) }
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -210,8 +219,9 @@ fun SettingsScreen(
                         if (uiState.filteredLines.isEmpty()) {
                             Text(
                                 text = stringResource(R.string.no_filtered_lines),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                lineHeight = 16.sp
                             )
                         } else {
                             FlowRow(

@@ -10,7 +10,6 @@ import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
-import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import com.example.pulsetransit.R
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -53,6 +52,7 @@ class SettingsViewModel(
         val themeMode: ThemeMode = ThemeMode.SYSTEM,
         val burnInLevel: BurnInProtectionLevel = BurnInProtectionLevel.MEDIUM,
         val refreshIntervalSeconds: Int = 60,
+        val autoDimSeconds: Int = 30,
         val favorites: List<StopPlace> = emptyList(),
         val favoriteStopsWithQuays: Map<String, StopPlace> = emptyMap(),
         val selectedQuays: Map<String, Set<String>> = emptyMap(),
@@ -60,12 +60,10 @@ class SettingsViewModel(
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
-        val proximityWake: Boolean = false,
         val cameraMotionWake: Boolean = false,
         val dynamicRefresh: Boolean = true,
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
-        val isProximityAvailable: Boolean = true,
         val filteredLines: Set<String> = emptySet(),
         val destinationStation: StopPlace? = null,
         val destinationQuery: String = "",
@@ -77,8 +75,6 @@ class SettingsViewModel(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     init {
-        val sensorManager = SystemSensorManager(appContext)
-        _uiState.update { it.copy(isProximityAvailable = sensorManager.hasProximitySensor()) }
         loadSettings()
     }
 
@@ -91,6 +87,7 @@ class SettingsViewModel(
                 themeMode = settingsRepository.getThemeMode(),
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
+                autoDimSeconds = settingsRepository.getAutoDimSeconds(),
                 latitude = settingsRepository.getSavedLatitude(),
                 longitude = settingsRepository.getSavedLongitude(),
                 favorites = favs,
@@ -98,7 +95,6 @@ class SettingsViewModel(
                 showDelays = settingsRepository.isShowDelays(),
                 showMessages = settingsRepository.isShowMessages(),
                 showCancelledLines = settingsRepository.isShowCancelledLines(),
-                proximityWake = settingsRepository.isProximityWakeEnabled(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
                 isFullScreenMode = settingsRepository.isFullScreenMode(),
@@ -171,11 +167,6 @@ class SettingsViewModel(
     fun updateShowCancelledLines(show: Boolean) {
         settingsRepository.setShowCancelledLines(show)
         _uiState.update { it.copy(showCancelledLines = show) }
-    }
-
-    fun updateProximityWake(enabled: Boolean) {
-        settingsRepository.setProximityWakeEnabled(enabled)
-        _uiState.update { it.copy(proximityWake = enabled) }
     }
 
     fun updateCameraMotionWake(enabled: Boolean) {
@@ -351,6 +342,11 @@ class SettingsViewModel(
     fun updateRefreshInterval(seconds: Int) {
         settingsRepository.setRefreshIntervalSeconds(seconds)
         _uiState.update { it.copy(refreshIntervalSeconds = seconds) }
+    }
+
+    fun updateAutoDimSeconds(seconds: Int) {
+        settingsRepository.setAutoDimSeconds(seconds)
+        _uiState.update { it.copy(autoDimSeconds = seconds) }
     }
 
     fun updateDestinationStation(stopPlace: StopPlace?) {

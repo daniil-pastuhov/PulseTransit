@@ -42,6 +42,8 @@ class StopBoardViewModel(
         val destinationStation: StopPlace? = null,
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
+        val autoDimSeconds: Int = 30,
+        val cameraMotionWake: Boolean = false,
         val filteredLines: Set<String> = emptySet()
     )
 
@@ -100,6 +102,27 @@ class StopBoardViewModel(
                 refreshDepartures()
             }
             .launchIn(viewModelScope)
+
+        settingsRepository.getAutoDimSecondsFlow()
+            .onEach { seconds ->
+                _uiState.update { it.copy(autoDimSeconds = seconds) }
+                // Re-trigger dim timer if currently active
+                if (!uiState.value.isScreenDimmed && uiState.value.cameraMotionWake && seconds > 0) {
+                    wakeScreen()
+                }
+            }
+            .launchIn(viewModelScope)
+
+        settingsRepository.getCameraMotionWakeFlow()
+            .onEach { enabled ->
+                _uiState.update { it.copy(cameraMotionWake = enabled) }
+                if (enabled && !uiState.value.isScreenDimmed) {
+                    wakeScreen()
+                } else if (!enabled) {
+                    dimJob?.cancel()
+                }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun loadSettings() {
@@ -113,6 +136,8 @@ class StopBoardViewModel(
         val destination = settingsRepository.getDestinationStation()
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
+        val autoDim = settingsRepository.getAutoDimSeconds()
+        val cameraWake = settingsRepository.isCameraMotionWakeEnabled()
         val filtered = settingsRepository.getFilteredLines()
 
         _uiState.update {
@@ -129,20 +154,14 @@ class StopBoardViewModel(
                 fastestTrip = if (destination == null) null else it.fastestTrip,
                 isFullScreenMode = isFullScreen,
                 isAlwaysOnEnabled = alwaysOn,
+                autoDimSeconds = autoDim,
+                cameraMotionWake = cameraWake,
                 filteredLines = filtered
             )
         }
     }
 
     private fun setupSensors() {
-        if (settingsRepository.isProximityWakeEnabled()) {
-            sensorManager.getProximityFlow()
-                .onEach { isNear ->
-                    if (isNear) wakeScreen() else dimScreen()
-                }
-                .launchIn(viewModelScope)
-        }
-
         if (_uiState.value.themeMode == ThemeMode.AUTO) {
             sensorManager.getLightFlow()
                 .onEach { lux ->
@@ -159,11 +178,14 @@ class StopBoardViewModel(
         dimJob?.cancel()
         _uiState.update { it.copy(isScreenDimmed = false) }
         
-        // Auto-dim after 30 seconds of no motion if motion detection is enabled
-        if (settingsRepository.isProximityWakeEnabled() || settingsRepository.isCameraMotionWakeEnabled()) {
-            dimJob = viewModelScope.launch {
-                delay(30.seconds)
-                dimScreen()
+        // Auto-dim after configured seconds of no motion if camera motion detection is enabled
+        if (uiState.value.cameraMotionWake) {
+            val autoDimSeconds = uiState.value.autoDimSeconds
+            if (autoDimSeconds > 0) {
+                dimJob = viewModelScope.launch {
+                    delay(autoDimSeconds.seconds)
+                    dimScreen()
+                }
             }
         }
     }

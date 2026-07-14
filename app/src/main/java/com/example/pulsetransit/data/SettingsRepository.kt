@@ -11,6 +11,10 @@ interface SettingsRepository {
     
     fun getRefreshIntervalSeconds(): Int
     fun setRefreshIntervalSeconds(seconds: Int)
+
+    fun getAutoDimSeconds(): Int
+    fun setAutoDimSeconds(seconds: Int)
+    fun getAutoDimSecondsFlow(): Flow<Int>
     
     fun getThemeMode(): ThemeMode
     fun setThemeMode(mode: ThemeMode)
@@ -34,11 +38,9 @@ interface SettingsRepository {
     fun getSelectedQuays(stopId: String): Set<String>?
     fun setSelectedQuays(stopId: String, quayIds: Set<String>?)
 
-    fun isProximityWakeEnabled(): Boolean
-    fun setProximityWakeEnabled(enabled: Boolean)
-
     fun isCameraMotionWakeEnabled(): Boolean
     fun setCameraMotionWakeEnabled(enabled: Boolean)
+    fun getCameraMotionWakeFlow(): Flow<Boolean>
 
     fun isDynamicRefreshEnabled(): Boolean
     fun setDynamicRefreshEnabled(enabled: Boolean)

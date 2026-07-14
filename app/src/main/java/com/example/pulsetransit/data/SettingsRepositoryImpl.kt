@@ -26,6 +26,12 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val _showMessages = MutableStateFlow(isShowMessages())
     override fun getShowMessagesFlow(): Flow<Boolean> = _showMessages.asStateFlow()
 
+    private val _autoDimSeconds = MutableStateFlow(getAutoDimSeconds())
+    override fun getAutoDimSecondsFlow(): Flow<Int> = _autoDimSeconds.asStateFlow()
+
+    private val _cameraMotionWake = MutableStateFlow(isCameraMotionWakeEnabled())
+    override fun getCameraMotionWakeFlow(): Flow<Boolean> = _cameraMotionWake.asStateFlow()
+
     private val _filteredLines = MutableStateFlow(getFilteredLines())
     override fun getFilteredLinesFlow(): Flow<Set<String>> = _filteredLines.asStateFlow()
 
@@ -73,6 +79,15 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
 
     override fun setRefreshIntervalSeconds(seconds: Int) {
         prefs.edit { putInt("refresh_interval", seconds) }
+    }
+
+    override fun getAutoDimSeconds(): Int {
+        return prefs.getInt("auto_dim_seconds", 30)
+    }
+
+    override fun setAutoDimSeconds(seconds: Int) {
+        prefs.edit { putInt("auto_dim_seconds", seconds) }
+        _autoDimSeconds.value = seconds
     }
 
     override fun getThemeMode(): ThemeMode {
@@ -150,11 +165,11 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         }
     }
 
-    override fun isProximityWakeEnabled(): Boolean = prefs.getBoolean("proximity_wake", false)
-    override fun setProximityWakeEnabled(enabled: Boolean) = prefs.edit { putBoolean("proximity_wake", enabled) }
-
     override fun isCameraMotionWakeEnabled(): Boolean = prefs.getBoolean("camera_motion_wake", false)
-    override fun setCameraMotionWakeEnabled(enabled: Boolean) = prefs.edit { putBoolean("camera_motion_wake", enabled) }
+    override fun setCameraMotionWakeEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean("camera_motion_wake", enabled) }
+        _cameraMotionWake.value = enabled
+    }
 
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
     override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit { putBoolean("dynamic_refresh", enabled) }

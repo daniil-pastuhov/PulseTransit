@@ -1,62 +1,55 @@
 package com.example.pulsetransit.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateOffsetAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.pulsetransit.R
-import com.example.pulsetransit.theme.PulseTransitTheme
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.example.pulsetransit.data.*
+import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.pixelshift.pixelShift
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import android.Manifest
-import android.content.pm.PackageManager
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.unit.IntOffset
-import kotlin.math.roundToInt
-import androidx.compose.animation.core.animateOffsetAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.zIndex
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.unit.IntSize
 import java.text.SimpleDateFormat
 import java.util.Locale
-import androidx.compose.ui.platform.LocalLocale
+import kotlin.math.roundToInt
 
 @Suppress("ParamsComparedByRef")
 @Composable
@@ -271,6 +264,81 @@ fun MainScreen(
 }
 
 @Composable
+fun FastestTripBanner(
+    trip: TripInfo,
+    modifier: Modifier = Modifier
+) {
+    val departureTime = try {
+        trip.expectedStartTime.substring(11, 16)
+    } catch (_: Exception) { "--:--" }
+
+    var expanded by remember { mutableStateOf(false) }
+    var hasOverflow by remember { mutableStateOf(false) }
+    val canExpand = hasOverflow || expanded
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .clickable(enabled = canExpand) { expanded = !expanded }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            text = departureTime,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.fastest_route_to, trip.destinationName),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+            val routeText = if (trip.legs.isNotEmpty()) {
+                trip.legs.mapNotNull { leg ->
+                    when {
+                        leg.lineName != null -> {
+                            val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
+                            leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
+                        }
+                        leg.durationMinutes > 0 ->
+                            stringResource(R.string.leg_walk, leg.durationMinutes)
+                        else -> null // skip 0-minute foot legs (quay transfers)
+                    }
+                }.joinToString("  →  ")
+            } else {
+                stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
+            }
+            Text(
+                text = routeText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                maxLines = if (expanded) Int.MAX_VALUE else 1,
+                overflow = TextOverflow.Ellipsis,
+                onTextLayout = { result ->
+                    if (!expanded) hasOverflow = result.hasVisualOverflow
+                }
+            )
+        }
+        Text(
+            text = stringResource(R.string.duration_min, trip.durationMinutes),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+        if (canExpand) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
+
+@Composable
 fun ReorderableFavoriteList(
     favorites: List<StopPlace>,
     departures: List<StopDepartures>,
@@ -441,81 +509,6 @@ fun ReorderableFavoriteList(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun FastestTripBanner(
-    trip: TripInfo,
-    modifier: Modifier = Modifier
-) {
-    val departureTime = try {
-        trip.expectedStartTime.substring(11, 16)
-    } catch (_: Exception) { "--:--" }
-
-    var expanded by remember { mutableStateOf(false) }
-    var hasOverflow by remember { mutableStateOf(false) }
-    val canExpand = hasOverflow || expanded
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .animateContentSize()
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .clickable(enabled = canExpand) { expanded = !expanded }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        Text(
-            text = departureTime,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.fastest_route_to, trip.destinationName),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-            val routeText = if (trip.legs.isNotEmpty()) {
-                trip.legs.mapNotNull { leg ->
-                    when {
-                        leg.lineName != null -> {
-                            val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
-                            leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
-                        }
-                        leg.durationMinutes > 0 ->
-                            stringResource(R.string.leg_walk, leg.durationMinutes)
-                        else -> null // skip 0-minute foot legs (quay transfers)
-                    }
-                }.joinToString("  →  ")
-            } else {
-                stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
-            }
-            Text(
-                text = routeText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                maxLines = if (expanded) Int.MAX_VALUE else 1,
-                overflow = TextOverflow.Ellipsis,
-                onTextLayout = { result ->
-                    if (!expanded) hasOverflow = result.hasVisualOverflow
-                }
-            )
-        }
-        Text(
-            text = stringResource(R.string.duration_min, trip.durationMinutes),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
-        )
-        if (canExpand) {
-            Icon(
-                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
         }
     }
 }
