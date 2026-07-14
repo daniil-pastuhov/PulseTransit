@@ -14,6 +14,9 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     private val _fullScreenMode = MutableStateFlow(isFullScreenMode())
     override fun getFullScreenModeFlow(): Flow<Boolean> = _fullScreenMode.asStateFlow()
 
+    private val _alwaysOnEnabled = MutableStateFlow(isAlwaysOnEnabled())
+    override fun getAlwaysOnEnabledFlow(): Flow<Boolean> = _alwaysOnEnabled.asStateFlow()
+
     override fun getFavorites(): List<StopPlace> {
         val jsonStr = prefs.getString("favorites", null) ?: return emptyList()
         return try {
@@ -150,5 +153,11 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun setFullScreenMode(enabled: Boolean) {
         prefs.edit { putBoolean("full_screen_mode", enabled) }
         _fullScreenMode.value = enabled
+    }
+
+    override fun isAlwaysOnEnabled(): Boolean = prefs.getBoolean("always_on_enabled", false)
+    override fun setAlwaysOnEnabled(enabled: Boolean) {
+        prefs.edit { putBoolean("always_on_enabled", enabled) }
+        _alwaysOnEnabled.value = enabled
     }
 }

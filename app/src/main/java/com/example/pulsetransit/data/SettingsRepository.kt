@@ -47,4 +47,8 @@ interface SettingsRepository {
     fun isFullScreenMode(): Boolean
     fun setFullScreenMode(enabled: Boolean)
     fun getFullScreenModeFlow(): Flow<Boolean>
+
+    fun isAlwaysOnEnabled(): Boolean
+    fun setAlwaysOnEnabled(enabled: Boolean)
+    fun getAlwaysOnEnabledFlow(): Flow<Boolean>
 }

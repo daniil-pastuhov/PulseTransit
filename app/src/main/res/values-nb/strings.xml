@@ -15,6 +15,7 @@
     <string name="recommended_alt">Anbefalt alternativ</string>
     <string name="dynamic_refresh">Dynamisk oppdatering (tregere om natten/når tom)</string>
     <string name="full_screen_mode">Fullskjermmodus (skjuler systemlinjer)</string>
+    <string name="always_on_display">Alltid på (forhindrer at skjermen slår seg av)</string>
     <string name="transport_info">Transportinformasjon</string>
     <string name="show_delays">Vis forsinkelser</string>
     <string name="show_messages">Vis informasjonsmeldinger</string>

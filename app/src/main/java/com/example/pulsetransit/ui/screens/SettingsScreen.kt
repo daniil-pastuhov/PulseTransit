@@ -182,6 +182,10 @@ fun SettingsScreen(
                             Checkbox(checked = uiState.isFullScreenMode, onCheckedChange = { viewModel.updateFullScreenMode(it) })
                             Text(stringResource(R.string.full_screen_mode))
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.isAlwaysOnEnabled, onCheckedChange = { viewModel.updateAlwaysOnMode(it) })
+                            Text(stringResource(R.string.always_on_display))
+                        }
                     }
 
                     // Section: Transport Info

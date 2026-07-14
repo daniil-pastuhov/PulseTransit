@@ -1,6 +1,7 @@
 package com.example.pulsetransit
 
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -30,6 +31,16 @@ class MainActivity : ComponentActivity() {
           hideSystemBars()
         } else {
           showSystemBars()
+        }
+      }
+    }
+
+    lifecycleScope.launch {
+      settingsRepository.getAlwaysOnEnabledFlow().collectLatest { alwaysOn ->
+        if (alwaysOn) {
+          window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+          window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
       }
     }

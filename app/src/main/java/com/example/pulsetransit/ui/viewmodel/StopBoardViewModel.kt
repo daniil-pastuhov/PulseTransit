@@ -37,7 +37,8 @@ class StopBoardViewModel(
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
         val fastestTrip: TripInfo? = null,
         val destinationStation: StopPlace? = null,
-        val isFullScreenMode: Boolean = false
+        val isFullScreenMode: Boolean = false,
+        val isAlwaysOnEnabled: Boolean = false
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -61,6 +62,12 @@ class StopBoardViewModel(
                 _uiState.update { it.copy(isFullScreenMode = isFullScreen) }
             }
             .launchIn(viewModelScope)
+
+        settingsRepository.getAlwaysOnEnabledFlow()
+            .onEach { alwaysOn ->
+                _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn) }
+            }
+            .launchIn(viewModelScope)
     }
 
     fun loadSettings() {
@@ -72,6 +79,7 @@ class StopBoardViewModel(
         val showMessages = settingsRepository.isShowMessages()
         val destination = settingsRepository.getDestinationStation()
         val isFullScreen = settingsRepository.isFullScreenMode()
+        val alwaysOn = settingsRepository.isAlwaysOnEnabled()
 
         _uiState.update {
             it.copy(
@@ -84,7 +92,8 @@ class StopBoardViewModel(
                 showMessages = showMessages,
                 destinationStation = destination,
                 fastestTrip = if (destination == null) null else it.fastestTrip,
-                isFullScreenMode = isFullScreen
+                isFullScreenMode = isFullScreen,
+                isAlwaysOnEnabled = alwaysOn
             )
         }
     }

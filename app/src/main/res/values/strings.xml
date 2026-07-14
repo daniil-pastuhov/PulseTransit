@@ -15,6 +15,7 @@
     <string name="recommended_alt">Recommended alternative</string>
     <string name="dynamic_refresh">Dynamic refresh (slower at night/empty)</string>
     <string name="full_screen_mode">Full screen mode (hides system bars)</string>
+    <string name="always_on_display">Always on display (prevents screen timeout)</string>
     <string name="transport_info">Transport Information</string>
     <string name="show_delays">Show delay information</string>
     <string name="show_messages">Show informational messages</string>
