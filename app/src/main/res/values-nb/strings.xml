@@ -110,6 +110,13 @@
     <string name="dim_2m">2 min</string>
     <string name="dim_never">Aldri</string>
 
+    <!-- Front camera sensitivity -->
+    <string name="camera_sensitivity">Kamerafølsomhet</string>
+    <string name="camera_sensitivity_hint">Hvor mye bevegelse som skal til for å vekke skjermen</string>
+    <string name="sensitivity_low">Lav</string>
+    <string name="sensitivity_medium">Middels</string>
+    <string name="sensitivity_high">Høy</string>
+
     <!-- Attribution -->
     <string name="attribution_entur">Data fra Entur</string>
     <string name="attribution_met">Værdata fra MET Norway</string>

@@ -80,3 +80,13 @@ enum class BurnInProtectionLevel(val maxOffsetDp: Float) {
     MEDIUM(6f),
     HIGH(12f)
 }
+
+/**
+ * Front-camera motion sensitivity. [motionPixelCountThreshold] is how many changed pixels
+ * (at full resolution) are required to register motion — lower means more sensitive.
+ */
+enum class CameraSensitivity(val motionPixelCountThreshold: Int) {
+    LOW(10000),
+    MEDIUM(5000),
+    HIGH(2000)
+}

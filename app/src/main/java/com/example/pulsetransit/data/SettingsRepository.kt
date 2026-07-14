@@ -42,6 +42,9 @@ interface SettingsRepository {
     fun setCameraMotionWakeEnabled(enabled: Boolean)
     fun getCameraMotionWakeFlow(): Flow<Boolean>
 
+    fun getCameraSensitivity(): CameraSensitivity
+    fun setCameraSensitivity(sensitivity: CameraSensitivity)
+
     fun isDynamicRefreshEnabled(): Boolean
     fun setDynamicRefreshEnabled(enabled: Boolean)
 

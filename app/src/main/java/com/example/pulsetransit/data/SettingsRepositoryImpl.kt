@@ -171,6 +171,20 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         _cameraMotionWake.value = enabled
     }
 
+    override fun getCameraSensitivity(): CameraSensitivity {
+        val str = prefs.getString("camera_sensitivity", CameraSensitivity.MEDIUM.name)
+            ?: CameraSensitivity.MEDIUM.name
+        return try {
+            CameraSensitivity.valueOf(str)
+        } catch (_: Exception) {
+            CameraSensitivity.MEDIUM
+        }
+    }
+
+    override fun setCameraSensitivity(sensitivity: CameraSensitivity) {
+        prefs.edit { putString("camera_sensitivity", sensitivity.name) }
+    }
+
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
     override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit { putBoolean("dynamic_refresh", enabled) }
 

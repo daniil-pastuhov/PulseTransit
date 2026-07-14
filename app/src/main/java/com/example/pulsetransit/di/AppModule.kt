@@ -16,7 +16,7 @@ import org.koin.dsl.module
 
 val appModule = module {
     single {
-        HttpClient(OkHttp) {
+        HttpClient(engineFactory = OkHttp) {
             install(ContentNegotiation) {
                 json(Json {
                     ignoreUnknownKeys = true
@@ -26,11 +26,25 @@ val appModule = module {
             }
         }
     }
-    single<SettingsRepository> { SettingsRepositoryImpl(androidContext()) }
-    single<EnturRepository> { EnturRepositoryImpl(get()) }
-    single<WeatherRepository> { WeatherRepositoryImpl(get()) }
-    single { SystemSensorManager(androidContext()) }
-    single { CameraMotionDetector(androidContext()) }
-    viewModel { StopBoardViewModel(get(), get(), get(), get(), get()) }
-    viewModel { SettingsViewModel(get(), get(), androidContext()) }
+    single<SettingsRepository> { SettingsRepositoryImpl(context = androidContext()) }
+    single<EnturRepository> { EnturRepositoryImpl(client = get()) }
+    single<WeatherRepository> { WeatherRepositoryImpl(client = get()) }
+    single { SystemSensorManager(context = androidContext()) }
+    single { CameraMotionDetector(context = androidContext(), settingsRepository = get()) }
+    viewModel {
+        StopBoardViewModel(
+            enturRepository = get(),
+            weatherRepository = get(),
+            settingsRepository = get(),
+            sensorManager = get(),
+            cameraMotionDetector = get()
+        )
+    }
+    viewModel {
+        SettingsViewModel(
+            enturRepository = get(),
+            settingsRepository = get(),
+            context = androidContext()
+        )
+    }
 }

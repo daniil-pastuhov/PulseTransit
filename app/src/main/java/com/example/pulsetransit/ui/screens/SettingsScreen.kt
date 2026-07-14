@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.BurnInProtectionLevel
+import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -191,6 +192,28 @@ fun SettingsScreen(
                                     FilterChip(
                                         selected = isSelected,
                                         onClick = { viewModel.updateAutoDimSeconds(seconds) },
+                                        label = { Text(stringResource(labelId)) }
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(stringResource(R.string.camera_sensitivity), style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium))
+                            Text(stringResource(R.string.camera_sensitivity_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                CameraSensitivity.entries.forEach { sensitivity ->
+                                    val labelId = when (sensitivity) {
+                                        CameraSensitivity.LOW -> R.string.sensitivity_low
+                                        CameraSensitivity.MEDIUM -> R.string.sensitivity_medium
+                                        CameraSensitivity.HIGH -> R.string.sensitivity_high
+                                    }
+                                    FilterChip(
+                                        selected = uiState.cameraSensitivity == sensitivity,
+                                        onClick = { viewModel.updateCameraSensitivity(sensitivity) },
                                         label = { Text(stringResource(labelId)) }
                                     )
                                 }

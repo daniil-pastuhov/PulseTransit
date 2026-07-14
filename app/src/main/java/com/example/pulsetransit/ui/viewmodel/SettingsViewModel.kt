@@ -6,6 +6,7 @@ import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.BurnInProtectionLevel
+import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
@@ -61,6 +62,7 @@ class SettingsViewModel(
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
         val cameraMotionWake: Boolean = false,
+        val cameraSensitivity: CameraSensitivity = CameraSensitivity.MEDIUM,
         val dynamicRefresh: Boolean = true,
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
@@ -96,6 +98,7 @@ class SettingsViewModel(
                 showMessages = settingsRepository.isShowMessages(),
                 showCancelledLines = settingsRepository.isShowCancelledLines(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
+                cameraSensitivity = settingsRepository.getCameraSensitivity(),
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
                 isFullScreenMode = settingsRepository.isFullScreenMode(),
                 isAlwaysOnEnabled = settingsRepository.isAlwaysOnEnabled(),
@@ -172,6 +175,11 @@ class SettingsViewModel(
     fun updateCameraMotionWake(enabled: Boolean) {
         settingsRepository.setCameraMotionWakeEnabled(enabled)
         _uiState.update { it.copy(cameraMotionWake = enabled) }
+    }
+
+    fun updateCameraSensitivity(sensitivity: CameraSensitivity) {
+        settingsRepository.setCameraSensitivity(sensitivity)
+        _uiState.update { it.copy(cameraSensitivity = sensitivity) }
     }
 
     fun updateDynamicRefresh(enabled: Boolean) {

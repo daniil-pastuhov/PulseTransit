@@ -110,6 +110,13 @@
     <string name="dim_2m">2 Min</string>
     <string name="dim_never">Never</string>
 
+    <!-- Front camera sensitivity -->
+    <string name="camera_sensitivity">Camera Sensitivity</string>
+    <string name="camera_sensitivity_hint">How much motion is needed to wake the screen</string>
+    <string name="sensitivity_low">Low</string>
+    <string name="sensitivity_medium">Medium</string>
+    <string name="sensitivity_high">High</string>
+
     <!-- Attribution -->
     <string name="attribution_entur">Data from Entur</string>
     <string name="attribution_met">Weather from MET Norway</string>

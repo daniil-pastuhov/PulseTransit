@@ -2,6 +2,7 @@ package com.example.pulsetransit.ui.sensors
 
 import android.content.Context
 import android.util.Log
+import com.example.pulsetransit.data.SettingsRepository
 import android.util.Size
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
@@ -17,9 +18,11 @@ import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
-class CameraMotionDetector(private val context: Context) {
+class CameraMotionDetector(
+    private val context: Context,
+    private val settingsRepository: SettingsRepository,
+) {
     private val threshold = 25 // Sensitivity threshold for pixel difference
-    private val motionPixelCountThreshold = 5000 // Number of pixels that must change to trigger motion
     private val subsample = 8 // Analyse every Nth pixel to save CPU
     // Motion-to-wake doesn't need full sensor FPS; throttle to ~4 fps to save power.
     private val minFrameIntervalNs = 250_000_000L
@@ -27,6 +30,10 @@ class CameraMotionDetector(private val context: Context) {
     private val targetResolution = Size(320, 240)
 
     fun getMotionFlow(lifecycleOwner: LifecycleOwner): Flow<Boolean> = callbackFlow {
+        // Number of full-resolution pixels that must change to trigger motion. Read once per
+        // subscription so a re-collection (e.g. after a settings change) picks up the new value.
+        val motionPixelCountThreshold = settingsRepository.getCameraSensitivity().motionPixelCountThreshold
+
         // Per-subscription state so a re-collection starts fresh. Captured (and mutated)
         // by the analyzer closure below.
         var lastFrame: ByteArray? = null
@@ -66,7 +73,8 @@ class CameraMotionDetector(private val context: Context) {
                 scratch = previous
                 lastFrame = current
 
-                if (previous != null && previous.size == current.size && hasMotion(current, previous)) {
+                if (previous != null && previous.size == current.size &&
+                    hasMotion(current, previous, motionPixelCountThreshold)) {
                     trySend(true)
                 }
                 image.close()
@@ -125,7 +133,7 @@ class CameraMotionDetector(private val context: Context) {
         return out
     }
 
-    private fun hasMotion(current: ByteArray, previous: ByteArray): Boolean {
+    private fun hasMotion(current: ByteArray, previous: ByteArray, motionPixelCountThreshold: Int): Boolean {
         var changedPixels = 0
         for (i in current.indices) {
             val diff = abs((current[i].toInt() and 0xFF) - (previous[i].toInt() and 0xFF))
