@@ -283,7 +283,7 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
                         if (expected != null && aimed != null) {
                             ((expected - aimed) / 60000).toInt()
                         } else 0
-                    } catch (e: Exception) { 0 }
+                    } catch (_: Exception) { 0 }
                     
                     val notices = (call.notices.mapNotNull { it.text } + 
                                   call.serviceJourney?.notices?.mapNotNull { it.text }.orEmpty()).distinct()
@@ -312,7 +312,7 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
             // Simple approach: handle common ISO formats
             val formatted = iso.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
             java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", java.util.Locale.US).parse(formatted)?.time
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

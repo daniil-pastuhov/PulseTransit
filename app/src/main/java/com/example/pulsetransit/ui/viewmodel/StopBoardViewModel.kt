@@ -12,13 +12,15 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 class StopBoardViewModel(
     private val enturRepository: EnturRepository,
     private val weatherRepository: WeatherRepository,
     private val settingsRepository: SettingsRepository,
     private val sensorManager: SystemSensorManager,
-    private val cameraMotionDetector: CameraMotionDetector
+    private val cameraMotionDetector: CameraMotionDetector,
 ) : ViewModel() {
 
     data class UiState(
@@ -160,7 +162,7 @@ class StopBoardViewModel(
         // Auto-dim after 30 seconds of no motion if motion detection is enabled
         if (settingsRepository.isProximityWakeEnabled() || settingsRepository.isCameraMotionWakeEnabled()) {
             dimJob = viewModelScope.launch {
-                delay(30000)
+                delay(30.seconds)
                 dimScreen()
             }
         }
@@ -189,7 +191,7 @@ class StopBoardViewModel(
             val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
             while (true) {
                 _uiState.update { it.copy(currentTime = sdf.format(Date())) }
-                delay(1000)
+                delay(1000.milliseconds)
             }
         }
     }
@@ -201,7 +203,7 @@ class StopBoardViewModel(
                 refreshData()
                 val seconds = calculateNextRefreshInterval()
                 if (seconds <= 0) break
-                delay(seconds * 1000L)
+                delay((seconds * 1000L).milliseconds)
             }
         }
     }
@@ -211,12 +213,12 @@ class StopBoardViewModel(
         if (!settingsRepository.isDynamicRefreshEnabled()) return base
 
         val calendar = Calendar.getInstance()
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
+        val hour = calendar[Calendar.HOUR_OF_DAY]
         
         var multiplier = 1.0
         
         // Night mode (00:00 - 05:00)
-        if (hour in 0..5) multiplier *= 5.0
+        if (hour in (0..5)) multiplier *= 5.0
         
         // Unoccupied mode (if dimmed)
         if (_uiState.value.isScreenDimmed) multiplier *= 2.0
@@ -321,12 +323,6 @@ class StopBoardViewModel(
         }
     }
 
-    fun removeFavorite(stopId: String) {
-        settingsRepository.removeFavorite(stopId)
-        loadSettings()
-        refreshDepartures()
-    }
-
     fun reorderFavorites(fromIndex: Int, toIndex: Int) {
         val currentList = _uiState.value.favorites.toMutableList()
         if (fromIndex !in currentList.indices || toIndex !in currentList.indices) return
@@ -340,9 +336,5 @@ class StopBoardViewModel(
 
     fun filterOutLine(line: String) {
         settingsRepository.addFilteredLine(line)
-    }
-
-    fun removeFilteredLine(line: String) {
-        settingsRepository.removeFilteredLine(line)
     }
 }

@@ -35,7 +35,7 @@
     <string name="longitude_label">Lengdegrad</string>
     <string name="save_coords">Lagre koordinater</string>
     <string name="add_stop_places">Legg til stoppesteder</string>
-    <string name="search_hint">Søk på navn...</string>
+    <string name="search_hint">Søk på navn…</string>
     <string name="nearby_stops">Stoppesteder i nærheten</string>
     <string name="search_results">Søkeresultater</string>
     <string name="no_stops_found">Ingen stoppesteder funnet</string>
@@ -92,8 +92,8 @@
 
     <!-- Location Status -->
     <string name="loc_not_requested">Ikke forespurt</string>
-    <string name="loc_requesting_gps">Forespør GPS (nøyaktig)...</string>
-    <string name="loc_requesting_network">GPS feilet. Forespør nettverk (omtrentlig)...</string>
+    <string name="loc_requesting_gps">Forespør GPS (nøyaktig)…</string>
+    <string name="loc_requesting_network">GPS feilet. Forespør nettverk (omtrentlig)…</string>
     <string name="loc_failed">Kunne ikke hente posisjon.</string>
     <string name="loc_denied">Posisjonstilgang avslått.</string>
     <string name="loc_error">Feil ved henting av posisjon: %1$s</string>

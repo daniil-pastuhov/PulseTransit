@@ -35,7 +35,7 @@
     <string name="longitude_label">Longitude</string>
     <string name="save_coords">Save Coordinates</string>
     <string name="add_stop_places">Add Stop Places</string>
-    <string name="search_hint">Search by name...</string>
+    <string name="search_hint">Search by name…</string>
     <string name="nearby_stops">Nearby Stop Places</string>
     <string name="search_results">Search Results</string>
     <string name="no_stops_found">No stops found</string>
@@ -92,8 +92,8 @@
 
     <!-- Location Status -->
     <string name="loc_not_requested">Not requested</string>
-    <string name="loc_requesting_gps">Requesting GPS (Precise)...</string>
-    <string name="loc_requesting_network">GPS failed. Requesting Network (Approximate)...</string>
+    <string name="loc_requesting_gps">Requesting GPS (Precise)…</string>
+    <string name="loc_requesting_network">GPS failed. Requesting Network (Approximate)…</string>
     <string name="loc_failed">Could not retrieve GPS or Network location.</string>
     <string name="loc_denied">Location permissions denied.</string>
     <string name="loc_error">Error retrieving location: %1$s</string>

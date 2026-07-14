@@ -26,7 +26,7 @@ import kotlin.coroutines.resume
 class SettingsViewModel(
     private val enturRepository: EnturRepository,
     private val settingsRepository: SettingsRepository,
-    context: Context
+    context: Context,
 ) : ViewModel() {
 
     private val appContext = context.applicationContext
@@ -34,7 +34,7 @@ class SettingsViewModel(
 
     data class LocationStatus(
         val resId: Int,
-        val arg: String? = null
+        val arg: String? = null,
     )
 
     data class UiState(
@@ -84,7 +84,7 @@ class SettingsViewModel(
 
     fun loadSettings() {
         val favs = settingsRepository.getFavorites()
-        val quaysMap = favs.associate { it.id to (settingsRepository.getSelectedQuays(it.id) ?: emptySet()) }
+        val quaysMap = favs.associateBy({ it.id }) { settingsRepository.getSelectedQuays(it.id) ?: emptySet() }
         
         _uiState.update {
             it.copy(
@@ -110,7 +110,7 @@ class SettingsViewModel(
         
         val lat = settingsRepository.getSavedLatitude()
         val lon = settingsRepository.getSavedLongitude()
-        if (lat != null && lon != null) {
+        if ((lat != null) && (lon != null)) {
             fetchNearbyStops(lat, lon)
         }
 
@@ -133,7 +133,10 @@ class SettingsViewModel(
 
     fun toggleQuay(stopId: String, quayId: String) {
         val current = _uiState.value.selectedQuays[stopId] ?: emptySet()
-        val allQuayIds = _uiState.value.favoriteStopsWithQuays[stopId]?.quays?.map { it.id }?.toSet() ?: emptySet()
+        val allQuayIds = _uiState.value.favoriteStopsWithQuays[stopId]?.quays
+            ?.asSequence()
+            ?.map { it.id }
+            ?.toSet() ?: emptySet()
 
         val next = if (current.isEmpty() && allQuayIds.isNotEmpty()) {
             // When none are explicitly selected, they are all active by default.
@@ -149,7 +152,7 @@ class SettingsViewModel(
         val isAll = next.isEmpty() || (allQuayIds.isNotEmpty() && next.size == allQuayIds.size)
         val finalNext = if (isAll) emptySet() else next
 
-        settingsRepository.setSelectedQuays(stopId, if (finalNext.isEmpty()) null else finalNext)
+        settingsRepository.setSelectedQuays(stopId, finalNext.ifEmpty { null })
         _uiState.update {
             it.copy(selectedQuays = it.selectedQuays + (stopId to finalNext))
         }
@@ -254,7 +257,7 @@ class SettingsViewModel(
                         handleLocationFailure(LocationStatus(R.string.loc_failed))
                     }
                 }
-            } catch (e: SecurityException) {
+            } catch (_: SecurityException) {
                 handleLocationFailure(LocationStatus(R.string.loc_denied))
             } catch (e: Exception) {
                 handleLocationFailure(LocationStatus(R.string.loc_error, e.message))

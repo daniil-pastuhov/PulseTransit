@@ -33,7 +33,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         val jsonStr = prefs.getString("favorites", null) ?: return emptyList()
         return try {
             json.decodeFromString<List<StopPlace>>(jsonStr)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             emptyList()
         }
     }
@@ -42,19 +42,25 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         val current = getFavorites().toMutableList()
         if (current.none { it.id == stopPlace.id }) {
             current.add(stopPlace)
-            prefs.edit().putString("favorites", json.encodeToString(current)).apply()
+            prefs.edit {
+                putString("favorites", json.encodeToString(current))
+            }
         }
     }
 
     override fun removeFavorite(stopId: String) {
         val current = getFavorites().filter { it.id != stopId }
-        prefs.edit().putString("favorites", json.encodeToString(current)).apply()
+        prefs.edit {
+            putString("favorites", json.encodeToString(current))
+        }
     }
 
     override fun reorderFavorites(stopIds: List<String>) {
         val current = getFavorites()
         val reordered = stopIds.mapNotNull { id -> current.find { it.id == id } }
-        prefs.edit().putString("favorites", json.encodeToString(reordered)).apply()
+        prefs.edit {
+            putString("favorites", json.encodeToString(reordered))
+        }
     }
 
     override fun isFavorite(stopId: String): Boolean {
@@ -66,20 +72,20 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun setRefreshIntervalSeconds(seconds: Int) {
-        prefs.edit().putInt("refresh_interval", seconds).apply()
+        prefs.edit { putInt("refresh_interval", seconds) }
     }
 
     override fun getThemeMode(): ThemeMode {
         val modeStr = prefs.getString("theme_mode", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
         return try {
             ThemeMode.valueOf(modeStr)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             ThemeMode.SYSTEM
         }
     }
 
     override fun setThemeMode(mode: ThemeMode) {
-        prefs.edit().putString("theme_mode", mode.name).apply()
+        prefs.edit { putString("theme_mode", mode.name) }
     }
 
     override fun getBurnInProtectionLevel(): BurnInProtectionLevel {
@@ -87,13 +93,13 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
             ?: BurnInProtectionLevel.MEDIUM.name
         return try {
             BurnInProtectionLevel.valueOf(levelStr)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             BurnInProtectionLevel.MEDIUM
         }
     }
 
     override fun setBurnInProtectionLevel(level: BurnInProtectionLevel) {
-        prefs.edit().putString("burn_in_protection", level.name).apply()
+        prefs.edit { putString("burn_in_protection", level.name) }
     }
 
     override fun getSavedLatitude(): Double? {
@@ -107,13 +113,16 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun setSavedLocation(lat: Double?, lon: Double?) {
-        if (lat == null || lon == null) {
-            prefs.edit().remove("saved_lat").remove("saved_lon").apply()
+        if ((lat == null) || (lon == null)) {
+            prefs.edit {
+                remove("saved_lat")
+                remove("saved_lon")
+            }
         } else {
-            prefs.edit()
-                .putString("saved_lat", lat.toString())
-                .putString("saved_lon", lon.toString())
-                .apply()
+            prefs.edit {
+                putString("saved_lat", lat.toString())
+                putString("saved_lon", lon.toString())
+            }
         }
     }
 
@@ -142,19 +151,19 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun isProximityWakeEnabled(): Boolean = prefs.getBoolean("proximity_wake", false)
-    override fun setProximityWakeEnabled(enabled: Boolean) = prefs.edit().putBoolean("proximity_wake", enabled).apply()
+    override fun setProximityWakeEnabled(enabled: Boolean) = prefs.edit { putBoolean("proximity_wake", enabled) }
 
     override fun isCameraMotionWakeEnabled(): Boolean = prefs.getBoolean("camera_motion_wake", false)
-    override fun setCameraMotionWakeEnabled(enabled: Boolean) = prefs.edit().putBoolean("camera_motion_wake", enabled).apply()
+    override fun setCameraMotionWakeEnabled(enabled: Boolean) = prefs.edit { putBoolean("camera_motion_wake", enabled) }
 
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
-    override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit().putBoolean("dynamic_refresh", enabled).apply()
+    override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit { putBoolean("dynamic_refresh", enabled) }
 
     override fun getDestinationStation(): StopPlace? {
         val jsonStr = prefs.getString("destination_station", null) ?: return null
         return try {
             json.decodeFromString<StopPlace>(jsonStr)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

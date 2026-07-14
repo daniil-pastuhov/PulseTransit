@@ -29,11 +29,11 @@ import java.util.*
 fun StopBoardPanel(
     stopPlace: StopPlace,
     departureGroups: List<DepartureGroup>,
+    modifier: Modifier = Modifier,
     showDelays: Boolean = true,
     showMessages: Boolean = true,
     isLoading: Boolean = false,
     onFilterOut: (String) -> Unit = {},
-    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
@@ -264,7 +264,7 @@ fun DepartureRow(
             Spacer(modifier = Modifier.width(8.dp))
 
             // Delay indicator
-            if (!firstDeparture.isCancelled && showDelays && firstDeparture.delayMinutes > 0) {
+            if ((!firstDeparture.isCancelled) && showDelays && (firstDeparture.delayMinutes > 0)) {
                 Text(
                     text = "+${firstDeparture.delayMinutes}",
                     style = MaterialTheme.typography.bodySmall.copy(
@@ -392,10 +392,10 @@ private fun formatDepartureTime(expectedTimeStr: String, nowText: String, minUni
         } else {
             "?"
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         try {
             expectedTimeStr.substring(11, 16)
-        } catch (ex: Exception) {
+        } catch (_: Exception) {
             "?"
         }
     }

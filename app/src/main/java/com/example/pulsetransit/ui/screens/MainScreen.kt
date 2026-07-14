@@ -58,6 +58,7 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
 
+@Suppress("ParamsComparedByRef")
 @Composable
 fun MainScreen(
     viewModel: StopBoardViewModel,
@@ -313,9 +314,8 @@ fun ReorderableFavoriteList(
                                 Offset.Zero
                             } else {
                                 val start = draggingIndex!!
-                                val target = currentTargetIndex
-                                if (index in (minOf(start, target)..maxOf(start, target))) {
-                                    val direction = if (start < target) -1f else 1f
+                                if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
+                                    val direction = if (start < currentTargetIndex) -1f else 1f
                                     Offset(x = direction * itemSize.width.toFloat(), y = 0f)
                                 } else {
                                     Offset.Zero
@@ -386,9 +386,8 @@ fun ReorderableFavoriteList(
                                 Offset.Zero
                             } else {
                                 val start = draggingIndex!!
-                                val target = currentTargetIndex
-                                if (index in (minOf(start, target)..maxOf(start, target))) {
-                                    val direction = if (start < target) -1f else 1f
+                                if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
+                                    val direction = if (start < currentTargetIndex) -1f else 1f
                                     Offset(x = 0f, y = direction * itemSize.height.toFloat())
                                 } else {
                                     Offset.Zero
@@ -453,7 +452,7 @@ fun FastestTripBanner(
 ) {
     val departureTime = try {
         trip.expectedStartTime.substring(11, 16)
-    } catch (e: Exception) { "--:--" }
+    } catch (_: Exception) { "--:--" }
 
     var expanded by remember { mutableStateOf(false) }
     var hasOverflow by remember { mutableStateOf(false) }
@@ -530,7 +529,7 @@ fun WeatherItem(weather: WeatherInfo) {
         if (date != null) {
             locale.format(date)
         } else "??"
-    } catch (e: Exception) { "??" }
+    } catch (_: Exception) { "??" }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(

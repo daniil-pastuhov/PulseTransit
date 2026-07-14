@@ -36,7 +36,7 @@ import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
@@ -325,7 +325,8 @@ fun SettingsScreen(
                         Text("${stringResource(R.string.latitude_val, latVal)}, ${stringResource(R.string.longitude_val, lonVal)}")
                         
                         val statusText = if (uiState.locationStatus.arg != null) {
-                            stringResource(uiState.locationStatus.resId,
+                            stringResource(
+                                uiState.locationStatus.resId,
                                 uiState.locationStatus.arg!!
                             )
                         } else {
@@ -601,7 +602,7 @@ fun FavoriteStopRow(
             }
         }
         
-        if (stopWithQuays != null && stopWithQuays.quays.isNotEmpty()) {
+        if ((stopWithQuays != null) && stopWithQuays.quays.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(stringResource(R.string.directions_quays), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
             FlowRow(
