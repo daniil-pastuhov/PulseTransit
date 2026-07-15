@@ -118,6 +118,25 @@
     <string name="sensitivity_medium">Middels</string>
     <string name="sensitivity_high">Høy</string>
 
+    <!-- Weather conditions (MET symbol codes) -->
+    <string name="weather_clear">Klarvær</string>
+    <string name="weather_fair">Lettskyet</string>
+    <string name="weather_partly_cloudy">Delvis skyet</string>
+    <string name="weather_cloudy">Skyet</string>
+    <string name="weather_fog">Tåke</string>
+    <string name="weather_light_rain">Lett regn</string>
+    <string name="weather_rain">Regn</string>
+    <string name="weather_heavy_rain">Kraftig regn</string>
+    <string name="weather_light_sleet">Lett sludd</string>
+    <string name="weather_sleet">Sludd</string>
+    <string name="weather_heavy_sleet">Kraftig sludd</string>
+    <string name="weather_light_snow">Lett snø</string>
+    <string name="weather_snow">Snø</string>
+    <string name="weather_heavy_snow">Kraftig snø</string>
+    <string name="weather_and_thunder">%1$s og torden</string>
+    <string name="weather_unknown">Ukjent</string>
+    <string name="weather_precipitation">%1$s mm nedbør</string>
+
     <!-- Attribution -->
     <string name="attribution_entur">Data fra Entur</string>
     <string name="attribution_met">Værdata fra MET Norway</string>

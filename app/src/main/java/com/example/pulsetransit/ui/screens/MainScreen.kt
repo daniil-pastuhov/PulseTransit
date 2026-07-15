@@ -31,7 +31,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -43,8 +46,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.*
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.PrecipitationBar
 import com.example.pulsetransit.ui.components.StopBoardPanel
+import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
+import com.example.pulsetransit.ui.components.parseWeatherSymbol
+import com.example.pulsetransit.ui.components.temperatureColor
+import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.pixelshift.pixelShift
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import java.text.SimpleDateFormat
@@ -526,32 +534,52 @@ fun WeatherItem(weather: WeatherInfo) {
         } else "??"
     } catch (_: Exception) { "??" }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    val symbol = remember(weather.symbolCode) { parseWeatherSymbol(weather.symbolCode) }
+    val label = weatherLabel(symbol)
+    val precipitationDescription =
+        stringResource(R.string.weather_precipitation, weather.precipitation.toString())
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
         Text(
-            text = "$hour:00", 
+            text = "$hour:00",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
         )
-        Text(
-            text = "${weather.temperature.toInt()}°", 
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onSurface
+        WeatherIcon(
+            symbol = symbol,
+            modifier = Modifier
+                .size(26.dp)
+                .semantics { contentDescription = label }
         )
-        if (weather.precipitation > 0) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
             Text(
-                text = "${weather.precipitation}mm",
-                style = MaterialTheme.typography.labelSmall.copy(
-                    color = MaterialTheme.colorScheme.primary, 
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                text = "${weather.temperature.roundToInt()}°",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = temperatureColor(weather.temperature)
+            )
+            PrecipitationBar(
+                millimetres = weather.precipitation,
+                modifier = Modifier
+                    .size(width = 4.dp, height = 16.dp)
+                    .semantics {
+                        contentDescription = precipitationDescription
+                    }
             )
         }
-        // Note: In a real app we'd map symbolCode to actual icons
         Text(
-            text = weather.symbolCode.split("_")[0], 
-            style = MaterialTheme.typography.labelSmall, 
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
             fontSize = 8.sp,
+            lineHeight = 10.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
