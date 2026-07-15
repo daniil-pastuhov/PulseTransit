@@ -11,6 +11,8 @@
 
 # Ktor
 -keep class io.ktor.** { *; }
+-dontwarn java.lang.management.**
+-dontwarn kotlinx.coroutines.debug.DebugProbesKt
 
 # kotlinx-serialization
 -keepattributes *Annotation*, EnclosingMethod, Signature
