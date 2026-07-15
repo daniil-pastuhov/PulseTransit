@@ -17,6 +17,9 @@ interface EnturRepository {
 
     suspend fun getStopPlaceWithQuays(stopId: String): StopPlace?
 
-    /** As [getDepartures], but for the fastest route to a destination. */
+    /** As [getDepartures], but for the fastest route to a destination from a set of stop places. */
     suspend fun getFastestTrip(fromIds: List<String>, toId: String): Sourced<TripInfo?>
+
+    /** As [getDepartures], but for the fastest route to a destination from a coordinate. */
+    suspend fun getFastestTrip(lat: Double, lon: Double, toId: String): Sourced<TripInfo?>
 }

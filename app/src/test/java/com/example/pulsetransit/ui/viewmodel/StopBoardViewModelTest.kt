@@ -352,6 +352,32 @@ class StopBoardViewModelTest {
         assertEquals(setOf("NSR:Quay:7"), entur.requestedQuays[oslo.id])
     }
 
+    // --- Fastest Route ---------------------------------------------------------------------
+
+    @Test
+    fun `fastest route uses configured location if present`() = boardTest {
+        settings.destinations = listOf(oslo)
+        settings.latitude = 60.0
+        settings.longitude = 11.0
+        viewModel()
+
+        assertEquals(60.0, entur.lastFastestTripCoords?.first)
+        assertEquals(11.0, entur.lastFastestTripCoords?.second)
+        assertNull(entur.lastFastestTripFromIds)
+    }
+
+    @Test
+    fun `fastest route falls back to favorites if no location is configured`() = boardTest {
+        settings.destinations = listOf(oslo)
+        settings.favoriteStops = listOf(oslo.copy(id = "FAV1"))
+        settings.latitude = null
+        settings.longitude = null
+        viewModel()
+
+        assertNull(entur.lastFastestTripCoords)
+        assertEquals(listOf("FAV1"), entur.lastFastestTripFromIds)
+    }
+
     // --- Weather ---------------------------------------------------------------------------
 
     @Test

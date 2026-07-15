@@ -365,13 +365,20 @@ class StopBoardViewModel(
 
     private fun refreshFastestTrip() {
         val destinations = _uiState.value.destinationStations
-        val favorites = _uiState.value.favorites
-        if (destinations.isEmpty() || favorites.isEmpty()) return
+        val lat = settingsRepository.getSavedLatitude()
+        val lon = settingsRepository.getSavedLongitude()
+
+        if (destinations.isEmpty()) return
 
         viewModelScope.launch {
-            val fromIds = favorites.map { it.id }
             val trips = destinations.mapNotNull { destination ->
-                val result = enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+                val result = if (lat != null && lon != null) {
+                    enturRepository.getFastestTrip(lat = lat, lon = lon, toId = destination.id)
+                } else {
+                    val fromIds = _uiState.value.favorites.map { it.id }
+                    if (fromIds.isEmpty()) return@mapNotNull null
+                    enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+                }
                 result.data?.copy(destinationName = destination.name)
             }
             _uiState.update { it.copy(fastestTrips = trips) }

@@ -42,6 +42,8 @@ class FakeEnturRepository : EnturRepository {
     var departures: (String) -> Sourced<List<Departure>> = { Sourced(emptyList()) }
     var trip: Sourced<TripInfo?> = Sourced(null)
     val requestedQuays = mutableMapOf<String, Set<String>?>()
+    var lastFastestTripFromIds: List<String>? = null
+    var lastFastestTripCoords: Pair<Double, Double>? = null
 
     override suspend fun searchStopPlaces(query: String) = emptyList<StopPlace>()
     override suspend fun getNearbyStopPlaces(lat: Double, lon: Double, radiusKm: Double) = emptyList<StopPlace>()
@@ -56,7 +58,15 @@ class FakeEnturRepository : EnturRepository {
         return departures(stopId)
     }
 
-    override suspend fun getFastestTrip(fromIds: List<String>, toId: String): Sourced<TripInfo?> = trip
+    override suspend fun getFastestTrip(fromIds: List<String>, toId: String): Sourced<TripInfo?> {
+        lastFastestTripFromIds = fromIds
+        return trip
+    }
+
+    override suspend fun getFastestTrip(lat: Double, lon: Double, toId: String): Sourced<TripInfo?> {
+        lastFastestTripCoords = lat to lon
+        return trip
+    }
 }
 
 class FakeWeatherRepository : WeatherRepository {

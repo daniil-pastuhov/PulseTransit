@@ -430,6 +430,65 @@ class EnturRepositoryImpl(
         }
     }
 
+    override suspend fun getFastestTrip(lat: Double, lon: Double, toId: String): Sourced<TripInfo?> {
+        val now = System.currentTimeMillis()
+        val routeKey = routeKey(lat, lon, toId)
+
+        val queryStr = """
+            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: String!) {
+              trip(
+                from: { coordinates: { latitude: ${'$'}lat, longitude: ${'$'}lon } }
+                to: { place: ${'$'}to }
+                numTripPatterns: 1
+              ) {
+                tripPatterns {
+                  expectedStartTime
+                  duration
+                  legs {
+                    mode
+                    duration
+                    line {
+                      publicCode
+                      name
+                    }
+                    fromPlace {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+        """.trimIndent()
+
+        val variables = buildJsonObject {
+            put("lat", lat)
+            put("lon", lon)
+            put("to", toId)
+        }
+
+        return try {
+            val response: GraphQLResponse<TripData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
+                header(clientNameHeader, clientNameValue)
+                contentType(ContentType.Application.Json)
+                setBody(GraphQLRequest(queryStr, variables))
+            }.body()
+
+            val pattern = response.data?.trip?.tripPatterns?.firstOrNull()
+            if (pattern == null) {
+                return Sourced(null)
+            }
+
+            val tripInfo = parseTripPattern(pattern)
+
+            tripCache.upsert(tripInfo.toCacheEntity(routeKey, now))
+            tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
+            Sourced.live(tripInfo)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            tripFromCache(routeKey, now)
+        }
+    }
+
     override suspend fun getFastestTrip(fromIds: List<String>, toId: String): Sourced<TripInfo?> {
         if (fromIds.isEmpty()) return Sourced(null)
 
@@ -480,24 +539,7 @@ class EnturRepositoryImpl(
                 }.body()
 
                 val pattern = response.data?.trip?.tripPatterns?.firstOrNull() ?: continue
-
-                // The first leg may be a foot leg (line == null); use the first transit leg for line/origin
-                val transitLeg = pattern.legs.firstOrNull { it.line != null }
-                val tripInfo = TripInfo(
-                    destinationName = "", // Will be filled by ViewModel or if we query for destination separately
-                    expectedStartTime = pattern.expectedStartTime,
-                    lineName = transitLeg?.line?.publicCode ?: transitLeg?.line?.name ?: "?",
-                    durationMinutes = (pattern.duration / 60).toInt(),
-                    originName = transitLeg?.fromPlace?.name ?: pattern.legs.firstOrNull()?.fromPlace?.name ?: "Unknown",
-                    legs = pattern.legs.map { leg ->
-                        TripLeg(
-                            mode = leg.mode,
-                            lineName = leg.line?.publicCode ?: leg.line?.name,
-                            fromName = leg.fromPlace?.name,
-                            durationMinutes = (leg.duration / 60).toInt()
-                        )
-                    }
-                )
+                val tripInfo = parseTripPattern(pattern)
 
                 if (fastestTrip == null || tripInfo.expectedStartTime < fastestTrip.expectedStartTime) {
                     fastestTrip = tripInfo
@@ -518,9 +560,32 @@ class EnturRepositoryImpl(
         return Sourced.live(fastestTrip)
     }
 
+    private fun parseTripPattern(pattern: TripPatternGraphQL): TripInfo {
+        // The first leg may be a foot leg (line == null); use the first transit leg for line/origin
+        val transitLeg = pattern.legs.firstOrNull { it.line != null }
+        return TripInfo(
+            destinationName = "", // Will be filled by ViewModel or if we query for destination separately
+            expectedStartTime = pattern.expectedStartTime,
+            lineName = transitLeg?.line?.publicCode ?: transitLeg?.line?.name ?: "?",
+            durationMinutes = (pattern.duration / 60).toInt(),
+            originName = transitLeg?.fromPlace?.name ?: pattern.legs.firstOrNull()?.fromPlace?.name ?: "Unknown",
+            legs = pattern.legs.map { leg ->
+                TripLeg(
+                    mode = leg.mode,
+                    lineName = leg.line?.publicCode ?: leg.line?.name,
+                    fromName = leg.fromPlace?.name,
+                    durationMinutes = (leg.duration / 60).toInt()
+                )
+            }
+        )
+    }
+
     /** Stable key for an origin set and destination, independent of the order favourites are in. */
     private fun routeKey(fromIds: List<String>, toId: String): String =
         fromIds.sorted().joinToString(",") + ">" + toId
+
+    private fun routeKey(lat: Double, lon: Double, toId: String): String =
+        "%.4f,%.4f>%s".format(lat, lon, toId)
 
     private suspend fun tripFromCache(routeKey: String, nowMillis: Long): Sourced<TripInfo?> {
         val cached = tripCache.getUpcoming(routeKey, nowMillis) ?: return Sourced(null)
