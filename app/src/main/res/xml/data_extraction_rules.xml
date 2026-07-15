@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample data extraction rules file; uncomment and customize as necessary.
-   See https://developer.android.com/about/versions/12/backup-restore#xml-changes
-   for details.
+   Backup/transfer rules for API 31+ (referenced via
+   android:dataExtractionRules). Once an <include> is present, only the
+   included domains are copied — settings live in SharedPreferences,
+   while the Room offline cache (pulse_transit_cache.db) is disposable
+   derived data and must not be restored onto a new device.
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <include domain="sharedpref" path="." />
+        <exclude domain="database" path="." />
     </cloud-backup>
-    <!--
     <device-transfer>
-        <include .../>
-        <exclude .../>
+        <include domain="sharedpref" path="." />
+        <exclude domain="database" path="." />
     </device-transfer>
-    -->
 </data-extraction-rules>
