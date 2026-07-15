@@ -118,6 +118,9 @@
     <string name="sensitivity_medium">Medium</string>
     <string name="sensitivity_high">High</string>
 
+    <!-- Offline / cached data -->
+    <string name="offline_stale_data">Offline — shown data is %1$d min old</string>
+
     <!-- Weather conditions (MET symbol codes) -->
     <string name="weather_clear">Clear</string>
     <string name="weather_fair">Fair</string>

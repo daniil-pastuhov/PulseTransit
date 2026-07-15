@@ -51,7 +51,15 @@ class StopBoardViewModel(
         val isAlwaysOnEnabled: Boolean = false,
         val autoDimSeconds: Int = 30,
         val cameraMotionWake: Boolean = false,
-        val filteredLines: Set<String> = emptySet()
+        val filteredLines: Set<String> = emptySet(),
+        /**
+         * When the transit board is showing cached data because Entur could not be reached, this
+         * is when that data was actually fetched; null while the board is live. Weather is
+         * excluded on purpose: it is cache-first by MET's rules, so a cache hit there is normal.
+         */
+        val staleSinceMillis: Long? = null,
+        /** [staleSinceMillis] as whole minutes, recomputed on each clock tick. */
+        val staleAgeMinutes: Int? = null
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -229,7 +237,16 @@ class StopBoardViewModel(
         viewModelScope.launch {
             val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
             while (true) {
-                _uiState.update { it.copy(currentTime = sdf.format(Date())) }
+                val now = System.currentTimeMillis()
+                _uiState.update {
+                    it.copy(
+                        currentTime = sdf.format(Date(now)),
+                        // Derived here so the age keeps climbing while the board stays offline.
+                        staleAgeMinutes = it.staleSinceMillis?.let { since ->
+                            ((now - since) / 60_000L).toInt()
+                        }
+                    )
+                }
                 delay(1000.milliseconds)
             }
         }
@@ -287,22 +304,31 @@ class StopBoardViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val newRawDepartures = mutableMapOf<String, List<Departure>>()
-            
+            // The board is only as fresh as its stalest stop.
+            var oldestCacheFetch: Long? = null
+
             for (stop in favs) {
                 val quayIds = settingsRepository.getSelectedQuays(stop.id)
-                val list = enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds)
-                val filteredList = list.filter { it.line !in _uiState.value.filteredLines }
-                newRawDepartures[stop.id] = filteredList
+                val result = enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds)
+                result.fetchedAtMillis?.let { fetchedAt ->
+                    oldestCacheFetch = minOf(oldestCacheFetch ?: fetchedAt, fetchedAt)
+                }
+                newRawDepartures[stop.id] = result.data.filter { it.line !in _uiState.value.filteredLines }
             }
 
             rawDepartures = newRawDepartures
             val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-            val updateTime = timeFormat.format(Date())
+            // Report when the data was actually fetched, not when we last tried.
+            val updateTime = timeFormat.format(Date(oldestCacheFetch ?: System.currentTimeMillis()))
 
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    lastUpdated = updateTime
+                    lastUpdated = updateTime,
+                    staleSinceMillis = oldestCacheFetch,
+                    staleAgeMinutes = oldestCacheFetch?.let { since ->
+                        ((System.currentTimeMillis() - since) / 60_000L).toInt()
+                    }
                 )
             }
             updateGroupedDepartures()
@@ -345,8 +371,8 @@ class StopBoardViewModel(
         viewModelScope.launch {
             val fromIds = favorites.map { it.id }
             val trips = destinations.mapNotNull { destination ->
-                enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
-                    ?.copy(destinationName = destination.name)
+                val result = enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+                result.data?.copy(destinationName = destination.name)
             }
             _uiState.update { it.copy(fastestTrips = trips) }
         }
@@ -358,8 +384,11 @@ class StopBoardViewModel(
         if (lat == null || lon == null) return
 
         viewModelScope.launch {
+            // Cached or live, the forecast is hour-stamped and past hours are dropped, so a stale
+            // one can only show fewer hours — never wrong ones. It does not raise the offline
+            // banner, which tracks the transit board.
             val weather = weatherRepository.getWeather(lat, lon)
-            _uiState.update { it.copy(weather = weather) }
+            _uiState.update { it.copy(weather = weather.data) }
         }
     }
 

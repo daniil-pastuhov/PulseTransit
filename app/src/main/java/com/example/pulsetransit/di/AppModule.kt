@@ -1,8 +1,11 @@
 package com.example.pulsetransit.di
 
 import com.example.pulsetransit.data.*
+import com.example.pulsetransit.data.cache.CacheDatabase
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
+import com.example.pulsetransit.ui.sensors.CameraMotionDetectorImpl
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
+import com.example.pulsetransit.ui.sensors.SystemSensorManagerImpl
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import io.ktor.client.HttpClient
@@ -26,11 +29,20 @@ val appModule = module {
             }
         }
     }
+    single { CacheDatabase.build(androidContext()) }
+    factory { get<CacheDatabase>().departureCacheDao() }
+    factory { get<CacheDatabase>().tripCacheDao() }
+    factory { get<CacheDatabase>().forecastCacheDao() }
+
     single<SettingsRepository> { SettingsRepositoryImpl(context = androidContext()) }
-    single<EnturRepository> { EnturRepositoryImpl(client = get()) }
-    single<WeatherRepository> { WeatherRepositoryImpl(client = get()) }
-    single { SystemSensorManager(context = androidContext()) }
-    single { CameraMotionDetector(context = androidContext(), settingsRepository = get()) }
+    single<EnturRepository> {
+        EnturRepositoryImpl(client = get(), departureCache = get(), tripCache = get())
+    }
+    single<WeatherRepository> { WeatherRepositoryImpl(client = get(), cache = get()) }
+    single<SystemSensorManager> { SystemSensorManagerImpl(context = androidContext()) }
+    single<CameraMotionDetector> {
+        CameraMotionDetectorImpl(context = androidContext(), settingsRepository = get())
+    }
     viewModel {
         StopBoardViewModel(
             enturRepository = get(),
