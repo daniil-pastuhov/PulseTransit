@@ -25,7 +25,6 @@
     <string name="latitude_val">Breddegrad: %1$s</string>
     <string name="longitude_val">Lengdegrad: %1$s</string>
     <string name="not_set">Ikke satt</string>
-    <string name="location_status">Status: %1$s</string>
     <string name="detect_location">Hent posisjon automatisk</string>
     <string name="enter_manual">Skriv inn koordinater manuelt:</string>
     <string name="latitude_label">Breddegrad</string>
@@ -59,7 +58,10 @@
     <!-- Fastest Route -->
     <string name="fastest_route_destination">Reisemål for raskeste rute</string>
     <string name="no_destination_set">Ingen destinasjoner valgt</string>
-    <string name="max_destinations_reached">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</string>
+    <plurals name="max_destinations_reached">
+        <item quantity="one">Maksimalt %1$d destinasjon nådd. Fjern den for å legge til en ny.</item>
+        <item quantity="other">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</item>
+    </plurals>
     <string name="select">Velg</string>
     <string name="fastest_route_to">Raskest til %1$s</string>
     <string name="fastest_route_info">Linje %1$s fra %2$s</string>
@@ -100,7 +102,6 @@
     <string name="network_source">Nettverk</string>
     <string name="loc_manual">Satt manuelt</string>
     <string name="loc_invalid_format">Ugyldig format for manuelle koordinater.</string>
-    <string name="loc_manual_prompt">Vennligst skriv inn koordinater manuelt.</string>
 
     <!-- Auto-dim Delay -->
     <string name="auto_dim_delay">Tid før autodimming</string>

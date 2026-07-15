@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -315,7 +316,11 @@ fun SettingsScreen(
                         if (destinations.size >= SettingsRepository.MAX_DESTINATION_STATIONS) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                stringResource(R.string.max_destinations_reached, SettingsRepository.MAX_DESTINATION_STATIONS),
+                                pluralStringResource(
+                                    R.plurals.max_destinations_reached,
+                                    SettingsRepository.MAX_DESTINATION_STATIONS,
+                                    SettingsRepository.MAX_DESTINATION_STATIONS
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

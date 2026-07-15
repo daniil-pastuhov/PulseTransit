@@ -25,7 +25,6 @@
     <string name="latitude_val">Lat: %1$s</string>
     <string name="longitude_val">Lon: %1$s</string>
     <string name="not_set">Not set</string>
-    <string name="location_status">Status: %1$s</string>
     <string name="detect_location">Detect Location Automatically</string>
     <string name="enter_manual">Enter coordinates manually:</string>
     <string name="latitude_label">Latitude</string>
@@ -59,7 +58,10 @@
     <!-- Fastest Route -->
     <string name="fastest_route_destination">Fastest Route Destinations</string>
     <string name="no_destination_set">No destinations set</string>
-    <string name="max_destinations_reached">Maximum of %1$d destinations reached. Remove one to add another.</string>
+    <plurals name="max_destinations_reached">
+        <item quantity="one">Maximum of %1$d destination reached. Remove it to add another.</item>
+        <item quantity="other">Maximum of %1$d destinations reached. Remove one to add another.</item>
+    </plurals>
     <string name="select">Select</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
     <string name="fastest_route_info">Line %1$s from %2$s</string>
@@ -100,7 +102,6 @@
     <string name="network_source">Network</string>
     <string name="loc_manual">Set manually</string>
     <string name="loc_invalid_format">Invalid manual coordinates format.</string>
-    <string name="loc_manual_prompt">Please enter coordinates manually.</string>
 
     <!-- Auto-dim Delay -->
     <string name="auto_dim_delay">Auto-dim Delay</string>
