@@ -67,8 +67,8 @@ class WeatherRepositoryImpl(private val client: HttpClient) : WeatherRepository 
                 parameter("lon", lon)
             }.body()
 
-            // Filter for next 24 hours, taking samples (e.g., every 3 hours or as available)
-            response.properties.timeseries.take(24).map { ts ->
+            // Filter for next 8 hours
+            response.properties.timeseries.take(8).map { ts ->
                 WeatherInfo(
                     time = ts.time,
                     temperature = ts.data.instant.details.air_temperature,

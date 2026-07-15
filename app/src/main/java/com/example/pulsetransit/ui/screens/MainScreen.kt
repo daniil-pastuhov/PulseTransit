@@ -127,7 +127,7 @@ fun MainScreen(
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        val maxItems = (maxWidth.value / 60).toInt().coerceIn(4, 12)
+                        val maxItems = (maxWidth.value / 60).toInt().coerceIn(4, 8)
                         val totalAvailable = uiState.weather.size
                         val step = if (totalAvailable > maxItems) totalAvailable / maxItems else 1
 
