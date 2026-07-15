@@ -118,6 +118,9 @@
     <string name="sensitivity_medium">Middels</string>
     <string name="sensitivity_high">Høy</string>
 
+    <!-- Offline / cached data -->
+    <string name="offline_stale_data">Frakoblet — dataene er %1$d min gamle</string>
+
     <!-- Weather conditions (MET symbol codes) -->
     <string name="weather_clear">Klarvær</string>
     <string name="weather_fair">Lettskyet</string>

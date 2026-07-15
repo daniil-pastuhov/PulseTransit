@@ -1,5 +1,10 @@
 package com.example.pulsetransit.data
 
+import com.example.pulsetransit.data.cache.CachedDeparture
+import com.example.pulsetransit.data.cache.CachedTrip
+import com.example.pulsetransit.data.cache.CachedTripLeg
+import com.example.pulsetransit.data.cache.DepartureCacheDao
+import com.example.pulsetransit.data.cache.TripCacheDao
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -14,9 +19,18 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
+class EnturRepositoryImpl(
+    private val client: HttpClient,
+    private val departureCache: DepartureCacheDao,
+    private val tripCache: TripCacheDao
+) : EnturRepository {
     private val clientNameHeader = "ET-Client-Name"
     private val clientNameValue = "personal-pulsetransit"
+
+    private companion object {
+        /** How long departed rows are kept before pruning, purely to bound cache growth. */
+        const val PRUNE_AFTER_MS = 6 * 60 * 60 * 1000L
+    }
 
     // Geocoder V3 response data structures
     @Serializable
@@ -225,7 +239,11 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
         }
     }
 
-    override suspend fun getDepartures(stopId: String, limit: Int, quayIds: Set<String>?): List<Departure> {
+    override suspend fun getDepartures(
+        stopId: String,
+        limit: Int,
+        quayIds: Set<String>?
+    ): Sourced<List<Departure>> {
         val queryStr = """
             query GetDepartures(${'$'}id: String!, ${'$'}limit: Int!) {
               stopPlace(id: ${'$'}id) {
@@ -265,6 +283,8 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
             put("limit", limit)
         }
 
+        val now = System.currentTimeMillis()
+
         return try {
             val response: GraphQLResponse<StopPlaceData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
                 header(clientNameHeader, clientNameValue)
@@ -272,14 +292,17 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
                 setBody(GraphQLRequest(queryStr, variables))
             }.body()
 
-            val estimatedCalls = response.data?.stopPlace?.estimatedCalls ?: return emptyList()
+            val estimatedCalls = response.data?.stopPlace?.estimatedCalls
+                // A response without the stop is an API-level failure, not an empty stop, so it
+                // falls back rather than wiping the cache.
+                ?: return departuresFromCache(stopId, now)
 
-            estimatedCalls
+            val departures = estimatedCalls
                 .filter { call -> quayIds == null || quayIds.contains(call.quay?.id) }
                 .map { call ->
                     val delay = try {
-                        val expected = call.expectedDepartureTime?.let { parseIso(it) }
-                        val aimed = call.aimedDepartureTime?.let { parseIso(it) }
+                        val expected = call.expectedDepartureTime?.let { parseIsoToMillis(it) }
+                        val aimed = call.aimedDepartureTime?.let { parseIsoToMillis(it) }
                         if (expected != null && aimed != null) {
                             ((expected - aimed) / 60000).toInt()
                         } else 0
@@ -301,21 +324,59 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
                         quayId = call.quay?.id
                     )
                 }
+
+            departureCache.replaceStop(
+                stopId,
+                departures.mapIndexed { index, departure -> departure.toCacheEntity(stopId, index, now) }
+            )
+            departureCache.pruneDepartedBefore(now - PRUNE_AFTER_MS)
+            Sourced.live(departures)
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
+            departuresFromCache(stopId, now)
         }
     }
 
-    private fun parseIso(iso: String): Long? {
-        return try {
-            // Simple approach: handle common ISO formats
-            val formatted = iso.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
-            java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", java.util.Locale.US).parse(formatted)?.time
-        } catch (_: Exception) {
-            null
-        }
+    /**
+     * Last good departures for [stopId], minus anything already due. Note the cache mirrors the
+     * quay selection in force when it was written, so a selection changed while offline only
+     * takes effect on the next successful fetch.
+     */
+    private suspend fun departuresFromCache(stopId: String, nowMillis: Long): Sourced<List<Departure>> {
+        val cached = departureCache.getUpcoming(stopId, nowMillis)
+        val fetchedAt = cached.firstOrNull()?.fetchedAt ?: return Sourced(emptyList())
+        return Sourced.cached(cached.map { it.toDeparture() }, fetchedAt)
     }
+
+    private fun Departure.toCacheEntity(stopId: String, position: Int, fetchedAt: Long) = CachedDeparture(
+        stopId = stopId,
+        position = position,
+        line = line,
+        destination = destination,
+        expectedTime = expectedTime,
+        aimedTime = aimedTime,
+        expectedAtMillis = parseIsoToMillis(expectedTime) ?: 0L,
+        isRealtime = isRealtime,
+        isCancelled = isCancelled,
+        transportMode = transportMode,
+        delayMinutes = delayMinutes,
+        notices = notices,
+        quayId = quayId,
+        fetchedAt = fetchedAt
+    )
+
+    private fun CachedDeparture.toDeparture() = Departure(
+        line = line,
+        destination = destination,
+        expectedTime = expectedTime,
+        aimedTime = aimedTime,
+        isRealtime = isRealtime,
+        isCancelled = isCancelled,
+        transportMode = transportMode,
+        delayMinutes = delayMinutes,
+        notices = notices,
+        quayId = quayId
+    )
 
     override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? {
         val queryStr = """
@@ -369,10 +430,15 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
         }
     }
 
-    override suspend fun getFastestTrip(fromIds: List<String>, toId: String): TripInfo? {
-        if (fromIds.isEmpty()) return null
-        
+    override suspend fun getFastestTrip(fromIds: List<String>, toId: String): Sourced<TripInfo?> {
+        if (fromIds.isEmpty()) return Sourced(null)
+
+        val now = System.currentTimeMillis()
+        val routeKey = routeKey(fromIds, toId)
         var fastestTrip: TripInfo? = null
+        // Tracked so that "every origin failed" falls back to the cache, while "the API answered
+        // but found no trips" is reported honestly as no trips.
+        var anyRequestFailed = false
 
         for (fromId in fromIds) {
             val queryStr = """
@@ -438,9 +504,47 @@ class EnturRepositoryImpl(private val client: HttpClient) : EnturRepository {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                anyRequestFailed = true
             }
         }
-        
-        return fastestTrip
+
+        if (fastestTrip == null) {
+            // Only reach for the cache when the network is the reason we have nothing.
+            return if (anyRequestFailed) tripFromCache(routeKey, now) else Sourced(null)
+        }
+
+        tripCache.upsert(fastestTrip.toCacheEntity(routeKey, now))
+        tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
+        return Sourced.live(fastestTrip)
     }
+
+    /** Stable key for an origin set and destination, independent of the order favourites are in. */
+    private fun routeKey(fromIds: List<String>, toId: String): String =
+        fromIds.sorted().joinToString(",") + ">" + toId
+
+    private suspend fun tripFromCache(routeKey: String, nowMillis: Long): Sourced<TripInfo?> {
+        val cached = tripCache.getUpcoming(routeKey, nowMillis) ?: return Sourced(null)
+        return Sourced.cached(cached.toTripInfo(), cached.fetchedAt)
+    }
+
+    private fun TripInfo.toCacheEntity(routeKey: String, fetchedAt: Long) = CachedTrip(
+        routeKey = routeKey,
+        destinationName = destinationName,
+        expectedStartTime = expectedStartTime,
+        expectedStartAtMillis = parseIsoToMillis(expectedStartTime) ?: 0L,
+        lineName = lineName,
+        durationMinutes = durationMinutes,
+        originName = originName,
+        legs = legs.map { CachedTripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) },
+        fetchedAt = fetchedAt
+    )
+
+    private fun CachedTrip.toTripInfo() = TripInfo(
+        destinationName = destinationName,
+        expectedStartTime = expectedStartTime,
+        lineName = lineName,
+        durationMinutes = durationMinutes,
+        originName = originName,
+        legs = legs.map { TripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) }
+    )
 }

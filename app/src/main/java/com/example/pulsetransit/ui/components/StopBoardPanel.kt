@@ -5,7 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -106,13 +106,17 @@ fun StopBoardPanel(
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(
+                    itemsIndexed(
                         items = departureGroups,
-                        key = { group -> 
+                        // Entur can return several service journeys that are identical in line,
+                        // destination, time and quay (replacement buses, for one), and when two
+                        // land non-consecutively they form two groups with the same identity.
+                        // The index keeps the key unique, which Compose requires.
+                        key = { index, group ->
                             val first = group.departures.first()
-                            "${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
+                            "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
                         }
-                    ) { group ->
+                    ) { _, group ->
                         DepartureRow(group, showDelays, showMessages, onFilterOut)
                     }
                 }

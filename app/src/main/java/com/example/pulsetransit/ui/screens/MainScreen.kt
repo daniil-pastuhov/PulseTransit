@@ -14,6 +14,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
@@ -147,7 +148,10 @@ fun MainScreen(
                             uiState.weather.filterIndexed { index, _ -> index % step == 0 }
                                 .take(maxItems)
                                 .forEach { w ->
-                                    WeatherItem(w)
+                                    // Equal-width columns: a long condition label ("Partly
+                                    // cloudy") must wrap inside its column rather than stretch
+                                    // it and squeeze the neighbours.
+                                    WeatherItem(w, modifier = Modifier.weight(1f))
                                 }
                         }
                     }
@@ -230,6 +234,27 @@ fun MainScreen(
                         .padding(top = 2.dp, bottom = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    uiState.staleAgeMinutes?.let { ageMinutes ->
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudOff,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = stringResource(R.string.offline_stale_data, ageMinutes),
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            )
+                        }
+                    }
                     Text(
                         text = stringResource(R.string.last_updated, uiState.lastUpdated),
                         style = MaterialTheme.typography.labelSmall.copy(
@@ -524,7 +549,7 @@ fun ReorderableFavoriteList(
 }
 
 @Composable
-fun WeatherItem(weather: WeatherInfo) {
+fun WeatherItem(weather: WeatherInfo, modifier: Modifier = Modifier) {
     val locale = SimpleDateFormat("HH", LocalLocale.current.platformLocale)
     val hour = try {
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
@@ -540,12 +565,14 @@ fun WeatherItem(weather: WeatherInfo) {
         stringResource(R.string.weather_precipitation, weather.precipitation.toString())
 
     Column(
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
             text = "$hour:00",
             style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
         )
         WeatherIcon(
@@ -561,6 +588,7 @@ fun WeatherItem(weather: WeatherInfo) {
             Text(
                 text = "${weather.temperature.roundToInt()}°",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                maxLines = 1,
                 color = temperatureColor(weather.temperature)
             )
             PrecipitationBar(
