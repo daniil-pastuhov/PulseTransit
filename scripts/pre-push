@@ -1,0 +1,12 @@
+#!/bin/sh
+
+echo "Running code style checks..."
+
+./gradlew detekt ktlintCheck
+
+if [ $? -ne 0 ]; then
+    echo "Code style checks failed. Please fix them before pushing."
+    exit 1
+fi
+
+exit 0
