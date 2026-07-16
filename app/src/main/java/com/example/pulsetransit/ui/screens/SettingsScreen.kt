@@ -144,6 +144,47 @@ fun SettingsScreen(
                             )
                         }
                     }
+
+                    if (uiState.themeMode == ThemeMode.AUTO) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            stringResource(R.string.auto_theme_thresholds),
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(stringResource(R.string.auto_theme_dark), style = MaterialTheme.typography.labelSmall)
+                        val darkThresholds = listOf(5f, 10f, 20f, 30f)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            darkThresholds.forEach { lux ->
+                                FilterChip(
+                                    selected = uiState.autoThemeDarkLux == lux,
+                                    onClick = { viewModel.updateAutoThemeDarkLux(lux) },
+                                    label = { Text(stringResource(R.string.lux_value, lux)) },
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(stringResource(R.string.auto_theme_light), style = MaterialTheme.typography.labelSmall)
+                        val lightThresholds = listOf(40f, 60f, 100f, 200f)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            lightThresholds.forEach { lux ->
+                                FilterChip(
+                                    selected = uiState.autoThemeLightLux == lux,
+                                    onClick = { viewModel.updateAutoThemeLightLux(lux) },
+                                    label = { Text(stringResource(R.string.lux_value, lux)) },
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Section 2: Refresh Interval

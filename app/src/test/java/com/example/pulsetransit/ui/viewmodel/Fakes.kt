@@ -116,6 +116,8 @@ class FakeSettingsRepository : SettingsRepository {
     // Backing these with separate vars would let a test set a value that `observeSettings`
     // immediately overwrites with the flow's stale initial emission.
     val autoDimFlow = MutableStateFlow(30)
+    val autoThemeDarkLuxFlow = MutableStateFlow(10f)
+    val autoThemeLightLuxFlow = MutableStateFlow(40f)
     val showDelaysFlow = MutableStateFlow(true)
     val showMessagesFlow = MutableStateFlow(true)
     val cameraMotionFlow = MutableStateFlow(false)
@@ -128,6 +130,16 @@ class FakeSettingsRepository : SettingsRepository {
         get() = autoDimFlow.value
         set(value) {
             autoDimFlow.value = value
+        }
+    var darkLux: Float
+        get() = autoThemeDarkLuxFlow.value
+        set(value) {
+            autoThemeDarkLuxFlow.value = value
+        }
+    var lightLux: Float
+        get() = autoThemeLightLuxFlow.value
+        set(value) {
+            autoThemeLightLuxFlow.value = value
         }
     var delaysShown: Boolean
         get() = showDelaysFlow.value
@@ -188,6 +200,22 @@ class FakeSettingsRepository : SettingsRepository {
     }
 
     override fun getAutoDimSecondsFlow(): Flow<Int> = autoDimFlow
+
+    override fun getAutoThemeDarkLux() = darkLux
+
+    override fun setAutoThemeDarkLux(lux: Float) {
+        darkLux = lux
+    }
+
+    override fun getAutoThemeDarkLuxFlow(): Flow<Float> = autoThemeDarkLuxFlow
+
+    override fun getAutoThemeLightLux() = lightLux
+
+    override fun setAutoThemeLightLux(lux: Float) {
+        lightLux = lux
+    }
+
+    override fun getAutoThemeLightLuxFlow(): Flow<Float> = autoThemeLightLuxFlow
 
     override fun getFilteredLines() = filtered
 

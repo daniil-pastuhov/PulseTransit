@@ -84,6 +84,11 @@
     <string name="theme_dark">Mørk</string>
     <string name="theme_auto">Auto</string>
 
+    <string name="auto_theme_thresholds">Lysnivå for automatisk tema (lux)</string>
+    <string name="auto_theme_dark">Mørkt under:</string>
+    <string name="auto_theme_light">Lyst over:</string>
+    <string name="lux_value">%1$.0f lux</string>
+
     <!-- Burn In Levels -->
     <string name="burn_in_off">Av</string>
     <string name="burn_in_low">Lav</string>

@@ -13,6 +13,8 @@ class SettingsRepositoryImpl(
     private companion object {
         const val DEFAULT_REFRESH_INTERVAL_SECONDS = 60
         const val DEFAULT_AUTO_DIM_SECONDS = 30
+        const val DEFAULT_AUTO_THEME_DARK_LUX = 10f
+        const val DEFAULT_AUTO_THEME_LIGHT_LUX = 40f
     }
 
     private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
@@ -41,6 +43,14 @@ class SettingsRepositoryImpl(
     private val _autoDimSeconds = MutableStateFlow(getAutoDimSeconds())
 
     override fun getAutoDimSecondsFlow(): Flow<Int> = _autoDimSeconds.asStateFlow()
+
+    private val _autoThemeDarkLux = MutableStateFlow(getAutoThemeDarkLux())
+
+    override fun getAutoThemeDarkLuxFlow(): Flow<Float> = _autoThemeDarkLux.asStateFlow()
+
+    private val _autoThemeLightLux = MutableStateFlow(getAutoThemeLightLux())
+
+    override fun getAutoThemeLightLuxFlow(): Flow<Float> = _autoThemeLightLux.asStateFlow()
 
     private val _cameraMotionWake = MutableStateFlow(isCameraMotionWakeEnabled())
 
@@ -110,6 +120,20 @@ class SettingsRepositoryImpl(
 
     override fun setThemeMode(mode: ThemeMode) {
         prefs.edit { putString("theme_mode", mode.name) }
+    }
+
+    override fun getAutoThemeDarkLux(): Float = prefs.getFloat("auto_theme_dark_lux", DEFAULT_AUTO_THEME_DARK_LUX)
+
+    override fun setAutoThemeDarkLux(lux: Float) {
+        prefs.edit { putFloat("auto_theme_dark_lux", lux) }
+        _autoThemeDarkLux.value = lux
+    }
+
+    override fun getAutoThemeLightLux(): Float = prefs.getFloat("auto_theme_light_lux", DEFAULT_AUTO_THEME_LIGHT_LUX)
+
+    override fun setAutoThemeLightLux(lux: Float) {
+        prefs.edit { putFloat("auto_theme_light_lux", lux) }
+        _autoThemeLightLux.value = lux
     }
 
     override fun getBurnInProtectionLevel(): BurnInProtectionLevel {

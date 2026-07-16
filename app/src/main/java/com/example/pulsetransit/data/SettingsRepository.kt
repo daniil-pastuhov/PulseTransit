@@ -31,6 +31,18 @@ interface SettingsRepository {
 
     fun setThemeMode(mode: ThemeMode)
 
+    fun getAutoThemeDarkLux(): Float
+
+    fun setAutoThemeDarkLux(lux: Float)
+
+    fun getAutoThemeDarkLuxFlow(): Flow<Float>
+
+    fun getAutoThemeLightLux(): Float
+
+    fun setAutoThemeLightLux(lux: Float)
+
+    fun getAutoThemeLightLuxFlow(): Flow<Float>
+
     fun getBurnInProtectionLevel(): BurnInProtectionLevel
 
     fun setBurnInProtectionLevel(level: BurnInProtectionLevel)

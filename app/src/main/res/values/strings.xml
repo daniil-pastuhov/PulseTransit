@@ -84,6 +84,11 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_auto">Auto</string>
 
+    <string name="auto_theme_thresholds">Auto-theme light thresholds (lux)</string>
+    <string name="auto_theme_dark">Dark below:</string>
+    <string name="auto_theme_light">Light above:</string>
+    <string name="lux_value">%1$.0f lux</string>
+
     <!-- Burn In Levels -->
     <string name="burn_in_off">Off</string>
     <string name="burn_in_low">Low</string>
