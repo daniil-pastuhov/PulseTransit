@@ -1,3 +1,5 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
@@ -5,6 +7,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -24,6 +28,20 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Crashlytics needs the mapping file to deobfuscate stack traces from a
+            // minified build; without this upload every release report is unreadable.
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = true
+            }
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = true
+        }
+        debug {
+            // Crashes from a development machine would drown out real ones. There is
+            // also nothing to deobfuscate, since debug builds are not minified.
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
+            manifestPlaceholders["crashlyticsCollectionEnabled"] = false
         }
     }
     compileOptions {
@@ -80,6 +98,10 @@ dependencies {
 
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
+
+    // Firebase (crash reporting). The BOM pins the individual artifact versions.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.crashlytics)
 
     // Room (offline cache)
     implementation(libs.room.runtime)

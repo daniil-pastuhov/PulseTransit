@@ -10,6 +10,11 @@ PulseTransit — an Android app (Kotlin, Jetpack Compose) that shows a live publ
 
 Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Single module: `:app`.
 
+Every build needs `app/google-services.json` (Firebase Crashlytics); without it the
+`processDebugGoogleServices` task fails before anything compiles. See "Firebase setup" in README.MD.
+Crash collection is off in debug builds by design, via the `crashlyticsCollectionEnabled` manifest
+placeholder set per build type — a debug build reporting nothing is expected, not a broken integration.
+
 ```bash
 ./gradlew assembleDebug          # build debug APK
 ./gradlew installDebug           # build + install on connected device/emulator
