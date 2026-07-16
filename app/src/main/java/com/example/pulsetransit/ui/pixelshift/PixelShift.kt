@@ -19,32 +19,39 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
-fun Modifier.pixelShift(level: BurnInProtectionLevel): Modifier = composed {
-    if (level == BurnInProtectionLevel.OFF) return@composed this
+fun Modifier.pixelShift(level: BurnInProtectionLevel): Modifier =
+    composed {
+        if (level == BurnInProtectionLevel.OFF) return@composed this
 
-    var targetOffset by remember { mutableStateOf(Offset.Zero) }
-    val animatedOffset by animateOffsetAsState(
-        targetValue = targetOffset,
-        animationSpec = tween(durationMillis = 5000), // Very slow 5-second transition
-        label = "pixelShift"
-    )
+        var targetOffset by remember { mutableStateOf(Offset.Zero) }
+        val animatedOffset by animateOffsetAsState(
+            targetValue = targetOffset,
+            animationSpec = tween(durationMillis = 5000), // Very slow 5-second transition
+            label = "pixelShift",
+        )
 
-    LaunchedEffect(level) {
-        while (true) {
-            val maxOffsetDp = level.maxOffsetDp
-            val xShiftDp = Random.nextFloat() * (maxOffsetDp * 2) - maxOffsetDp
-            val yShiftDp = Random.nextFloat() * (maxOffsetDp * 2) - maxOffsetDp
-            
-            targetOffset = Offset(xShiftDp, yShiftDp)
-            
-            delay(60000.milliseconds) // Shift every minute
+        LaunchedEffect(level) {
+            while (true) {
+                val maxOffsetDp = level.maxOffsetDp
+                val xShiftDp = Random.nextFloat() * (maxOffsetDp * 2) - maxOffsetDp
+                val yShiftDp = Random.nextFloat() * (maxOffsetDp * 2) - maxOffsetDp
+
+                targetOffset = Offset(xShiftDp, yShiftDp)
+
+                delay(60000.milliseconds) // Shift every minute
+            }
+        }
+
+        this.offset {
+            IntOffset(
+                x =
+                    animatedOffset.x.dp
+                        .toPx()
+                        .roundToInt(),
+                y =
+                    animatedOffset.y.dp
+                        .toPx()
+                        .roundToInt(),
+            )
         }
     }
-
-    this.offset { 
-        IntOffset(
-            x = animatedOffset.x.dp.toPx().roundToInt(),
-            y = animatedOffset.y.dp.toPx().roundToInt()
-        )
-    }
-}

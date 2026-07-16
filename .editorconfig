@@ -1,0 +1,13 @@
+root = true
+
+[*.{kt,kts}]
+ktlint_code_style = ktlint_official
+max_line_length = 140
+
+# Composables are PascalCase by convention.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# The settings repository exposes its StateFlows through getXxxFlow() functions
+# rather than matching properties, so the _xxx backing fields have no same-named
+# public counterpart for this rule to find.
+ktlint_standard_backing-property-naming = disabled

@@ -6,5 +6,8 @@ interface WeatherRepository {
      * still open or when the request fails, in which case the result carries the original fetch
      * time. Past hours are never returned.
      */
-    suspend fun getWeather(lat: Double, lon: Double): Sourced<List<WeatherInfo>>
+    suspend fun getWeather(
+        lat: Double,
+        lon: Double,
+    ): Sourced<List<WeatherInfo>>
 }

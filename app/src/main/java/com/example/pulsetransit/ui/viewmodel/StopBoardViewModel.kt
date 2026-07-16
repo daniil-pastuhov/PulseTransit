@@ -3,15 +3,32 @@ package com.example.pulsetransit.ui.viewmodel
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pulsetransit.data.*
+import com.example.pulsetransit.data.BurnInProtectionLevel
+import com.example.pulsetransit.data.Departure
+import com.example.pulsetransit.data.DepartureGroup
+import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.SettingsRepository
+import com.example.pulsetransit.data.StopDepartures
+import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.WeatherInfo
+import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -22,12 +39,20 @@ class StopBoardViewModel(
     private val sensorManager: SystemSensorManager,
     private val cameraMotionDetector: CameraMotionDetector,
 ) : ViewModel() {
-
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
         // and the gap in between is a dead zone that holds the current theme to avoid flapping.
         const val AUTO_THEME_DARK_LUX = 10f
         const val AUTO_THEME_LIGHT_LUX = 40f
+
+        // Dynamic refresh: the base interval is stretched overnight and while the
+        // screen is dimmed, since nobody is reading the board in either case.
+        val NIGHT_HOURS = 0..5
+        const val NIGHT_REFRESH_MULTIPLIER = 5.0
+        const val DIMMED_REFRESH_MULTIPLIER = 2.0
+
+        const val MILLIS_PER_SECOND = 1000L
+        const val MILLIS_PER_MINUTE = 60_000L
     }
 
     data class UiState(
@@ -59,7 +84,7 @@ class StopBoardViewModel(
          */
         val staleSinceMillis: Long? = null,
         /** [staleSinceMillis] as whole minutes, recomputed on each clock tick. */
-        val staleAgeMinutes: Int? = null
+        val staleAgeMinutes: Int? = null,
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -80,55 +105,56 @@ class StopBoardViewModel(
     }
 
     private fun observeSettings() {
-        settingsRepository.getFullScreenModeFlow()
+        settingsRepository
+            .getFullScreenModeFlow()
             .onEach { isFullScreen ->
                 _uiState.update { it.copy(isFullScreenMode = isFullScreen) }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getAlwaysOnEnabledFlow()
+        settingsRepository
+            .getAlwaysOnEnabledFlow()
             .onEach { alwaysOn ->
                 _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn) }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getShowCancelledLinesFlow()
+        settingsRepository
+            .getShowCancelledLinesFlow()
             .onEach { showCancelled ->
                 _uiState.update { it.copy(showCancelledLines = showCancelled) }
                 updateGroupedDepartures()
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getShowDelaysFlow()
+        settingsRepository
+            .getShowDelaysFlow()
             .onEach { showDelays ->
                 _uiState.update { it.copy(showDelays = showDelays) }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getShowMessagesFlow()
+        settingsRepository
+            .getShowMessagesFlow()
             .onEach { showMessages ->
                 _uiState.update { it.copy(showMessages = showMessages) }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getFilteredLinesFlow()
+        settingsRepository
+            .getFilteredLinesFlow()
             .onEach { filteredLines ->
                 _uiState.update { it.copy(filteredLines = filteredLines) }
                 refreshDepartures()
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getAutoDimSecondsFlow()
+        settingsRepository
+            .getAutoDimSecondsFlow()
             .onEach { seconds ->
                 _uiState.update { it.copy(autoDimSeconds = seconds) }
                 // Re-trigger dim timer if currently active
                 if (!uiState.value.isScreenDimmed && uiState.value.cameraMotionWake && seconds > 0) {
                     wakeScreen()
                 }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
 
-        settingsRepository.getCameraMotionWakeFlow()
+        settingsRepository
+            .getCameraMotionWakeFlow()
             .onEach { enabled ->
                 _uiState.update { it.copy(cameraMotionWake = enabled) }
                 if (enabled && !uiState.value.isScreenDimmed) {
@@ -136,8 +162,7 @@ class StopBoardViewModel(
                 } else if (!enabled) {
                     dimJob?.cancel()
                 }
-            }
-            .launchIn(viewModelScope)
+            }.launchIn(viewModelScope)
     }
 
     fun loadSettings() {
@@ -171,29 +196,30 @@ class StopBoardViewModel(
                 isAlwaysOnEnabled = alwaysOn,
                 autoDimSeconds = autoDim,
                 cameraMotionWake = cameraWake,
-                filteredLines = filtered
+                filteredLines = filtered,
             )
         }
     }
 
     private fun setupSensors() {
         if (_uiState.value.themeMode == ThemeMode.AUTO) {
-            sensorManager.getLightFlow()
+            sensorManager
+                .getLightFlow()
                 .onEach { lux ->
                     // Hysteresis: switch to light only when clearly bright, and to dark only
                     // when clearly dim. The dead zone between the two thresholds prevents the
                     // theme from flapping when ambient light hovers near a single edge.
                     val current = _uiState.value.activeTheme
-                    val autoTheme = when {
-                        lux <= AUTO_THEME_DARK_LUX -> ThemeMode.DARK
-                        lux >= AUTO_THEME_LIGHT_LUX -> ThemeMode.LIGHT
-                        else -> current // within dead zone: keep the current theme
-                    }
+                    val autoTheme =
+                        when {
+                            lux <= AUTO_THEME_DARK_LUX -> ThemeMode.DARK
+                            lux >= AUTO_THEME_LIGHT_LUX -> ThemeMode.LIGHT
+                            else -> current // within dead zone: keep the current theme
+                        }
                     if (autoTheme != current) {
                         _uiState.update { it.copy(activeTheme = autoTheme) }
                     }
-                }
-                .launchIn(viewModelScope)
+                }.launchIn(viewModelScope)
         }
     }
 
@@ -202,15 +228,16 @@ class StopBoardViewModel(
     fun wakeScreen() {
         dimJob?.cancel()
         _uiState.update { it.copy(isScreenDimmed = false) }
-        
+
         // Auto-dim after configured seconds of no motion if camera motion detection is enabled
         if (uiState.value.cameraMotionWake) {
             val autoDimSeconds = uiState.value.autoDimSeconds
             if (autoDimSeconds > 0) {
-                dimJob = viewModelScope.launch {
-                    delay(autoDimSeconds.seconds)
-                    dimScreen()
-                }
+                dimJob =
+                    viewModelScope.launch {
+                        delay(autoDimSeconds.seconds)
+                        dimScreen()
+                    }
             }
         }
     }
@@ -223,13 +250,13 @@ class StopBoardViewModel(
 
     fun bindCameraMotion(lifecycleOwner: LifecycleOwner) {
         if (settingsRepository.isCameraMotionWakeEnabled()) {
-            cameraMotionDetector.getMotionFlow(lifecycleOwner)
+            cameraMotionDetector
+                .getMotionFlow(lifecycleOwner)
                 .onEach { motionDetected ->
                     if (motionDetected) {
                         wakeScreen()
                     }
-                }
-                .launchIn(viewModelScope)
+                }.launchIn(viewModelScope)
         }
     }
 
@@ -242,9 +269,10 @@ class StopBoardViewModel(
                     it.copy(
                         currentTime = sdf.format(Date(now)),
                         // Derived here so the age keeps climbing while the board stays offline.
-                        staleAgeMinutes = it.staleSinceMillis?.let { since ->
-                            ((now - since) / 60_000L).toInt()
-                        }
+                        staleAgeMinutes =
+                            it.staleSinceMillis?.let { since ->
+                                ((now - since) / MILLIS_PER_MINUTE).toInt()
+                            },
                     )
                 }
                 delay(1000.milliseconds)
@@ -254,14 +282,15 @@ class StopBoardViewModel(
 
     fun startAutoRefresh() {
         refreshJob?.cancel()
-        refreshJob = viewModelScope.launch {
-            while (true) {
-                refreshData()
-                val seconds = calculateNextRefreshInterval()
-                if (seconds <= 0) break
-                delay((seconds * 1000L).milliseconds)
+        refreshJob =
+            viewModelScope.launch {
+                while (true) {
+                    refreshData()
+                    val seconds = calculateNextRefreshInterval()
+                    if (seconds <= 0) break
+                    delay((seconds * MILLIS_PER_SECOND).milliseconds)
+                }
             }
-        }
     }
 
     private fun calculateNextRefreshInterval(): Int {
@@ -270,22 +299,22 @@ class StopBoardViewModel(
 
         val calendar = Calendar.getInstance()
         val hour = calendar[Calendar.HOUR_OF_DAY]
-        
+
         var multiplier = 1.0
-        
+
         // Night mode (00:00 - 05:00)
-        if (hour in (0..5)) multiplier *= 5.0
-        
+        if (hour in NIGHT_HOURS) multiplier *= NIGHT_REFRESH_MULTIPLIER
+
         // Unoccupied mode (if dimmed)
-        if (_uiState.value.isScreenDimmed) multiplier *= 2.0
-        
+        if (_uiState.value.isScreenDimmed) multiplier *= DIMMED_REFRESH_MULTIPLIER
+
         return (base * multiplier).toInt()
     }
 
     fun refreshData() {
         refreshDepartures()
         refreshFastestTrip()
-        
+
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastWeatherUpdateTime >= weatherRefreshIntervalMs) {
             refreshWeather()
@@ -326,9 +355,10 @@ class StopBoardViewModel(
                     isLoading = false,
                     lastUpdated = updateTime,
                     staleSinceMillis = oldestCacheFetch,
-                    staleAgeMinutes = oldestCacheFetch?.let { since ->
-                        ((System.currentTimeMillis() - since) / 60_000L).toInt()
-                    }
+                    staleAgeMinutes =
+                        oldestCacheFetch?.let { since ->
+                            ((System.currentTimeMillis() - since) / MILLIS_PER_MINUTE).toInt()
+                        },
                 )
             }
             updateGroupedDepartures()
@@ -337,13 +367,17 @@ class StopBoardViewModel(
 
     private fun updateGroupedDepartures() {
         val showCancelled = _uiState.value.showCancelledLines
-        val grouped = rawDepartures.map { (stopId, deps) ->
-            StopDepartures(stopId, groupDepartures(deps, showCancelled))
-        }
+        val grouped =
+            rawDepartures.map { (stopId, deps) ->
+                StopDepartures(stopId, groupDepartures(deps, showCancelled))
+            }
         _uiState.update { it.copy(departures = grouped) }
     }
 
-    private fun groupDepartures(departures: List<Departure>, showCancelled: Boolean): List<DepartureGroup> {
+    private fun groupDepartures(
+        departures: List<Departure>,
+        showCancelled: Boolean,
+    ): List<DepartureGroup> {
         val filtered = if (showCancelled) departures else departures.filter { !it.isCancelled }
         val result = mutableListOf<DepartureGroup>()
         if (filtered.isNotEmpty()) {
@@ -371,16 +405,18 @@ class StopBoardViewModel(
         if (destinations.isEmpty()) return
 
         viewModelScope.launch {
-            val trips = destinations.mapNotNull { destination ->
-                val result = if (lat != null && lon != null) {
-                    enturRepository.getFastestTrip(lat = lat, lon = lon, toId = destination.id)
-                } else {
-                    val fromIds = _uiState.value.favorites.map { it.id }
-                    if (fromIds.isEmpty()) return@mapNotNull null
-                    enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+            val trips =
+                destinations.mapNotNull { destination ->
+                    val result =
+                        if (lat != null && lon != null) {
+                            enturRepository.getFastestTrip(lat = lat, lon = lon, toId = destination.id)
+                        } else {
+                            val fromIds = _uiState.value.favorites.map { it.id }
+                            if (fromIds.isEmpty()) return@mapNotNull null
+                            enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+                        }
+                    result.data?.copy(destinationName = destination.name)
                 }
-                result.data?.copy(destinationName = destination.name)
-            }
             _uiState.update { it.copy(fastestTrips = trips) }
         }
     }
@@ -399,13 +435,16 @@ class StopBoardViewModel(
         }
     }
 
-    fun reorderFavorites(fromIndex: Int, toIndex: Int) {
+    fun reorderFavorites(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
         val currentList = _uiState.value.favorites.toMutableList()
         if (fromIndex !in currentList.indices || toIndex !in currentList.indices) return
-        
+
         val item = currentList.removeAt(fromIndex)
         currentList.add(toIndex, item)
-        
+
         _uiState.update { it.copy(favorites = currentList) }
         settingsRepository.reorderFavorites(currentList.map { it.id })
     }

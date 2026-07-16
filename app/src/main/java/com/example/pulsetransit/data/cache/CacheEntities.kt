@@ -33,7 +33,7 @@ data class CachedDeparture(
     val notices: List<String>,
     val quayId: String?,
     /** When this row was fetched from Entur, used to tell the user how stale the board is. */
-    val fetchedAt: Long
+    val fetchedAt: Long,
 )
 
 /** One cached fastest-route trip, keyed by the origin/destination pair it was requested for. */
@@ -47,7 +47,7 @@ data class CachedTrip(
     val durationMinutes: Int,
     val originName: String,
     val legs: List<CachedTripLeg>,
-    val fetchedAt: Long
+    val fetchedAt: Long,
 )
 
 /** [TripLeg][com.example.pulsetransit.data.TripLeg] as stored inside [CachedTrip.legs]. */
@@ -56,7 +56,7 @@ data class CachedTripLeg(
     val mode: String? = null,
     val lineName: String? = null,
     val fromName: String? = null,
-    val durationMinutes: Int = 0
+    val durationMinutes: Int = 0,
 )
 
 /**
@@ -70,7 +70,7 @@ data class CachedForecast(
     val lastModified: String?,
     /** MET `Expires` header as epoch millis. No request may be repeated before this. */
     val expiresAtMillis: Long,
-    val fetchedAt: Long
+    val fetchedAt: Long,
 )
 
 /** One hour of a cached forecast. Rows are replaced wholesale when MET returns a new document. */
@@ -83,9 +83,9 @@ data class CachedForecast(
             entity = CachedForecast::class,
             parentColumns = ["locationKey"],
             childColumns = ["locationKey"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
 )
 data class CachedForecastHour(
     val locationKey: String,
@@ -93,5 +93,5 @@ data class CachedForecastHour(
     val timeAtMillis: Long,
     val temperature: Double,
     val symbolCode: String,
-    val precipitation: Double
+    val precipitation: Double,
 )

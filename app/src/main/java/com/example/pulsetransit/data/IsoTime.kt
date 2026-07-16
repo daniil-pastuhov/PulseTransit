@@ -10,9 +10,10 @@ import java.util.Locale
  * java.time is unavailable below API 26 and desugaring is not enabled, so the offset is
  * normalised to the RFC-822 form that SimpleDateFormat's 'Z' pattern accepts.
  */
-internal fun parseIsoToMillis(iso: String): Long? = try {
-    val formatted = iso.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
-    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).parse(formatted)?.time
-} catch (_: Exception) {
-    null
-}
+internal fun parseIsoToMillis(iso: String): Long? =
+    try {
+        val formatted = iso.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US).parse(formatted)?.time
+    } catch (_: Exception) {
+        null
+    }

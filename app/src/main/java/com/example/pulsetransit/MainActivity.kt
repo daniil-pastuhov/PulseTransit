@@ -18,49 +18,49 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
-  private val settingsRepository: SettingsRepository by inject()
+    private val settingsRepository: SettingsRepository by inject()
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-    enableEdgeToEdge()
-    
-    lifecycleScope.launch {
-      settingsRepository.getFullScreenModeFlow().collectLatest { isFullScreen ->
-        if (isFullScreen) {
-          hideSystemBars()
-        } else {
-          showSystemBars()
+        enableEdgeToEdge()
+
+        lifecycleScope.launch {
+            settingsRepository.getFullScreenModeFlow().collectLatest { isFullScreen ->
+                if (isFullScreen) {
+                    hideSystemBars()
+                } else {
+                    showSystemBars()
+                }
+            }
         }
-      }
-    }
 
-    lifecycleScope.launch {
-      settingsRepository.getAlwaysOnEnabledFlow().collectLatest { alwaysOn ->
-        if (alwaysOn) {
-          window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        } else {
-          window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        lifecycleScope.launch {
+            settingsRepository.getAlwaysOnEnabledFlow().collectLatest { alwaysOn ->
+                if (alwaysOn) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
         }
-      }
+
+        setContent {
+            Surface(modifier = Modifier.fillMaxSize()) {
+                MainNavigation()
+            }
+        }
     }
 
-    setContent {
-      Surface(modifier = Modifier.fillMaxSize()) {
-        MainNavigation()
-      }
+    private fun hideSystemBars() {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
     }
-  }
 
-  private fun hideSystemBars() {
-    val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-    windowInsetsController.systemBarsBehavior =
-      WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-  }
-
-  private fun showSystemBars() {
-    val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-    windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
-  }
+    private fun showSystemBars() {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+    }
 }

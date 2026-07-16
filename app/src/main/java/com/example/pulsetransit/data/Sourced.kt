@@ -12,12 +12,16 @@ package com.example.pulsetransit.data
  */
 data class Sourced<T>(
     val data: T,
-    val fetchedAtMillis: Long? = null
+    val fetchedAtMillis: Long? = null,
 ) {
     val isFromCache: Boolean get() = fetchedAtMillis != null
 
     companion object {
         fun <T> live(data: T): Sourced<T> = Sourced(data, null)
-        fun <T> cached(data: T, fetchedAtMillis: Long): Sourced<T> = Sourced(data, fetchedAtMillis)
+
+        fun <T> cached(
+            data: T,
+            fetchedAtMillis: Long,
+        ): Sourced<T> = Sourced(data, fetchedAtMillis)
     }
 }
