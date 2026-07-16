@@ -1,5 +1,7 @@
 # PulseTransit
 
+[![Android CI](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/android.yml/badge.svg?branch=main&event=push)](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/android.yml)
+
 PulseTransit is an Android application designed to show public transport stop boards.
 
 ## Features
