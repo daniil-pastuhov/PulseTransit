@@ -22,7 +22,7 @@ import kotlinx.serialization.json.put
 class EnturRepositoryImpl(
     private val client: HttpClient,
     private val departureCache: DepartureCacheDao,
-    private val tripCache: TripCacheDao
+    private val tripCache: TripCacheDao,
 ) : EnturRepository {
     private val clientNameHeader = "ET-Client-Name"
     private val clientNameValue = "personal-pulsetransit"
@@ -35,77 +35,77 @@ class EnturRepositoryImpl(
     // Geocoder V3 response data structures
     @Serializable
     private data class GeoJsonResponse(
-        val features: List<GeoJsonFeature> = emptyList()
+        val features: List<GeoJsonFeature> = emptyList(),
     )
 
     @Serializable
     private data class GeoJsonFeature(
         val geometry: GeoJsonGeometry? = null,
-        val properties: GeoJsonProperties? = null
+        val properties: GeoJsonProperties? = null,
     )
 
     @Serializable
     private data class GeoJsonGeometry(
         val type: String,
-        val coordinates: List<Double> = emptyList() // [lon, lat]
+        val coordinates: List<Double> = emptyList(), // [lon, lat]
     )
 
     @Serializable
     private data class GeoJsonProperties(
         val id: String,
         val names: GeoJsonNames? = null,
-        val address: GeoJsonAddress? = null
+        val address: GeoJsonAddress? = null,
     )
 
     @Serializable
     private data class GeoJsonNames(
         val default: String,
-        val display: String? = null
+        val display: String? = null,
     )
 
     @Serializable
     private data class GeoJsonAddress(
-        val locality: String? = null
+        val locality: String? = null,
     )
 
     // GraphQL response data structures
     @Serializable
     private data class GraphQLRequest(
         val query: String,
-        val variables: JsonObject
+        val variables: JsonObject,
     )
 
     @Serializable
     private data class GraphQLResponse<T>(
         val data: T? = null,
-        val errors: List<GraphQLError>? = null
+        val errors: List<GraphQLError>? = null,
     )
 
     @Serializable
     private data class GraphQLError(
-        val message: String
+        val message: String,
     )
 
     @Serializable
     private data class StopPlaceData(
-        val stopPlace: StopPlaceGraphQL? = null
+        val stopPlace: StopPlaceGraphQL? = null,
     )
 
     @Serializable
     private data class TripData(
-        val trip: TripGraphQL? = null
+        val trip: TripGraphQL? = null,
     )
 
     @Serializable
     private data class TripGraphQL(
-        val tripPatterns: List<TripPatternGraphQL> = emptyList()
+        val tripPatterns: List<TripPatternGraphQL> = emptyList(),
     )
 
     @Serializable
     private data class TripPatternGraphQL(
         val expectedStartTime: String,
         val duration: Long,
-        val legs: List<LegGraphQL> = emptyList()
+        val legs: List<LegGraphQL> = emptyList(),
     )
 
     @Serializable
@@ -113,12 +113,12 @@ class EnturRepositoryImpl(
         val mode: String? = null,
         val duration: Long = 0,
         val line: LineGraphQL? = null,
-        val fromPlace: TripPlaceGraphQL? = null
+        val fromPlace: TripPlaceGraphQL? = null,
     )
 
     @Serializable
     private data class TripPlaceGraphQL(
-        val name: String? = null
+        val name: String? = null,
     )
 
     @Serializable
@@ -126,7 +126,7 @@ class EnturRepositoryImpl(
         val id: String,
         val name: String,
         val estimatedCalls: List<EstimatedCallGraphQL> = emptyList(),
-        val quays: List<QuayGraphQL> = emptyList()
+        val quays: List<QuayGraphQL> = emptyList(),
     )
 
     @Serializable
@@ -135,7 +135,7 @@ class EnturRepositoryImpl(
         val publicCode: String? = null,
         val name: String? = null,
         val description: String? = null,
-        val estimatedCalls: List<EstimatedCallGraphQL> = emptyList()
+        val estimatedCalls: List<EstimatedCallGraphQL> = emptyList(),
     )
 
     @Serializable
@@ -147,35 +147,35 @@ class EnturRepositoryImpl(
         val destinationDisplay: DestinationDisplayGraphQL? = null,
         val serviceJourney: ServiceJourneyGraphQL? = null,
         val notices: List<NoticeGraphQL> = emptyList(),
-        val quay: QuayIdGraphQL? = null
+        val quay: QuayIdGraphQL? = null,
     )
 
     @Serializable
     private data class QuayIdGraphQL(
-        val id: String
+        val id: String,
     )
 
     @Serializable
     private data class NoticeGraphQL(
-        val text: String? = null
+        val text: String? = null,
     )
 
     @Serializable
     private data class DestinationDisplayGraphQL(
-        val frontText: String? = null
+        val frontText: String? = null,
     )
 
     @Serializable
     private data class ServiceJourneyGraphQL(
         val line: LineGraphQL? = null,
-        val notices: List<NoticeGraphQL> = emptyList()
+        val notices: List<NoticeGraphQL> = emptyList(),
     )
 
     @Serializable
     private data class LineGraphQL(
         val publicCode: String? = null,
         val name: String? = null,
-        val transportMode: String? = null
+        val transportMode: String? = null,
     )
 
     override suspend fun searchStopPlaces(query: String): List<StopPlace> {
@@ -183,12 +183,14 @@ class EnturRepositoryImpl(
         // ... (keeping implementation but I need to make it non-suspend or match interface)
         // Wait, the interface is suspend.
         return try {
-            val response: GeoJsonResponse = client.get("https://api.entur.io/geocoder/v3/autocomplete") {
-                header(clientNameHeader, clientNameValue)
-                parameter("q", query)
-                parameter("layers", "stopPlace")
-                parameter("limit", 15)
-            }.body()
+            val response: GeoJsonResponse =
+                client
+                    .get("https://api.entur.io/geocoder/v3/autocomplete") {
+                        header(clientNameHeader, clientNameValue)
+                        parameter("q", query)
+                        parameter("layers", "stopPlace")
+                        parameter("limit", 15)
+                    }.body()
 
             response.features.mapNotNull { feature ->
                 val props = feature.properties ?: return@mapNotNull null
@@ -200,7 +202,7 @@ class EnturRepositoryImpl(
                     name = props.names?.default ?: "Unknown",
                     locality = props.address?.locality,
                     latitude = lat,
-                    longitude = lon
+                    longitude = lon,
                 )
             }
         } catch (e: Exception) {
@@ -209,16 +211,22 @@ class EnturRepositoryImpl(
         }
     }
 
-    override suspend fun getNearbyStopPlaces(lat: Double, lon: Double, radiusKm: Double): List<StopPlace> {
+    override suspend fun getNearbyStopPlaces(
+        lat: Double,
+        lon: Double,
+        radiusKm: Double,
+    ): List<StopPlace> {
         return try {
-            val response: GeoJsonResponse = client.get("https://api.entur.io/geocoder/v3/reverse") {
-                header(clientNameHeader, clientNameValue)
-                parameter("lat", lat)
-                parameter("lon", lon)
-                parameter("radius", radiusKm)
-                parameter("layers", "stopPlace")
-                parameter("limit", 20)
-            }.body()
+            val response: GeoJsonResponse =
+                client
+                    .get("https://api.entur.io/geocoder/v3/reverse") {
+                        header(clientNameHeader, clientNameValue)
+                        parameter("lat", lat)
+                        parameter("lon", lon)
+                        parameter("radius", radiusKm)
+                        parameter("layers", "stopPlace")
+                        parameter("limit", 20)
+                    }.body()
 
             response.features.mapNotNull { feature ->
                 val props = feature.properties ?: return@mapNotNull null
@@ -230,7 +238,7 @@ class EnturRepositoryImpl(
                     name = props.names?.default ?: "Unknown",
                     locality = props.address?.locality,
                     latitude = fLat,
-                    longitude = fLon
+                    longitude = fLon,
                 )
             }
         } catch (e: Exception) {
@@ -239,12 +247,15 @@ class EnturRepositoryImpl(
         }
     }
 
+    // Length here is the inlined GraphQL query string, not branching logic.
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     override suspend fun getDepartures(
         stopId: String,
         limit: Int,
-        quayIds: Set<String>?
+        quayIds: Set<String>?,
     ): Sourced<List<Departure>> {
-        val queryStr = """
+        val queryStr =
+            """
             query GetDepartures(${'$'}id: String!, ${'$'}limit: Int!) {
               stopPlace(id: ${'$'}id) {
                 id
@@ -276,58 +287,74 @@ class EnturRepositoryImpl(
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val variables = buildJsonObject {
-            put("id", stopId)
-            put("limit", limit)
-        }
+        val variables =
+            buildJsonObject {
+                put("id", stopId)
+                put("limit", limit)
+            }
 
         val now = System.currentTimeMillis()
 
         return try {
-            val response: GraphQLResponse<StopPlaceData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
-                header(clientNameHeader, clientNameValue)
-                contentType(ContentType.Application.Json)
-                setBody(GraphQLRequest(queryStr, variables))
-            }.body()
+            val response: GraphQLResponse<StopPlaceData> =
+                client
+                    .post("https://api.entur.io/journey-planner/v3/graphql") {
+                        header(clientNameHeader, clientNameValue)
+                        contentType(ContentType.Application.Json)
+                        setBody(GraphQLRequest(queryStr, variables))
+                    }.body()
 
-            val estimatedCalls = response.data?.stopPlace?.estimatedCalls
-                // A response without the stop is an API-level failure, not an empty stop, so it
-                // falls back rather than wiping the cache.
-                ?: return departuresFromCache(stopId, now)
+            val estimatedCalls =
+                response.data?.stopPlace?.estimatedCalls
+                    // A response without the stop is an API-level failure, not an empty stop, so it
+                    // falls back rather than wiping the cache.
+                    ?: return departuresFromCache(stopId, now)
 
-            val departures = estimatedCalls
-                .filter { call -> quayIds == null || quayIds.contains(call.quay?.id) }
-                .map { call ->
-                    val delay = try {
-                        val expected = call.expectedDepartureTime?.let { parseIsoToMillis(it) }
-                        val aimed = call.aimedDepartureTime?.let { parseIsoToMillis(it) }
-                        if (expected != null && aimed != null) {
-                            ((expected - aimed) / 60000).toInt()
-                        } else 0
-                    } catch (_: Exception) { 0 }
-                    
-                    val notices = (call.notices.mapNotNull { it.text } + 
-                                  call.serviceJourney?.notices?.mapNotNull { it.text }.orEmpty()).distinct()
+            val departures =
+                estimatedCalls
+                    .filter { call -> quayIds == null || quayIds.contains(call.quay?.id) }
+                    .map { call ->
+                        val delay =
+                            try {
+                                val expected = call.expectedDepartureTime?.let { parseIsoToMillis(it) }
+                                val aimed = call.aimedDepartureTime?.let { parseIsoToMillis(it) }
+                                if (expected != null && aimed != null) {
+                                    ((expected - aimed) / 60000).toInt()
+                                } else {
+                                    0
+                                }
+                            } catch (_: Exception) {
+                                0
+                            }
 
-                    Departure(
-                        line = call.serviceJourney?.line?.publicCode ?: call.serviceJourney?.line?.name ?: "?",
-                        destination = call.destinationDisplay?.frontText ?: "Unknown",
-                        expectedTime = call.expectedDepartureTime ?: call.aimedDepartureTime ?: "",
-                        aimedTime = call.aimedDepartureTime ?: "",
-                        isRealtime = call.realtimeState != null && call.realtimeState != "scheduled",
-                        isCancelled = call.cancellation,
-                        transportMode = call.serviceJourney?.line?.transportMode,
-                        delayMinutes = delay,
-                        notices = notices,
-                        quayId = call.quay?.id
-                    )
-                }
+                        val notices =
+                            (
+                                call.notices.mapNotNull { it.text } +
+                                    call.serviceJourney
+                                        ?.notices
+                                        ?.mapNotNull { it.text }
+                                        .orEmpty()
+                            ).distinct()
+
+                        Departure(
+                            line = call.serviceJourney?.line?.publicCode ?: call.serviceJourney?.line?.name ?: "?",
+                            destination = call.destinationDisplay?.frontText ?: "Unknown",
+                            expectedTime = call.expectedDepartureTime ?: call.aimedDepartureTime ?: "",
+                            aimedTime = call.aimedDepartureTime ?: "",
+                            isRealtime = call.realtimeState != null && call.realtimeState != "scheduled",
+                            isCancelled = call.cancellation,
+                            transportMode = call.serviceJourney?.line?.transportMode,
+                            delayMinutes = delay,
+                            notices = notices,
+                            quayId = call.quay?.id,
+                        )
+                    }
 
             departureCache.replaceStop(
                 stopId,
-                departures.mapIndexed { index, departure -> departure.toCacheEntity(stopId, index, now) }
+                departures.mapIndexed { index, departure -> departure.toCacheEntity(stopId, index, now) },
             )
             departureCache.pruneDepartedBefore(now - PRUNE_AFTER_MS)
             Sourced.live(departures)
@@ -342,13 +369,20 @@ class EnturRepositoryImpl(
      * quay selection in force when it was written, so a selection changed while offline only
      * takes effect on the next successful fetch.
      */
-    private suspend fun departuresFromCache(stopId: String, nowMillis: Long): Sourced<List<Departure>> {
+    private suspend fun departuresFromCache(
+        stopId: String,
+        nowMillis: Long,
+    ): Sourced<List<Departure>> {
         val cached = departureCache.getUpcoming(stopId, nowMillis)
         val fetchedAt = cached.firstOrNull()?.fetchedAt ?: return Sourced(emptyList())
         return Sourced.cached(cached.map { it.toDeparture() }, fetchedAt)
     }
 
-    private fun Departure.toCacheEntity(stopId: String, position: Int, fetchedAt: Long) = CachedDeparture(
+    private fun Departure.toCacheEntity(
+        stopId: String,
+        position: Int,
+        fetchedAt: Long,
+    ) = CachedDeparture(
         stopId = stopId,
         position = position,
         line = line,
@@ -362,24 +396,26 @@ class EnturRepositoryImpl(
         delayMinutes = delayMinutes,
         notices = notices,
         quayId = quayId,
-        fetchedAt = fetchedAt
+        fetchedAt = fetchedAt,
     )
 
-    private fun CachedDeparture.toDeparture() = Departure(
-        line = line,
-        destination = destination,
-        expectedTime = expectedTime,
-        aimedTime = aimedTime,
-        isRealtime = isRealtime,
-        isCancelled = isCancelled,
-        transportMode = transportMode,
-        delayMinutes = delayMinutes,
-        notices = notices,
-        quayId = quayId
-    )
+    private fun CachedDeparture.toDeparture() =
+        Departure(
+            line = line,
+            destination = destination,
+            expectedTime = expectedTime,
+            aimedTime = aimedTime,
+            isRealtime = isRealtime,
+            isCancelled = isCancelled,
+            transportMode = transportMode,
+            delayMinutes = delayMinutes,
+            notices = notices,
+            quayId = quayId,
+        )
 
     override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? {
-        val queryStr = """
+        val queryStr =
+            """
             query GetStopPlace(${'$'}id: String!) {
               stopPlace(id: ${'$'}id) {
                 id
@@ -397,32 +433,39 @@ class EnturRepositoryImpl(
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val variables = buildJsonObject {
-            put("id", stopId)
-        }
+        val variables =
+            buildJsonObject {
+                put("id", stopId)
+            }
 
         return try {
-            val response: GraphQLResponse<StopPlaceData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
-                header(clientNameHeader, clientNameValue)
-                contentType(ContentType.Application.Json)
-                setBody(GraphQLRequest(queryStr, variables))
-            }.body()
+            val response: GraphQLResponse<StopPlaceData> =
+                client
+                    .post("https://api.entur.io/journey-planner/v3/graphql") {
+                        header(clientNameHeader, clientNameValue)
+                        contentType(ContentType.Application.Json)
+                        setBody(GraphQLRequest(queryStr, variables))
+                    }.body()
 
             val stop = response.data?.stopPlace ?: return null
             StopPlace(
                 id = stop.id,
                 name = stop.name,
-                quays = stop.quays.map { 
-                    Quay(
-                        it.id, 
-                        it.publicCode, 
-                        it.name, 
-                        it.description,
-                        it.estimatedCalls.firstOrNull()?.destinationDisplay?.frontText
-                    ) 
-                }
+                quays =
+                    stop.quays.map {
+                        Quay(
+                            it.id,
+                            it.publicCode,
+                            it.name,
+                            it.description,
+                            it.estimatedCalls
+                                .firstOrNull()
+                                ?.destinationDisplay
+                                ?.frontText,
+                        )
+                    },
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -430,11 +473,18 @@ class EnturRepositoryImpl(
         }
     }
 
-    override suspend fun getFastestTrip(lat: Double, lon: Double, toId: String): Sourced<TripInfo?> {
+    // Length here is the inlined GraphQL query string, not branching logic.
+    @Suppress("LongMethod")
+    override suspend fun getFastestTrip(
+        lat: Double,
+        lon: Double,
+        toId: String,
+    ): Sourced<TripInfo?> {
         val now = System.currentTimeMillis()
         val routeKey = routeKey(lat, lon, toId)
 
-        val queryStr = """
+        val queryStr =
+            """
             query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: String!) {
               trip(
                 from: { coordinates: { latitude: ${'$'}lat, longitude: ${'$'}lon } }
@@ -458,22 +508,29 @@ class EnturRepositoryImpl(
                 }
               }
             }
-        """.trimIndent()
+            """.trimIndent()
 
-        val variables = buildJsonObject {
-            put("lat", lat)
-            put("lon", lon)
-            put("to", toId)
-        }
+        val variables =
+            buildJsonObject {
+                put("lat", lat)
+                put("lon", lon)
+                put("to", toId)
+            }
 
         return try {
-            val response: GraphQLResponse<TripData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
-                header(clientNameHeader, clientNameValue)
-                contentType(ContentType.Application.Json)
-                setBody(GraphQLRequest(queryStr, variables))
-            }.body()
+            val response: GraphQLResponse<TripData> =
+                client
+                    .post("https://api.entur.io/journey-planner/v3/graphql") {
+                        header(clientNameHeader, clientNameValue)
+                        contentType(ContentType.Application.Json)
+                        setBody(GraphQLRequest(queryStr, variables))
+                    }.body()
 
-            val pattern = response.data?.trip?.tripPatterns?.firstOrNull()
+            val pattern =
+                response.data
+                    ?.trip
+                    ?.tripPatterns
+                    ?.firstOrNull()
             if (pattern == null) {
                 return Sourced(null)
             }
@@ -489,7 +546,12 @@ class EnturRepositoryImpl(
         }
     }
 
-    override suspend fun getFastestTrip(fromIds: List<String>, toId: String): Sourced<TripInfo?> {
+    // Length here is the inlined GraphQL query string, not branching logic.
+    @Suppress("LongMethod")
+    override suspend fun getFastestTrip(
+        fromIds: List<String>,
+        toId: String,
+    ): Sourced<TripInfo?> {
         if (fromIds.isEmpty()) return Sourced(null)
 
         val now = System.currentTimeMillis()
@@ -500,7 +562,8 @@ class EnturRepositoryImpl(
         var anyRequestFailed = false
 
         for (fromId in fromIds) {
-            val queryStr = """
+            val queryStr =
+                """
                 query GetTrip(${'$'}from: String!, ${'$'}to: String!) {
                   trip(
                     from: { place: ${'$'}from }
@@ -524,21 +587,28 @@ class EnturRepositoryImpl(
                     }
                   }
                 }
-            """.trimIndent()
+                """.trimIndent()
 
-            val variables = buildJsonObject {
-                put("from", fromId)
-                put("to", toId)
-            }
+            val variables =
+                buildJsonObject {
+                    put("from", fromId)
+                    put("to", toId)
+                }
 
             try {
-                val response: GraphQLResponse<TripData> = client.post("https://api.entur.io/journey-planner/v3/graphql") {
-                    header(clientNameHeader, clientNameValue)
-                    contentType(ContentType.Application.Json)
-                    setBody(GraphQLRequest(queryStr, variables))
-                }.body()
+                val response: GraphQLResponse<TripData> =
+                    client
+                        .post("https://api.entur.io/journey-planner/v3/graphql") {
+                            header(clientNameHeader, clientNameValue)
+                            contentType(ContentType.Application.Json)
+                            setBody(GraphQLRequest(queryStr, variables))
+                        }.body()
 
-                val pattern = response.data?.trip?.tripPatterns?.firstOrNull() ?: continue
+                val pattern =
+                    response.data
+                        ?.trip
+                        ?.tripPatterns
+                        ?.firstOrNull() ?: continue
                 val tripInfo = parseTripPattern(pattern)
 
                 if (fastestTrip == null || tripInfo.expectedStartTime < fastestTrip.expectedStartTime) {
@@ -568,31 +638,47 @@ class EnturRepositoryImpl(
             expectedStartTime = pattern.expectedStartTime,
             lineName = transitLeg?.line?.publicCode ?: transitLeg?.line?.name ?: "?",
             durationMinutes = (pattern.duration / 60).toInt(),
-            originName = transitLeg?.fromPlace?.name ?: pattern.legs.firstOrNull()?.fromPlace?.name ?: "Unknown",
-            legs = pattern.legs.map { leg ->
-                TripLeg(
-                    mode = leg.mode,
-                    lineName = leg.line?.publicCode ?: leg.line?.name,
-                    fromName = leg.fromPlace?.name,
-                    durationMinutes = (leg.duration / 60).toInt()
-                )
-            }
+            originName =
+                transitLeg?.fromPlace?.name ?: pattern.legs
+                    .firstOrNull()
+                    ?.fromPlace
+                    ?.name ?: "Unknown",
+            legs =
+                pattern.legs.map { leg ->
+                    TripLeg(
+                        mode = leg.mode,
+                        lineName = leg.line?.publicCode ?: leg.line?.name,
+                        fromName = leg.fromPlace?.name,
+                        durationMinutes = (leg.duration / 60).toInt(),
+                    )
+                },
         )
     }
 
     /** Stable key for an origin set and destination, independent of the order favourites are in. */
-    private fun routeKey(fromIds: List<String>, toId: String): String =
-        fromIds.sorted().joinToString(",") + ">" + toId
+    private fun routeKey(
+        fromIds: List<String>,
+        toId: String,
+    ): String = fromIds.sorted().joinToString(",") + ">" + toId
 
-    private fun routeKey(lat: Double, lon: Double, toId: String): String =
-        "%.4f,%.4f>%s".format(lat, lon, toId)
+    private fun routeKey(
+        lat: Double,
+        lon: Double,
+        toId: String,
+    ): String = "%.4f,%.4f>%s".format(lat, lon, toId)
 
-    private suspend fun tripFromCache(routeKey: String, nowMillis: Long): Sourced<TripInfo?> {
+    private suspend fun tripFromCache(
+        routeKey: String,
+        nowMillis: Long,
+    ): Sourced<TripInfo?> {
         val cached = tripCache.getUpcoming(routeKey, nowMillis) ?: return Sourced(null)
         return Sourced.cached(cached.toTripInfo(), cached.fetchedAt)
     }
 
-    private fun TripInfo.toCacheEntity(routeKey: String, fetchedAt: Long) = CachedTrip(
+    private fun TripInfo.toCacheEntity(
+        routeKey: String,
+        fetchedAt: Long,
+    ) = CachedTrip(
         routeKey = routeKey,
         destinationName = destinationName,
         expectedStartTime = expectedStartTime,
@@ -601,15 +687,16 @@ class EnturRepositoryImpl(
         durationMinutes = durationMinutes,
         originName = originName,
         legs = legs.map { CachedTripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) },
-        fetchedAt = fetchedAt
+        fetchedAt = fetchedAt,
     )
 
-    private fun CachedTrip.toTripInfo() = TripInfo(
-        destinationName = destinationName,
-        expectedStartTime = expectedStartTime,
-        lineName = lineName,
-        durationMinutes = durationMinutes,
-        originName = originName,
-        legs = legs.map { TripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) }
-    )
+    private fun CachedTrip.toTripInfo() =
+        TripInfo(
+            destinationName = destinationName,
+            expectedStartTime = expectedStartTime,
+            lineName = lineName,
+            durationMinutes = durationMinutes,
+            originName = originName,
+            legs = legs.map { TripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) },
+        )
 }

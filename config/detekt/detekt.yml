@@ -1,0 +1,118 @@
+# Overrides on top of detekt's default rule set (buildUponDefaultConfig = true).
+# Only rules that misfire against this codebase's conventions are relaxed here;
+# everything else is left at detekt's defaults.
+
+complexity:
+  NestedBlockDepth:
+    # NB: `excludes` replaces detekt's default list rather than adding to it.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.Test.kt'
+      - '**/*.Spec.kt'
+      - '**/*.Spek.kt'
+  LongMethod:
+    # Compose screens are one long declarative tree; splitting them to satisfy a
+    # line count fragments the layout without making it more readable.
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    # Composables take one parameter per piece of state plus a callback each.
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    # A screen file is a set of small private composables. SettingsRepository is
+    # excluded because it is one getter/setter pair per stored setting — the count
+    # tracks the number of settings, not any complexity worth splitting up.
+    # NB: `excludes` replaces detekt's default list rather than adding to it.
+    ignoreAnnotated: ['Composable']
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.Test.kt'
+      - '**/*.Spec.kt'
+      - '**/*.Spek.kt'
+      - '**/SettingsRepository.kt'
+      - '**/SettingsRepositoryImpl.kt'
+      - '**/SettingsViewModel.kt'
+    thresholdInFiles: 20
+    thresholdInClasses: 20
+
+empty-blocks:
+  EmptyFunctionBlock:
+    # No-op overrides of interface methods we do not care about
+    # (SensorEventListener.onAccuracyChanged, unused fakes in tests).
+    ignoreOverridden: true
+
+exceptions:
+  PrintStackTrace:
+    # The repositories swallow exceptions and fall back to cached data, so the stack
+    # trace on stderr (which Android routes to logcat) is the only trace left of a
+    # failed request. android.util.Log is not an option here: data/ is deliberately
+    # free of Android types so it can be unit-tested on the JVM against MockEngine,
+    # and Log is stubbed to throw there unless unit tests return default values.
+    # Revisit if this layer ever gets a real logger injected.
+    # NB: `excludes` replaces detekt's default list rather than adding to it.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.Test.kt'
+      - '**/*.Spec.kt'
+      - '**/*.Spek.kt'
+      - '**/data/**'
+  TooGenericExceptionCaught:
+    # Repositories deliberately catch broadly and fall back to cached data rather
+    # than propagating; see CLAUDE.md on the Sourced<T> contract.
+    # NB: `excludes` replaces detekt's default list rather than adding to it.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.Test.kt'
+      - '**/*.Spec.kt'
+      - '**/*.Spek.kt'
+      - '**/data/**'
+
+naming:
+  FunctionNaming:
+    # Composables are PascalCase by convention.
+    ignoreAnnotated: ['Composable']
+  ConstructorParameterNaming:
+    # API response DTOs mirror the wire format field-for-field (air_temperature);
+    # they are private nested classes that never leak out of the repository.
+    # NB: `excludes` replaces detekt's default list rather than adding to it.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.Test.kt'
+      - '**/*.Spec.kt'
+      - '**/*.Spek.kt'
+      - '**/data/**'
+
+style:
+  MagicNumber:
+    # dp/sp sizes, canvas coordinates and colour components are clearer as
+    # literals in place than as named constants far from where they are drawn.
+    ignoreAnnotated: ['Composable', 'Preview']
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    # An enum constant is already the name for its value: BurnInProtectionLevel.LOW(3f).
+    ignoreEnums: true
+    # NB: `excludes` replaces detekt's default list rather than adding to it, so the
+    # default test globs are repeated here. WeatherIcon draws its symbols on a Canvas
+    # from ratios of the icon size (width * 0.22f, and so on); those numbers only mean
+    # anything relative to each other and to what they look like, so naming them hurts.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/*.Test.kt'
+      - '**/*.Spec.kt'
+      - '**/*.Spek.kt'
+      - '**/WeatherIcon.kt'
+  MaxLineLength:
+    # Match ktlint's max_line_length in .editorconfig.
+    maxLineLength: 140
+  ReturnCount:
+    # Clamping a value to both ends of a range takes two early returns plus the
+    # real result, and reads better than routing all three through one exit.
+    max: 3
+    excludeGuardClauses: true

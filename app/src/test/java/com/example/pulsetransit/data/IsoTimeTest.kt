@@ -5,7 +5,6 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class IsoTimeTest {
-
     @Test
     fun `parses Entur timestamp with positive offset`() {
         // 2026-07-15T10:05:00+02:00 == 08:05:00Z
@@ -21,7 +20,7 @@ class IsoTimeTest {
     fun `same instant in different offsets parses identically`() {
         assertEquals(
             parseIsoToMillis("2026-07-15T08:05:00Z"),
-            parseIsoToMillis("2026-07-15T10:05:00+02:00")
+            parseIsoToMillis("2026-07-15T10:05:00+02:00"),
         )
     }
 
@@ -29,7 +28,7 @@ class IsoTimeTest {
     fun `parses negative offset`() {
         assertEquals(
             parseIsoToMillis("2026-07-15T08:05:00Z"),
-            parseIsoToMillis("2026-07-15T04:05:00-04:00")
+            parseIsoToMillis("2026-07-15T04:05:00-04:00"),
         )
     }
 

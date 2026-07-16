@@ -19,10 +19,10 @@ val LightTextSecondary = Color(0xFF6B7280)
 val LightPrimary = Color(0xFF1A73E8)
 
 // Transport Mode Colors (used for Line Pill badges)
-val ColorBus = Color(0xFFE74C3C)      // Red
-val ColorTram = Color(0xFF7E48A2)     // Purple (Tram style)
-val ColorTrain = Color(0xFF003D82)    // Deep Navy Blue (Vy/NSB style)
+val ColorBus = Color(0xFFE74C3C) // Red
+val ColorTram = Color(0xFF7E48A2) // Purple (Tram style)
+val ColorTrain = Color(0xFF003D82) // Deep Navy Blue (Vy/NSB style)
 val ColorExpressTrain = Color(0xFF86005B) // Magenta (Flytoget style)
-val ColorMetro = Color(0xFFC45B25)    // Burnt Orange (T-bane style)
-val ColorFerry = Color(0xFF16A085)    // Teal
+val ColorMetro = Color(0xFFC45B25) // Burnt Orange (T-bane style)
+val ColorFerry = Color(0xFF16A085) // Teal
 val ColorDefaultLine = Color(0xFF7F8C8D) // Gray

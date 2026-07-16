@@ -30,9 +30,8 @@ import kotlin.math.roundToLong
  */
 class WeatherRepositoryImpl(
     private val client: HttpClient,
-    private val cache: ForecastCacheDao
+    private val cache: ForecastCacheDao,
 ) : WeatherRepository {
-
     private companion object {
         const val URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
         const val USER_AGENT = "PulseTransit/1.0 github.com/daniil-pastuhov"
@@ -43,6 +42,11 @@ class WeatherRepositoryImpl(
 
         /** Backoff when MET throttles us and sends no `Retry-After`. */
         const val THROTTLE_BACKOFF_MS = 10 * 60 * 1000L
+
+        const val MILLIS_PER_SECOND = 1000L
+
+        /** MET's terms require coordinates truncated to 4 decimals. */
+        const val COORDINATE_SCALE = 10_000.0
 
         /**
          * Ceiling on the `Expires` gate. MET sends roughly half an hour; this only stops an
@@ -58,43 +62,59 @@ class WeatherRepositoryImpl(
     }
 
     @Serializable
-    private data class MetResponse(val properties: MetProperties)
+    private data class MetResponse(
+        val properties: MetProperties,
+    )
 
     @Serializable
-    private data class MetProperties(val timeseries: List<MetTimeSeries>)
+    private data class MetProperties(
+        val timeseries: List<MetTimeSeries>,
+    )
 
     @Serializable
-    private data class MetTimeSeries(val time: String, val data: MetData)
+    private data class MetTimeSeries(
+        val time: String,
+        val data: MetData,
+    )
 
     @Serializable
     private data class MetData(
         val instant: MetInstant,
         val next_1_hours: MetNextHours? = null,
-        val next_6_hours: MetNextHours? = null
+        val next_6_hours: MetNextHours? = null,
     )
 
     @Serializable
-    private data class MetInstant(val details: MetDetails)
+    private data class MetInstant(
+        val details: MetDetails,
+    )
 
     @Serializable
     private data class MetDetails(
         val air_temperature: Double,
-        val precipitation_amount: Double? = null
+        val precipitation_amount: Double? = null,
     )
 
     @Serializable
     private data class MetNextHours(
         val summary: MetSummary,
-        val details: MetNextDetails? = null
+        val details: MetNextDetails? = null,
     )
 
     @Serializable
-    private data class MetSummary(val symbol_code: String)
+    private data class MetSummary(
+        val symbol_code: String,
+    )
 
     @Serializable
-    private data class MetNextDetails(val precipitation_amount: Double? = null)
+    private data class MetNextDetails(
+        val precipitation_amount: Double? = null,
+    )
 
-    override suspend fun getWeather(lat: Double, lon: Double): Sourced<List<WeatherInfo>> {
+    override suspend fun getWeather(
+        lat: Double,
+        lon: Double,
+    ): Sourced<List<WeatherInfo>> {
         // MET requires at most 4 decimals — more is rejected with 403 on newer products, and the
         // truncation is what lets their CDN cache effectively.
         val roundedLat = round4(lat)
@@ -110,13 +130,14 @@ class WeatherRepositoryImpl(
         }
 
         return try {
-            val response = client.get(URL) {
-                header(HttpHeaders.UserAgent, USER_AGENT)
-                parameter("lat", roundedLat)
-                parameter("lon", roundedLon)
-                // Only valid against the exact previous Last-Modified, never an arbitrary time.
-                stored?.lastModified?.let { header(HttpHeaders.IfModifiedSince, it) }
-            }
+            val response =
+                client.get(URL) {
+                    header(HttpHeaders.UserAgent, USER_AGENT)
+                    parameter("lat", roundedLat)
+                    parameter("lon", roundedLon)
+                    // Only valid against the exact previous Last-Modified, never an arbitrary time.
+                    stored?.lastModified?.let { header(HttpHeaders.IfModifiedSince, it) }
+                }
 
             when {
                 // Body is empty; keep the stored hours and just carry the new expiry forward.
@@ -124,8 +145,8 @@ class WeatherRepositoryImpl(
                     cache.upsertForecast(
                         stored.copy(
                             lastModified = response.headers[HttpHeaders.LastModified] ?: stored.lastModified,
-                            expiresAtMillis = response.expiresAt(now)
-                        )
+                            expiresAtMillis = response.expiresAt(now),
+                        ),
                     )
                     servedFromCache(locationKey, stored.fetchedAt, now)
                 }
@@ -148,9 +169,9 @@ class WeatherRepositoryImpl(
                             locationKey = locationKey,
                             lastModified = response.headers[HttpHeaders.LastModified],
                             expiresAtMillis = response.expiresAt(now),
-                            fetchedAt = now
+                            fetchedAt = now,
                         ),
-                        hours.map { it.toEntity(locationKey) }
+                        hours.map { it.toEntity(locationKey) },
                     )
                     Sourced.live(hours)
                 }
@@ -166,7 +187,7 @@ class WeatherRepositoryImpl(
     private suspend fun servedFromCache(
         locationKey: String,
         fetchedAt: Long,
-        nowMillis: Long
+        nowMillis: Long,
     ): Sourced<List<WeatherInfo>> {
         val hours = cache.getUpcomingHours(locationKey, nowMillis - CURRENT_HOUR_GRACE_MS)
         return Sourced.cached(hours.map { it.toWeatherInfo() }, fetchedAt)
@@ -175,55 +196,68 @@ class WeatherRepositoryImpl(
     private suspend fun fallbackToCache(
         locationKey: String,
         fetchedAt: Long?,
-        nowMillis: Long
+        nowMillis: Long,
     ): Sourced<List<WeatherInfo>> =
         // Nothing cached either: there is nothing to show, and nothing to call stale.
-        if (fetchedAt == null) Sourced(emptyList())
-        else servedFromCache(locationKey, fetchedAt, nowMillis)
+        if (fetchedAt == null) {
+            Sourced(emptyList())
+        } else {
+            servedFromCache(locationKey, fetchedAt, nowMillis)
+        }
 
     /** MET sends `Expires` as an RFC-1123 date; fall back to a conservative window without it. */
     private fun HttpResponse.expiresAt(nowMillis: Long): Long {
         val header = headers[HttpHeaders.Expires] ?: return nowMillis + DEFAULT_EXPIRY_MS
-        val parsed = try {
-            SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
-                .apply { timeZone = TimeZone.getTimeZone("GMT") }
-                .parse(header)?.time
-        } catch (_: Exception) {
-            null
-        }
+        val parsed =
+            try {
+                SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
+                    .apply { timeZone = TimeZone.getTimeZone("GMT") }
+                    .parse(header)
+                    ?.time
+            } catch (_: Exception) {
+                null
+            }
         // An already-past Expires would mean re-requesting on every tick.
         val expiry = parsed?.takeIf { it > nowMillis } ?: (nowMillis + DEFAULT_EXPIRY_MS)
         return minOf(expiry, nowMillis + MAX_EXPIRY_MS)
     }
 
     private fun retryAfterMs(response: HttpResponse): Long =
-        response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()?.times(1000) ?: THROTTLE_BACKOFF_MS
+        response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()?.times(MILLIS_PER_SECOND) ?: THROTTLE_BACKOFF_MS
 
     private fun MetResponse.toWeather(): List<WeatherInfo> =
         properties.timeseries.take(FORECAST_HOURS).map { ts ->
             WeatherInfo(
                 time = ts.time,
                 temperature = ts.data.instant.details.air_temperature,
-                symbolCode = ts.data.next_1_hours?.summary?.symbol_code ?: "unknown",
-                precipitation = ts.data.next_1_hours?.details?.precipitation_amount ?: 0.0
+                symbolCode =
+                    ts.data.next_1_hours
+                        ?.summary
+                        ?.symbol_code ?: "unknown",
+                precipitation =
+                    ts.data.next_1_hours
+                        ?.details
+                        ?.precipitation_amount ?: 0.0,
             )
         }
 
-    private fun WeatherInfo.toEntity(locationKey: String) = CachedForecastHour(
-        locationKey = locationKey,
-        time = time,
-        timeAtMillis = parseIsoToMillis(time) ?: 0L,
-        temperature = temperature,
-        symbolCode = symbolCode,
-        precipitation = precipitation
-    )
+    private fun WeatherInfo.toEntity(locationKey: String) =
+        CachedForecastHour(
+            locationKey = locationKey,
+            time = time,
+            timeAtMillis = parseIsoToMillis(time) ?: 0L,
+            temperature = temperature,
+            symbolCode = symbolCode,
+            precipitation = precipitation,
+        )
 
-    private fun CachedForecastHour.toWeatherInfo() = WeatherInfo(
-        time = time,
-        temperature = temperature,
-        symbolCode = symbolCode,
-        precipitation = precipitation
-    )
+    private fun CachedForecastHour.toWeatherInfo() =
+        WeatherInfo(
+            time = time,
+            temperature = temperature,
+            symbolCode = symbolCode,
+            precipitation = precipitation,
+        )
 
-    private fun round4(value: Double): Double = (value * 10_000.0).roundToLong() / 10_000.0
+    private fun round4(value: Double): Double = (value * COORDINATE_SCALE).roundToLong() / COORDINATE_SCALE
 }

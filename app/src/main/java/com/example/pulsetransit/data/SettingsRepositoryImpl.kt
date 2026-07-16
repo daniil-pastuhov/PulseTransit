@@ -1,38 +1,53 @@
 package com.example.pulsetransit.data
 
 import android.content.Context
-import kotlinx.serialization.json.Json
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.json.Json
 
-class SettingsRepositoryImpl(context: Context) : SettingsRepository {
+class SettingsRepositoryImpl(
+    context: Context,
+) : SettingsRepository {
+    private companion object {
+        const val DEFAULT_REFRESH_INTERVAL_SECONDS = 60
+        const val DEFAULT_AUTO_DIM_SECONDS = 30
+    }
+
     private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true }
 
     private val _fullScreenMode = MutableStateFlow(isFullScreenMode())
+
     override fun getFullScreenModeFlow(): Flow<Boolean> = _fullScreenMode.asStateFlow()
 
     private val _alwaysOnEnabled = MutableStateFlow(isAlwaysOnEnabled())
+
     override fun getAlwaysOnEnabledFlow(): Flow<Boolean> = _alwaysOnEnabled.asStateFlow()
 
     private val _showCancelledLines = MutableStateFlow(isShowCancelledLines())
+
     override fun getShowCancelledLinesFlow(): Flow<Boolean> = _showCancelledLines.asStateFlow()
 
     private val _showDelays = MutableStateFlow(isShowDelays())
+
     override fun getShowDelaysFlow(): Flow<Boolean> = _showDelays.asStateFlow()
 
     private val _showMessages = MutableStateFlow(isShowMessages())
+
     override fun getShowMessagesFlow(): Flow<Boolean> = _showMessages.asStateFlow()
 
     private val _autoDimSeconds = MutableStateFlow(getAutoDimSeconds())
+
     override fun getAutoDimSecondsFlow(): Flow<Int> = _autoDimSeconds.asStateFlow()
 
     private val _cameraMotionWake = MutableStateFlow(isCameraMotionWakeEnabled())
+
     override fun getCameraMotionWakeFlow(): Flow<Boolean> = _cameraMotionWake.asStateFlow()
 
     private val _filteredLines = MutableStateFlow(getFilteredLines())
+
     override fun getFilteredLinesFlow(): Flow<Set<String>> = _filteredLines.asStateFlow()
 
     override fun getFavorites(): List<StopPlace> {
@@ -69,21 +84,15 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         }
     }
 
-    override fun isFavorite(stopId: String): Boolean {
-        return getFavorites().any { it.id == stopId }
-    }
+    override fun isFavorite(stopId: String): Boolean = getFavorites().any { it.id == stopId }
 
-    override fun getRefreshIntervalSeconds(): Int {
-        return prefs.getInt("refresh_interval", 60)
-    }
+    override fun getRefreshIntervalSeconds(): Int = prefs.getInt("refresh_interval", DEFAULT_REFRESH_INTERVAL_SECONDS)
 
     override fun setRefreshIntervalSeconds(seconds: Int) {
         prefs.edit { putInt("refresh_interval", seconds) }
     }
 
-    override fun getAutoDimSeconds(): Int {
-        return prefs.getInt("auto_dim_seconds", 30)
-    }
+    override fun getAutoDimSeconds(): Int = prefs.getInt("auto_dim_seconds", DEFAULT_AUTO_DIM_SECONDS)
 
     override fun setAutoDimSeconds(seconds: Int) {
         prefs.edit { putInt("auto_dim_seconds", seconds) }
@@ -104,8 +113,9 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun getBurnInProtectionLevel(): BurnInProtectionLevel {
-        val levelStr = prefs.getString("burn_in_protection", BurnInProtectionLevel.MEDIUM.name) 
-            ?: BurnInProtectionLevel.MEDIUM.name
+        val levelStr =
+            prefs.getString("burn_in_protection", BurnInProtectionLevel.MEDIUM.name)
+                ?: BurnInProtectionLevel.MEDIUM.name
         return try {
             BurnInProtectionLevel.valueOf(levelStr)
         } catch (_: Exception) {
@@ -127,7 +137,10 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
         return valStr.toDoubleOrNull()
     }
 
-    override fun setSavedLocation(lat: Double?, lon: Double?) {
+    override fun setSavedLocation(
+        lat: Double?,
+        lon: Double?,
+    ) {
         if ((lat == null) || (lon == null)) {
             prefs.edit {
                 remove("saved_lat")
@@ -142,22 +155,25 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun isShowDelays(): Boolean = prefs.getBoolean("show_delays", true)
+
     override fun setShowDelays(show: Boolean) {
         prefs.edit { putBoolean("show_delays", show) }
         _showDelays.value = show
     }
 
     override fun isShowMessages(): Boolean = prefs.getBoolean("show_messages", true)
+
     override fun setShowMessages(show: Boolean) {
         prefs.edit { putBoolean("show_messages", show) }
         _showMessages.value = show
     }
 
-    override fun getSelectedQuays(stopId: String): Set<String>? {
-        return prefs.getStringSet("quays_$stopId", null)
-    }
+    override fun getSelectedQuays(stopId: String): Set<String>? = prefs.getStringSet("quays_$stopId", null)
 
-    override fun setSelectedQuays(stopId: String, quayIds: Set<String>?) {
+    override fun setSelectedQuays(
+        stopId: String,
+        quayIds: Set<String>?,
+    ) {
         if (quayIds == null) {
             prefs.edit { remove("quays_$stopId") }
         } else {
@@ -166,14 +182,16 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun isCameraMotionWakeEnabled(): Boolean = prefs.getBoolean("camera_motion_wake", false)
+
     override fun setCameraMotionWakeEnabled(enabled: Boolean) {
         prefs.edit { putBoolean("camera_motion_wake", enabled) }
         _cameraMotionWake.value = enabled
     }
 
     override fun getCameraSensitivity(): CameraSensitivity {
-        val str = prefs.getString("camera_sensitivity", CameraSensitivity.MEDIUM.name)
-            ?: CameraSensitivity.MEDIUM.name
+        val str =
+            prefs.getString("camera_sensitivity", CameraSensitivity.MEDIUM.name)
+                ?: CameraSensitivity.MEDIUM.name
         return try {
             CameraSensitivity.valueOf(str)
         } catch (_: Exception) {
@@ -186,6 +204,7 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
+
     override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit { putBoolean("dynamic_refresh", enabled) }
 
     override fun getDestinationStations(): List<StopPlace> {
@@ -200,7 +219,8 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     override fun addDestinationStation(stopPlace: StopPlace) {
         val current = getDestinationStations().toMutableList()
         if (current.none { it.id == stopPlace.id } &&
-            current.size < SettingsRepository.MAX_DESTINATION_STATIONS) {
+            current.size < SettingsRepository.MAX_DESTINATION_STATIONS
+        ) {
             current.add(stopPlace)
             prefs.edit { putString("destination_stations", json.encodeToString(current)) }
         }
@@ -212,24 +232,28 @@ class SettingsRepositoryImpl(context: Context) : SettingsRepository {
     }
 
     override fun isFullScreenMode(): Boolean = prefs.getBoolean("full_screen_mode", false)
+
     override fun setFullScreenMode(enabled: Boolean) {
         prefs.edit { putBoolean("full_screen_mode", enabled) }
         _fullScreenMode.value = enabled
     }
 
     override fun isAlwaysOnEnabled(): Boolean = prefs.getBoolean("always_on_enabled", false)
+
     override fun setAlwaysOnEnabled(enabled: Boolean) {
         prefs.edit { putBoolean("always_on_enabled", enabled) }
         _alwaysOnEnabled.value = enabled
     }
 
     override fun isShowCancelledLines(): Boolean = prefs.getBoolean("show_cancelled_lines", false)
+
     override fun setShowCancelledLines(show: Boolean) {
         prefs.edit { putBoolean("show_cancelled_lines", show) }
         _showCancelledLines.value = show
     }
 
     override fun getFilteredLines(): Set<String> = prefs.getStringSet("filtered_lines", emptySet()) ?: emptySet()
+
     override fun addFilteredLine(line: String) {
         val current = getFilteredLines().toMutableSet()
         if (current.add(line)) {

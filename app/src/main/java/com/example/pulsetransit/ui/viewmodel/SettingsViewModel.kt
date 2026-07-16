@@ -5,13 +5,13 @@ import android.content.Context
 import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.R
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
-import com.example.pulsetransit.R
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -28,7 +28,6 @@ class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     context: Context,
 ) : ViewModel() {
-
     private val appContext = context.applicationContext
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(appContext)
 
@@ -41,15 +40,12 @@ class SettingsViewModel(
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
-        
         val nearbyStops: List<StopPlace> = emptyList(),
         val isSearchingNearby: Boolean = false,
-        
         val latitude: Double? = null,
         val longitude: Double? = null,
         val locationStatus: LocationStatus = LocationStatus(R.string.loc_not_requested),
         val showManualCoordinatesPrompt: Boolean = false,
-        
         val themeMode: ThemeMode = ThemeMode.SYSTEM,
         val burnInLevel: BurnInProtectionLevel = BurnInProtectionLevel.MEDIUM,
         val refreshIntervalSeconds: Int = 60,
@@ -57,7 +53,6 @@ class SettingsViewModel(
         val favorites: List<StopPlace> = emptyList(),
         val favoriteStopsWithQuays: Map<String, StopPlace> = emptyMap(),
         val selectedQuays: Map<String, Set<String>> = emptyMap(),
-        
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
@@ -70,7 +65,7 @@ class SettingsViewModel(
         val destinationStations: List<StopPlace> = emptyList(),
         val destinationQuery: String = "",
         val destinationResults: List<StopPlace> = emptyList(),
-        val isSearchingDestination: Boolean = false
+        val isSearchingDestination: Boolean = false,
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -83,7 +78,7 @@ class SettingsViewModel(
     fun loadSettings() {
         val favs = settingsRepository.getFavorites()
         val quaysMap = favs.associateBy({ it.id }) { settingsRepository.getSelectedQuays(it.id) ?: emptySet() }
-        
+
         _uiState.update {
             it.copy(
                 themeMode = settingsRepository.getThemeMode(),
@@ -103,10 +98,10 @@ class SettingsViewModel(
                 isFullScreenMode = settingsRepository.isFullScreenMode(),
                 isAlwaysOnEnabled = settingsRepository.isAlwaysOnEnabled(),
                 destinationStations = settingsRepository.getDestinationStations(),
-                filteredLines = settingsRepository.getFilteredLines()
+                filteredLines = settingsRepository.getFilteredLines(),
             )
         }
-        
+
         val lat = settingsRepository.getSavedLatitude()
         val lon = settingsRepository.getSavedLongitude()
         if ((lat != null) && (lon != null)) {
@@ -123,29 +118,35 @@ class SettingsViewModel(
         viewModelScope.launch {
             val stopWithQuays = enturRepository.getStopPlaceWithQuays(stopId)
             if (stopWithQuays != null) {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(favoriteStopsWithQuays = it.favoriteStopsWithQuays + (stopId to stopWithQuays))
                 }
             }
         }
     }
 
-    fun toggleQuay(stopId: String, quayId: String) {
+    fun toggleQuay(
+        stopId: String,
+        quayId: String,
+    ) {
         val current = _uiState.value.selectedQuays[stopId] ?: emptySet()
-        val allQuayIds = _uiState.value.favoriteStopsWithQuays[stopId]?.quays
-            ?.asSequence()
-            ?.map { it.id }
-            ?.toSet() ?: emptySet()
+        val allQuayIds =
+            _uiState.value.favoriteStopsWithQuays[stopId]
+                ?.quays
+                ?.asSequence()
+                ?.map { it.id }
+                ?.toSet() ?: emptySet()
 
-        val next = if (current.isEmpty() && allQuayIds.isNotEmpty()) {
-            // When none are explicitly selected, they are all active by default.
-            // Clicking one should deselect it, meaning we select all others.
-            allQuayIds - quayId
-        } else if (current.contains(quayId)) {
-            current - quayId
-        } else {
-            current + quayId
-        }
+        val next =
+            if (current.isEmpty() && allQuayIds.isNotEmpty()) {
+                // When none are explicitly selected, they are all active by default.
+                // Clicking one should deselect it, meaning we select all others.
+                allQuayIds - quayId
+            } else if (current.contains(quayId)) {
+                current - quayId
+            } else {
+                current + quayId
+            }
 
         // Normalize: if everything or nothing is selected, treat it as "All" (empty set in UI, null in DB)
         val isAll = next.isEmpty() || (allQuayIds.isNotEmpty() && next.size == allQuayIds.size)
@@ -218,24 +219,27 @@ class SettingsViewModel(
     private suspend fun fetchCurrentLocationWithPriority(priority: Int): Location? =
         suspendCancellableCoroutine { continuation ->
             val cts = CancellationTokenSource()
-            fusedLocationClient.getCurrentLocation(priority, cts.token)
+            fusedLocationClient
+                .getCurrentLocation(priority, cts.token)
                 .addOnSuccessListener { location ->
                     continuation.resume(location)
-                }
-                .addOnFailureListener {
+                }.addOnFailureListener {
                     continuation.resume(null)
                 }
         }
 
+    // Play Services and the Entur lookup can fail in a dozen unrelated ways; whatever
+    // goes wrong, the screen falls back to asking for coordinates by hand.
+    @Suppress("TooGenericExceptionCaught")
     @SuppressLint("MissingPermission")
     fun requestLocationAndNearbyStops() {
         viewModelScope.launch {
-            _uiState.update { 
+            _uiState.update {
                 it.copy(
-                    isSearchingNearby = true, 
+                    isSearchingNearby = true,
                     locationStatus = LocationStatus(R.string.loc_requesting_gps),
-                    showManualCoordinatesPrompt = false
-                ) 
+                    showManualCoordinatesPrompt = false,
+                )
             }
 
             try {
@@ -264,7 +268,10 @@ class SettingsViewModel(
         }
     }
 
-    private fun handleLocationSuccess(location: Location, sourceResId: Int) {
+    private fun handleLocationSuccess(
+        location: Location,
+        sourceResId: Int,
+    ) {
         val lat = location.latitude
         val lon = location.longitude
         settingsRepository.setSavedLocation(lat, lon)
@@ -274,7 +281,7 @@ class SettingsViewModel(
                 longitude = lon,
                 locationStatus = LocationStatus(R.string.loc_success, appContext.getString(sourceResId)),
                 isSearchingNearby = false,
-                showManualCoordinatesPrompt = false
+                showManualCoordinatesPrompt = false,
             )
         }
         fetchNearbyStops(lat, lon)
@@ -285,12 +292,15 @@ class SettingsViewModel(
             it.copy(
                 locationStatus = status,
                 isSearchingNearby = false,
-                showManualCoordinatesPrompt = true
+                showManualCoordinatesPrompt = true,
             )
         }
     }
 
-    fun setManualCoordinates(latStr: String, lonStr: String) {
+    fun setManualCoordinates(
+        latStr: String,
+        lonStr: String,
+    ) {
         val lat = latStr.toDoubleOrNull()
         val lon = lonStr.toDoubleOrNull()
         if (lat != null && lon != null) {
@@ -300,7 +310,7 @@ class SettingsViewModel(
                     latitude = lat,
                     longitude = lon,
                     locationStatus = LocationStatus(R.string.loc_manual),
-                    showManualCoordinatesPrompt = false
+                    showManualCoordinatesPrompt = false,
                 )
             }
             fetchNearbyStops(lat, lon)
@@ -311,7 +321,10 @@ class SettingsViewModel(
         }
     }
 
-    private fun fetchNearbyStops(lat: Double, lon: Double) {
+    private fun fetchNearbyStops(
+        lat: Double,
+        lon: Double,
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSearchingNearby = true) }
             val stops = enturRepository.getNearbyStopPlaces(lat, lon, radiusKm = 1.0)
@@ -328,11 +341,11 @@ class SettingsViewModel(
 
     fun removeFavorite(stopId: String) {
         settingsRepository.removeFavorite(stopId)
-        _uiState.update { 
+        _uiState.update {
             it.copy(
                 favorites = it.favorites.filter { f -> f.id != stopId },
                 favoriteStopsWithQuays = it.favoriteStopsWithQuays - stopId,
-                selectedQuays = it.selectedQuays - stopId
+                selectedQuays = it.selectedQuays - stopId,
             )
         }
     }
@@ -363,7 +376,7 @@ class SettingsViewModel(
             it.copy(
                 destinationStations = settingsRepository.getDestinationStations(),
                 destinationQuery = "",
-                destinationResults = emptyList()
+                destinationResults = emptyList(),
             )
         }
     }

@@ -18,20 +18,23 @@ import kotlinx.serialization.json.Json
         CachedDeparture::class,
         CachedTrip::class,
         CachedForecast::class,
-        CachedForecastHour::class
+        CachedForecastHour::class,
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = true,
 )
 @TypeConverters(CacheConverters::class)
 abstract class CacheDatabase : RoomDatabase() {
     abstract fun departureCacheDao(): DepartureCacheDao
+
     abstract fun tripCacheDao(): TripCacheDao
+
     abstract fun forecastCacheDao(): ForecastCacheDao
 
     companion object {
         fun build(context: Context): CacheDatabase =
-            Room.databaseBuilder(context, CacheDatabase::class.java, "pulse_transit_cache.db")
+            Room
+                .databaseBuilder(context, CacheDatabase::class.java, "pulse_transit_cache.db")
                 // The cache is disposable, so a schema change may throw it away rather than
                 // require a migration.
                 .fallbackToDestructiveMigration(dropAllTables = true)
@@ -48,12 +51,20 @@ class CacheConverters {
 
     @TypeConverter
     fun jsonToStringList(value: String): List<String> =
-        try { json.decodeFromString(value) } catch (_: Exception) { emptyList() }
+        try {
+            json.decodeFromString(value)
+        } catch (_: Exception) {
+            emptyList()
+        }
 
     @TypeConverter
     fun legsToJson(value: List<CachedTripLeg>): String = json.encodeToString(value)
 
     @TypeConverter
     fun jsonToLegs(value: String): List<CachedTripLeg> =
-        try { json.decodeFromString(value) } catch (_: Exception) { emptyList() }
+        try {
+            json.decodeFromString(value)
+        } catch (_: Exception) {
+            emptyList()
+        }
 }

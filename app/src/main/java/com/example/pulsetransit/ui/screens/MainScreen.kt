@@ -12,15 +12,43 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -45,7 +73,11 @@ import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.pulsetransit.R
-import com.example.pulsetransit.data.*
+import com.example.pulsetransit.data.StopDepartures
+import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.PrecipitationBar
 import com.example.pulsetransit.ui.components.StopBoardPanel
@@ -65,7 +97,7 @@ import kotlin.math.roundToInt
 fun MainScreen(
     viewModel: StopBoardViewModel,
     onNavigateToSettings: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
@@ -73,13 +105,14 @@ fun MainScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
-    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModel.bindCameraMotion(lifecycleOwner)
+    val cameraPermissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            if (isGranted) {
+                viewModel.bindCameraMotion(lifecycleOwner)
+            }
         }
-    }
 
     LaunchedEffect(uiState.isScreenDimmed) {
         // Just to ensure we're observing
@@ -99,42 +132,47 @@ fun MainScreen(
     PulseTransitTheme(themeMode = effectiveTheme) {
         val backgroundColor = if (uiState.isScreenDimmed) Color.Black else MaterialTheme.colorScheme.background
         Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(backgroundColor)
-                .pixelShift(uiState.burnInLevel)
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(backgroundColor)
+                    .pixelShift(uiState.burnInLevel),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .graphicsLayer(alpha = screenAlpha)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer(alpha = screenAlpha),
             ) {
                 // Header Bar
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.statusBars)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.statusBars)
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     // Left: Digital Clock
                     Text(
                         text = uiState.currentTime,
-                        style = MaterialTheme.typography.headlineLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 32.sp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        style =
+                            MaterialTheme.typography.headlineLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 32.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                            ),
                     )
 
                     // Middle: Weather
                     BoxWithConstraints(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         val maxItems = (maxWidth.value / 60).toInt().coerceIn(4, 8)
                         val totalAvailable = uiState.weather.size
@@ -143,9 +181,10 @@ fun MainScreen(
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            horizontalArrangement = Arrangement.SpaceEvenly,
                         ) {
-                            uiState.weather.filterIndexed { index, _ -> index % step == 0 }
+                            uiState.weather
+                                .filterIndexed { index, _ -> index % step == 0 }
                                 .take(maxItems)
                                 .forEach { w ->
                                     // Equal-width columns: a long condition label ("Partly
@@ -159,7 +198,7 @@ fun MainScreen(
                     // Right: Control Buttons
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
@@ -168,14 +207,14 @@ fun MainScreen(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = stringResource(R.string.refresh),
-                                tint = MaterialTheme.colorScheme.onSurface
+                                tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                         IconButton(onClick = onNavigateToSettings) {
                             Icon(
                                 imageVector = Icons.Default.Settings,
                                 contentDescription = stringResource(R.string.settings_title),
-                                tint = MaterialTheme.colorScheme.onSurface
+                                tint = MaterialTheme.colorScheme.onSurface,
                             )
                         }
                     }
@@ -191,18 +230,19 @@ fun MainScreen(
                 // Body Area (Equal screen division between favorite stops)
                 if (uiState.favorites.isEmpty()) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .weight(1f),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                         ) {
                             Text(
                                 text = stringResource(R.string.no_stops_configured),
-                                style = MaterialTheme.typography.headlineSmall
+                                style = MaterialTheme.typography.headlineSmall,
                             )
                             Button(onClick = onNavigateToSettings) {
                                 Text(stringResource(R.string.open_settings_to_add))
@@ -219,66 +259,72 @@ fun MainScreen(
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
                         onFilterOut = { line -> viewModel.filterOutLine(line) },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .weight(1f)
-                            .padding(6.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .weight(1f)
+                                .padding(6.dp),
                     )
                 }
 
                 // Subtle Last Updated and Attribution at the bottom
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.navigationBars)
-                        .padding(top = 2.dp, bottom = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.navigationBars)
+                            .padding(top = 2.dp, bottom = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     uiState.staleAgeMinutes?.let { ageMinutes ->
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CloudOff,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(12.dp),
                             )
                             Text(
                                 text = stringResource(R.string.offline_stale_data, ageMinutes),
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                                style =
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.error,
+                                    ),
                             )
                         }
                     }
                     Text(
                         text = stringResource(R.string.last_updated, uiState.lastUpdated),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                        )
+                        style =
+                            MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            ),
                     )
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             text = stringResource(R.string.attribution_entur),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                            )
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                ),
                         )
                         Text(
                             text = stringResource(R.string.attribution_met),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 8.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                            )
+                            style =
+                                MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 8.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                ),
                         )
                     }
                 }
@@ -286,12 +332,13 @@ fun MainScreen(
 
             if (uiState.isScreenDimmed) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) { viewModel.wakeScreen() }
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) { viewModel.wakeScreen() },
                 )
             }
         }
@@ -301,52 +348,58 @@ fun MainScreen(
 @Composable
 fun FastestTripBanner(
     trip: TripInfo,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val departureTime = try {
-        trip.expectedStartTime.substring(11, 16)
-    } catch (_: Exception) { "--:--" }
+    val departureTime =
+        try {
+            trip.expectedStartTime.substring(11, 16)
+        } catch (_: Exception) {
+            "--:--"
+        }
 
     var expanded by remember { mutableStateOf(false) }
     var hasOverflow by remember { mutableStateOf(false) }
     val canExpand = hasOverflow || expanded
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .animateContentSize()
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .clickable(enabled = canExpand) { expanded = !expanded }
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .animateContentSize()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .clickable(enabled = canExpand) { expanded = !expanded }
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
             text = departureTime,
             style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.fastest_route_to, trip.destinationName),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
-            val routeText = if (trip.legs.isNotEmpty()) {
-                trip.legs.mapNotNull { leg ->
-                    when {
-                        leg.lineName != null -> {
-                            val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
-                            leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
-                        }
-                        leg.durationMinutes > 0 ->
-                            stringResource(R.string.leg_walk, leg.durationMinutes)
-                        else -> null // skip 0-minute foot legs (quay transfers)
-                    }
-                }.joinToString("  →  ")
-            } else {
-                stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
-            }
+            val routeText =
+                if (trip.legs.isNotEmpty()) {
+                    trip.legs
+                        .mapNotNull { leg ->
+                            when {
+                                leg.lineName != null -> {
+                                    val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
+                                    leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
+                                }
+                                leg.durationMinutes > 0 ->
+                                    stringResource(R.string.leg_walk, leg.durationMinutes)
+                                else -> null // skip 0-minute foot legs (quay transfers)
+                            }
+                        }.joinToString("  →  ")
+                } else {
+                    stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
+                }
             Text(
                 text = routeText,
                 style = MaterialTheme.typography.bodyMedium,
@@ -355,19 +408,19 @@ fun FastestTripBanner(
                 overflow = TextOverflow.Ellipsis,
                 onTextLayout = { result ->
                     if (!expanded) hasOverflow = result.hasVisualOverflow
-                }
+                },
             )
         }
         Text(
             text = stringResource(R.string.duration_min, trip.durationMinutes),
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         if (canExpand) {
             Icon(
                 imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                 contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
     }
@@ -383,7 +436,7 @@ fun ReorderableFavoriteList(
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
     onFilterOut: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
@@ -391,73 +444,79 @@ fun ReorderableFavoriteList(
 
     Box(modifier = modifier) {
         val itemCount = favorites.size
-        
-        val currentTargetIndex = draggingIndex?.let { startIdx ->
-            if (isLandscape && itemSize.width > 0) {
-                (startIdx + (dragOffset.x / itemSize.width).roundToInt()).coerceIn(0, itemCount - 1)
-            } else if (!isLandscape && itemSize.height > 0) {
-                (startIdx + (dragOffset.y / itemSize.height).roundToInt()).coerceIn(0, itemCount - 1)
-            } else startIdx
-        }
+
+        val currentTargetIndex =
+            draggingIndex?.let { startIdx ->
+                if (isLandscape && itemSize.width > 0) {
+                    (startIdx + (dragOffset.x / itemSize.width).roundToInt()).coerceIn(0, itemCount - 1)
+                } else if (!isLandscape && itemSize.height > 0) {
+                    (startIdx + (dragOffset.y / itemSize.height).roundToInt()).coerceIn(0, itemCount - 1)
+                } else {
+                    startIdx
+                }
+            }
 
         if (isLandscape) {
             Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onSizeChanged { size -> 
-                        itemSize = IntSize(width = size.width / maxOf(1, itemCount), height = size.height) 
-                    }
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .onSizeChanged { size ->
+                            itemSize = IntSize(width = size.width / maxOf(1, itemCount), height = size.height)
+                        },
             ) {
                 favorites.forEachIndexed { index, stop ->
                     key(stop.id) {
                         val isDragging = draggingIndex == index
-                        
-                        val visualOffset = remember(index, draggingIndex, currentTargetIndex) {
-                            if (draggingIndex == null || currentTargetIndex == null || isDragging) {
-                                Offset.Zero
-                            } else {
-                                val start = draggingIndex!!
-                                if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
-                                    val direction = if (start < currentTargetIndex) -1f else 1f
-                                    Offset(x = direction * itemSize.width.toFloat(), y = 0f)
-                                } else {
+
+                        val visualOffset =
+                            remember(index, draggingIndex, currentTargetIndex) {
+                                if (draggingIndex == null || currentTargetIndex == null || isDragging) {
                                     Offset.Zero
+                                } else {
+                                    val start = draggingIndex!!
+                                    if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
+                                        val direction = if (start < currentTargetIndex) -1f else 1f
+                                        Offset(x = direction * itemSize.width.toFloat(), y = 0f)
+                                    } else {
+                                        Offset.Zero
+                                    }
                                 }
                             }
-                        }
 
                         val animatedOffset by animateOffsetAsState(
                             targetValue = if (isDragging) dragOffset else visualOffset,
                             animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
-                            label = "itemOffset"
+                            label = "itemOffset",
                         )
 
                         Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .zIndex(if (isDragging) 1f else 0f)
-                                .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
-                                .pointerInput(Unit) {
-                                    detectDragGesturesAfterLongPress(
-                                        onDragStart = { draggingIndex = index },
-                                        onDragEnd = {
-                                            currentTargetIndex?.let { target ->
-                                                if (target != index) onReorder(index, target)
-                                            }
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDragCancel = {
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragOffset += dragAmount
-                                        }
-                                    )
-                                }
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .zIndex(if (isDragging) 1f else 0f)
+                                    .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
+                                    .pointerInput(Unit) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = { draggingIndex = index },
+                                            onDragEnd = {
+                                                currentTargetIndex?.let { target ->
+                                                    if (target != index) onReorder(index, target)
+                                                }
+                                                draggingIndex = null
+                                                dragOffset = Offset.Zero
+                                            },
+                                            onDragCancel = {
+                                                draggingIndex = null
+                                                dragOffset = Offset.Zero
+                                            },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragOffset += dragAmount
+                                            },
+                                        )
+                                    },
                         ) {
                             StopBoardPanel(
                                 stopPlace = stop,
@@ -466,7 +525,7 @@ fun ReorderableFavoriteList(
                                 showMessages = showMessages,
                                 isLoading = isLoading,
                                 onFilterOut = onFilterOut,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
                             )
                         }
                     }
@@ -474,62 +533,65 @@ fun ReorderableFavoriteList(
             }
         } else {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onSizeChanged { size -> 
-                        itemSize = IntSize(width = size.width, height = size.height / maxOf(1, itemCount)) 
-                    }
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .onSizeChanged { size ->
+                            itemSize = IntSize(width = size.width, height = size.height / maxOf(1, itemCount))
+                        },
             ) {
                 favorites.forEachIndexed { index, stop ->
                     key(stop.id) {
                         val isDragging = draggingIndex == index
-                        
-                        val visualOffset = remember(index, draggingIndex, currentTargetIndex) {
-                            if (draggingIndex == null || currentTargetIndex == null || isDragging) {
-                                Offset.Zero
-                            } else {
-                                val start = draggingIndex!!
-                                if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
-                                    val direction = if (start < currentTargetIndex) -1f else 1f
-                                    Offset(x = 0f, y = direction * itemSize.height.toFloat())
-                                } else {
+
+                        val visualOffset =
+                            remember(index, draggingIndex, currentTargetIndex) {
+                                if (draggingIndex == null || currentTargetIndex == null || isDragging) {
                                     Offset.Zero
+                                } else {
+                                    val start = draggingIndex!!
+                                    if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
+                                        val direction = if (start < currentTargetIndex) -1f else 1f
+                                        Offset(x = 0f, y = direction * itemSize.height.toFloat())
+                                    } else {
+                                        Offset.Zero
+                                    }
                                 }
                             }
-                        }
 
                         val animatedOffset by animateOffsetAsState(
                             targetValue = if (isDragging) dragOffset else visualOffset,
                             animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
-                            label = "itemOffset"
+                            label = "itemOffset",
                         )
 
                         Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .zIndex(if (isDragging) 1f else 0f)
-                                .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
-                                .pointerInput(Unit) {
-                                    detectDragGesturesAfterLongPress(
-                                        onDragStart = { draggingIndex = index },
-                                        onDragEnd = {
-                                            currentTargetIndex?.let { target ->
-                                                if (target != index) onReorder(index, target)
-                                            }
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDragCancel = {
-                                            draggingIndex = null
-                                            dragOffset = Offset.Zero
-                                        },
-                                        onDrag = { change, dragAmount ->
-                                            change.consume()
-                                            dragOffset += dragAmount
-                                        }
-                                    )
-                                }
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .zIndex(if (isDragging) 1f else 0f)
+                                    .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
+                                    .pointerInput(Unit) {
+                                        detectDragGesturesAfterLongPress(
+                                            onDragStart = { draggingIndex = index },
+                                            onDragEnd = {
+                                                currentTargetIndex?.let { target ->
+                                                    if (target != index) onReorder(index, target)
+                                                }
+                                                draggingIndex = null
+                                                dragOffset = Offset.Zero
+                                            },
+                                            onDragCancel = {
+                                                draggingIndex = null
+                                                dragOffset = Offset.Zero
+                                            },
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragOffset += dragAmount
+                                            },
+                                        )
+                                    },
                         ) {
                             StopBoardPanel(
                                 stopPlace = stop,
@@ -538,7 +600,7 @@ fun ReorderableFavoriteList(
                                 showMessages = showMessages,
                                 isLoading = isLoading,
                                 onFilterOut = onFilterOut,
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
                             )
                         }
                     }
@@ -549,15 +611,23 @@ fun ReorderableFavoriteList(
 }
 
 @Composable
-fun WeatherItem(weather: WeatherInfo, modifier: Modifier = Modifier) {
+fun WeatherItem(
+    weather: WeatherInfo,
+    modifier: Modifier = Modifier,
+) {
     val locale = SimpleDateFormat("HH", LocalLocale.current.platformLocale)
-    val hour = try {
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
-        val date = sdf.parse(weather.time.substring(0, 19))
-        if (date != null) {
-            locale.format(date)
-        } else "??"
-    } catch (_: Exception) { "??" }
+    val hour =
+        try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
+            val date = sdf.parse(weather.time.substring(0, 19))
+            if (date != null) {
+                locale.format(date)
+            } else {
+                "??"
+            }
+        } catch (_: Exception) {
+            "??"
+        }
 
     val symbol = remember(weather.symbolCode) { parseWeatherSymbol(weather.symbolCode) }
     val label = weatherLabel(symbol)
@@ -567,37 +637,39 @@ fun WeatherItem(weather: WeatherInfo, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         Text(
             text = "$hour:00",
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
         )
         WeatherIcon(
             symbol = symbol,
-            modifier = Modifier
-                .size(26.dp)
-                .semantics { contentDescription = label }
+            modifier =
+                Modifier
+                    .size(26.dp)
+                    .semantics { contentDescription = label },
         )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Text(
                 text = "${weather.temperature.roundToInt()}°",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 maxLines = 1,
-                color = temperatureColor(weather.temperature)
+                color = temperatureColor(weather.temperature),
             )
             PrecipitationBar(
                 millimetres = weather.precipitation,
-                modifier = Modifier
-                    .size(width = 4.dp, height = 16.dp)
-                    .semantics {
-                        contentDescription = precipitationDescription
-                    }
+                modifier =
+                    Modifier
+                        .size(width = 4.dp, height = 16.dp)
+                        .semantics {
+                            contentDescription = precipitationDescription
+                        },
             )
         }
         Text(
@@ -608,7 +680,7 @@ fun WeatherItem(weather: WeatherInfo, modifier: Modifier = Modifier) {
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
     }
 }

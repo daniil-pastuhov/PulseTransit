@@ -7,7 +7,6 @@ import org.junit.Test
 
 /** Covers the MET `symbol_code` vocabulary the forecast icons are drawn from. */
 class WeatherSymbolTest {
-
     @Test
     fun `parses clear day and night`() {
         val day = parseWeatherSymbol("clearsky_day")
