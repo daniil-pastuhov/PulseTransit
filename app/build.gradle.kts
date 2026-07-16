@@ -14,6 +14,7 @@ plugins {
 android {
     namespace = "com.example.pulsetransit"
     compileSdk = 37
+
     defaultConfig {
         applicationId = "com.example.pulsetransit"
         minSdk = 24
@@ -23,8 +24,41 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        val releaseFile =
+            providers
+                .gradleProperty("pulseReleaseFile")
+                .orElse(providers.environmentVariable("pulseReleaseFile"))
+                .filter { it.isNotBlank() }
+                .orNull
+
+        if (releaseFile != null) {
+            create("release") {
+                keyAlias =
+                    providers
+                        .gradleProperty("pulseReleaseKeyAlias")
+                        .orElse(providers.environmentVariable("pulseReleaseKeyAlias"))
+                        .getOrElse("")
+                keyPassword =
+                    providers
+                        .gradleProperty("pulseReleaseKeyPassword")
+                        .orElse(providers.environmentVariable("pulseReleaseKeyPassword"))
+                        .getOrElse("")
+                storeFile = file(releaseFile)
+                storePassword =
+                    providers
+                        .gradleProperty("pulseReleaseStorePassword")
+                        .orElse(providers.environmentVariable("pulseReleaseStorePassword"))
+                        .getOrElse("")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfigs.findByName("release")?.let {
+                signingConfig = it
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
@@ -57,7 +91,7 @@ android {
 
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
 }
