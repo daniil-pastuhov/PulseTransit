@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -220,9 +221,17 @@ fun MainScreen(
                     }
                 }
 
-                // Fastest route banners (one per destination station set in Settings)
-                uiState.fastestTrips.forEach { trip ->
+                // Fastest route banners (one per destination station set in Settings).
+                // They share one background colour, so without a rule between them
+                // consecutive banners read as a single block.
+                uiState.fastestTrips.forEachIndexed { index, trip ->
                     key(trip.destinationName) {
+                        if (index > 0) {
+                            HorizontalDivider(
+                                thickness = 1.dp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                            )
+                        }
                         FastestTripBanner(trip = trip)
                     }
                 }
