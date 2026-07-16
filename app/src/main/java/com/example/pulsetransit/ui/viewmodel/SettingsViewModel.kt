@@ -56,6 +56,8 @@ class SettingsViewModel(
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
+        val autoThemeDarkLux: Float = 10f,
+        val autoThemeLightLux: Float = 40f,
         val cameraMotionWake: Boolean = false,
         val cameraSensitivity: CameraSensitivity = CameraSensitivity.MEDIUM,
         val dynamicRefresh: Boolean = true,
@@ -92,6 +94,8 @@ class SettingsViewModel(
                 showDelays = settingsRepository.isShowDelays(),
                 showMessages = settingsRepository.isShowMessages(),
                 showCancelledLines = settingsRepository.isShowCancelledLines(),
+                autoThemeDarkLux = settingsRepository.getAutoThemeDarkLux(),
+                autoThemeLightLux = settingsRepository.getAutoThemeLightLux(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
                 cameraSensitivity = settingsRepository.getCameraSensitivity(),
                 dynamicRefresh = settingsRepository.isDynamicRefreshEnabled(),
@@ -353,6 +357,16 @@ class SettingsViewModel(
     fun updateThemeMode(mode: ThemeMode) {
         settingsRepository.setThemeMode(mode)
         _uiState.update { it.copy(themeMode = mode) }
+    }
+
+    fun updateAutoThemeDarkLux(lux: Float) {
+        settingsRepository.setAutoThemeDarkLux(lux)
+        _uiState.update { it.copy(autoThemeDarkLux = lux) }
+    }
+
+    fun updateAutoThemeLightLux(lux: Float) {
+        settingsRepository.setAutoThemeLightLux(lux)
+        _uiState.update { it.copy(autoThemeLightLux = lux) }
     }
 
     fun updateBurnInLevel(level: BurnInProtectionLevel) {

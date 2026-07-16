@@ -42,8 +42,6 @@ class StopBoardViewModel(
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
         // and the gap in between is a dead zone that holds the current theme to avoid flapping.
-        const val AUTO_THEME_DARK_LUX = 10f
-        const val AUTO_THEME_LIGHT_LUX = 40f
 
         // Dynamic refresh: the base interval is stretched overnight and while the
         // screen is dimmed, since nobody is reading the board in either case.
@@ -69,6 +67,8 @@ class StopBoardViewModel(
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
+        val autoThemeDarkLux: Float = 10f,
+        val autoThemeLightLux: Float = 40f,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
         val fastestTrips: List<TripInfo> = emptyList(),
         val destinationStations: List<StopPlace> = emptyList(),
@@ -107,33 +107,29 @@ class StopBoardViewModel(
     private fun observeSettings() {
         settingsRepository
             .getFullScreenModeFlow()
-            .onEach { isFullScreen ->
-                _uiState.update { it.copy(isFullScreenMode = isFullScreen) }
-            }.launchIn(viewModelScope)
+            .onEach { isFullScreen -> _uiState.update { it.copy(isFullScreenMode = isFullScreen) } }
+            .launchIn(viewModelScope)
 
         settingsRepository
             .getAlwaysOnEnabledFlow()
-            .onEach { alwaysOn ->
-                _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn) }
-            }.launchIn(viewModelScope)
+            .onEach { alwaysOn -> _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn) } }
+            .launchIn(viewModelScope)
+
+        settingsRepository
+            .getShowDelaysFlow()
+            .onEach { showDelays -> _uiState.update { it.copy(showDelays = showDelays) } }
+            .launchIn(viewModelScope)
+
+        settingsRepository
+            .getShowMessagesFlow()
+            .onEach { showMessages -> _uiState.update { it.copy(showMessages = showMessages) } }
+            .launchIn(viewModelScope)
 
         settingsRepository
             .getShowCancelledLinesFlow()
             .onEach { showCancelled ->
                 _uiState.update { it.copy(showCancelledLines = showCancelled) }
                 updateGroupedDepartures()
-            }.launchIn(viewModelScope)
-
-        settingsRepository
-            .getShowDelaysFlow()
-            .onEach { showDelays ->
-                _uiState.update { it.copy(showDelays = showDelays) }
-            }.launchIn(viewModelScope)
-
-        settingsRepository
-            .getShowMessagesFlow()
-            .onEach { showMessages ->
-                _uiState.update { it.copy(showMessages = showMessages) }
             }.launchIn(viewModelScope)
 
         settingsRepository
@@ -147,11 +143,20 @@ class StopBoardViewModel(
             .getAutoDimSecondsFlow()
             .onEach { seconds ->
                 _uiState.update { it.copy(autoDimSeconds = seconds) }
-                // Re-trigger dim timer if currently active
                 if (!uiState.value.isScreenDimmed && uiState.value.cameraMotionWake && seconds > 0) {
                     wakeScreen()
                 }
             }.launchIn(viewModelScope)
+
+        settingsRepository
+            .getAutoThemeDarkLuxFlow()
+            .onEach { lux -> _uiState.update { it.copy(autoThemeDarkLux = lux) } }
+            .launchIn(viewModelScope)
+
+        settingsRepository
+            .getAutoThemeLightLuxFlow()
+            .onEach { lux -> _uiState.update { it.copy(autoThemeLightLux = lux) } }
+            .launchIn(viewModelScope)
 
         settingsRepository
             .getCameraMotionWakeFlow()
@@ -177,6 +182,8 @@ class StopBoardViewModel(
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
         val autoDim = settingsRepository.getAutoDimSeconds()
+        val autoDark = settingsRepository.getAutoThemeDarkLux()
+        val autoLight = settingsRepository.getAutoThemeLightLux()
         val cameraWake = settingsRepository.isCameraMotionWakeEnabled()
         val filtered = settingsRepository.getFilteredLines()
 
@@ -195,6 +202,8 @@ class StopBoardViewModel(
                 isFullScreenMode = isFullScreen,
                 isAlwaysOnEnabled = alwaysOn,
                 autoDimSeconds = autoDim,
+                autoThemeDarkLux = autoDark,
+                autoThemeLightLux = autoLight,
                 cameraMotionWake = cameraWake,
                 filteredLines = filtered,
             )
@@ -210,10 +219,11 @@ class StopBoardViewModel(
                     // when clearly dim. The dead zone between the two thresholds prevents the
                     // theme from flapping when ambient light hovers near a single edge.
                     val current = _uiState.value.activeTheme
+                    val state = _uiState.value
                     val autoTheme =
                         when {
-                            lux <= AUTO_THEME_DARK_LUX -> ThemeMode.DARK
-                            lux >= AUTO_THEME_LIGHT_LUX -> ThemeMode.LIGHT
+                            lux <= state.autoThemeDarkLux -> ThemeMode.DARK
+                            lux >= state.autoThemeLightLux -> ThemeMode.LIGHT
                             else -> current // within dead zone: keep the current theme
                         }
                     if (autoTheme != current) {
