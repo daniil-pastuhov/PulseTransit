@@ -14,7 +14,7 @@ class SettingsRepositoryImpl(
         const val DEFAULT_REFRESH_INTERVAL_SECONDS = 60
         const val DEFAULT_AUTO_DIM_SECONDS = 30
         const val DEFAULT_AUTO_THEME_DARK_LUX = 10f
-        const val DEFAULT_AUTO_THEME_LIGHT_LUX = 40f
+        const val DEFAULT_AUTO_THEME_LIGHT_LUX = 100f
     }
 
     private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)

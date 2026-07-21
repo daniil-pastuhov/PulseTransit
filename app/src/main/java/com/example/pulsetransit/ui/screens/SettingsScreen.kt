@@ -154,7 +154,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(stringResource(R.string.auto_theme_dark), style = MaterialTheme.typography.labelSmall)
-                        val darkThresholds = listOf(5f, 10f, 20f, 30f)
+                        val darkThresholds = listOf(10f, 30f, 50f, 100f)
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
@@ -171,7 +171,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Text(stringResource(R.string.auto_theme_light), style = MaterialTheme.typography.labelSmall)
-                        val lightThresholds = listOf(40f, 60f, 100f, 200f)
+                        val lightThresholds = listOf(100f, 150f, 200f, 250f)
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
