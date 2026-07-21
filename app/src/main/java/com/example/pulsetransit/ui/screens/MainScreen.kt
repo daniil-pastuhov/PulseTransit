@@ -91,6 +91,7 @@ import com.example.pulsetransit.ui.pixelshift.pixelShift
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 @Suppress("ParamsComparedByRef")
@@ -624,10 +625,15 @@ fun WeatherItem(
     weather: WeatherInfo,
     modifier: Modifier = Modifier,
 ) {
+    // MET returns times in UTC (trailing `Z`); the display formatter uses the device's local
+    // zone, so the parser must read the wall-clock as UTC or the hour comes out offset.
     val locale = SimpleDateFormat("HH", LocalLocale.current.platformLocale)
     val hour =
         try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
+            val sdf =
+                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
             val date = sdf.parse(weather.time.substring(0, 19))
             if (date != null) {
                 locale.format(date)
