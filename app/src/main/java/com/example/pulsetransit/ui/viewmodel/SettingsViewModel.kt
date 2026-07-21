@@ -12,6 +12,7 @@ import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -26,6 +27,7 @@ import kotlin.coroutines.resume
 class SettingsViewModel(
     private val enturRepository: EnturRepository,
     private val settingsRepository: SettingsRepository,
+    private val sensorManager: SystemSensorManager,
     context: Context,
 ) : ViewModel() {
     private val appContext = context.applicationContext
@@ -58,6 +60,7 @@ class SettingsViewModel(
         val showCancelledLines: Boolean = false,
         val autoThemeDarkLux: Float = 10f,
         val autoThemeLightLux: Float = 40f,
+        val currentLux: Float? = null,
         val cameraMotionWake: Boolean = false,
         val cameraSensitivity: CameraSensitivity = CameraSensitivity.MEDIUM,
         val dynamicRefresh: Boolean = true,
@@ -75,6 +78,11 @@ class SettingsViewModel(
 
     init {
         loadSettings()
+        viewModelScope.launch {
+            sensorManager.getLightFlow().collect { lux ->
+                _uiState.update { it.copy(currentLux = lux) }
+            }
+        }
     }
 
     fun loadSettings() {

@@ -64,6 +64,7 @@ val appModule =
             SettingsViewModel(
                 enturRepository = get(),
                 settingsRepository = get(),
+                sensorManager = get(),
                 context = androidContext(),
             )
         }

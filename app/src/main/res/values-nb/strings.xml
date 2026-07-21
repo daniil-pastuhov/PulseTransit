@@ -88,6 +88,7 @@
     <string name="auto_theme_dark">Mørkt under:</string>
     <string name="auto_theme_light">Lyst over:</string>
     <string name="lux_value">%1$.0f lux</string>
+    <string name="current_lux">Nå: %1$.0f lux</string>
 
     <!-- Burn In Levels -->
     <string name="burn_in_off">Av</string>
