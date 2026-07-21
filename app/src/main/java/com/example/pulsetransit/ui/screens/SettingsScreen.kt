@@ -5,6 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -60,6 +62,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -166,6 +169,15 @@ fun SettingsScreen(
                                     label = { Text(stringResource(R.string.lux_value, lux)) },
                                 )
                             }
+                        }
+
+                        uiState.currentLux?.let { lux ->
+                            Spacer(modifier = Modifier.height(12.dp))
+                            LuxScaleIndicator(
+                                currentLux = lux,
+                                darkLux = uiState.autoThemeDarkLux,
+                                lightLux = uiState.autoThemeLightLux,
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
@@ -704,6 +716,103 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * A horizontal scale showing the live ambient-light reading against the two auto-theme thresholds.
+ * The filled bar tracks the current lux; the two ticks (and labels below) mark the "dark below" and
+ * "light above" thresholds, so the user can see where the current reading falls relative to both.
+ */
+@Composable
+private fun LuxScaleIndicator(
+    currentLux: Float,
+    darkLux: Float,
+    lightLux: Float,
+    modifier: Modifier = Modifier,
+) {
+    val scaleMax = maxOf(lightLux, currentLux, 1f) * 1.15f
+    val curFrac = (currentLux / scaleMax).coerceIn(0f, 1f)
+    val darkFrac = (darkLux / scaleMax).coerceIn(0f, 1f)
+    val lightFrac = (lightLux / scaleMax).coerceIn(0f, 1f)
+
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val fillColor = MaterialTheme.colorScheme.primary
+    val darkMarkColor = MaterialTheme.colorScheme.onSurface
+    val lightMarkColor = MaterialTheme.colorScheme.tertiary
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(R.string.current_lux, currentLux),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium,
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(14.dp)) {
+            val fullWidth = maxWidth
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .align(Alignment.CenterStart)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(trackColor),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .width(fullWidth * curFrac)
+                        .height(8.dp)
+                        .align(Alignment.CenterStart)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(fillColor),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .offset(x = fullWidth * darkFrac - 1.dp)
+                        .width(2.dp)
+                        .fillMaxHeight()
+                        .background(darkMarkColor),
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .offset(x = fullWidth * lightFrac - 1.dp)
+                        .width(2.dp)
+                        .fillMaxHeight()
+                        .background(lightMarkColor),
+            )
+        }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(16.dp)) {
+            val fullWidth = maxWidth
+            val labelWidth = 48.dp
+            Text(
+                text = stringResource(R.string.lux_value, darkLux),
+                style = MaterialTheme.typography.labelSmall,
+                color = darkMarkColor,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .width(labelWidth)
+                        .offset(x = (fullWidth * darkFrac - labelWidth / 2).coerceIn(0.dp, fullWidth - labelWidth)),
+            )
+            Text(
+                text = stringResource(R.string.lux_value, lightLux),
+                style = MaterialTheme.typography.labelSmall,
+                color = lightMarkColor,
+                maxLines = 1,
+                textAlign = TextAlign.Center,
+                modifier =
+                    Modifier
+                        .width(labelWidth)
+                        .offset(x = (fullWidth * lightFrac - labelWidth / 2).coerceIn(0.dp, fullWidth - labelWidth)),
+            )
         }
     }
 }
