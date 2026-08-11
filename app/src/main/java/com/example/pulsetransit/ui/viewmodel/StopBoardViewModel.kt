@@ -91,16 +91,16 @@ class StopBoardViewModel(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var refreshJob: Job? = null
+    private var lightSensorJob: Job? = null
     private var lastWeatherUpdateTime: Long = 0
     private val weatherRefreshIntervalMs = 30 * 60 * 1000L // 30 minutes
 
     private var rawDepartures: Map<String, List<Departure>> = emptyMap()
 
     init {
-        loadSettings()
+        loadSettings() // also starts the light sensor when the theme is AUTO
         startClock()
         startAutoRefresh()
-        setupSensors()
         observeSettings()
     }
 
@@ -208,10 +208,24 @@ class StopBoardViewModel(
                 filteredLines = filtered,
             )
         }
+
+        setupSensors()
     }
 
+    /**
+     * Starts the ambient-light collector while the theme is `AUTO` and stops it otherwise. Called
+     * on every [loadSettings], so leaving `AUTO` tears the collector down instead of letting it
+     * keep overwriting [UiState.activeTheme], and returning to `AUTO` brings it back.
+     */
     private fun setupSensors() {
-        if (_uiState.value.themeMode == ThemeMode.AUTO) {
+        if (_uiState.value.themeMode != ThemeMode.AUTO) {
+            lightSensorJob?.cancel()
+            lightSensorJob = null
+            return
+        }
+        if (lightSensorJob?.isActive == true) return
+
+        lightSensorJob =
             sensorManager
                 .getLightFlow()
                 .onEach { lux ->
@@ -230,7 +244,6 @@ class StopBoardViewModel(
                         _uiState.update { it.copy(activeTheme = autoTheme) }
                     }
                 }.launchIn(viewModelScope)
-        }
     }
 
     private var dimJob: Job? = null

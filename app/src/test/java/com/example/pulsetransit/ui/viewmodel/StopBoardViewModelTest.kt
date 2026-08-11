@@ -173,6 +173,43 @@ class StopBoardViewModelTest {
             assertEquals(ThemeMode.LIGHT, vm.uiState.value.activeTheme)
         }
 
+    @Test
+    fun `leaving auto stops the light sensor from overriding the chosen theme`() =
+        boardTest {
+            settings.theme = ThemeMode.AUTO
+            val vm = viewModel()
+
+            sensors.lux.tryEmit(5f)
+            runCurrent()
+            assertEquals(ThemeMode.DARK, vm.uiState.value.activeTheme)
+
+            // The user picks LIGHT on the Settings screen; returning to the board re-reads settings.
+            settings.theme = ThemeMode.LIGHT
+            vm.loadSettings()
+            runCurrent()
+
+            sensors.lux.tryEmit(0f) // pitch dark: must no longer force DARK
+            runCurrent()
+
+            assertEquals(ThemeMode.LIGHT, vm.uiState.value.activeTheme)
+        }
+
+    @Test
+    fun `returning to auto starts the light sensor again`() =
+        boardTest {
+            settings.theme = ThemeMode.LIGHT
+            val vm = viewModel()
+
+            settings.theme = ThemeMode.AUTO
+            vm.loadSettings()
+            runCurrent()
+
+            sensors.lux.tryEmit(5f)
+            runCurrent()
+
+            assertEquals(ThemeMode.DARK, vm.uiState.value.activeTheme)
+        }
+
     // --- Offline / staleness ---------------------------------------------------------------
 
     @Test
