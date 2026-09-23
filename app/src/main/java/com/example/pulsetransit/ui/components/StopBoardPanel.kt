@@ -42,11 +42,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.DepartureGroup
@@ -60,8 +66,10 @@ import com.example.pulsetransit.theme.ColorMetro
 import com.example.pulsetransit.theme.ColorTrain
 import com.example.pulsetransit.theme.ColorTram
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private const val MILLIS_PER_SECOND = 1000L
 private const val SECONDS_PER_MINUTE = 60L
@@ -75,6 +83,10 @@ private const val RELATIVE_TIME_CUTOFF_SECONDS = 1800L
 // "HH:mm" within a yyyy-MM-ddTHH:mm:ss... timestamp.
 private const val ISO_HOUR_START = 11
 private const val ISO_MINUTE_END = 16
+private const val MILLIS_PER_DAY = 86_400_000.0
+
+// Size of the "+1" next-day marker relative to the time it follows.
+private const val DAY_OFFSET_FONT_SCALE = 0.6f
 
 @Composable
 fun StopBoardPanel(
@@ -300,7 +312,7 @@ fun DepartureRow(
     val formattedTimes =
         departures
             .map { dep ->
-                if (dep.isCancelled) cancelledText else formatDepartureTime(dep.expectedTime, nowText, minUnit)
+                if (dep.isCancelled) AnnotatedString(cancelledText) else formatDepartureTime(dep.expectedTime, nowText, minUnit)
             }.distinct()
 
     var showMenu by remember { mutableStateOf(false) }
@@ -381,7 +393,7 @@ fun DepartureRow(
 
             // Primary Departure Time
             val primaryTime = formattedTimes.first()
-            val isNow = primaryTime == nowText
+            val isNow = primaryTime.text == nowText
 
             Text(
                 text = primaryTime,
@@ -403,7 +415,13 @@ fun DepartureRow(
         if (formattedTimes.size > 1) {
             val secondaryTimes = formattedTimes.drop(1)
             Text(
-                text = secondaryTimes.joinToString("    "),
+                text =
+                    buildAnnotatedString {
+                        secondaryTimes.forEachIndexed { index, time ->
+                            if (index > 0) append("    ")
+                            append(time)
+                        }
+                    },
                 style =
                     MaterialTheme.typography.bodyLarge.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -476,28 +494,48 @@ private fun getTransportColor(mode: String?): Color =
         else -> ColorDefaultLine
     }
 
-private fun isSameDay(
-    a: Date,
-    b: Date,
-): Boolean {
-    val day = SimpleDateFormat("yyyyMMdd", Locale.US)
-    return day.format(a) == day.format(b)
-}
+private fun startOfDayMillis(date: Date): Long =
+    Calendar
+        .getInstance()
+        .apply {
+            time = date
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
 
-/** Beyond today is only reachable when the user widened the search window; the weekday marks it. */
+/** Calendar days from [now] to [time]; rounded so a DST shift inside the span doesn't skew it. */
+private fun daysBetween(
+    now: Date,
+    time: Date,
+): Int = ((startOfDayMillis(time) - startOfDayMillis(now)).toDouble() / MILLIS_PER_DAY).roundToInt()
+
+/**
+ * Beyond today is only reachable when the user widened the search window. Such times get a small
+ * raised "+1" (or "+2", …) day marker, as printed timetables do, instead of a weekday prefix.
+ */
 private fun formatClockTime(
     time: Date,
     now: Date,
-): String {
-    val pattern = if (isSameDay(time, now)) "HH:mm" else "EEE HH:mm"
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(time)
+): AnnotatedString {
+    val clock = SimpleDateFormat("HH:mm", Locale.getDefault()).format(time)
+    val dayOffset = daysBetween(now, time)
+    return buildAnnotatedString {
+        append(clock)
+        if (dayOffset > 0) {
+            withStyle(SpanStyle(fontSize = DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
+                append("+$dayOffset")
+            }
+        }
+    }
 }
 
 private fun formatDepartureTime(
     expectedTimeStr: String,
     nowText: String,
     minUnit: String,
-): String =
+): AnnotatedString =
     try {
         // Simple ISO parser for common formats
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
@@ -508,19 +546,19 @@ private fun formatDepartureTime(
         if (expectedDate != null) {
             val diffSeconds = (expectedDate.time - now.time) / MILLIS_PER_SECOND
             when {
-                diffSeconds < DEPARTING_NOW_SECONDS -> nowText
-                diffSeconds < SECONDS_PER_MINUTE -> "1$minUnit"
-                diffSeconds < RELATIVE_TIME_CUTOFF_SECONDS -> "${diffSeconds / SECONDS_PER_MINUTE}$minUnit"
+                diffSeconds < DEPARTING_NOW_SECONDS -> AnnotatedString(nowText)
+                diffSeconds < SECONDS_PER_MINUTE -> AnnotatedString("1$minUnit")
+                diffSeconds < RELATIVE_TIME_CUTOFF_SECONDS -> AnnotatedString("${diffSeconds / SECONDS_PER_MINUTE}$minUnit")
                 else -> formatClockTime(expectedDate, now)
             }
         } else {
-            "?"
+            AnnotatedString("?")
         }
     } catch (_: Exception) {
         // Fall back to slicing "HH:mm" straight out of the ISO-8601 timestamp.
         try {
-            expectedTimeStr.substring(ISO_HOUR_START, ISO_MINUTE_END)
+            AnnotatedString(expectedTimeStr.substring(ISO_HOUR_START, ISO_MINUTE_END))
         } catch (_: Exception) {
-            "?"
+            AnnotatedString("?")
         }
     }
