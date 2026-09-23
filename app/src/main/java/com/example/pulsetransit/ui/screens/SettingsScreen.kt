@@ -17,20 +17,30 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,6 +58,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -58,10 +69,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -69,6 +82,7 @@ import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
+import com.example.pulsetransit.data.PlaceKind
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -83,6 +97,7 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var manualLat by remember { mutableStateOf("") }
     var manualLon by remember { mutableStateOf("") }
@@ -112,7 +127,9 @@ fun SettingsScreen(
                 )
             },
             modifier = modifier.fillMaxSize(),
-            contentWindowInsets = WindowInsets.navigationBars,
+            // Edge-to-edge means adjustResize no longer shrinks the window for the keyboard, so the
+            // content has to make room for it itself or it covers the search fields.
+            contentWindowInsets = WindowInsets.navigationBars.union(WindowInsets.ime),
         ) { innerPadding ->
             val containerSizePx = LocalWindowInfo.current.containerSize
             val containerWidthDp = with(LocalDensity.current) { containerSizePx.width.toDp() }
@@ -410,6 +427,8 @@ fun SettingsScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
+                                    PlaceKindIcon(destination.kind)
+                                    Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(destination.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
                                         destination.locality?.let {
@@ -451,53 +470,70 @@ fun SettingsScreen(
                         )
                     } else {
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = uiState.destinationQuery,
-                            onValueChange = { viewModel.onDestinationQueryChanged(it) },
-                            label = { Text(stringResource(R.string.search_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                        )
+                        // The field and its results scroll into view together as results arrive,
+                        // so they aren't left below the fold behind the keyboard.
+                        val destinationSearchBringIntoView = remember { BringIntoViewRequester() }
+                        LaunchedEffect(uiState.destinationResults) {
+                            if (uiState.destinationResults.isNotEmpty()) destinationSearchBringIntoView.bringIntoView()
+                        }
+                        Column(modifier = Modifier.bringIntoViewRequester(destinationSearchBringIntoView)) {
+                            OutlinedTextField(
+                                value = uiState.destinationQuery,
+                                onValueChange = { viewModel.onDestinationQueryChanged(it) },
+                                label = { Text(stringResource(R.string.search_destination_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
+                            )
 
-                        if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            }
-                        } else if (uiState.destinationResults.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            uiState.destinationResults
-                                .filter { result -> destinations.none { it.id == result.id } }
-                                .forEach { stop ->
-                                    key(stop.id) {
-                                        Row(
-                                            modifier =
-                                                Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(vertical = 4.dp)
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(MaterialTheme.colorScheme.surface)
-                                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                                stop.locality?.let {
-                                                    Text(
-                                                        it,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                    )
+                            if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                }
+                            } else if (uiState.destinationResults.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                uiState.destinationResults
+                                    .filter { result -> destinations.none { it.id == result.id } }
+                                    .forEach { stop ->
+                                        key(stop.id) {
+                                            Row(
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(MaterialTheme.colorScheme.surface)
+                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+                                                PlaceKindIcon(stop.kind)
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                                    stop.locality?.let {
+                                                        Text(
+                                                            it,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
                                                 }
-                                            }
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Button(onClick = { viewModel.addDestinationStation(stop) }) {
-                                                Text(stringResource(R.string.select), fontSize = 12.sp)
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Button(
+                                                    onClick = {
+                                                        keyboardController?.hide()
+                                                        viewModel.addDestinationStation(stop)
+                                                    },
+                                                ) {
+                                                    Text(stringResource(R.string.select), fontSize = 12.sp)
+                                                }
                                             }
                                         }
                                     }
-                                }
+                            }
                         }
                     }
                 }
@@ -956,4 +992,20 @@ fun FavoriteStopRow(
             }
         }
     }
+}
+
+/** Tells a stop apart from an address or place in destination search, where they sit side by side. */
+@Composable
+private fun PlaceKindIcon(kind: PlaceKind) {
+    Icon(
+        imageVector =
+            when (kind) {
+                PlaceKind.STOP -> Icons.Default.DirectionsBus
+                PlaceKind.ADDRESS -> Icons.Default.Home
+                PlaceKind.POI -> Icons.Default.Place
+                PlaceKind.PLACE -> Icons.Default.Map
+            },
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }

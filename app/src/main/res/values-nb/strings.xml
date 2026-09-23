@@ -32,6 +32,7 @@
     <string name="save_coords">Lagre koordinater</string>
     <string name="add_stop_places">Legg til stoppesteder</string>
     <string name="search_hint">Søk på navn…</string>
+    <string name="search_destination_hint">Holdeplass, adresse eller sted…</string>
     <string name="nearby_stops">Stoppesteder i nærheten</string>
     <string name="search_results">Søkeresultater</string>
     <string name="no_stops_found">Ingen stoppesteder funnet</string>

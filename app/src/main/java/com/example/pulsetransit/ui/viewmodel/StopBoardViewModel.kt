@@ -476,11 +476,11 @@ class StopBoardViewModel(
                 destinations.mapNotNull { destination ->
                     val result =
                         if (lat != null && lon != null) {
-                            enturRepository.getFastestTrip(lat = lat, lon = lon, toId = destination.id)
+                            enturRepository.getFastestTrip(lat = lat, lon = lon, to = destination)
                         } else {
                             val fromIds = _uiState.value.favorites.map { it.id }
                             if (fromIds.isEmpty()) return@mapNotNull null
-                            enturRepository.getFastestTrip(fromIds = fromIds, toId = destination.id)
+                            enturRepository.getFastestTrip(fromIds = fromIds, to = destination)
                         }
                     result.data?.copy(destinationName = destination.name)
                 }

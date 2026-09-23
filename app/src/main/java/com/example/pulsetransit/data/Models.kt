@@ -10,7 +10,18 @@ data class StopPlace(
     val latitude: Double? = null,
     val longitude: Double? = null,
     val quays: List<Quay> = emptyList(),
+    /** Only destinations are ever anything other than a stop; saved JSON without it is a stop. */
+    val kind: PlaceKind = PlaceKind.STOP,
 )
+
+/** Geocoder layer a place came from. Anything but [STOP] has no NSR id, so is routed to by coordinates. */
+@Serializable
+enum class PlaceKind {
+    STOP,
+    ADDRESS,
+    POI,
+    PLACE,
+}
 
 @Serializable
 data class Quay(

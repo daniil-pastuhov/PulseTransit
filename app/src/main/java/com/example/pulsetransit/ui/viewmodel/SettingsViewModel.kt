@@ -16,6 +16,8 @@ import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,6 +74,12 @@ class SettingsViewModel(
         val destinationResults: List<StopPlace> = emptyList(),
         val isSearchingDestination: Boolean = false,
     )
+
+    private companion object {
+        const val SEARCH_DEBOUNCE_MS = 300L
+    }
+
+    private var destinationSearchJob: Job? = null
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -393,12 +401,14 @@ class SettingsViewModel(
     }
 
     fun addDestinationStation(stopPlace: StopPlace) {
+        destinationSearchJob?.cancel()
         settingsRepository.addDestinationStation(stopPlace)
         _uiState.update {
             it.copy(
                 destinationStations = settingsRepository.getDestinationStations(),
                 destinationQuery = "",
                 destinationResults = emptyList(),
+                isSearchingDestination = false,
             )
         }
     }
@@ -412,15 +422,21 @@ class SettingsViewModel(
 
     fun onDestinationQueryChanged(newQuery: String) {
         _uiState.update { it.copy(destinationQuery = newQuery) }
+        // Each keystroke supersedes the last search, so a slow early response can't land after
+        // (and overwrite) the results for what the user has typed since.
+        destinationSearchJob?.cancel()
         if (newQuery.isBlank()) {
             _uiState.update { it.copy(destinationResults = emptyList(), isSearchingDestination = false) }
             return
         }
-        viewModelScope.launch {
-            _uiState.update { it.copy(isSearchingDestination = true) }
-            val results = enturRepository.searchStopPlaces(newQuery)
-            _uiState.update { it.copy(destinationResults = results, isSearchingDestination = false) }
-        }
+        destinationSearchJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isSearchingDestination = true) }
+                delay(SEARCH_DEBOUNCE_MS)
+                val state = _uiState.value
+                val results = enturRepository.searchPlaces(newQuery, state.latitude, state.longitude)
+                _uiState.update { it.copy(destinationResults = results, isSearchingDestination = false) }
+            }
     }
 
     fun removeFilteredLine(line: String) {

@@ -18,6 +18,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 
 class EnturRepositoryImpl(
     private val client: HttpClient,
@@ -53,6 +54,7 @@ class EnturRepositoryImpl(
     @Serializable
     private data class GeoJsonProperties(
         val id: String,
+        val layer: String? = null,
         val names: GeoJsonNames? = null,
         val address: GeoJsonAddress? = null,
     )
@@ -180,8 +182,6 @@ class EnturRepositoryImpl(
 
     override suspend fun searchStopPlaces(query: String): List<StopPlace> {
         if (query.isBlank()) return emptyList()
-        // ... (keeping implementation but I need to make it non-suspend or match interface)
-        // Wait, the interface is suspend.
         return try {
             val response: GeoJsonResponse =
                 client
@@ -192,22 +192,78 @@ class EnturRepositoryImpl(
                         parameter("limit", 15)
                     }.body()
 
-            response.features.mapNotNull { feature ->
-                val props = feature.properties ?: return@mapNotNull null
-                val coords = feature.geometry?.coordinates
-                val lon = coords?.getOrNull(0)
-                val lat = coords?.getOrNull(1)
-                StopPlace(
-                    id = props.id,
-                    name = props.names?.default ?: "Unknown",
-                    locality = props.address?.locality,
-                    latitude = lat,
-                    longitude = lon,
-                )
-            }
+            response.features.mapNotNull { it.toStopPlace() }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
+        }
+    }
+
+    override suspend fun searchPlaces(
+        query: String,
+        focusLat: Double?,
+        focusLon: Double?,
+    ): List<StopPlace> {
+        if (query.isBlank()) return emptyList()
+        return try {
+            val response: GeoJsonResponse =
+                client
+                    .get("https://api.entur.io/geocoder/v3/autocomplete") {
+                        header(clientNameHeader, clientNameValue)
+                        parameter("q", query)
+                        // groupOfStopPlaces is left out: the trip planner can't route to one.
+                        parameter("layers", "stopPlace,address,poi,place")
+                        parameter("limit", 15)
+                        if (focusLat != null && focusLon != null) {
+                            parameter("lat", focusLat)
+                            parameter("lon", focusLon)
+                        }
+                    }.body()
+
+            response.features.mapNotNull { it.toStopPlace() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    private fun GeoJsonFeature.toStopPlace(): StopPlace? {
+        val props = properties ?: return null
+        val kind =
+            when (props.layer) {
+                "address", "street" -> PlaceKind.ADDRESS
+                "poi" -> PlaceKind.POI
+                "place" -> PlaceKind.PLACE
+                // Absent on older responses, which only ever asked for stop places.
+                else -> PlaceKind.STOP
+            }
+        return StopPlace(
+            id = props.id,
+            name = props.names?.default ?: "Unknown",
+            locality = props.address?.locality,
+            latitude = geometry?.coordinates?.getOrNull(1),
+            longitude = geometry?.coordinates?.getOrNull(0),
+            kind = kind,
+        )
+    }
+
+    /**
+     * The trip planner only knows NSR ids; an address or POI id finds no trips at all, so those
+     * are routed to their coordinates instead.
+     */
+    private fun StopPlace.toTripLocation(): JsonObject {
+        val lat = latitude
+        val lon = longitude
+        return buildJsonObject {
+            if (kind != PlaceKind.STOP && lat != null && lon != null) {
+                put("name", name)
+                putJsonObject("coordinates") {
+                    put("latitude", lat)
+                    put("longitude", lon)
+                }
+            } else {
+                put("place", id)
+            }
         }
     }
 
@@ -215,8 +271,8 @@ class EnturRepositoryImpl(
         lat: Double,
         lon: Double,
         radiusKm: Double,
-    ): List<StopPlace> {
-        return try {
+    ): List<StopPlace> =
+        try {
             val response: GeoJsonResponse =
                 client
                     .get("https://api.entur.io/geocoder/v3/reverse") {
@@ -228,24 +284,11 @@ class EnturRepositoryImpl(
                         parameter("limit", 20)
                     }.body()
 
-            response.features.mapNotNull { feature ->
-                val props = feature.properties ?: return@mapNotNull null
-                val coords = feature.geometry?.coordinates
-                val fLon = coords?.getOrNull(0)
-                val fLat = coords?.getOrNull(1)
-                StopPlace(
-                    id = props.id,
-                    name = props.names?.default ?: "Unknown",
-                    locality = props.address?.locality,
-                    latitude = fLat,
-                    longitude = fLon,
-                )
-            }
+            response.features.mapNotNull { it.toStopPlace() }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
         }
-    }
 
     // Length here is the inlined GraphQL query string, not branching logic.
     @Suppress("LongMethod", "CyclomaticComplexMethod")
@@ -480,17 +523,17 @@ class EnturRepositoryImpl(
     override suspend fun getFastestTrip(
         lat: Double,
         lon: Double,
-        toId: String,
+        to: StopPlace,
     ): Sourced<TripInfo?> {
         val now = System.currentTimeMillis()
-        val routeKey = routeKey(lat, lon, toId)
+        val routeKey = routeKey(lat, lon, to.id)
 
         val queryStr =
             """
-            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: String!) {
+            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: Location!) {
               trip(
                 from: { coordinates: { latitude: ${'$'}lat, longitude: ${'$'}lon } }
-                to: { place: ${'$'}to }
+                to: ${'$'}to
                 numTripPatterns: 1
               ) {
                 tripPatterns {
@@ -516,7 +559,7 @@ class EnturRepositoryImpl(
             buildJsonObject {
                 put("lat", lat)
                 put("lon", lon)
-                put("to", toId)
+                put("to", to.toTripLocation())
             }
 
         return try {
@@ -552,12 +595,12 @@ class EnturRepositoryImpl(
     @Suppress("LongMethod")
     override suspend fun getFastestTrip(
         fromIds: List<String>,
-        toId: String,
+        to: StopPlace,
     ): Sourced<TripInfo?> {
         if (fromIds.isEmpty()) return Sourced(null)
 
         val now = System.currentTimeMillis()
-        val routeKey = routeKey(fromIds, toId)
+        val routeKey = routeKey(fromIds, to.id)
         var fastestTrip: TripInfo? = null
         // Tracked so that "every origin failed" falls back to the cache, while "the API answered
         // but found no trips" is reported honestly as no trips.
@@ -566,10 +609,10 @@ class EnturRepositoryImpl(
         for (fromId in fromIds) {
             val queryStr =
                 """
-                query GetTrip(${'$'}from: String!, ${'$'}to: String!) {
+                query GetTrip(${'$'}from: String!, ${'$'}to: Location!) {
                   trip(
                     from: { place: ${'$'}from }
-                    to: { place: ${'$'}to }
+                    to: ${'$'}to
                     numTripPatterns: 1
                   ) {
                     tripPatterns {
@@ -594,7 +637,7 @@ class EnturRepositoryImpl(
             val variables =
                 buildJsonObject {
                     put("from", fromId)
-                    put("to", toId)
+                    put("to", to.toTripLocation())
                 }
 
             try {

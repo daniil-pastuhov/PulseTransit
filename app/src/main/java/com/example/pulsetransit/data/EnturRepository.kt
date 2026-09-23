@@ -3,6 +3,16 @@ package com.example.pulsetransit.data
 interface EnturRepository {
     suspend fun searchStopPlaces(query: String): List<StopPlace>
 
+    /**
+     * Stops, addresses, streets, points of interest and named places, for picking a trip
+     * destination. Results near the focus point, when given, rank higher.
+     */
+    suspend fun searchPlaces(
+        query: String,
+        focusLat: Double? = null,
+        focusLon: Double? = null,
+    ): List<StopPlace>
+
     suspend fun getNearbyStopPlaces(
         lat: Double,
         lon: Double,
@@ -29,14 +39,14 @@ interface EnturRepository {
     /** As [getDepartures], but for the fastest route to a destination from a set of stop places. */
     suspend fun getFastestTrip(
         fromIds: List<String>,
-        toId: String,
+        to: StopPlace,
     ): Sourced<TripInfo?>
 
     /** As [getDepartures], but for the fastest route to a destination from a coordinate. */
     suspend fun getFastestTrip(
         lat: Double,
         lon: Double,
-        toId: String,
+        to: StopPlace,
     ): Sourced<TripInfo?>
 
     companion object {

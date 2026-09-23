@@ -50,6 +50,12 @@ class FakeEnturRepository : EnturRepository {
 
     override suspend fun searchStopPlaces(query: String) = emptyList<StopPlace>()
 
+    override suspend fun searchPlaces(
+        query: String,
+        focusLat: Double?,
+        focusLon: Double?,
+    ) = emptyList<StopPlace>()
+
     override suspend fun getNearbyStopPlaces(
         lat: Double,
         lon: Double,
@@ -71,7 +77,7 @@ class FakeEnturRepository : EnturRepository {
 
     override suspend fun getFastestTrip(
         fromIds: List<String>,
-        toId: String,
+        to: StopPlace,
     ): Sourced<TripInfo?> {
         lastFastestTripFromIds = fromIds
         return trip
@@ -80,7 +86,7 @@ class FakeEnturRepository : EnturRepository {
     override suspend fun getFastestTrip(
         lat: Double,
         lon: Double,
-        toId: String,
+        to: StopPlace,
     ): Sourced<TripInfo?> {
         lastFastestTripCoords = lat to lon
         return trip

@@ -32,6 +32,7 @@
     <string name="save_coords">Save Coordinates</string>
     <string name="add_stop_places">Add Stop Places</string>
     <string name="search_hint">Search by name…</string>
+    <string name="search_destination_hint">Stop, address or place…</string>
     <string name="nearby_stops">Nearby Stop Places</string>
     <string name="search_results">Search Results</string>
     <string name="no_stops_found">No stops found</string>
