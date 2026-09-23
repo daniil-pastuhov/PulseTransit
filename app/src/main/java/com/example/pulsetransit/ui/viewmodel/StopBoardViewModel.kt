@@ -441,29 +441,6 @@ class StopBoardViewModel(
         _uiState.update { it.copy(departures = grouped) }
     }
 
-    private fun groupDepartures(
-        departures: List<Departure>,
-        showCancelled: Boolean,
-    ): List<DepartureGroup> {
-        val filtered = if (showCancelled) departures else departures.filter { !it.isCancelled }
-        val result = mutableListOf<DepartureGroup>()
-        if (filtered.isNotEmpty()) {
-            var currentList = mutableListOf(filtered[0])
-            for (i in 1 until filtered.size) {
-                val dep = filtered[i]
-                val prev = filtered[i - 1]
-                if (dep.line == prev.line && dep.destination == prev.destination) {
-                    currentList.add(dep)
-                } else {
-                    result.add(DepartureGroup(currentList))
-                    currentList = mutableListOf(dep)
-                }
-            }
-            result.add(DepartureGroup(currentList))
-        }
-        return result
-    }
-
     private fun refreshFastestTrip() {
         val destinations = _uiState.value.destinationStations
         val lat = settingsRepository.getSavedLatitude()
@@ -519,4 +496,28 @@ class StopBoardViewModel(
     fun filterOutLine(line: String) {
         settingsRepository.addFilteredLine(line)
     }
+}
+
+/** Collapses consecutive departures of the same line to the same destination into one row. */
+private fun groupDepartures(
+    departures: List<Departure>,
+    showCancelled: Boolean,
+): List<DepartureGroup> {
+    val filtered = if (showCancelled) departures else departures.filter { !it.isCancelled }
+    val result = mutableListOf<DepartureGroup>()
+    if (filtered.isNotEmpty()) {
+        var currentList = mutableListOf(filtered[0])
+        for (i in 1 until filtered.size) {
+            val dep = filtered[i]
+            val prev = filtered[i - 1]
+            if (dep.line == prev.line && dep.destination == prev.destination) {
+                currentList.add(dep)
+            } else {
+                result.add(DepartureGroup(currentList))
+                currentList = mutableListOf(dep)
+            }
+        }
+        result.add(DepartureGroup(currentList))
+    }
+    return result
 }

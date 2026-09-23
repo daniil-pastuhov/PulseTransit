@@ -484,6 +484,15 @@ private fun isSameDay(
     return day.format(a) == day.format(b)
 }
 
+/** Beyond today is only reachable when the user widened the search window; the weekday marks it. */
+private fun formatClockTime(
+    time: Date,
+    now: Date,
+): String {
+    val pattern = if (isSameDay(time, now)) "HH:mm" else "EEE HH:mm"
+    return SimpleDateFormat(pattern, Locale.getDefault()).format(time)
+}
+
 private fun formatDepartureTime(
     expectedTimeStr: String,
     nowText: String,
@@ -502,11 +511,7 @@ private fun formatDepartureTime(
                 diffSeconds < DEPARTING_NOW_SECONDS -> nowText
                 diffSeconds < SECONDS_PER_MINUTE -> "1$minUnit"
                 diffSeconds < RELATIVE_TIME_CUTOFF_SECONDS -> "${diffSeconds / SECONDS_PER_MINUTE}$minUnit"
-                else -> {
-                    // Only reachable beyond today when the user widened the search window.
-                    val pattern = if (isSameDay(expectedDate, now)) "HH:mm" else "EEE HH:mm"
-                    SimpleDateFormat(pattern, Locale.getDefault()).format(expectedDate)
-                }
+                else -> formatClockTime(expectedDate, now)
             }
         } else {
             "?"
