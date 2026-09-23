@@ -5,6 +5,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
+import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
@@ -105,6 +106,7 @@ class FakeSettingsRepository : SettingsRepository {
     var theme = ThemeMode.SYSTEM
     var refreshInterval = 60
     var burnInLevel = BurnInProtectionLevel.MEDIUM
+    var dateStyle = DateDisplayStyle.BESIDE
     var latitude: Double? = 59.9149
     var longitude: Double? = 10.7322
     var dynamicRefresh = false
@@ -239,6 +241,12 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun setBurnInProtectionLevel(level: BurnInProtectionLevel) {
         burnInLevel = level
+    }
+
+    override fun getDateDisplayStyle() = dateStyle
+
+    override fun setDateDisplayStyle(style: DateDisplayStyle) {
+        dateStyle = style
     }
 
     override fun getSavedLatitude() = latitude

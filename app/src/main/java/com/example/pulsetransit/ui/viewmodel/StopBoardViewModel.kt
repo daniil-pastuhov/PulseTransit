@@ -4,6 +4,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.BurnInProtectionLevel
+import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
@@ -60,6 +61,12 @@ class StopBoardViewModel(
         val isLoading: Boolean = false,
         val lastUpdated: String = "",
         val currentTime: String = "",
+        val currentDayOfMonth: String = "",
+        val currentWeekday: String = "",
+        val currentMonth: String = "",
+        val currentWeekdayLong: String = "",
+        val currentMonthLong: String = "",
+        val dateStyle: DateDisplayStyle = DateDisplayStyle.BESIDE,
         val themeMode: ThemeMode = ThemeMode.SYSTEM,
         val burnInLevel: BurnInProtectionLevel = BurnInProtectionLevel.MEDIUM,
         val refreshIntervalSeconds: Int = 60,
@@ -174,6 +181,7 @@ class StopBoardViewModel(
         val favs = settingsRepository.getFavorites()
         val theme = settingsRepository.getThemeMode()
         val burnIn = settingsRepository.getBurnInProtectionLevel()
+        val dateStyle = settingsRepository.getDateDisplayStyle()
         val interval = settingsRepository.getRefreshIntervalSeconds()
         val showDelays = settingsRepository.isShowDelays()
         val showMessages = settingsRepository.isShowMessages()
@@ -193,6 +201,7 @@ class StopBoardViewModel(
                 themeMode = theme,
                 activeTheme = theme,
                 burnInLevel = burnIn,
+                dateStyle = dateStyle,
                 refreshIntervalSeconds = interval,
                 showDelays = showDelays,
                 showMessages = showMessages,
@@ -283,14 +292,32 @@ class StopBoardViewModel(
         }
     }
 
+    /** Advances the header date to the next [DateDisplayStyle] and remembers the choice. */
+    fun cycleDateStyle() {
+        val next = _uiState.value.dateStyle.next()
+        settingsRepository.setDateDisplayStyle(next)
+        _uiState.update { it.copy(dateStyle = next) }
+    }
+
     private fun startClock() {
         viewModelScope.launch {
             val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val daySdf = SimpleDateFormat("d", Locale.getDefault())
+            val weekdaySdf = SimpleDateFormat("EEE", Locale.getDefault())
+            val monthSdf = SimpleDateFormat("LLL", Locale.getDefault())
+            val weekdayLongSdf = SimpleDateFormat("EEEE", Locale.getDefault())
+            val monthLongSdf = SimpleDateFormat("LLLL", Locale.getDefault())
             while (true) {
                 val now = System.currentTimeMillis()
+                val date = Date(now)
                 _uiState.update {
                     it.copy(
-                        currentTime = sdf.format(Date(now)),
+                        currentTime = sdf.format(date),
+                        currentDayOfMonth = daySdf.format(date),
+                        currentWeekday = weekdaySdf.format(date),
+                        currentMonth = monthSdf.format(date),
+                        currentWeekdayLong = weekdayLongSdf.format(date),
+                        currentMonthLong = monthLongSdf.format(date),
                         // Derived here so the age keeps climbing while the board stays offline.
                         staleAgeMinutes =
                             it.staleSinceMillis?.let { since ->

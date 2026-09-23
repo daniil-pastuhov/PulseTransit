@@ -47,6 +47,10 @@ interface SettingsRepository {
 
     fun setBurnInProtectionLevel(level: BurnInProtectionLevel)
 
+    fun getDateDisplayStyle(): DateDisplayStyle
+
+    fun setDateDisplayStyle(style: DateDisplayStyle)
+
     fun getSavedLatitude(): Double?
 
     fun getSavedLongitude(): Double?

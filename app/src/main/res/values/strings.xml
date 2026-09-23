@@ -150,4 +150,5 @@
     <!-- Attribution -->
     <string name="attribution_entur">Data from Entur</string>
     <string name="attribution_met">Weather from MET Norway</string>
+    <string name="change_date_style">Change date style</string>
 </resources>
