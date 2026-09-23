@@ -150,4 +150,5 @@
     <!-- Attribution -->
     <string name="attribution_entur">Data fra Entur</string>
     <string name="attribution_met">Værdata fra MET Norway</string>
+    <string name="change_date_style">Endre datovisning</string>
 </resources>

@@ -1,6 +1,7 @@
 package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
@@ -99,6 +100,24 @@ class StopBoardViewModelTest {
         isRealtime = true,
         quayId = "NSR:Quay:1",
     )
+
+    // --- Header date style -----------------------------------------------------------------
+
+    @Test
+    fun `tapping the clock cycles date styles, wraps around and persists each choice`() =
+        boardTest {
+            settings.dateStyle = DateDisplayStyle.TILE
+            val vm = viewModel()
+            assertEquals(DateDisplayStyle.TILE, vm.uiState.value.dateStyle)
+
+            vm.cycleDateStyle()
+            assertEquals(DateDisplayStyle.LONG, vm.uiState.value.dateStyle)
+            assertEquals(DateDisplayStyle.LONG, settings.dateStyle)
+
+            vm.cycleDateStyle() // last entry wraps to the first
+            assertEquals(DateDisplayStyle.HIDDEN, vm.uiState.value.dateStyle)
+            assertEquals(DateDisplayStyle.HIDDEN, settings.dateStyle)
+        }
 
     // --- Auto theme hysteresis -------------------------------------------------------------
 

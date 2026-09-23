@@ -9,6 +9,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ExpandLess
@@ -52,6 +54,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -63,9 +66,12 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -74,6 +80,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.pulsetransit.R
+import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -157,16 +164,8 @@ fun MainScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    // Left: Digital Clock
-                    Text(
-                        text = uiState.currentTime,
-                        style =
-                            MaterialTheme.typography.headlineLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 32.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                            ),
-                    )
+                    // Left: Digital Clock + date; tapping cycles the date style.
+                    HeaderClock(uiState = uiState, onClick = { viewModel.cycleDateStyle() })
 
                     // Middle: Weather
                     BoxWithConstraints(
@@ -697,5 +696,139 @@ fun WeatherItem(
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
         )
+    }
+}
+
+/**
+ * The header clock with the date drawn in the user's chosen [DateDisplayStyle]. Every visible style
+ * gives the day of month the emphasis; weekday and month are secondary context.
+ */
+@Composable
+private fun HeaderClock(
+    uiState: StopBoardViewModel.UiState,
+    onClick: () -> Unit,
+) {
+    val timeStyle =
+        MaterialTheme.typography.headlineLarge.copy(
+            fontWeight = FontWeight.Bold,
+            fontSize = 32.sp,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    val dayStyle = timeStyle.copy(color = MaterialTheme.colorScheme.onSurface)
+    val secondary = MaterialTheme.colorScheme.onSurfaceVariant
+    // The date strings arrive with the first clock tick; until then show the time alone.
+    val style = if (uiState.currentDayOfMonth.isEmpty()) DateDisplayStyle.HIDDEN else uiState.dateStyle
+    val clickModifier =
+        Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClickLabel = stringResource(R.string.change_date_style), onClick = onClick)
+
+    when (style) {
+        DateDisplayStyle.HIDDEN -> {
+            Text(text = uiState.currentTime, modifier = clickModifier, style = timeStyle)
+        }
+
+        DateDisplayStyle.BESIDE -> {
+            Row(
+                modifier = clickModifier,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(text = uiState.currentTime, style = timeStyle)
+                Text(
+                    text = uiState.currentDayOfMonth,
+                    modifier = Modifier.padding(start = 10.dp),
+                    style = dayStyle,
+                )
+                Column {
+                    Text(text = uiState.currentWeekday, style = MaterialTheme.typography.labelMedium, color = secondary)
+                    Text(text = uiState.currentMonth, style = MaterialTheme.typography.labelMedium, color = secondary)
+                }
+            }
+        }
+
+        DateDisplayStyle.STACKED -> {
+            Column(modifier = clickModifier) {
+                Text(text = uiState.currentTime, style = timeStyle)
+                Text(
+                    text =
+                        buildAnnotatedString {
+                            append(uiState.currentWeekday)
+                            append(" ")
+                            withStyle(
+                                SpanStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                ),
+                            ) { append(uiState.currentDayOfMonth) }
+                            append(" ")
+                            append(uiState.currentMonth)
+                        },
+                    style = MaterialTheme.typography.labelLarge,
+                    color = secondary,
+                )
+            }
+        }
+
+        DateDisplayStyle.TILE -> {
+            Row(
+                modifier = clickModifier,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(text = uiState.currentTime, style = timeStyle)
+                Column(
+                    modifier =
+                        Modifier
+                            .width(48.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp)),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = uiState.currentMonth.uppercase(),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.primary),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = uiState.currentDayOfMonth,
+                        style = dayStyle.copy(fontSize = 22.sp),
+                    )
+                }
+            }
+        }
+
+        DateDisplayStyle.LONG -> {
+            Row(
+                modifier = clickModifier,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(text = uiState.currentTime, modifier = Modifier.alignByBaseline(), style = timeStyle)
+                Text(
+                    text = uiState.currentWeekdayLong,
+                    modifier = Modifier.alignByBaseline().padding(start = 10.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = secondary,
+                )
+                Text(
+                    text = uiState.currentDayOfMonth,
+                    modifier = Modifier.alignByBaseline(),
+                    style = dayStyle.copy(fontSize = 26.sp),
+                )
+                Text(
+                    text = uiState.currentMonthLong,
+                    modifier = Modifier.alignByBaseline(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = secondary,
+                )
+            }
+        }
     }
 }

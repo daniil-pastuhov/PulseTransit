@@ -77,6 +77,27 @@ enum class ThemeMode {
     AUTO,
 }
 
+/** How the date is shown next to the header clock. Tapping the clock cycles through these in order. */
+enum class DateDisplayStyle {
+    /** Time only. */
+    HIDDEN,
+
+    /** Large day of month beside the time, weekday and month stacked small next to it. */
+    BESIDE,
+
+    /** A small "Wed 23 Sep" line under the time, with the day in bold. */
+    STACKED,
+
+    /** A tear-off calendar tile: month in a header strip above a large day of month. */
+    TILE,
+
+    /** Spelled out beside the time: "Wednesday 23 September", with the day enlarged. */
+    LONG,
+    ;
+
+    fun next(): DateDisplayStyle = entries[(ordinal + 1) % entries.size]
+}
+
 enum class BurnInProtectionLevel(
     val maxOffsetDp: Float,
 ) {

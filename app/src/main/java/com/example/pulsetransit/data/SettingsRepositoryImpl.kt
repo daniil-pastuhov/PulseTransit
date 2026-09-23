@@ -151,6 +151,21 @@ class SettingsRepositoryImpl(
         prefs.edit { putString("burn_in_protection", level.name) }
     }
 
+    override fun getDateDisplayStyle(): DateDisplayStyle {
+        val styleStr =
+            prefs.getString("date_display_style", DateDisplayStyle.BESIDE.name)
+                ?: DateDisplayStyle.BESIDE.name
+        return try {
+            DateDisplayStyle.valueOf(styleStr)
+        } catch (_: Exception) {
+            DateDisplayStyle.BESIDE
+        }
+    }
+
+    override fun setDateDisplayStyle(style: DateDisplayStyle) {
+        prefs.edit { putString("date_display_style", style.name) }
+    }
+
     override fun getSavedLatitude(): Double? {
         val valStr = prefs.getString("saved_lat", null) ?: return null
         return valStr.toDoubleOrNull()
