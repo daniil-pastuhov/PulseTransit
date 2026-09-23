@@ -25,6 +25,18 @@ android {
     }
 
     signingConfigs {
+        // Project-local debug key so every machine signs debug builds identically. Falls back to
+        // the SDK's ~/.android/debug.keystore when the file is absent.
+        val debugKeystore = file("debug.keystore")
+        if (debugKeystore.exists()) {
+            getByName("debug") {
+                storeFile = debugKeystore
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+
         val releaseFile =
             providers
                 .gradleProperty("pulseReleaseFile")
@@ -56,6 +68,7 @@ android {
 
     buildTypes {
         release {
+            manifestPlaceholders += mapOf()
             signingConfigs.findByName("release")?.let {
                 signingConfig = it
             }
