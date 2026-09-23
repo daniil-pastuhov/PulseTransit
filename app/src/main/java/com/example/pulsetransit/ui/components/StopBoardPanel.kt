@@ -28,6 +28,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,14 +40,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.DepartureGroup
+import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.theme.ColorBus
 import com.example.pulsetransit.theme.ColorDefaultLine
@@ -80,7 +84,9 @@ fun StopBoardPanel(
     showDelays: Boolean = true,
     showMessages: Boolean = true,
     isLoading: Boolean = false,
+    isExtended: Boolean = false,
     onFilterOut: (String) -> Unit = {},
+    onSearchFurtherAhead: () -> Unit = {},
 ) {
     Card(
         modifier =
@@ -146,13 +152,31 @@ fun StopBoardPanel(
                             .weight(1f),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = stringResource(R.string.no_departures),
-                        style =
-                            MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text =
+                                if (isExtended) {
+                                    pluralStringResource(
+                                        R.plurals.no_departures_extended,
+                                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
+                                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
+                                    )
+                                } else {
+                                    stringResource(R.string.no_departures)
+                                },
+                            style =
+                                MaterialTheme.typography.bodyLarge.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
+                            textAlign = TextAlign.Center,
+                        )
+                        if (!isExtended) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedButton(onClick = onSearchFurtherAhead) {
+                                Text(stringResource(R.string.search_further_ahead))
+                            }
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
@@ -452,6 +476,14 @@ private fun getTransportColor(mode: String?): Color =
         else -> ColorDefaultLine
     }
 
+private fun isSameDay(
+    a: Date,
+    b: Date,
+): Boolean {
+    val day = SimpleDateFormat("yyyyMMdd", Locale.US)
+    return day.format(a) == day.format(b)
+}
+
 private fun formatDepartureTime(
     expectedTimeStr: String,
     nowText: String,
@@ -471,8 +503,9 @@ private fun formatDepartureTime(
                 diffSeconds < SECONDS_PER_MINUTE -> "1$minUnit"
                 diffSeconds < RELATIVE_TIME_CUTOFF_SECONDS -> "${diffSeconds / SECONDS_PER_MINUTE}$minUnit"
                 else -> {
-                    val timeSdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-                    timeSdf.format(expectedDate)
+                    // Only reachable beyond today when the user widened the search window.
+                    val pattern = if (isSameDay(expectedDate, now)) "HH:mm" else "EEE HH:mm"
+                    SimpleDateFormat(pattern, Locale.getDefault()).format(expectedDate)
                 }
             }
         } else {

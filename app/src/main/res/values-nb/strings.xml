@@ -50,6 +50,11 @@
     <string name="no_stops_configured">Ingen stoppesteder er konfigurert.</string>
     <string name="open_settings_to_add">Åpne innstillinger for å legge til stopp</string>
     <string name="no_departures">Ingen kommende avganger</string>
+    <plurals name="no_departures_extended">
+        <item quantity="one">Ingen avganger det neste %1$d døgnet</item>
+        <item quantity="other">Ingen avganger de neste %1$d dagene</item>
+    </plurals>
+    <string name="search_further_ahead">Søk lenger frem</string>
     <string name="now">Nå</string>
     <string name="cancelled">Kansellert</string>
     <string name="unit_minute">min</string>

@@ -50,6 +50,11 @@
     <string name="no_stops_configured">No stops configured yet.</string>
     <string name="open_settings_to_add">Open Settings to Add Stops</string>
     <string name="no_departures">No upcoming departures</string>
+    <plurals name="no_departures_extended">
+        <item quantity="one">No departures in the next %1$d day</item>
+        <item quantity="other">No departures in the next %1$d days</item>
+    </plurals>
+    <string name="search_further_ahead">Search further ahead</string>
     <string name="now">Now</string>
     <string name="cancelled">Cancelled</string>
     <string name="unit_minute">m</string>

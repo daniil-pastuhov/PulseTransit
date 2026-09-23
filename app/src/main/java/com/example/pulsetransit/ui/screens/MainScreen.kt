@@ -268,6 +268,8 @@ fun MainScreen(
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
                         onFilterOut = { line -> viewModel.filterOutLine(line) },
+                        extendedStopIds = uiState.extendedStopIds,
+                        onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -445,6 +447,8 @@ fun ReorderableFavoriteList(
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
     onFilterOut: (String) -> Unit,
+    extendedStopIds: Set<String>,
+    onSearchFurtherAhead: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
@@ -533,7 +537,9 @@ fun ReorderableFavoriteList(
                                 showDelays = showDelays,
                                 showMessages = showMessages,
                                 isLoading = isLoading,
+                                isExtended = stop.id in extendedStopIds,
                                 onFilterOut = onFilterOut,
+                                onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -608,7 +614,9 @@ fun ReorderableFavoriteList(
                                 showDelays = showDelays,
                                 showMessages = showMessages,
                                 isLoading = isLoading,
+                                isExtended = stop.id in extendedStopIds,
                                 onFilterOut = onFilterOut,
+                                onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

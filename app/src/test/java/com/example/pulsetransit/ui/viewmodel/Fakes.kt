@@ -44,6 +44,7 @@ class FakeEnturRepository : EnturRepository {
     var departures: (String) -> Sourced<List<Departure>> = { Sourced(emptyList()) }
     var trip: Sourced<TripInfo?> = Sourced(null)
     val requestedQuays = mutableMapOf<String, Set<String>?>()
+    val requestedTimeRanges = mutableMapOf<String, Int>()
     var lastFastestTripFromIds: List<String>? = null
     var lastFastestTripCoords: Pair<Double, Double>? = null
 
@@ -61,8 +62,10 @@ class FakeEnturRepository : EnturRepository {
         stopId: String,
         limit: Int,
         quayIds: Set<String>?,
+        timeRangeSeconds: Int,
     ): Sourced<List<Departure>> {
         requestedQuays[stopId] = quayIds
+        requestedTimeRanges[stopId] = timeRangeSeconds
         return departures(stopId)
     }
 

@@ -92,6 +92,11 @@ class StopBoardViewModel(
         val staleSinceMillis: Long? = null,
         /** [staleSinceMillis] as whole minutes, recomputed on each clock tick. */
         val staleAgeMinutes: Int? = null,
+        /**
+         * Stops the user asked to search further ahead for, because nothing departs within the
+         * default window. Kept for the session so the next auto-refresh doesn't empty them again.
+         */
+        val extendedStopIds: Set<String> = emptySet(),
     )
 
     private val _uiState = MutableStateFlow(UiState())
@@ -388,7 +393,14 @@ class StopBoardViewModel(
 
             for (stop in favs) {
                 val quayIds = settingsRepository.getSelectedQuays(stop.id)
-                val result = enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds)
+                val timeRange =
+                    if (stop.id in _uiState.value.extendedStopIds) {
+                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS
+                    } else {
+                        EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS
+                    }
+                val result =
+                    enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds, timeRangeSeconds = timeRange)
                 result.fetchedAtMillis?.let { fetchedAt ->
                     oldestCacheFetch = minOf(oldestCacheFetch ?: fetchedAt, fetchedAt)
                 }
@@ -413,6 +425,11 @@ class StopBoardViewModel(
             }
             updateGroupedDepartures()
         }
+    }
+
+    fun searchFurtherAhead(stopId: String) {
+        _uiState.update { it.copy(extendedStopIds = it.extendedStopIds + stopId) }
+        refreshDepartures()
     }
 
     private fun updateGroupedDepartures() {

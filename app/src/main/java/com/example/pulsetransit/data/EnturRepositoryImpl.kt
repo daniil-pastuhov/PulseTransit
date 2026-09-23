@@ -253,14 +253,15 @@ class EnturRepositoryImpl(
         stopId: String,
         limit: Int,
         quayIds: Set<String>?,
+        timeRangeSeconds: Int,
     ): Sourced<List<Departure>> {
         val queryStr =
             """
-            query GetDepartures(${'$'}id: String!, ${'$'}limit: Int!) {
+            query GetDepartures(${'$'}id: String!, ${'$'}limit: Int!, ${'$'}timeRange: Int!) {
               stopPlace(id: ${'$'}id) {
                 id
                 name
-                estimatedCalls(numberOfDepartures: ${'$'}limit, includeCancelledTrips: true) {
+                estimatedCalls(numberOfDepartures: ${'$'}limit, timeRange: ${'$'}timeRange, includeCancelledTrips: true) {
                   expectedDepartureTime
                   aimedDepartureTime
                   cancellation
@@ -293,6 +294,7 @@ class EnturRepositoryImpl(
             buildJsonObject {
                 put("id", stopId)
                 put("limit", limit)
+                put("timeRange", timeRangeSeconds)
             }
 
         val now = System.currentTimeMillis()

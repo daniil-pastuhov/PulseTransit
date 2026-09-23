@@ -7,10 +7,14 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.TextContent
 import io.ktor.http.headersOf
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -215,6 +219,34 @@ class EnturRepositoryImplTest {
 
             assertEquals(listOf("L1"), result.data.map { it.line })
             assertEquals(listOf("L1"), departureCache.rows.map { it.line })
+        }
+
+    @Test
+    fun `time range is sent as a query variable`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val engine =
+                MockEngine { request ->
+                    bodies += (request.body as TextContent).text
+                    respond(departuresBody(), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            repo.getDepartures(stopId, limit = 15)
+            repo.getDepartures(stopId, limit = 15, timeRangeSeconds = EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS)
+
+            val ranges =
+                bodies.map {
+                    Json
+                        .parseToJsonElement(it)
+                        .jsonObject["variables"]!!
+                        .jsonObject["timeRange"]!!
+                        .jsonPrimitive.int
+                }
+            assertEquals(
+                listOf(EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS, EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS),
+                ranges,
+            )
         }
 
     private fun cached(

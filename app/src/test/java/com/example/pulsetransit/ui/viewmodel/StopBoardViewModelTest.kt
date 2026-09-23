@@ -3,6 +3,7 @@ package com.example.pulsetransit.ui.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
+import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -450,6 +451,28 @@ class StopBoardViewModelTest {
             viewModel()
 
             assertEquals(setOf("NSR:Quay:7"), entur.requestedQuays[oslo.id])
+        }
+
+    @Test
+    fun `searching further ahead widens the window for that stop only and survives refresh`() =
+        boardTest {
+            val bergen = oslo.copy(id = "NSR:StopPlace:548")
+            settings.favoriteStops = listOf(oslo, bergen)
+            entur.departures = { Sourced.live(emptyList()) }
+            val vm = viewModel()
+            runCurrent()
+            assertEquals(EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS, entur.requestedTimeRanges[oslo.id])
+
+            vm.searchFurtherAhead(oslo.id)
+            runCurrent()
+
+            assertEquals(setOf(oslo.id), vm.uiState.value.extendedStopIds)
+            assertEquals(EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS, entur.requestedTimeRanges[oslo.id])
+            assertEquals(EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS, entur.requestedTimeRanges[bergen.id])
+
+            vm.refreshDepartures()
+            runCurrent()
+            assertEquals(EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS, entur.requestedTimeRanges[oslo.id])
         }
 
     // --- Fastest Route ---------------------------------------------------------------------
