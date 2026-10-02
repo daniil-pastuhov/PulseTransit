@@ -11,7 +11,7 @@
 # Needs `gh` (authenticated) and `adb` on PATH.
 set -euo pipefail
 
-PACKAGE=com.example.pulsetransit
+PACKAGE=com.homieapps.pulsetransit
 WORKFLOW=android.yml
 ARTIFACT=app-release
 
