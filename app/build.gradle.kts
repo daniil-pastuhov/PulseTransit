@@ -1,3 +1,4 @@
+import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 
 plugins {
@@ -9,6 +10,7 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.play.publisher)
 }
 
 android {
@@ -16,12 +18,25 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.example.pulsetransit"
+        applicationId = "com.homieapps.pulsetransit"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
+        // Play rejects an upload whose versionCode is not higher than every earlier one, so CI
+        // passes its run number. Local builds stay at 1 and are never uploaded.
+        versionCode =
+            providers
+                .gradleProperty("pulseVersionCode")
+                .orElse(providers.environmentVariable("pulseVersionCode"))
+                .map(String::toInt)
+                .getOrElse(1)
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    androidResources {
+        // The app is translated into English and Norwegian Bokmål only. Without this filter the
+        // libraries' translations ship too, and Play lists the app under ~80 languages.
+        localeFilters += listOf("en", "nb")
     }
 
     signingConfigs {
@@ -111,6 +126,29 @@ android {
 
 kotlin {
     jvmToolchain(17)
+}
+
+// Uploads to Google Play: `publishReleaseBundle` (AAB + release notes) and
+// `publishReleaseListing` (store texts from src/main/play). Country availability, graphics and
+// the policy declarations are managed in Play Console, not here.
+play {
+    providers
+        .gradleProperty("pulsePlayCredentials")
+        .orElse(providers.environmentVariable("pulsePlayCredentials"))
+        .filter { it.isNotBlank() }
+        .orNull
+        ?.let { serviceAccountCredentials.set(file(it)) }
+    track.set("internal")
+    defaultToAppBundles.set(true)
+    // An app that has never passed review only accepts draft releases; switch to "completed"
+    // once the first production review is through.
+    releaseStatus.set(
+        providers
+            .gradleProperty("pulsePlayReleaseStatus")
+            .orElse(providers.environmentVariable("pulsePlayReleaseStatus"))
+            .map { ReleaseStatus.valueOf(it.uppercase()) }
+            .getOrElse(ReleaseStatus.DRAFT),
+    )
 }
 
 detekt {

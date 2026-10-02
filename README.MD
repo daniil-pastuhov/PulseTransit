@@ -57,3 +57,29 @@ minified stack traces are unreadable.
 
 To confirm the pipeline works end to end, force a crash from a **release** build — a debug build reports
 nothing by design — and it should appear in the console within a couple of minutes.
+
+## Publishing to Google Play
+
+The app is published as `com.homieapps.pulsetransit`, in Norway only, with English and Norwegian
+store listings.
+
+- **Store texts** live in `app/src/main/play/` (`listings/en-US`, `listings/no-NO`, plus
+  `release-notes/` for the "What's new" text). They are pushed by CI, so edit them here rather than
+  in Play Console, or the next release overwrites your Console edits. Graphics, country
+  availability, the content rating, Data safety and other policy declarations are managed in Play
+  Console.
+- **Releases**: every push to `main` builds a signed AAB, with the workflow run number as its
+  `versionCode`, and uploads it to the **internal** testing track via
+  [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher). Promote it to closed
+  testing or production in Play Console.
+- **Secrets** (GitHub `Release` environment): `PLAY_SERVICE_ACCOUNT_JSON` holds the service account
+  key. The upload step is skipped while the secret is missing.
+- **Release status**: Play only accepts draft releases until the app has passed its first review.
+  After that, set the repository variable `PLAY_RELEASE_STATUS=completed` so internal releases go
+  out to testers without a manual rollout.
+
+To upload from your machine instead:
+
+```bash
+./gradlew publishReleaseBundle -PpulsePlayCredentials=/path/to/service-account.json -PpulseVersionCode=<n>
+```

@@ -12,3 +12,6 @@ local.properties
 /.claude
 *.jks
 *.keystore
+# Google Play service account key
+*service-account*.json
+pulsetransit-*.json

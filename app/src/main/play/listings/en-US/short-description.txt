@@ -1,0 +1,1 @@
+Live departure board for your stops in Norway, built for an always-on display.
