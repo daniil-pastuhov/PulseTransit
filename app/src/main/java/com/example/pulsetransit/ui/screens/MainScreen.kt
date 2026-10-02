@@ -62,6 +62,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -175,7 +176,11 @@ fun MainScreen(
                                 .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        val maxItems = (maxWidth.value / 60).toInt().coerceIn(4, 8)
+                        // Fit only as many columns as the width allows: a forced minimum
+                        // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
+                        // grow with the system font scale, so the column budget does too.
+                        val itemWidth = 56.dp * LocalDensity.current.fontScale
+                        val maxItems = (maxWidth / itemWidth).toInt().coerceIn(1, 8)
                         val totalAvailable = uiState.weather.size
                         val step = if (totalAvailable > maxItems) totalAvailable / maxItems else 1
 
