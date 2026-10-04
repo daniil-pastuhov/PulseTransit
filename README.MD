@@ -63,23 +63,38 @@ nothing by design — and it should appear in the console within a couple of min
 The app is published as `com.homieapps.pulsetransit`, in Norway only, with English and Norwegian
 store listings.
 
-- **Store texts** live in `app/src/main/play/` (`listings/en-US`, `listings/no-NO`, plus
-  `release-notes/` for the "What's new" text). They are pushed by CI, so edit them here rather than
-  in Play Console, or the next release overwrites your Console edits. Graphics, country
+- **Store texts** live in `app/src/main/play/listings/` (`en-US`, `no-NO`), and the "What's new"
+  text of each release in `release-notes/vX.Y.Z/`. CI pushes them with every release, so edit them
+  here rather than in Play Console, or the next release overwrites your Console edits. Graphics, country
   availability, the content rating, Data safety and other policy declarations are managed in Play
   Console.
-- **Releases**: every push to `main` builds a signed AAB, with the workflow run number as its
-  `versionCode`, and uploads it to the **internal** testing track via
-  [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher). Promote it to closed
-  testing or production in Play Console.
+- **Releases**: see [Releasing](#releasing). CI uploads a signed AAB, with the workflow run number
+  as its `versionCode`, via [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher).
 - **Secrets** (GitHub `Release` environment): `PLAY_SERVICE_ACCOUNT_JSON` holds the service account
   key. The upload step is skipped while the secret is missing.
-- **Release status**: Play only accepts draft releases until the app has passed its first review.
-  After that, set the repository variable `PLAY_RELEASE_STATUS=completed` so internal releases go
-  out to testers without a manual rollout.
+- **Release status**: releases go out to testers as `completed`. Set the repository variable
+  `PLAY_RELEASE_STATUS=draft` to leave the rollout to Play Console instead.
 
 To upload from your machine instead:
 
 ```bash
 ./gradlew publishReleaseBundle -PpulsePlayCredentials=/path/to/service-account.json -PpulseVersionCode=<n>
 ```
+
+## Releasing
+
+Merging to `main` publishes nothing; CI only checks and builds it. A release goes out like this:
+
+1. **Start it**: `scripts/release` (add `--dry-run` to try it without changing anything). It
+   lists the commits on `origin/main` since the last `vX.Y.Z` tag and asks for a patch, minor or
+   major bump. Then it has the Claude CLI write the "What's new" notes in English and Norwegian
+   for you to accept, edit or regenerate. It creates `release/vX.Y.Z` with the new `versionName`
+   and `release-notes/vX.Y.Z/<locale>.txt`, pushes it and opens a PR.
+2. **Internal testing**: CI publishes every push to `release/v*` to the internal track, with those
+   notes and the store listing. Fixes for the release go on the branch; each push becomes a new
+   internal build.
+3. **Closed testing**: merging the PR promotes the internal release to closed testing (`alpha`) and
+   tags `vX.Y.Z`, with a GitHub release.
+
+Needs `gh` (logged in) and `claude` on your PATH. Play allows 500 characters of notes per
+language, and the script checks that.

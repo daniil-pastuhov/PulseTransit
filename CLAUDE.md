@@ -25,6 +25,13 @@ placeholder set per build type — a debug build reporting nothing is expected, 
 ./gradlew lint                   # Android lint
 ```
 
+**Releases** are cut with `scripts/release`, not by pushing to main: it bumps `versionName` on a
+`release/vX.Y.Z` branch and writes `release-notes/vX.Y.Z/<play-locale>.txt`. CI publishes pushes to
+`release/v*` to Play internal (copying the notes into GPP's git-ignored
+`app/src/main/play/release-notes/` via `scripts/stage-release-notes.sh`), and on the PR's merge
+promotes that release to closed testing and tags `vX.Y.Z`. Main publishes nothing. See "Releasing"
+in README.MD.
+
 **Tests.** `app/src/test` covers the offline cache and the MET caching contract with Ktor's
 `MockEngine` and in-memory fake DAOs (`FakeCacheDaos.kt`). Those fakes reproduce the DAO queries by
 hand, so the real SQL is pinned separately by `app/src/androidTest` (`CacheDatabaseTest`) against an
