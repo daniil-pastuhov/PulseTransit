@@ -1,0 +1,1 @@
+• Når et stoppested ikke har avganger snart, ser tavlen nå 3 dager frem i stedet for 7, slik at den bare viser tider rutetabellen pålitelig kan bekrefte.

@@ -1,0 +1,1 @@
+• When a stop has no departures soon, the board now looks ahead 3 days instead of 7, so it only shows times the timetable can reliably back up.
