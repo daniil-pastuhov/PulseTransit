@@ -53,8 +53,12 @@ interface EnturRepository {
         /** Entur's own default for `estimatedCalls`. */
         const val DEFAULT_DEPARTURE_WINDOW_SECONDS = 24 * 60 * 60
 
-        /** Used on request for stops with nothing inside the default window. */
-        const val EXTENDED_DEPARTURE_WINDOW_DAYS = 7
+        /**
+         * Used on request for stops with nothing inside the default window. Kept short because the
+         * board tells the user there is nothing in this span, and timetable data further out is
+         * not reliable enough to claim that; three days still reaches past a weekend.
+         */
+        const val EXTENDED_DEPARTURE_WINDOW_DAYS = 3
         const val EXTENDED_DEPARTURE_WINDOW_SECONDS = EXTENDED_DEPARTURE_WINDOW_DAYS * 24 * 60 * 60
     }
 }
