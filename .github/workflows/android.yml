@@ -1,18 +1,29 @@
 name: Android CI
 
+# Release flow (scripts/release starts it; see "Releasing" in README.MD):
+# - Each push to a release/vX.Y.Z branch publishes the bundle and the store listing to the Play
+#   internal track, with the notes in release-notes/vX.Y.Z/.
+# - Merging that branch's PR promotes the internal release to closed testing (alpha) and tags
+#   vX.Y.Z.
+# Main itself publishes nothing. The release jobs live in this workflow, not a separate one,
+# because the Play version code is this workflow's run number.
 on:
   push:
-    branches: [ main ]
+    branches: [ main, "release/v*" ]
   pull_request:
     branches: [ main ]
+    types: [ opened, synchronize, reopened, closed ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Release-branch pushes are never cancelled, so a Play upload is never cut off halfway, and
+  # neither is the run that promotes a merged release PR.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release/') && github.event.action != 'closed' }}
 
 jobs:
   static-analysis:
     name: Static Analysis
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +57,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -70,6 +82,7 @@ jobs:
 
   instrumentation-tests:
     name: Instrumentation Tests
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -109,6 +122,7 @@ jobs:
 
   build:
     name: Build Release
+    if: github.event.action != 'closed'
     runs-on: ubuntu-latest
     environment: Release
     env:
@@ -151,13 +165,75 @@ jobs:
           name: app-release-bundle
           path: app/build/outputs/bundle/release/app-release.aab
 
+      - name: Stage the release notes
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v')
+        run: scripts/stage-release-notes.sh "${GITHUB_REF_NAME#release/v}"
+
       # Skipped when the PLAY_SERVICE_ACCOUNT_JSON secret is absent (e.g. on a fork).
       - name: Publish to Google Play (internal track)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && env.HAS_PLAY_KEY == 'true'
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v') && env.HAS_PLAY_KEY == 'true'
         run: |
           printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play-service-account.json"
-          ./gradlew publishReleaseBundle --artifact-dir app/build/outputs/bundle/release publishReleaseListing --stacktrace
+          ./gradlew publishReleaseBundle --artifact-dir app/build/outputs/bundle/release \
+            --release-name "$RELEASE_VERSION ($pulseVersionCode)" publishReleaseListing --stacktrace
         env:
           PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           pulsePlayCredentials: ${{ runner.temp }}/play-service-account.json
-          pulsePlayReleaseStatus: ${{ vars.PLAY_RELEASE_STATUS || 'draft' }}
+          # "completed" rolls each build out to the track's testers; the repository variable
+          # PLAY_RELEASE_STATUS can set "draft" to leave the rollout to Play Console instead.
+          pulsePlayReleaseStatus: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
+
+  # --- Merged release PR: move the tested build on to closed testing ---------------------------
+
+  promote:
+    name: Promote to Google Play closed testing
+    if: >-
+      github.event_name == 'pull_request' && github.event.action == 'closed' &&
+      github.event.pull_request.merged && startsWith(github.head_ref, 'release/v')
+    runs-on: ubuntu-latest
+    environment: Release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - name: set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Stage the release notes
+        run: scripts/stage-release-notes.sh "${GITHUB_HEAD_REF#release/v}"
+
+      # The internal track's release is the build testers have been trying; it is promoted as is
+      # rather than rebuilt from the merge commit.
+      - name: Promote internal to closed testing
+        run: |
+          printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play-service-account.json"
+          ./gradlew promoteReleaseArtifact --from-track internal --promote-track alpha --stacktrace
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          pulsePlayCredentials: ${{ runner.temp }}/play-service-account.json
+          pulsePlayReleaseStatus: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
+
+  tag-release:
+    name: Tag the release
+    needs: promote
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - name: Tag and create a GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          VERSION=${GITHUB_HEAD_REF#release/v}
+          gh release create "v$VERSION" --target "$MERGE_SHA" --title "$VERSION" \
+            --notes-file "release-notes/v$VERSION/en-US.txt"
