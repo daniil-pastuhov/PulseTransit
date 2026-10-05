@@ -94,11 +94,20 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   `MotionSource` in `iosMain/.../platform/IosPorts.kt`) that small adapters turn into the shared
   interfaces. `ClockFormatter` has neither, so Swift implements it directly.
 - Each screen gets its ViewModel through a `ViewModelOwner`, and **must call `owner.clear()` when the
-  screen goes away** (see `StopBoardModel.deinit`). Only that cancels `viewModelScope`; without it
+  screen goes away** (`ScreenModel` in `iosApp/iosApp/Support/ScreenModel.swift` does it in `deinit`). Only that cancels `viewModelScope`; without it
   the board's clock and refresh loops keep running for the life of the app.
+- **Strings:** the Android `values*/strings.xml` files are the source of truth for both apps. After
+  editing them, run `scripts/sync-ios-strings.py` and commit the regenerated
+  `iosApp/iosApp/Localizable.xcstrings` (CI fails if it is out of date). Swift looks strings up by the
+  Android resource name: `L("last_updated", time)`. Info.plist texts live in `InfoPlist.xcstrings`.
+- Screens: `Board/` (the board, the counterpart of `MainScreen`/`StopBoardPanel`) and `Settings/`
+  (a sheet; the board calls `loadSettings()` when it closes). Colours are Android's tokens in
+  `Theme/Palette.swift`. In debug builds, launching with `-PTOpenSettings YES` opens Settings
+  directly, for simulator checks without tapping.
 - Logic a SwiftUI view would otherwise reimplement belongs in `commonMain` (e.g.
   `departureCountdown`, `PixelShiftSchedule`, `parseWeatherSymbol`), so both apps share one tested
-  version.
+  version. Kotlin `Duration` values and default arguments do not reach Swift usefully, so such APIs
+  also offer millisecond properties and explicit overloads (see `PixelShiftSchedule`).
 
 **State**: each ViewModel exposes a single `UiState` data class through one `MutableStateFlow`. Settings are not reactive — screens call `viewModel.loadSettings()` from a `LaunchedEffect` on navigation entry to re-read SharedPreferences, which is how changes made on the Settings screen reach the main board.
 

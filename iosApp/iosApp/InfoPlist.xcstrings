@@ -1,0 +1,23 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSLocationWhenInUseUsageDescription": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your location is used to find nearby stops and to show the weather where you are."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjonen din brukes til å finne holdeplasser i nærheten og vise været der du er."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

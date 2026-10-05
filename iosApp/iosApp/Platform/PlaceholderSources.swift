@@ -1,16 +1,8 @@
 import Foundation
 import Shared
 
-// Stand-ins until the real CoreLocation, light and AVFoundation sources exist. Each one behaves
-// like a device without that capability, which the shared code already handles.
-
-final class UnavailableLocationSource: NSObject, LocationSource {
-    func requestLocation(accuracy: LocationAccuracy, onResult: @escaping (any LocationResult) -> Void) {
-        onResult(LocationResultUnavailable.shared)
-    }
-
-    func cancel() {}
-}
+// Stand-ins until the real light and AVFoundation sources exist. Each one behaves like a device
+// without that capability, which the shared code already handles.
 
 final class SilentLightSource: NSObject, LightSource {
     func start(onLux: @escaping (KotlinDouble) -> Void) {}
