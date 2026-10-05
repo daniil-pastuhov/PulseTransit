@@ -108,8 +108,8 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
 - Screens: `Board/` (the board, the counterpart of `MainScreen`/`StopBoardPanel`) and `Settings/`
   (a sheet; the board calls `loadSettings()` when it closes). Colours are Android's tokens in
   `Theme/Palette.swift`. In debug builds, launching with `-PTOpenSettings YES` opens Settings
-  directly, and `-PTRequestLocation YES` also starts "Detect location", for simulator checks without
-  tapping.
+  directly, and `-PTRequestLocation YES` also starts "Detect location", and `-PTDemo YES` plays the scripted
+  tour the App Store previews are recorded from (see "App Store screenshots and previews" in README).
 - iOS shows one system permission prompt at a time and silently drops a request made while another
   is up, with no callback. So permissions are asked for where the user turns the feature on (camera
   in Settings, location on "Detect location"), and `CoreLocationSource` re-asks when the app becomes

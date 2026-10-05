@@ -151,3 +151,19 @@ by the iOS workflow's run number.
 Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project's iOS app), and the
 `beta` lane uploads the dSYM to Crashlytics. Collection is off in Debug builds, as on Android.
 
+### App Store screenshots and previews
+
+`iosApp/fastlane/screenshots` and `iosApp/fastlane/app_previews` hold the store media for the 6.9"
+iPhone and 13" iPad, in English (UK) and Norwegian. They are made from the running app with live
+data, so regenerate them when the UI changes:
+
+1. Build the Debug app for a simulator and boot an iPhone 17 Pro Max and an iPad Pro 13-inch.
+2. `scripts/capture-ios-screenshots.sh <udid> <PulseTransit.app> <raw-dir> <en-GB|no> <iphone|ipad>`
+   seeds a set of Oslo stops and captures the board (light and dark) and Settings.
+3. `swift scripts/frame-ios-screenshots.swift <raw-dir> iosApp/fastlane/screenshots` adds the
+   captions (in the script) on the icon's gradient.
+4. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the
+   scripted tour (`-PTDemo YES`) as a 29-second preview.
+5. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
+   editable App Store version.
+

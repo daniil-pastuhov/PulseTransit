@@ -63,6 +63,14 @@ struct StopBoardView: View {
         // The camera runs only while the board is on screen and the app is active, as on Android:
         // released in the background and while Settings is open, reopened when the board returns.
         .onAppear { startCameraIfAllowed() }
+        #if DEBUG
+        // -PTDemo YES plays a short scripted tour for recording App Store previews in a simulator,
+        // where nothing can be tapped. Debug builds only.
+        .task {
+            guard UserDefaults.standard.bool(forKey: "PTDemo") else { return }
+            await runDemo()
+        }
+        #endif
         .onDisappear { viewModel.stopCameraMotion() }
         .onChange(of: scenePhase) { phase in
             if phase == .active && !showSettings { startCameraIfAllowed() } else { viewModel.stopCameraMotion() }
@@ -80,6 +88,31 @@ struct StopBoardView: View {
         }
     }
 }
+
+#if DEBUG
+extension StopBoardView {
+    /// The App Store preview tour: date styles, Settings, then the wall-display dim and wake.
+    @MainActor
+    private func runDemo() async {
+        let viewModel = model.viewModel
+        func wait(_ seconds: Double) async { try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
+        await wait(5)
+        viewModel.cycleDateStyle()
+        await wait(3)
+        viewModel.cycleDateStyle()
+        await wait(3)
+        viewModel.cycleDateStyle()
+        await wait(3)
+        showSettings = true
+        await wait(5)
+        showSettings = false
+        await wait(3)
+        viewModel.dimScreen()
+        await wait(4)
+        viewModel.wakeScreen()
+    }
+}
+#endif
 
 extension StopBoardView {
     /// Starts camera motion wake if the setting is on. Settings asks for camera access when the
