@@ -6,14 +6,14 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.example.pulsetransit.platform.CameraFrameMotionDetector
+import com.example.pulsetransit.platform.CameraFrameSource
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.LightSource
 import com.example.pulsetransit.platform.LightSourceSensorManager
 import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.LocationSource
 import com.example.pulsetransit.platform.LocationSourceProvider
-import com.example.pulsetransit.platform.MotionSource
-import com.example.pulsetransit.platform.MotionSourceDetector
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -30,7 +30,7 @@ object PulseTransitIos : KoinComponent {
         clockFormatter: ClockFormatter,
         locationSource: LocationSource,
         lightSource: LightSource,
-        motionSource: MotionSource,
+        cameraFrameSource: CameraFrameSource,
     ) {
         startKoin {
             modules(
@@ -40,7 +40,7 @@ object PulseTransitIos : KoinComponent {
                     single<ClockFormatter> { clockFormatter }
                     single<LocationProvider> { LocationSourceProvider(locationSource) }
                     single<SystemSensorManager> { LightSourceSensorManager(lightSource) }
-                    single<CameraMotionDetector> { MotionSourceDetector(motionSource) }
+                    single<CameraMotionDetector> { CameraFrameMotionDetector(cameraFrameSource, settingsRepository = get()) }
                 },
             )
         }
