@@ -42,7 +42,7 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
   -destination 'platform=iOS Simulator,name=iPhone 17' build
 ```
 
-The iOS app is in progress: the board works, while settings, location and the sensors are still to come.
+The iOS app is in progress: the board, settings and location work; camera motion wake and the ambient-light estimate for the auto theme are still to come.
 
 ## Firebase setup
 

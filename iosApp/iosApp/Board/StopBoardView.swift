@@ -1,117 +1,159 @@
 import Shared
 import SwiftUI
 
-/// The departure board: a first, read-only version that proves the shared pipeline end to end.
+/// The departure board: the iOS counterpart of Android's MainScreen.
 struct StopBoardView: View {
     @StateObject private var model = StopBoardModel()
+    // A launch argument (-PTOpenSettings YES) opens Settings straight away, so the screen can be
+    // reached in a simulator without tapping; debug builds only.
+    #if DEBUG
+    @State private var showSettings = UserDefaults.standard.bool(forKey: "PTOpenSettings")
+    #else
+    @State private var showSettings = false
+    #endif
 
     var body: some View {
         let state = model.state
-        VStack(spacing: 0) {
-            BoardHeader(state: state)
-            if state.favorites.isEmpty {
-                Spacer()
-                Text("No stops configured yet.")
-                    .font(.title3)
-                Spacer()
-            } else {
-                List {
-                    ForEach(state.departures, id: \.stopId) { stop in
-                        Section(stopName(stop.stopId, in: state.favorites)) {
-                            ForEach(Array(stop.groups.enumerated()), id: \.offset) { _, group in
-                                if let departure = group.departures.first {
-                                    DepartureRow(departure: departure)
-                                }
-                            }
-                        }
-                    }
+        let viewModel = model.viewModel
+        // Dimmed means unattended: dark, nearly transparent, and any tap wakes it.
+        let scheme: ColorScheme? = state.isScreenDimmed ? .dark : state.activeTheme.colorScheme
+
+        ZStack {
+            (state.isScreenDimmed ? Color.black : Palette.background).ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                BoardHeader(
+                    state: state,
+                    onCycleDateStyle: { viewModel.cycleDateStyle() },
+                    onRefresh: { viewModel.refreshData() },
+                    onOpenSettings: { showSettings = true }
+                )
+                ForEach(Array(state.fastestTrips.enumerated()), id: \.element.destinationName) { index, trip in
+                    if index > 0 { Divider() }
+                    FastestTripBanner(trip: trip)
                 }
-                .listStyle(.insetGrouped)
+                if state.favorites.isEmpty {
+                    EmptyBoard(onOpenSettings: { showSettings = true })
+                } else {
+                    // Side by side when the space is wider than tall. Read from the layout rather than
+                    // the screen, so an iPad rotation (regular size class both ways) re-lays it out.
+                    GeometryReader { geometry in
+                        StopPanels(state: state, viewModel: viewModel, isLandscape: geometry.size.width > geometry.size.height)
+                    }
+                    .padding(6)
+                }
+                BoardFooter(state: state)
             }
-            BoardFooter(state: state)
-        }
-    }
+            .opacity(state.isScreenDimmed ? 0.05 : 1)
+            .pixelShift(state.burnInLevel)
 
-    private func stopName(_ stopId: String, in favorites: [StopPlace]) -> String {
-        favorites.first { $0.id == stopId }?.name ?? stopId
+            if state.isScreenDimmed {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture { viewModel.wakeScreen() }
+            }
+        }
+        .preferredColorScheme(scheme)
+        .statusBarHidden(state.isFullScreenMode)
+        .hidingHomeIndicator(state.isFullScreenMode)
+        .keepingScreenAwake(state.isAlwaysOnEnabled)
+        .sheet(isPresented: $showSettings, onDismiss: {
+            // Settings are not reactive: the board re-reads them when Settings closes, as Android
+            // does on navigating back.
+            viewModel.loadSettings()
+        }) {
+            SettingsView(themeMode: state.themeMode)
+        }
     }
 }
 
-private struct BoardHeader: View {
+private struct EmptyBoard: View {
+    let onOpenSettings: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+            Text(L("no_stops_configured"))
+                .font(.title2)
+                .foregroundColor(Palette.textPrimary)
+            Button(L("open_settings_to_add"), action: onOpenSettings)
+                .buttonStyle(.borderedProminent)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+/// One panel per favourite, sharing the space equally: stacked in portrait, side by side in
+/// landscape. A long press drags a panel to reorder the favourites, as on Android.
+private struct StopPanels: View {
     let state: StopBoardViewModel.UiState
+    let viewModel: StopBoardViewModel
+    let isLandscape: Bool
+    // Which panel a drag started from. Set afresh by every drag and only read when a drop lands
+    // on another panel. A cancelled drag leaves it set until the next one; the only effect is that
+    // a text drop from another app onto a panel would then reorder, which is harmless.
+    @State private var dragging: String?
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(state.currentTime)
-                .font(.system(size: 48, weight: .bold, design: .rounded))
-                .foregroundColor(.accentColor)
-                .monospacedDigit()
-            Text(state.currentDayOfMonth)
-                .font(.system(size: 40, weight: .bold, design: .rounded))
-            VStack(alignment: .leading) {
-                Text(state.currentWeekday)
-                Text(state.currentMonth)
+        let layout = isLandscape ? AnyLayoutBox.horizontal : .vertical
+        layout.stack {
+            ForEach(Array(state.favorites.enumerated()), id: \.element.id) { index, stop in
+                StopPanel(
+                    stop: stop,
+                    groups: state.departures.first { $0.stopId == stop.id }?.groups ?? [],
+                    showDelays: state.showDelays,
+                    showMessages: state.showMessages,
+                    isLoading: state.isLoading,
+                    isExtended: state.extendedStopIds.contains(stop.id),
+                    onFilterOut: { viewModel.filterOutLine(line: $0) },
+                    onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) }
+                )
+                .onDrag {
+                    dragging = stop.id
+                    return NSItemProvider(object: stop.id as NSString)
+                }
+                .onDrop(of: [.text], delegate: PanelDropDelegate(
+                    targetIndex: index,
+                    favorites: state.favorites,
+                    dragging: $dragging,
+                    onMove: { from, to in viewModel.reorderFavorites(fromIndex: Int32(from), toIndex: Int32(to)) }
+                ))
             }
-            .font(.subheadline)
-            .foregroundColor(.secondary)
-            Spacer()
         }
-        .padding()
     }
 }
 
-private struct DepartureRow: View {
-    let departure: Departure
+private struct PanelDropDelegate: DropDelegate {
+    let targetIndex: Int
+    let favorites: [StopPlace]
+    @Binding var dragging: String?
+    let onMove: (Int, Int) -> Void
 
-    var body: some View {
-        HStack(spacing: 12) {
-            Text(departure.line)
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(minWidth: 52)
-                .padding(.vertical, 6)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Color.blue))
-            Text(departure.destination)
-                .font(.title3)
-                .strikethrough(departure.isCancelled)
-                .lineLimit(1)
-            Spacer()
-            if departure.delayMinutes > 0 {
-                Text("+\(departure.delayMinutes)")
-                    .font(.footnote.bold())
-                    .foregroundColor(.red)
-            }
-            // Ticks on its own schedule. The shared state only changes about once a minute (equal
-            // states are not re-emitted), and a row whose only input is the same Departure object
-            // is not redrawn at all, so neither can be relied on to move "5m" towards "Now".
-            TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                Text(countdownText(now: timeline.date))
-                    .font(.title2.bold())
-                    .monospacedDigit()
-            }
+    func performDrop(info: DropInfo) -> Bool {
+        defer { dragging = nil }
+        guard let id = dragging, let from = favorites.firstIndex(where: { $0.id == id }), from != targetIndex else {
+            return false
         }
+        onMove(from, targetIndex)
+        return true
     }
 
-    /// 24-hour, like the Android board, whatever the locale's default.
-    private static let clockFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return formatter
-    }()
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+}
 
-    private func countdownText(now: Date) -> String {
-        let nowMillis = Int64(now.timeIntervalSince1970 * 1000)
-        switch onEnum(of: DepartureCountdownKt.departureCountdown(expectedTime: departure.expectedTime, nowMillis: nowMillis)) {
-        case .now:
-            return "Now"
-        case let .minutes(countdown):
-            return "\(countdown.minutes)m"
-        case let .clock(countdown):
-            let date = Date(timeIntervalSince1970: TimeInterval(countdown.epochMillis) / 1000)
-            let time = Self.clockFormatter.string(from: date)
-            return countdown.dayOffset > 0 ? "\(time) +\(countdown.dayOffset)" : time
-        case .unknown:
-            return "?"
+/// HStack or VStack chosen at runtime; `AnyLayout` needs iOS 16.
+private enum AnyLayoutBox {
+    case horizontal, vertical
+
+    @ViewBuilder
+    func stack<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        switch self {
+        case .horizontal: HStack(spacing: 0, content: content)
+        case .vertical: VStack(spacing: 0, content: content)
         }
     }
 }
@@ -120,16 +162,23 @@ private struct BoardFooter: View {
     let state: StopBoardViewModel.UiState
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             if let staleMinutes = state.staleAgeMinutes {
-                Label("Offline — shown data is \(staleMinutes.intValue) min old", systemImage: "icloud.slash")
-                    .font(.footnote.bold())
-                    .foregroundColor(.red)
+                Label(L("offline_stale_data", Int(staleMinutes.intValue)), systemImage: "icloud.slash")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Palette.error)
             }
-            Text("Last updated: \(state.lastUpdated)")
-                .font(.footnote)
-                .foregroundColor(.secondary)
+            Text(L("last_updated", state.lastUpdated))
+                .font(.system(size: 11))
+                .foregroundColor(Palette.textPrimary.opacity(0.3))
+            HStack(spacing: 8) {
+                Text(L("attribution_entur"))
+                Text(L("attribution_met"))
+            }
+            .font(.system(size: 9))
+            .foregroundColor(Palette.textPrimary.opacity(0.2))
         }
-        .padding(.vertical, 8)
+        .padding(.top, 2)
+        .padding(.bottom, 4)
     }
 }

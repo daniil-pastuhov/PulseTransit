@@ -22,10 +22,17 @@ object PixelShiftSchedule {
     /** How long the move to the new offset takes; slow enough that nobody notices it. */
     val transition = 5.seconds
 
+    // Duration is a value class that reaches Swift as its raw encoding, so Swift reads these.
+    val intervalMillis: Long get() = interval.inWholeMilliseconds
+    val transitionMillis: Long get() = transition.inWholeMilliseconds
+
+    /** A random offset within [level]'s range. An overload rather than a default, for Swift. */
+    fun nextOffset(level: BurnInProtectionLevel): PixelShiftOffset = nextOffset(level, Random.Default)
+
     /** A random offset within [level]'s range on both axes. */
     fun nextOffset(
         level: BurnInProtectionLevel,
-        random: Random = Random.Default,
+        random: Random,
     ): PixelShiftOffset {
         val max = level.maxOffsetDp
         return PixelShiftOffset(
