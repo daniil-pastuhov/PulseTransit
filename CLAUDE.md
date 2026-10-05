@@ -15,6 +15,9 @@ Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Two mod
   `sharedModule`. `commonMain` holds everything platform-neutral; `androidMain`/`iosMain` hold the
   platform implementations and each platform's Koin module.
 - `:app` — the Android app: Compose UI, theme, navigation, `MainActivity`. It depends on `:shared`.
+- `iosApp/` — the iOS app (SwiftUI, iOS 15+), an Xcode project, not a Gradle module. Its
+  "Compile Kotlin Framework" build phase runs `scripts/build-shared-framework.sh`, which builds
+  `Shared` with `:shared:embedAndSignAppleFrameworkForXcode`.
 
 Every build needs `app/google-services.json` (Firebase Crashlytics); without it the
 `processDebugGoogleServices` task fails before anything compiles. See "Firebase setup" in README.MD.
@@ -30,6 +33,8 @@ placeholder set per build type — a debug build reporting nothing is expected, 
 ./gradlew :shared:testAndroidHostTest --tests "*WeatherRepositoryImplTest*"  # single test class
 ./gradlew connectedDebugAndroidTest :shared:connectedAndroidDeviceTest  # instrumented tests (needs device/emulator)
 ./gradlew lintDebug :shared:lint          # Android lint
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build  # iOS app (also builds Shared)
 ```
 
 **Releases** are cut with `scripts/release`, not by pushing to main: it bumps `versionName` on a
@@ -45,8 +50,12 @@ so backticked test names must not contain commas. They cover the offline cache a
 contract with Ktor's `MockEngine` and in-memory fake DAOs (`FakeCacheDaos.kt`); time helpers that
 format like Entur and MET are in `TestTime.kt`. Those fakes reproduce the DAO queries by hand, so the
 real SQL is pinned separately by `shared/src/androidDeviceTest` (`CacheDatabaseTest`) against an
-in-memory Room database — if you change a `@Query`, that instrumented test is what catches it. The
-settings migration is pinned there too (`SettingsMigrationTest`).
+in-memory Room database. Its body is `CacheDatabaseContract` in `shared/src/cacheContractTest`, a
+source dir compiled into both `androidDeviceTest` and `iosTest`, so the same queries are checked on
+Android's framework SQLite and on the bundled driver iOS uses (`CacheDatabaseIosTest`). It is kept out
+of `commonTest` because the device test APK cannot dex sentence-style test names below API 30. If
+you change a `@Query`, those tests are what catch it. The settings migration is pinned in
+`androidDeviceTest` too (`SettingsMigrationTest`).
 
 `StopBoardViewModelTest` covers the auto-theme hysteresis, offline staleness, grouping and
 auto-dim against fakes (`ui/viewmodel/Fakes.kt`). Two things about it are load-bearing: the
@@ -72,6 +81,24 @@ MVVM with Koin for DI. Wiring is split in two: `sharedModule` (`shared/src/commo
 - Shared domain models live in `data/Models.kt`; API response DTOs are private nested classes inside each repository impl and never leak out.
 - Repositories still swallow exceptions rather than throwing, but the cached calls (`getDepartures`, `getFastestTrip`, `getWeather`) no longer return bare empty lists on failure: they return `Sourced<T>`, falling back to the last good cached response and reporting when it was fetched via `Sourced.fetchedAtMillis`. Only when nothing is cached is the result empty — keep this in mind when debugging "no data" symptoms. Un-cached calls (stop search, nearby, quays) do still fail silently to empty.
 - `WeatherRepositoryImpl` must honour MET's terms: coordinates truncated to 4 decimals, no repeat request before the `Expires` time, and revalidation with `If-Modified-Since`/`304`. The cache is what implements this, so don't bypass it.
+
+**iOS app** (`iosApp/iosApp/`). The Xcode project uses synchronized folders, so new Swift files are
+picked up without editing `project.pbxproj`; versions and the bundle id live in
+`iosApp/Configuration/Config.xcconfig`. The deployment target is iOS 15, so no `@Observable` and no
+`NavigationStack`: screen models are `ObservableObject`s, and newer APIs go behind `#available`.
+The Swift side reaches Kotlin through SKIE, which turns a `StateFlow` into an `AsyncSequence` and
+sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
+- `PulseTransitIos.start(...)` (`shared/src/iosMain/.../di/PulseTransitIos.kt`) starts Koin, once at
+  launch, with the services Swift implements. Swift cannot implement a `suspend fun` or produce a
+  `Flow`, so those services are callback-style ports (`LocationSource`, `LightSource`,
+  `MotionSource` in `iosMain/.../platform/IosPorts.kt`) that small adapters turn into the shared
+  interfaces. `ClockFormatter` has neither, so Swift implements it directly.
+- Each screen gets its ViewModel through a `ViewModelOwner`, and **must call `owner.clear()` when the
+  screen goes away** (see `StopBoardModel.deinit`). Only that cancels `viewModelScope`; without it
+  the board's clock and refresh loops keep running for the life of the app.
+- Logic a SwiftUI view would otherwise reimplement belongs in `commonMain` (e.g.
+  `departureCountdown`, `PixelShiftSchedule`, `parseWeatherSymbol`), so both apps share one tested
+  version.
 
 **State**: each ViewModel exposes a single `UiState` data class through one `MutableStateFlow`. Settings are not reactive — screens call `viewModel.loadSettings()` from a `LaunchedEffect` on navigation entry to re-read SharedPreferences, which is how changes made on the Settings screen reach the main board.
 

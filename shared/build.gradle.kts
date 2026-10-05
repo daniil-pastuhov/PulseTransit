@@ -4,12 +4,19 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    // Swift-friendly framework API: StateFlow as AsyncSequence, sealed and enum types as Swift enums.
+    alias(libs.plugins.skie)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
 }
 
 kotlin {
     jvmToolchain(17)
+
+    compilerOptions {
+        // Room's KMP setup needs an `expect object` (CacheDatabaseConstructor), which is still Beta.
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
 
     android {
         namespace = "com.example.pulsetransit.shared"
@@ -40,6 +47,7 @@ kotlin {
         target.binaries.framework {
             baseName = "Shared"
             isStatic = true
+            binaryOption("bundleId", "com.example.pulsetransit.shared")
         }
     }
 
@@ -76,7 +84,15 @@ kotlin {
             implementation(libs.ktor.client.mock)
             implementation(libs.multiplatform.settings.test)
         }
+        // The Room contract runs on each platform's real SQLite; see CacheDatabaseContract.
+        iosTest {
+            kotlin.srcDir("src/cacheContractTest/kotlin")
+        }
+        getByName("androidDeviceTest") {
+            kotlin.srcDir("src/cacheContractTest/kotlin")
+        }
         getByName("androidDeviceTest").dependencies {
+            implementation(kotlin("test"))
             implementation(libs.androidx.test.core)
             implementation(libs.androidx.test.ext.junit)
             implementation(libs.androidx.test.runner)
@@ -89,6 +105,17 @@ dependencies {
     // Room's generated code, per target that has a database.
     listOf("kspAndroid", "kspIosArm64", "kspIosSimulatorArm64").forEach { add(it, libs.room.compiler) }
     "coreLibraryDesugaring"(libs.desugar.jdk.libs)
+}
+
+skie {
+    features {
+        // Ktor's types reach the framework through the repositories' constructors. Their name
+        // clashes with NSObject are Ktor's to fix, and the iOS app never touches those members.
+        group("io.ktor") {
+            co.touchlab.skie.configuration.SuppressSkieWarning
+                .NameCollision(true)
+        }
+    }
 }
 
 room {
@@ -106,5 +133,7 @@ detekt {
         "src/iosMain/kotlin",
         "src/commonTest/kotlin",
         "src/androidDeviceTest/kotlin",
+        "src/iosTest/kotlin",
+        "src/cacheContractTest/kotlin",
     )
 }

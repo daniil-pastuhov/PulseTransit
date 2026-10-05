@@ -31,6 +31,19 @@ PulseTransit is an Android application designed to show public transport stop bo
 3. Open the project in Android Studio.
 4. Build and run the `app` module.
 
+### iOS
+
+Requires Xcode (iOS 15 deployment target) and a JDK on the machine; the Xcode build calls Gradle to
+compile the shared Kotlin framework. Open `iosApp/iosApp.xcodeproj` and run the `iosApp` scheme, or
+from the command line:
+
+```bash
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+  -destination 'platform=iOS Simulator,name=iPhone 17' build
+```
+
+The iOS app is in progress: the board works, while settings, location and the sensors are still to come.
+
 ## Firebase setup
 
 Crash reporting uses [Firebase Crashlytics](https://firebase.google.com/docs/crashlytics), which needs a
