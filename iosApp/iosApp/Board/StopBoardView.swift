@@ -1,9 +1,11 @@
+import AVFoundation
 import Shared
 import SwiftUI
 
 /// The departure board: the iOS counterpart of Android's MainScreen.
 struct StopBoardView: View {
     @StateObject private var model = StopBoardModel()
+    @Environment(\.scenePhase) private var scenePhase
     // A launch argument (-PTOpenSettings YES) opens Settings straight away, so the screen can be
     // reached in a simulator without tapping; debug builds only.
     #if DEBUG
@@ -58,12 +60,43 @@ struct StopBoardView: View {
         .statusBarHidden(state.isFullScreenMode)
         .hidingHomeIndicator(state.isFullScreenMode)
         .keepingScreenAwake(state.isAlwaysOnEnabled)
+        // The camera runs only while the board is on screen and the app is active, as on Android:
+        // released in the background and while Settings is open, reopened when the board returns.
+        .onAppear { startCameraIfAllowed() }
+        .onDisappear { viewModel.stopCameraMotion() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active && !showSettings { startCameraIfAllowed() } else { viewModel.stopCameraMotion() }
+        }
+        .onChange(of: showSettings) { open in
+            if open { viewModel.stopCameraMotion() }
+        }
         .sheet(isPresented: $showSettings, onDismiss: {
             // Settings are not reactive: the board re-reads them when Settings closes, as Android
-            // does on navigating back.
+            // does on navigating back. That may also have switched camera wake on or off.
             viewModel.loadSettings()
+            startCameraIfAllowed()
         }) {
             SettingsView(themeMode: state.themeMode)
+        }
+    }
+}
+
+extension StopBoardView {
+    /// Starts camera motion wake if the setting is on, asking for camera access the first time.
+    /// `startCameraMotion()` itself does nothing while the setting is off.
+    private func startCameraIfAllowed() {
+        let viewModel = model.viewModel
+        switch AVCaptureDevice.authorizationStatus(for: .video) {
+        case .authorized:
+            viewModel.startCameraMotion()
+        case .notDetermined where viewModel.isCameraMotionEnabled():
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                DispatchQueue.main.async {
+                    if granted { viewModel.startCameraMotion() }
+                }
+            }
+        default:
+            break
         }
     }
 }

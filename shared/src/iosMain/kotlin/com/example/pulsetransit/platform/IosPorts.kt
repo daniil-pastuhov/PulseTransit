@@ -1,6 +1,8 @@
 package com.example.pulsetransit.platform
 
+import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
+import com.example.pulsetransit.ui.sensors.MotionFrameDiff
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -32,9 +34,14 @@ interface LightSource {
     fun stop()
 }
 
-/** Front-camera motion in Swift (AVFoundation). Calls [onMotion] each time motion is seen, until [stop]. */
-interface MotionSource {
-    fun start(onMotion: () -> Unit)
+/**
+ * Front-camera frames in Swift (AVFoundation), as luminance samples: every
+ * [MotionFrameDiff.SUBSAMPLE]th pixel of the Y plane on both axes, row by row, at most one frame per
+ * [MotionFrameDiff.MIN_FRAME_INTERVAL_MILLIS]. Delivered on one serial queue until [stop]. The
+ * motion decision itself is shared code, so it behaves the same as on Android.
+ */
+interface CameraFrameSource {
+    fun start(onFrame: (ByteArray) -> Unit)
 
     fun stop()
 }
@@ -61,12 +68,18 @@ internal class LightSourceSensorManager(
         }
 }
 
-internal class MotionSourceDetector(
-    private val source: MotionSource,
+internal class CameraFrameMotionDetector(
+    private val source: CameraFrameSource,
+    private val settingsRepository: SettingsRepository,
 ) : CameraMotionDetector {
     override fun motionEvents(): Flow<Unit> =
         callbackFlow {
-            source.start { trySend(Unit) }
+            // Read per collection, like Android, so restarting the camera picks up a new setting.
+            val threshold = settingsRepository.getCameraSensitivity().motionPixelCountThreshold
+            val motion = MotionFrameDiff()
+            source.start { frame ->
+                if (motion.isMotion(frame, threshold)) trySend(Unit)
+            }
             awaitClose { source.stop() }
         }
 }

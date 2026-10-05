@@ -18,17 +18,13 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import java.util.concurrent.Executors
-import kotlin.math.abs
 
 class CameraMotionDetectorImpl(
     private val context: Context,
     private val settingsRepository: SettingsRepository,
 ) : CameraMotionDetector {
-    private val threshold = 25 // Sensitivity threshold for pixel difference
-    private val subsample = 8 // Analyse every Nth pixel to save CPU
-
-    // Motion-to-wake doesn't need full sensor FPS; throttle to ~4 fps to save power.
-    private val minFrameIntervalNs = 250_000_000L
+    private val subsample = MotionFrameDiff.SUBSAMPLE
+    private val minFrameIntervalNs = MotionFrameDiff.MIN_FRAME_INTERVAL_MILLIS * 1_000_000L
 
     // A low resolution is plenty for coarse motion detection and cuts CPU/memory sharply.
     private val targetResolution = Size(320, 240)
@@ -44,8 +40,7 @@ class CameraMotionDetectorImpl(
 
             // Per-subscription state so a re-collection starts fresh. Captured (and mutated)
             // by the analyzer closure below.
-            var lastFrame: ByteArray? = null
-            var scratch: ByteArray? = null
+            val motion = MotionFrameDiff()
             var lastAnalyzedNs = 0L
 
             // Owned by this subscription so shutting it down on close can't break a later one.
@@ -87,16 +82,7 @@ class CameraMotionDetectorImpl(
                     }
                     lastAnalyzedNs = now
 
-                    val current = sampleLuminance(image, scratch)
-                    val previous = lastFrame
-                    // Recycle the old previous-frame buffer as next iteration's scratch.
-                    scratch = previous
-                    lastFrame = current
-
-                    if (previous != null &&
-                        previous.size == current.size &&
-                        hasMotion(current, previous, motionPixelCountThreshold)
-                    ) {
+                    if (motion.isMotion(sampleLuminance(image), motionPixelCountThreshold)) {
                         trySend(Unit)
                     }
                     image.close()
@@ -139,12 +125,10 @@ class CameraMotionDetectorImpl(
 
     /**
      * Subsamples the Y (luminance) plane directly from its buffer, honouring the plane's
-     * row/pixel stride. Reuses [reusable] when it is the right size to avoid per-frame allocation.
+     * row/pixel stride. At about 1200 bytes a frame and 4 frames a second, a fresh array each time
+     * costs nothing worth recycling.
      */
-    private fun sampleLuminance(
-        image: ImageProxy,
-        reusable: ByteArray?,
-    ): ByteArray {
+    private fun sampleLuminance(image: ImageProxy): ByteArray {
         val plane = image.planes[0]
         val buffer = plane.buffer
         val rowStride = plane.rowStride
@@ -153,7 +137,7 @@ class CameraMotionDetectorImpl(
         val subH = image.height / subsample
         val size = subW * subH
 
-        val out = if (reusable != null && reusable.size == size) reusable else ByteArray(size)
+        val out = ByteArray(size)
 
         var idx = 0
         for (sy in 0 until subH) {
@@ -163,20 +147,5 @@ class CameraMotionDetectorImpl(
             }
         }
         return out
-    }
-
-    private fun hasMotion(
-        current: ByteArray,
-        previous: ByteArray,
-        motionPixelCountThreshold: Int,
-    ): Boolean {
-        var changedPixels = 0
-        for (i in current.indices) {
-            val diff = abs((current[i].toInt() and 0xFF) - (previous[i].toInt() and 0xFF))
-            if (diff > threshold) {
-                changedPixels++
-            }
-        }
-        return changedPixels > motionPixelCountThreshold / (subsample * subsample)
     }
 }
