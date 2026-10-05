@@ -1,6 +1,8 @@
 package com.example.pulsetransit.data
 
 import kotlinx.serialization.Serializable
+import kotlin.experimental.ExperimentalObjCName
+import kotlin.native.ObjCName
 
 @Serializable
 data class StopPlace(
@@ -28,6 +30,9 @@ data class Quay(
     val id: String,
     val publicCode: String? = null,
     val name: String? = null,
+    // `description` clashes with NSObject's in Swift, so it gets a name of its own there.
+    @OptIn(ExperimentalObjCName::class)
+    @ObjCName(swiftName = "quayDescription")
     val description: String? = null,
     val towards: String? = null,
 )

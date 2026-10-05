@@ -36,6 +36,7 @@ LOCALES = {"en-US": "English (US)", "no-NO": "Norwegian Bokmål"}
 # (file, regex with the version as group 2, how many matches the file must have)
 VERSION_FILES = [
     ("app/build.gradle.kts", r'(versionName = ")(\d+\.\d+\.\d+)(")', 1),
+    ("iosApp/Configuration/Config.xcconfig", r'(MARKETING_VERSION = )(\d+\.\d+\.\d+)()', 1),
 ]
 # ------------------------------------------------------------------------------------------
 
