@@ -59,8 +59,8 @@ platform :ios do
       export_method: "app-store",
       output_directory: File.join(ROOT, "iosApp/build"),
       derived_data_path: derived_data,
+      # fastlane passes xcargs to the export step too, so the signing flags go here only once.
       xcargs: "#{signing_xcargs} CURRENT_PROJECT_VERSION=#{build_number}",
-      export_xcargs: signing_xcargs,
       export_options: { signingStyle: "automatic", teamID: "S8Q8KHX6G5" },
     )
 
