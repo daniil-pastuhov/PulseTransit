@@ -956,14 +956,18 @@ fun FavoriteStopRow(
                     val isSelected = selectedQuays.isEmpty() || selectedQuays.contains(quay.id)
                     val platform = quay.publicCode?.takeIf { it.isNotBlank() }
                     val destination = quay.towards?.takeIf { it.isNotBlank() }
+                    // Copied to locals: Quay comes from :shared, and Kotlin does not smart-cast
+                    // another module's properties.
+                    val description = quay.description?.takeIf { it.isNotBlank() }
+                    val name = quay.name?.takeIf { it.isNotBlank() && it != stop.name }
 
                     val labelText =
                         when {
                             platform != null && destination != null -> stringResource(R.string.platform_destination, platform, destination)
                             destination != null -> stringResource(R.string.towards_destination, destination)
                             platform != null -> stringResource(R.string.platform_label, platform)
-                            !quay.description.isNullOrBlank() -> quay.description
-                            !quay.name.isNullOrBlank() && quay.name != stop.name -> quay.name
+                            description != null -> description
+                            name != null -> name
                             else -> stringResource(R.string.direction_id, quay.id.takeLast(3))
                         }
 

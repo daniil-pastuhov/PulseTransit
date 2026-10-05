@@ -5,7 +5,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.google.services)
@@ -109,7 +108,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-        // kotlinx-datetime is built on java.time, which only exists natively from API 26.
+        // :shared uses kotlinx-datetime, built on java.time, which only exists natively from API 26.
         isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
@@ -158,12 +157,10 @@ detekt {
     config.setFrom(rootProject.files("config/detekt/detekt.yml"))
 }
 
-ksp {
-    // Room schema history, checked in so cache schema changes are reviewable.
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
 dependencies {
+    // Data, cache, settings and ViewModels, shared with the iOS app.
+    implementation(project(":shared"))
+
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -173,35 +170,18 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // Ktor Client
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.okhttp)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
-
     // Koin DI
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
-    // Kotlinx Serialization
+    // Kotlinx Serialization (navigation keys)
     implementation(libs.kotlinx.serialization.json)
 
-    // Time and settings, both chosen because they also run on iOS
-    implementation(libs.kotlinx.datetime)
-    implementation(libs.multiplatform.settings)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // Firebase (crash reporting). The BOM pins the individual artifact versions.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
-
-    // Room (offline cache)
-    implementation(libs.room.runtime)
-    implementation(libs.room.ktx)
-    ksp(libs.room.compiler)
-
-    // Location
-    implementation(libs.play.services.location)
 
     // Arch Components
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -218,12 +198,6 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
-    // Local tests: jUnit, coroutines, Android runner
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.ktor.client.mock)
-    testImplementation(libs.multiplatform.settings.test)
-
     // Instrumented tests: jUnit rules and runners
     androidTestImplementation(libs.androidx.test.core)
     androidTestImplementation(libs.androidx.test.ext.junit)
@@ -234,10 +208,4 @@ dependencies {
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-
-    // CameraX
-    implementation(libs.androidx.camera.core)
-    implementation(libs.androidx.camera.camera2)
-    implementation(libs.androidx.camera.lifecycle)
-    implementation(libs.androidx.camera.view)
 }

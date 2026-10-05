@@ -15,7 +15,9 @@ PulseTransit is an Android application designed to show public transport stop bo
 
 ## Tech Stack
 
+- **Shared code**: [Kotlin Multiplatform](https://kotlinlang.org/docs/multiplatform.html) — the `shared` module (data, offline cache, settings, ViewModels) builds for Android and iOS
 - **UI**: [Jetpack Compose](https://developer.android.com/jetpack/compose)
+- **Offline cache**: [Room](https://developer.android.com/kotlin/multiplatform/room) (multiplatform)
 - **Dependency Injection**: [Koin](https://insert-koin.io/)
 - **Networking**: [Ktor](https://ktor.io/)
 - **Serialization**: [Kotlinx Serialization](https://github.com/Kotlin/kotlinx.serialization)
