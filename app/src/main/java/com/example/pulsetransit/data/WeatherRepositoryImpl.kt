@@ -11,12 +11,11 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.fromHttpToGmtDate
 import io.ktor.http.isSuccess
 import kotlinx.serialization.Serializable
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
 import kotlin.math.roundToLong
+import kotlin.time.Clock
 
 /**
  * MET Norway locationforecast.
@@ -31,6 +30,7 @@ import kotlin.math.roundToLong
 class WeatherRepositoryImpl(
     private val client: HttpClient,
     private val cache: ForecastCacheDao,
+    private val clock: Clock = Clock.System,
 ) : WeatherRepository {
     private companion object {
         const val URL = "https://api.met.no/weatherapi/locationforecast/2.0/compact"
@@ -120,7 +120,7 @@ class WeatherRepositoryImpl(
         val roundedLat = round4(lat)
         val roundedLon = round4(lon)
         val locationKey = "$roundedLat,$roundedLon"
-        val now = System.currentTimeMillis()
+        val now = clock.now().toEpochMilliseconds()
 
         val stored = cache.getForecast(locationKey)
 
@@ -161,7 +161,7 @@ class WeatherRepositoryImpl(
                 // logged rather than discarded.
                 response.status.isSuccess() -> {
                     if (response.status == HttpStatusCode.NonAuthoritativeInformation) {
-                        System.err.println("MET locationforecast reports this product as deprecated (203)")
+                        println("MET locationforecast reports this product as deprecated (203)")
                     }
                     val hours = response.body<MetResponse>().toWeather()
                     cache.replaceForecast(
@@ -210,10 +210,7 @@ class WeatherRepositoryImpl(
         val header = headers[HttpHeaders.Expires] ?: return nowMillis + DEFAULT_EXPIRY_MS
         val parsed =
             try {
-                SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.US)
-                    .apply { timeZone = TimeZone.getTimeZone("GMT") }
-                    .parse(header)
-                    ?.time
+                header.fromHttpToGmtDate().timestamp
             } catch (_: Exception) {
                 null
             }

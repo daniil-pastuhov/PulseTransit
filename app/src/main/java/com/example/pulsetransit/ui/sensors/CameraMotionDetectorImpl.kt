@@ -10,7 +10,9 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import com.example.pulsetransit.data.SettingsRepository
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -34,7 +36,7 @@ class CameraMotionDetectorImpl(
     // CameraX setup, the analyzer and the teardown all have to live inside the one
     // callbackFlow block, and binding failures surface as plain Exception.
     @Suppress("LongMethod", "TooGenericExceptionCaught")
-    override fun getMotionFlow(lifecycleOwner: LifecycleOwner): Flow<Boolean> =
+    override fun motionEvents(): Flow<Unit> =
         callbackFlow {
             // Number of full-resolution pixels that must change to trigger motion. Read once per
             // subscription so a re-collection (e.g. after a settings change) picks up the new value.
@@ -48,9 +50,18 @@ class CameraMotionDetectorImpl(
 
             // Owned by this subscription so shutting it down on close can't break a later one.
             val executor = Executors.newSingleThreadExecutor()
+            val mainExecutor = ContextCompat.getMainExecutor(context)
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            // CameraX binds to a lifecycle; this one is RESUMED for exactly as long as the flow is
+            // collected, so the collector decides when the camera runs. Registry calls must be
+            // made on the main thread, which is why they all go through mainExecutor.
+            val cameraLifecycle = CollectionLifecycleOwner()
+            // Only touched on the main thread. Set when collection ends, so a provider that becomes
+            // ready afterwards does not open a camera nobody is listening to.
+            var closed = false
 
             cameraProviderFuture.addListener({
+                if (closed) return@addListener
                 val cameraProvider = cameraProviderFuture.get()
 
                 val resolutionSelector =
@@ -86,7 +97,7 @@ class CameraMotionDetectorImpl(
                         previous.size == current.size &&
                         hasMotion(current, previous, motionPixelCountThreshold)
                     ) {
-                        trySend(true)
+                        trySend(Unit)
                     }
                     image.close()
                 }
@@ -95,8 +106,9 @@ class CameraMotionDetectorImpl(
 
                 try {
                     cameraProvider.unbindAll()
+                    cameraLifecycle.registry.currentState = Lifecycle.State.RESUMED
                     cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
+                        cameraLifecycle,
                         cameraSelector,
                         imageAnalysis,
                     )
@@ -104,20 +116,26 @@ class CameraMotionDetectorImpl(
                     Log.e("CameraMotionDetector", "Use case binding failed", e)
                     close(e)
                 }
-            }, ContextCompat.getMainExecutor(context))
+            }, mainExecutor)
 
             awaitClose {
-                // unbindAll must run on the main thread; the provider is ready by the time we close.
-                ContextCompat.getMainExecutor(context).execute {
-                    try {
-                        cameraProviderFuture.get().unbindAll()
-                    } catch (e: Exception) {
-                        Log.e("CameraMotionDetector", "Unbind failed", e)
+                // Destroying the lifecycle unbinds everything bound to it and releases the camera.
+                // A lifecycle that never started cannot be destroyed, and has nothing to release.
+                mainExecutor.execute {
+                    closed = true
+                    if (cameraLifecycle.registry.currentState.isAtLeast(Lifecycle.State.CREATED)) {
+                        cameraLifecycle.registry.currentState = Lifecycle.State.DESTROYED
                     }
                 }
                 executor.shutdown()
             }
         }
+
+    /** A lifecycle owned by one collection of [motionEvents]; see its use there. */
+    private class CollectionLifecycleOwner : LifecycleOwner {
+        val registry = LifecycleRegistry(this)
+        override val lifecycle: Lifecycle get() = registry
+    }
 
     /**
      * Subsamples the Y (luminance) plane directly from its buffer, honouring the plane's

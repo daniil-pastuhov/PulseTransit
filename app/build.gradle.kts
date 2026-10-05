@@ -109,6 +109,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // kotlinx-datetime is built on java.time, which only exists natively from API 26.
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
@@ -184,6 +186,11 @@ dependencies {
     // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
+    // Time and settings, both chosen because they also run on iOS
+    implementation(libs.kotlinx.datetime)
+    implementation(libs.multiplatform.settings)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
     // Firebase (crash reporting). The BOM pins the individual artifact versions.
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.crashlytics)
@@ -215,6 +222,7 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.multiplatform.settings.test)
 
     // Instrumented tests: jUnit rules and runners
     androidTestImplementation(libs.androidx.test.core)

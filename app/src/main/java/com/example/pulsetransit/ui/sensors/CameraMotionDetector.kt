@@ -1,6 +1,5 @@
 package com.example.pulsetransit.ui.sensors
 
-import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -10,6 +9,9 @@ import kotlinx.coroutines.flow.Flow
  * tested on the JVM: the real implementation needs a `Context` and CameraX.
  */
 interface CameraMotionDetector {
-    /** Emits `true` each time motion is seen, while bound to [lifecycleOwner]. */
-    fun getMotionFlow(lifecycleOwner: LifecycleOwner): Flow<Boolean>
+    /**
+     * Emits each time motion is seen. Cold: the camera opens when collection starts and is
+     * released when it is cancelled, so the collector's lifetime is the camera's.
+     */
+    fun motionEvents(): Flow<Unit>
 }

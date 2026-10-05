@@ -1,8 +1,5 @@
 package com.example.pulsetransit.ui.viewmodel
 
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DateDisplayStyle
@@ -15,6 +12,11 @@ import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.platform.ClockFormatter
+import com.example.pulsetransit.platform.ClockText
+import com.example.pulsetransit.platform.LocationAccuracy
+import com.example.pulsetransit.platform.LocationProvider
+import com.example.pulsetransit.platform.LocationResult
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.flow.Flow
@@ -30,13 +32,24 @@ class FakeSystemSensorManager : SystemSensorManager {
 }
 
 class FakeCameraMotionDetector : CameraMotionDetector {
-    val motion = MutableSharedFlow<Boolean>(extraBufferCapacity = 32)
-    var boundTo: LifecycleOwner? = null
+    val motion = MutableSharedFlow<Unit>(extraBufferCapacity = 32)
 
-    override fun getMotionFlow(lifecycleOwner: LifecycleOwner): Flow<Boolean> {
-        boundTo = lifecycleOwner
-        return motion
-    }
+    override fun motionEvents(): Flow<Unit> = motion
+}
+
+/** Formats as recognisable tokens, so a test can tell which instant was rendered. */
+class FakeClockFormatter : ClockFormatter {
+    override fun clockText(epochMillis: Long) =
+        ClockText(
+            time = "time:$epochMillis",
+            dayOfMonth = "day:$epochMillis",
+            weekdayShort = "wd:$epochMillis",
+            monthShort = "mon:$epochMillis",
+            weekdayLong = "weekday:$epochMillis",
+            monthLong = "month:$epochMillis",
+        )
+
+    override fun timeWithSeconds(epochMillis: Long) = "hms:$epochMillis"
 }
 
 /** Returns whatever each test sets, per stop id. */
@@ -344,9 +357,13 @@ class FakeSettingsRepository : SettingsRepository {
     override fun getShowCancelledLinesFlow(): Flow<Boolean> = showCancelledFlow
 }
 
-/** [LifecycleOwner] for `bindCameraMotion`; the fake detector never touches the lifecycle. */
-class TestLifecycleOwner : LifecycleOwner {
-    // createUnsafe skips the main-thread assertion, which is what makes this usable off-device.
-    private val registry = LifecycleRegistry.createUnsafe(this)
-    override val lifecycle: Lifecycle get() = registry
+/** Answers each accuracy with whatever the test queued, recording what was asked for. */
+class FakeLocationProvider : LocationProvider {
+    var results: Map<LocationAccuracy, LocationResult> = emptyMap()
+    val requested = mutableListOf<LocationAccuracy>()
+
+    override suspend fun currentLocation(accuracy: LocationAccuracy): LocationResult {
+        requested += accuracy
+        return results[accuracy] ?: LocationResult.Unavailable
+    }
 }

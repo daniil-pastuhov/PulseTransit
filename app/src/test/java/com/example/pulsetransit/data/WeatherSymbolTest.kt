@@ -1,4 +1,4 @@
-package com.example.pulsetransit.ui.components
+package com.example.pulsetransit.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

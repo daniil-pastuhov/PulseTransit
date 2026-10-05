@@ -86,6 +86,7 @@ import com.example.pulsetransit.data.PlaceKind
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 
@@ -549,17 +550,8 @@ fun SettingsScreen(
                     val lonVal = uiState.longitude?.toString() ?: stringResource(R.string.not_set)
                     Text("${stringResource(R.string.latitude_val, latVal)}, ${stringResource(R.string.longitude_val, lonVal)}")
 
-                    val statusText =
-                        if (uiState.locationStatus.arg != null) {
-                            stringResource(
-                                uiState.locationStatus.resId,
-                                uiState.locationStatus.arg!!,
-                            )
-                        } else {
-                            stringResource(uiState.locationStatus.resId)
-                        }
                     Text(
-                        statusText,
+                        locationStatusText(uiState.locationStatus),
                         style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     )
 
@@ -1009,3 +1001,24 @@ private fun PlaceKindIcon(kind: PlaceKind) {
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
+
+@Composable
+private fun locationStatusText(status: SettingsViewModel.LocationStatus): String =
+    when (status) {
+        SettingsViewModel.LocationStatus.NotRequested -> stringResource(R.string.loc_not_requested)
+        SettingsViewModel.LocationStatus.RequestingPrecise -> stringResource(R.string.loc_requesting_gps)
+        SettingsViewModel.LocationStatus.RequestingApproximate -> stringResource(R.string.loc_requesting_network)
+        is SettingsViewModel.LocationStatus.Found ->
+            stringResource(
+                R.string.loc_success,
+                when (status.accuracy) {
+                    LocationAccuracy.PRECISE -> stringResource(R.string.gps_source)
+                    LocationAccuracy.APPROXIMATE -> stringResource(R.string.network_source)
+                },
+            )
+        SettingsViewModel.LocationStatus.Failed -> stringResource(R.string.loc_failed)
+        SettingsViewModel.LocationStatus.Denied -> stringResource(R.string.loc_denied)
+        is SettingsViewModel.LocationStatus.Error -> stringResource(R.string.loc_error, status.message)
+        SettingsViewModel.LocationStatus.Manual -> stringResource(R.string.loc_manual)
+        SettingsViewModel.LocationStatus.InvalidManualFormat -> stringResource(R.string.loc_invalid_format)
+    }

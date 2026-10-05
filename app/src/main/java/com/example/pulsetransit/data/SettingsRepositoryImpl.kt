@@ -1,15 +1,27 @@
 package com.example.pulsetransit.data
 
-import android.content.Context
-import androidx.core.content.edit
+import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 
+/**
+ * Settings in a key-value [Settings] store: SharedPreferences on Android, NSUserDefaults on iOS.
+ *
+ * Sets of strings are stored as JSON under the keys in [Keys], because NSUserDefaults has no
+ * string-set type. Android builds with string sets from before that change are migrated once, by
+ * [migrateLegacyStringSets].
+ */
 class SettingsRepositoryImpl(
-    context: Context,
+    private val prefs: Settings,
 ) : SettingsRepository {
+    object Keys {
+        const val FILTERED_LINES = "filtered_lines_json"
+
+        fun selectedQuays(stopId: String) = "quays_json_$stopId"
+    }
+
     private companion object {
         const val DEFAULT_REFRESH_INTERVAL_SECONDS = 60
         const val DEFAULT_AUTO_DIM_SECONDS = 30
@@ -17,7 +29,6 @@ class SettingsRepositoryImpl(
         const val DEFAULT_AUTO_THEME_LIGHT_LUX = 100f
     }
 
-    private val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true }
 
     private val _fullScreenMode = MutableStateFlow(isFullScreenMode())
@@ -61,7 +72,7 @@ class SettingsRepositoryImpl(
     override fun getFilteredLinesFlow(): Flow<Set<String>> = _filteredLines.asStateFlow()
 
     override fun getFavorites(): List<StopPlace> {
-        val jsonStr = prefs.getString("favorites", null) ?: return emptyList()
+        val jsonStr = prefs.getStringOrNull("favorites") ?: return emptyList()
         return try {
             json.decodeFromString<List<StopPlace>>(jsonStr)
         } catch (_: Exception) {
@@ -73,25 +84,19 @@ class SettingsRepositoryImpl(
         val current = getFavorites().toMutableList()
         if (current.none { it.id == stopPlace.id }) {
             current.add(stopPlace)
-            prefs.edit {
-                putString("favorites", json.encodeToString(current))
-            }
+            prefs.putString("favorites", json.encodeToString(current))
         }
     }
 
     override fun removeFavorite(stopId: String) {
         val current = getFavorites().filter { it.id != stopId }
-        prefs.edit {
-            putString("favorites", json.encodeToString(current))
-        }
+        prefs.putString("favorites", json.encodeToString(current))
     }
 
     override fun reorderFavorites(stopIds: List<String>) {
         val current = getFavorites()
         val reordered = stopIds.mapNotNull { id -> current.find { it.id == id } }
-        prefs.edit {
-            putString("favorites", json.encodeToString(reordered))
-        }
+        prefs.putString("favorites", json.encodeToString(reordered))
     }
 
     override fun isFavorite(stopId: String): Boolean = getFavorites().any { it.id == stopId }
@@ -99,18 +104,18 @@ class SettingsRepositoryImpl(
     override fun getRefreshIntervalSeconds(): Int = prefs.getInt("refresh_interval", DEFAULT_REFRESH_INTERVAL_SECONDS)
 
     override fun setRefreshIntervalSeconds(seconds: Int) {
-        prefs.edit { putInt("refresh_interval", seconds) }
+        prefs.putInt("refresh_interval", seconds)
     }
 
     override fun getAutoDimSeconds(): Int = prefs.getInt("auto_dim_seconds", DEFAULT_AUTO_DIM_SECONDS)
 
     override fun setAutoDimSeconds(seconds: Int) {
-        prefs.edit { putInt("auto_dim_seconds", seconds) }
+        prefs.putInt("auto_dim_seconds", seconds)
         _autoDimSeconds.value = seconds
     }
 
     override fun getThemeMode(): ThemeMode {
-        val modeStr = prefs.getString("theme_mode", ThemeMode.SYSTEM.name) ?: ThemeMode.SYSTEM.name
+        val modeStr = prefs.getString("theme_mode", ThemeMode.SYSTEM.name)
         return try {
             ThemeMode.valueOf(modeStr)
         } catch (_: Exception) {
@@ -119,27 +124,25 @@ class SettingsRepositoryImpl(
     }
 
     override fun setThemeMode(mode: ThemeMode) {
-        prefs.edit { putString("theme_mode", mode.name) }
+        prefs.putString("theme_mode", mode.name)
     }
 
     override fun getAutoThemeDarkLux(): Float = prefs.getFloat("auto_theme_dark_lux", DEFAULT_AUTO_THEME_DARK_LUX)
 
     override fun setAutoThemeDarkLux(lux: Float) {
-        prefs.edit { putFloat("auto_theme_dark_lux", lux) }
+        prefs.putFloat("auto_theme_dark_lux", lux)
         _autoThemeDarkLux.value = lux
     }
 
     override fun getAutoThemeLightLux(): Float = prefs.getFloat("auto_theme_light_lux", DEFAULT_AUTO_THEME_LIGHT_LUX)
 
     override fun setAutoThemeLightLux(lux: Float) {
-        prefs.edit { putFloat("auto_theme_light_lux", lux) }
+        prefs.putFloat("auto_theme_light_lux", lux)
         _autoThemeLightLux.value = lux
     }
 
     override fun getBurnInProtectionLevel(): BurnInProtectionLevel {
-        val levelStr =
-            prefs.getString("burn_in_protection", BurnInProtectionLevel.MEDIUM.name)
-                ?: BurnInProtectionLevel.MEDIUM.name
+        val levelStr = prefs.getString("burn_in_protection", BurnInProtectionLevel.MEDIUM.name)
         return try {
             BurnInProtectionLevel.valueOf(levelStr)
         } catch (_: Exception) {
@@ -148,13 +151,11 @@ class SettingsRepositoryImpl(
     }
 
     override fun setBurnInProtectionLevel(level: BurnInProtectionLevel) {
-        prefs.edit { putString("burn_in_protection", level.name) }
+        prefs.putString("burn_in_protection", level.name)
     }
 
     override fun getDateDisplayStyle(): DateDisplayStyle {
-        val styleStr =
-            prefs.getString("date_display_style", DateDisplayStyle.BESIDE.name)
-                ?: DateDisplayStyle.BESIDE.name
+        val styleStr = prefs.getString("date_display_style", DateDisplayStyle.BESIDE.name)
         return try {
             DateDisplayStyle.valueOf(styleStr)
         } catch (_: Exception) {
@@ -163,16 +164,16 @@ class SettingsRepositoryImpl(
     }
 
     override fun setDateDisplayStyle(style: DateDisplayStyle) {
-        prefs.edit { putString("date_display_style", style.name) }
+        prefs.putString("date_display_style", style.name)
     }
 
     override fun getSavedLatitude(): Double? {
-        val valStr = prefs.getString("saved_lat", null) ?: return null
+        val valStr = prefs.getStringOrNull("saved_lat") ?: return null
         return valStr.toDoubleOrNull()
     }
 
     override fun getSavedLongitude(): Double? {
-        val valStr = prefs.getString("saved_lon", null) ?: return null
+        val valStr = prefs.getStringOrNull("saved_lon") ?: return null
         return valStr.toDoubleOrNull()
     }
 
@@ -181,56 +182,50 @@ class SettingsRepositoryImpl(
         lon: Double?,
     ) {
         if ((lat == null) || (lon == null)) {
-            prefs.edit {
-                remove("saved_lat")
-                remove("saved_lon")
-            }
+            prefs.remove("saved_lat")
+            prefs.remove("saved_lon")
         } else {
-            prefs.edit {
-                putString("saved_lat", lat.toString())
-                putString("saved_lon", lon.toString())
-            }
+            prefs.putString("saved_lat", lat.toString())
+            prefs.putString("saved_lon", lon.toString())
         }
     }
 
     override fun isShowDelays(): Boolean = prefs.getBoolean("show_delays", true)
 
     override fun setShowDelays(show: Boolean) {
-        prefs.edit { putBoolean("show_delays", show) }
+        prefs.putBoolean("show_delays", show)
         _showDelays.value = show
     }
 
     override fun isShowMessages(): Boolean = prefs.getBoolean("show_messages", true)
 
     override fun setShowMessages(show: Boolean) {
-        prefs.edit { putBoolean("show_messages", show) }
+        prefs.putBoolean("show_messages", show)
         _showMessages.value = show
     }
 
-    override fun getSelectedQuays(stopId: String): Set<String>? = prefs.getStringSet("quays_$stopId", null)
+    override fun getSelectedQuays(stopId: String): Set<String>? = getStringSet(Keys.selectedQuays(stopId))
 
     override fun setSelectedQuays(
         stopId: String,
         quayIds: Set<String>?,
     ) {
         if (quayIds == null) {
-            prefs.edit { remove("quays_$stopId") }
+            prefs.remove(Keys.selectedQuays(stopId))
         } else {
-            prefs.edit { putStringSet("quays_$stopId", quayIds) }
+            putStringSet(Keys.selectedQuays(stopId), quayIds)
         }
     }
 
     override fun isCameraMotionWakeEnabled(): Boolean = prefs.getBoolean("camera_motion_wake", false)
 
     override fun setCameraMotionWakeEnabled(enabled: Boolean) {
-        prefs.edit { putBoolean("camera_motion_wake", enabled) }
+        prefs.putBoolean("camera_motion_wake", enabled)
         _cameraMotionWake.value = enabled
     }
 
     override fun getCameraSensitivity(): CameraSensitivity {
-        val str =
-            prefs.getString("camera_sensitivity", CameraSensitivity.MEDIUM.name)
-                ?: CameraSensitivity.MEDIUM.name
+        val str = prefs.getString("camera_sensitivity", CameraSensitivity.MEDIUM.name)
         return try {
             CameraSensitivity.valueOf(str)
         } catch (_: Exception) {
@@ -239,15 +234,15 @@ class SettingsRepositoryImpl(
     }
 
     override fun setCameraSensitivity(sensitivity: CameraSensitivity) {
-        prefs.edit { putString("camera_sensitivity", sensitivity.name) }
+        prefs.putString("camera_sensitivity", sensitivity.name)
     }
 
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
 
-    override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.edit { putBoolean("dynamic_refresh", enabled) }
+    override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.putBoolean("dynamic_refresh", enabled)
 
     override fun getDestinationStations(): List<StopPlace> {
-        val jsonStr = prefs.getString("destination_stations", null) ?: return emptyList()
+        val jsonStr = prefs.getStringOrNull("destination_stations") ?: return emptyList()
         return try {
             json.decodeFromString<List<StopPlace>>(jsonStr)
         } catch (_: Exception) {
@@ -261,42 +256,42 @@ class SettingsRepositoryImpl(
             current.size < SettingsRepository.MAX_DESTINATION_STATIONS
         ) {
             current.add(stopPlace)
-            prefs.edit { putString("destination_stations", json.encodeToString(current)) }
+            prefs.putString("destination_stations", json.encodeToString(current))
         }
     }
 
     override fun removeDestinationStation(stopId: String) {
         val current = getDestinationStations().filter { it.id != stopId }
-        prefs.edit { putString("destination_stations", json.encodeToString(current)) }
+        prefs.putString("destination_stations", json.encodeToString(current))
     }
 
     override fun isFullScreenMode(): Boolean = prefs.getBoolean("full_screen_mode", false)
 
     override fun setFullScreenMode(enabled: Boolean) {
-        prefs.edit { putBoolean("full_screen_mode", enabled) }
+        prefs.putBoolean("full_screen_mode", enabled)
         _fullScreenMode.value = enabled
     }
 
     override fun isAlwaysOnEnabled(): Boolean = prefs.getBoolean("always_on_enabled", false)
 
     override fun setAlwaysOnEnabled(enabled: Boolean) {
-        prefs.edit { putBoolean("always_on_enabled", enabled) }
+        prefs.putBoolean("always_on_enabled", enabled)
         _alwaysOnEnabled.value = enabled
     }
 
     override fun isShowCancelledLines(): Boolean = prefs.getBoolean("show_cancelled_lines", false)
 
     override fun setShowCancelledLines(show: Boolean) {
-        prefs.edit { putBoolean("show_cancelled_lines", show) }
+        prefs.putBoolean("show_cancelled_lines", show)
         _showCancelledLines.value = show
     }
 
-    override fun getFilteredLines(): Set<String> = prefs.getStringSet("filtered_lines", emptySet()) ?: emptySet()
+    override fun getFilteredLines(): Set<String> = getStringSet(Keys.FILTERED_LINES) ?: emptySet()
 
     override fun addFilteredLine(line: String) {
         val current = getFilteredLines().toMutableSet()
         if (current.add(line)) {
-            prefs.edit { putStringSet("filtered_lines", current) }
+            putStringSet(Keys.FILTERED_LINES, current)
             _filteredLines.value = current
         }
     }
@@ -304,8 +299,24 @@ class SettingsRepositoryImpl(
     override fun removeFilteredLine(line: String) {
         val current = getFilteredLines().toMutableSet()
         if (current.remove(line)) {
-            prefs.edit { putStringSet("filtered_lines", current) }
+            putStringSet(Keys.FILTERED_LINES, current)
             _filteredLines.value = current
         }
+    }
+
+    private fun getStringSet(key: String): Set<String>? {
+        val jsonStr = prefs.getStringOrNull(key) ?: return null
+        return try {
+            json.decodeFromString<List<String>>(jsonStr).toSet()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun putStringSet(
+        key: String,
+        values: Set<String>,
+    ) {
+        prefs.putString(key, json.encodeToString(values.toList()))
     }
 }

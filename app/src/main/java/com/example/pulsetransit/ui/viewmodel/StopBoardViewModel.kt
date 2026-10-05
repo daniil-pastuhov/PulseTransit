@@ -1,6 +1,5 @@
 package com.example.pulsetransit.ui.viewmodel
 
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.BurnInProtectionLevel
@@ -15,6 +14,7 @@ import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.Job
@@ -26,19 +26,23 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
+// The constructor is the DI seam: every collaborator is injected so the board runs on the JVM in
+// tests. The function count is the board's public surface plus its refresh/clock loops.
+@Suppress("LongParameterList", "TooManyFunctions")
 class StopBoardViewModel(
     private val enturRepository: EnturRepository,
     private val weatherRepository: WeatherRepository,
     private val settingsRepository: SettingsRepository,
     private val sensorManager: SystemSensorManager,
     private val cameraMotionDetector: CameraMotionDetector,
+    private val clockFormatter: ClockFormatter,
+    private val clock: Clock = Clock.System,
 ) : ViewModel() {
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
@@ -104,6 +108,7 @@ class StopBoardViewModel(
 
     private var refreshJob: Job? = null
     private var lightSensorJob: Job? = null
+    private var cameraMotionJob: Job? = null
     private var lastWeatherUpdateTime: Long = 0
     private val weatherRefreshIntervalMs = 30 * 60 * 1000L // 30 minutes
 
@@ -285,16 +290,25 @@ class StopBoardViewModel(
 
     fun isCameraMotionEnabled(): Boolean = settingsRepository.isCameraMotionWakeEnabled()
 
-    fun bindCameraMotion(lifecycleOwner: LifecycleOwner) {
-        if (settingsRepository.isCameraMotionWakeEnabled()) {
+    /**
+     * Starts watching the camera for motion, if the setting is on. The camera stays open until
+     * [stopCameraMotion], so the screen calls the pair from its start/stop lifecycle events.
+     */
+    fun startCameraMotion() {
+        cameraMotionJob?.cancel()
+        cameraMotionJob = null
+        if (!settingsRepository.isCameraMotionWakeEnabled()) return
+
+        cameraMotionJob =
             cameraMotionDetector
-                .getMotionFlow(lifecycleOwner)
-                .onEach { motionDetected ->
-                    if (motionDetected) {
-                        wakeScreen()
-                    }
-                }.launchIn(viewModelScope)
-        }
+                .motionEvents()
+                .onEach { wakeScreen() }
+                .launchIn(viewModelScope)
+    }
+
+    fun stopCameraMotion() {
+        cameraMotionJob?.cancel()
+        cameraMotionJob = null
     }
 
     /** Advances the header date to the next [DateDisplayStyle] and remembers the choice. */
@@ -306,23 +320,17 @@ class StopBoardViewModel(
 
     private fun startClock() {
         viewModelScope.launch {
-            val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val daySdf = SimpleDateFormat("d", Locale.getDefault())
-            val weekdaySdf = SimpleDateFormat("EEE", Locale.getDefault())
-            val monthSdf = SimpleDateFormat("LLL", Locale.getDefault())
-            val weekdayLongSdf = SimpleDateFormat("EEEE", Locale.getDefault())
-            val monthLongSdf = SimpleDateFormat("LLLL", Locale.getDefault())
             while (true) {
-                val now = System.currentTimeMillis()
-                val date = Date(now)
+                val now = clock.now().toEpochMilliseconds()
+                val text = clockFormatter.clockText(now)
                 _uiState.update {
                     it.copy(
-                        currentTime = sdf.format(date),
-                        currentDayOfMonth = daySdf.format(date),
-                        currentWeekday = weekdaySdf.format(date),
-                        currentMonth = monthSdf.format(date),
-                        currentWeekdayLong = weekdayLongSdf.format(date),
-                        currentMonthLong = monthLongSdf.format(date),
+                        currentTime = text.time,
+                        currentDayOfMonth = text.dayOfMonth,
+                        currentWeekday = text.weekdayShort,
+                        currentMonth = text.monthShort,
+                        currentWeekdayLong = text.weekdayLong,
+                        currentMonthLong = text.monthLong,
                         // Derived here so the age keeps climbing while the board stays offline.
                         staleAgeMinutes =
                             it.staleSinceMillis?.let { since ->
@@ -352,8 +360,7 @@ class StopBoardViewModel(
         val base = _uiState.value.refreshIntervalSeconds
         if (!settingsRepository.isDynamicRefreshEnabled()) return base
 
-        val calendar = Calendar.getInstance()
-        val hour = calendar[Calendar.HOUR_OF_DAY]
+        val hour = clock.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
 
         var multiplier = 1.0
 
@@ -370,7 +377,7 @@ class StopBoardViewModel(
         refreshDepartures()
         refreshFastestTrip()
 
-        val currentTime = System.currentTimeMillis()
+        val currentTime = clock.now().toEpochMilliseconds()
         if (currentTime - lastWeatherUpdateTime >= weatherRefreshIntervalMs) {
             refreshWeather()
             lastWeatherUpdateTime = currentTime
@@ -408,9 +415,9 @@ class StopBoardViewModel(
             }
 
             rawDepartures = newRawDepartures
-            val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            val now = clock.now().toEpochMilliseconds()
             // Report when the data was actually fetched, not when we last tried.
-            val updateTime = timeFormat.format(Date(oldestCacheFetch ?: System.currentTimeMillis()))
+            val updateTime = clockFormatter.timeWithSeconds(oldestCacheFetch ?: now)
 
             _uiState.update {
                 it.copy(
@@ -419,7 +426,7 @@ class StopBoardViewModel(
                     staleSinceMillis = oldestCacheFetch,
                     staleAgeMinutes =
                         oldestCacheFetch?.let { since ->
-                            ((System.currentTimeMillis() - since) / MILLIS_PER_MINUTE).toInt()
+                            ((now - since) / MILLIS_PER_MINUTE).toInt()
                         },
                 )
             }
