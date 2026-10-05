@@ -1,0 +1,1 @@
+avganger,buss,trikk,t-bane,tog,ferje,rutetider,sanntid,tavle,skjerm,kollektiv,pendling,vær
