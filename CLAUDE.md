@@ -108,7 +108,12 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
 - Screens: `Board/` (the board, the counterpart of `MainScreen`/`StopBoardPanel`) and `Settings/`
   (a sheet; the board calls `loadSettings()` when it closes). Colours are Android's tokens in
   `Theme/Palette.swift`. In debug builds, launching with `-PTOpenSettings YES` opens Settings
-  directly, for simulator checks without tapping.
+  directly, and `-PTRequestLocation YES` also starts "Detect location", for simulator checks without
+  tapping.
+- iOS shows one system permission prompt at a time and silently drops a request made while another
+  is up, with no callback. So permissions are asked for where the user turns the feature on (camera
+  in Settings, location on "Detect location"), and `CoreLocationSource` re-asks when the app becomes
+  active again and gives up after a timeout rather than waiting forever.
 - Logic a SwiftUI view would otherwise reimplement belongs in `commonMain` (e.g.
   `departureCountdown`, `PixelShiftSchedule`, `parseWeatherSymbol`), so both apps share one tested
   version. Kotlin `Duration` values and default arguments do not reach Swift usefully, so such APIs

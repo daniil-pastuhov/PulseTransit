@@ -1,3 +1,4 @@
+import AVFoundation
 import Shared
 import SwiftUI
 
@@ -35,7 +36,14 @@ struct SettingsView: View {
         }
         .navigationViewStyle(.stack)
         .preferredColorScheme((state.themeMode).colorScheme ?? themeMode.colorScheme)
-        .onAppear { viewModel.loadSettings() }
+        .onAppear {
+            viewModel.loadSettings()
+            // Debug builds can be launched with -PTRequestLocation YES to start "Detect location"
+            // straight away, for checking the permission flow in a simulator without tapping.
+            #if DEBUG
+            if UserDefaults.standard.bool(forKey: "PTRequestLocation") { viewModel.requestLocationAndNearbyStops() }
+            #endif
+        }
     }
 }
 
@@ -117,7 +125,14 @@ private struct PowerSection: View {
 
     var body: some View {
         Section(L("power_refresh")) {
-            Toggle(L("wake_camera"), isOn: binding(state.cameraMotionWake) { viewModel.updateCameraMotionWake(enabled: $0) })
+            Toggle(L("wake_camera"), isOn: binding(state.cameraMotionWake) { enabled in
+                viewModel.updateCameraMotionWake(enabled: enabled)
+                // Ask for camera access here, where the user just chose the feature, rather than
+                // later on the board, where the prompt would come out of nowhere.
+                if enabled && AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
+                    AVCaptureDevice.requestAccess(for: .video) { _ in }
+                }
+            })
             Toggle(L("dynamic_refresh"), isOn: binding(state.dynamicRefresh) { viewModel.updateDynamicRefresh(enabled: $0) })
             Toggle(L("full_screen_mode"), isOn: binding(state.isFullScreenMode) { viewModel.updateFullScreenMode(enabled: $0) })
             Toggle(L("always_on_display"), isOn: binding(state.isAlwaysOnEnabled) { viewModel.updateAlwaysOnMode(enabled: $0) })
