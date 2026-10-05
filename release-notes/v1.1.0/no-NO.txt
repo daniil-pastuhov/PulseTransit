@@ -1,0 +1,3 @@
+• PulseTransit kommer til iPhone og iPad: tavlen bygger nå på en felles kjerne for begge appene.
+• Frontkameraet slås nå av når tavlen ikke vises, også mens Innstillinger er åpen, for å spare strøm.
+• Et mislykket posisjonsoppslag viser nå en lesbar feilmelding.

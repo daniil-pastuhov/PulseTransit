@@ -1,0 +1,3 @@
+• PulseTransit is coming to iPhone and iPad: the board now runs on a shared core for both apps.
+• The front camera now switches off whenever the board is off screen, including while Settings is open, to save power.
+• A failed location lookup now shows a readable error.
