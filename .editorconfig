@@ -11,3 +11,8 @@ ktlint_function_naming_ignore_when_annotated_with = Composable
 # rather than matching properties, so the _xxx backing fields have no same-named
 # public counterpart for this rule to find.
 ktlint_standard_backing-property-naming = disabled
+
+# Generated code (Room's KSP output) is registered with the KMP source sets, so ktlint sees it.
+# It is not ours to format.
+[**/build/generated/**]
+ktlint_standard = disabled

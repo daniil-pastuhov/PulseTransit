@@ -8,6 +8,10 @@ complexity:
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
       - '**/*.Test.kt'
       - '**/*.Spec.kt'
       - '**/*.Spek.kt'
@@ -29,6 +33,10 @@ complexity:
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
       - '**/*.Test.kt'
       - '**/*.Spec.kt'
       - '**/*.Spek.kt'
@@ -48,14 +56,17 @@ exceptions:
   PrintStackTrace:
     # The repositories swallow exceptions and fall back to cached data, so the stack
     # trace on stderr (which Android routes to logcat) is the only trace left of a
-    # failed request. android.util.Log is not an option here: data/ is deliberately
-    # free of Android types so it can be unit-tested on the JVM against MockEngine,
-    # and Log is stubbed to throw there unless unit tests return default values.
+    # failed request. android.util.Log is not an option here: data/ lives in the KMP
+    # module's commonMain and is shared with iOS, where the trace goes to the console.
     # Revisit if this layer ever gets a real logger injected.
     # NB: `excludes` replaces detekt's default list rather than adding to it.
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
       - '**/*.Test.kt'
       - '**/*.Spec.kt'
       - '**/*.Spek.kt'
@@ -67,6 +78,10 @@ exceptions:
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
       - '**/*.Test.kt'
       - '**/*.Spec.kt'
       - '**/*.Spek.kt'
@@ -76,6 +91,15 @@ naming:
   FunctionNaming:
     # Composables are PascalCase by convention.
     ignoreAnnotated: ['Composable']
+    # Tests are named as sentences in backticks.
+    # NB: `excludes` replaces detekt's default list rather than adding to it.
+    excludes:
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
   ConstructorParameterNaming:
     # API response DTOs mirror the wire format field-for-field (air_temperature);
     # they are private nested classes that never leak out of the repository.
@@ -83,6 +107,10 @@ naming:
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
       - '**/*.Test.kt'
       - '**/*.Spec.kt'
       - '**/*.Spek.kt'
@@ -104,6 +132,10 @@ style:
     excludes:
       - '**/test/**'
       - '**/androidTest/**'
+      - '**/commonTest/**'
+      - '**/androidHostTest/**'
+      - '**/androidDeviceTest/**'
+      - '**/iosTest/**'
       - '**/*.Test.kt'
       - '**/*.Spec.kt'
       - '**/*.Spek.kt'
