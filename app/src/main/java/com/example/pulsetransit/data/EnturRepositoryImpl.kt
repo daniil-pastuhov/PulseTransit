@@ -19,11 +19,13 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
+import kotlin.time.Clock
 
 class EnturRepositoryImpl(
     private val client: HttpClient,
     private val departureCache: DepartureCacheDao,
     private val tripCache: TripCacheDao,
+    private val clock: Clock = Clock.System,
 ) : EnturRepository {
     private val clientNameHeader = "ET-Client-Name"
     private val clientNameValue = "personal-pulsetransit"
@@ -340,7 +342,7 @@ class EnturRepositoryImpl(
                 put("timeRange", timeRangeSeconds)
             }
 
-        val now = System.currentTimeMillis()
+        val now = clock.now().toEpochMilliseconds()
 
         return try {
             val response: GraphQLResponse<StopPlaceData> =
@@ -525,7 +527,7 @@ class EnturRepositoryImpl(
         lon: Double,
         to: StopPlace,
     ): Sourced<TripInfo?> {
-        val now = System.currentTimeMillis()
+        val now = clock.now().toEpochMilliseconds()
         val routeKey = routeKey(lat, lon, to.id)
 
         val queryStr =
@@ -599,7 +601,7 @@ class EnturRepositoryImpl(
     ): Sourced<TripInfo?> {
         if (fromIds.isEmpty()) return Sourced(null)
 
-        val now = System.currentTimeMillis()
+        val now = clock.now().toEpochMilliseconds()
         val routeKey = routeKey(fromIds, to.id)
         var fastestTrip: TripInfo? = null
         // Tracked so that "every origin failed" falls back to the cache, while "the API answered

@@ -16,8 +16,6 @@ import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.milliseconds
 
 fun Modifier.pixelShift(level: BurnInProtectionLevel): Modifier =
     composed {
@@ -26,19 +24,15 @@ fun Modifier.pixelShift(level: BurnInProtectionLevel): Modifier =
         var targetOffset by remember { mutableStateOf(Offset.Zero) }
         val animatedOffset by animateOffsetAsState(
             targetValue = targetOffset,
-            animationSpec = tween(durationMillis = 5000), // Very slow 5-second transition
+            animationSpec = tween(durationMillis = PixelShiftSchedule.transition.inWholeMilliseconds.toInt()),
             label = "pixelShift",
         )
 
         LaunchedEffect(level) {
             while (true) {
-                val maxOffsetDp = level.maxOffsetDp
-                val xShiftDp = Random.nextFloat() * (maxOffsetDp * 2) - maxOffsetDp
-                val yShiftDp = Random.nextFloat() * (maxOffsetDp * 2) - maxOffsetDp
-
-                targetOffset = Offset(xShiftDp, yShiftDp)
-
-                delay(60000.milliseconds) // Shift every minute
+                val next = PixelShiftSchedule.nextOffset(level)
+                targetOffset = Offset(next.xDp, next.yDp)
+                delay(PixelShiftSchedule.interval)
             }
         }
 

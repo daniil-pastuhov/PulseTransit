@@ -45,6 +45,7 @@ class StopBoardViewModelTest {
     private val settings = FakeSettingsRepository()
     private val sensors = FakeSystemSensorManager()
     private val camera = FakeCameraMotionDetector()
+    private val clockFormatter = FakeClockFormatter()
 
     private val minute = 60 * 1000L
     private val oslo = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S", locality = "Oslo")
@@ -83,7 +84,7 @@ class StopBoardViewModelTest {
         }
 
     private fun TestScope.viewModel(): StopBoardViewModel {
-        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera)
+        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter)
         created += vm
         runCurrent() // let init's loadSettings / first refresh / sensor wiring run
         return vm
@@ -260,8 +261,7 @@ class StopBoardViewModelTest {
             assertEquals(fetchedAt, vm.uiState.value.staleSinceMillis)
             assertEquals(12, vm.uiState.value.staleAgeMinutes)
             // The board must not claim data fetched 12 minutes ago is current.
-            val expected = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(fetchedAt))
-            assertEquals(expected, vm.uiState.value.lastUpdated)
+            assertEquals(clockFormatter.timeWithSeconds(fetchedAt), vm.uiState.value.lastUpdated)
         }
 
     @Test
@@ -557,16 +557,48 @@ class StopBoardViewModelTest {
             settings.cameraMotionWake = true
             settings.autoDim = 30
             val vm = viewModel()
-            vm.bindCameraMotion(TestLifecycleOwner())
+            vm.startCameraMotion()
             runCurrent()
 
             vm.dimScreen()
             assertEquals(true, vm.uiState.value.isScreenDimmed)
 
-            camera.motion.tryEmit(true)
+            camera.motion.tryEmit(Unit)
             runCurrent()
 
             assertEquals(false, vm.uiState.value.isScreenDimmed)
+        }
+
+    @Test
+    fun `motion is ignored once the camera is stopped`() =
+        boardTest {
+            settings.cameraMotionWake = true
+            settings.autoDim = 30
+            val vm = viewModel()
+            vm.startCameraMotion()
+            runCurrent()
+
+            vm.stopCameraMotion()
+            vm.dimScreen()
+            camera.motion.tryEmit(Unit)
+            runCurrent()
+
+            assertEquals("a backgrounded board must not react to the camera", true, vm.uiState.value.isScreenDimmed)
+        }
+
+    @Test
+    fun `camera motion does nothing while the setting is off`() =
+        boardTest {
+            settings.cameraMotionWake = false
+            val vm = viewModel()
+            vm.startCameraMotion()
+            runCurrent()
+
+            vm.dimScreen()
+            camera.motion.tryEmit(Unit)
+            runCurrent()
+
+            assertEquals(true, vm.uiState.value.isScreenDimmed)
         }
 
     @Test

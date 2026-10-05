@@ -1,21 +1,18 @@
 package com.example.pulsetransit.ui.viewmodel
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.pulsetransit.R
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.platform.LocationAccuracy
+import com.example.pulsetransit.platform.LocationProvider
+import com.example.pulsetransit.platform.LocationResult
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,22 +20,38 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 
 class SettingsViewModel(
     private val enturRepository: EnturRepository,
     private val settingsRepository: SettingsRepository,
     private val sensorManager: SystemSensorManager,
-    context: Context,
+    private val locationProvider: LocationProvider,
 ) : ViewModel() {
-    private val appContext = context.applicationContext
-    private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(appContext)
+    /** Where the location lookup stands. Each platform turns this into its own localized text. */
+    sealed interface LocationStatus {
+        data object NotRequested : LocationStatus
 
-    data class LocationStatus(
-        val resId: Int,
-        val arg: String? = null,
-    )
+        data object RequestingPrecise : LocationStatus
+
+        /** The precise fix failed and the approximate fallback is running. */
+        data object RequestingApproximate : LocationStatus
+
+        data class Found(
+            val accuracy: LocationAccuracy,
+        ) : LocationStatus
+
+        data object Failed : LocationStatus
+
+        data object Denied : LocationStatus
+
+        data class Error(
+            val message: String,
+        ) : LocationStatus
+
+        data object Manual : LocationStatus
+
+        data object InvalidManualFormat : LocationStatus
+    }
 
     data class UiState(
         val query: String = "",
@@ -48,7 +61,7 @@ class SettingsViewModel(
         val isSearchingNearby: Boolean = false,
         val latitude: Double? = null,
         val longitude: Double? = null,
-        val locationStatus: LocationStatus = LocationStatus(R.string.loc_not_requested),
+        val locationStatus: LocationStatus = LocationStatus.NotRequested,
         val showManualCoordinatesPrompt: Boolean = false,
         val themeMode: ThemeMode = ThemeMode.SYSTEM,
         val burnInLevel: BurnInProtectionLevel = BurnInProtectionLevel.MEDIUM,
@@ -235,71 +248,54 @@ class SettingsViewModel(
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private suspend fun fetchCurrentLocationWithPriority(priority: Int): Location? =
-        suspendCancellableCoroutine { continuation ->
-            val cts = CancellationTokenSource()
-            fusedLocationClient
-                .getCurrentLocation(priority, cts.token)
-                .addOnSuccessListener { location ->
-                    continuation.resume(location)
-                }.addOnFailureListener {
-                    continuation.resume(null)
-                }
-        }
-
-    // Play Services and the Entur lookup can fail in a dozen unrelated ways; whatever
+    // The location provider and the Entur lookup can fail in a dozen unrelated ways; whatever
     // goes wrong, the screen falls back to asking for coordinates by hand.
     @Suppress("TooGenericExceptionCaught")
-    @SuppressLint("MissingPermission")
     fun requestLocationAndNearbyStops() {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
                     isSearchingNearby = true,
-                    locationStatus = LocationStatus(R.string.loc_requesting_gps),
+                    locationStatus = LocationStatus.RequestingPrecise,
                     showManualCoordinatesPrompt = false,
                 )
             }
 
             try {
-                // 1. Try GPS (Precise)
-                val gpsLocation = fetchCurrentLocationWithPriority(Priority.PRIORITY_HIGH_ACCURACY)
-
-                if (gpsLocation != null) {
-                    handleLocationSuccess(gpsLocation, R.string.gps_source)
-                } else {
-                    // 2. GPS failed/unavailable, try Network (Approximate)
-                    _uiState.update { it.copy(locationStatus = LocationStatus(R.string.loc_requesting_network)) }
-                    val networkLocation = fetchCurrentLocationWithPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
-
-                    if (networkLocation != null) {
-                        handleLocationSuccess(networkLocation, R.string.network_source)
-                    } else {
-                        // 3. Both failed, fallback to manual prompt
-                        handleLocationFailure(LocationStatus(R.string.loc_failed))
-                    }
+                // Precise first; if it has nothing, fall back to approximate.
+                var accuracy = LocationAccuracy.PRECISE
+                var result = locationProvider.currentLocation(accuracy)
+                if (result == LocationResult.Unavailable) {
+                    _uiState.update { it.copy(locationStatus = LocationStatus.RequestingApproximate) }
+                    accuracy = LocationAccuracy.APPROXIMATE
+                    result = locationProvider.currentLocation(accuracy)
                 }
-            } catch (_: SecurityException) {
-                handleLocationFailure(LocationStatus(R.string.loc_denied))
+
+                when (result) {
+                    is LocationResult.Fix -> handleLocationSuccess(result, accuracy)
+                    LocationResult.Unavailable -> handleLocationFailure(LocationStatus.Failed)
+                    LocationResult.PermissionDenied -> handleLocationFailure(LocationStatus.Denied)
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                handleLocationFailure(LocationStatus(R.string.loc_error, e.message))
+                handleLocationFailure(LocationStatus.Error(e.message ?: e.toString()))
             }
         }
     }
 
     private fun handleLocationSuccess(
-        location: Location,
-        sourceResId: Int,
+        fix: LocationResult.Fix,
+        accuracy: LocationAccuracy,
     ) {
-        val lat = location.latitude
-        val lon = location.longitude
+        val lat = fix.latitude
+        val lon = fix.longitude
         settingsRepository.setSavedLocation(lat, lon)
         _uiState.update {
             it.copy(
                 latitude = lat,
                 longitude = lon,
-                locationStatus = LocationStatus(R.string.loc_success, appContext.getString(sourceResId)),
+                locationStatus = LocationStatus.Found(accuracy),
                 isSearchingNearby = false,
                 showManualCoordinatesPrompt = false,
             )
@@ -329,14 +325,14 @@ class SettingsViewModel(
                 it.copy(
                     latitude = lat,
                     longitude = lon,
-                    locationStatus = LocationStatus(R.string.loc_manual),
+                    locationStatus = LocationStatus.Manual,
                     showManualCoordinatesPrompt = false,
                 )
             }
             fetchNearbyStops(lat, lon)
         } else {
             _uiState.update {
-                it.copy(locationStatus = LocationStatus(R.string.loc_invalid_format))
+                it.copy(locationStatus = LocationStatus.InvalidManualFormat)
             }
         }
     }

@@ -79,7 +79,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.LifecycleStartEffect
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.StopDepartures
@@ -87,12 +87,12 @@ import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
+import com.example.pulsetransit.data.parseWeatherSymbol
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.PrecipitationBar
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
-import com.example.pulsetransit.ui.components.parseWeatherSymbol
 import com.example.pulsetransit.ui.components.temperatureColor
 import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.pixelshift.pixelShift
@@ -112,7 +112,6 @@ fun MainScreen(
     val uiState by viewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
 
     val cameraPermissionLauncher =
@@ -120,20 +119,25 @@ fun MainScreen(
             ActivityResultContracts.RequestPermission(),
         ) { isGranted ->
             if (isGranted) {
-                viewModel.bindCameraMotion(lifecycleOwner)
+                viewModel.startCameraMotion()
             }
         }
 
-    LaunchedEffect(uiState.isScreenDimmed) {
-        // Just to ensure we're observing
-    }
-
-    LaunchedEffect(lifecycleOwner) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            viewModel.bindCameraMotion(lifecycleOwner)
-        } else if (viewModel.isCameraMotionEnabled()) {
+    LaunchedEffect(Unit) {
+        val granted =
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        if (!granted && viewModel.isCameraMotionEnabled()) {
             cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
+    }
+
+    // The camera runs only while the board is visible: it is released when the app goes to the
+    // background or the board leaves the screen, and reopened when it comes back.
+    LifecycleStartEffect(Unit) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.startCameraMotion()
+        }
+        onStopOrDispose { viewModel.stopCameraMotion() }
     }
 
     val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
