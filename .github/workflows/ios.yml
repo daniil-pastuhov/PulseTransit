@@ -121,11 +121,14 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
 
+  # Runs only once an external TestFlight group exists and its name is set in the repository
+  # variable TESTFLIGHT_EXTERNAL_GROUP; until then releases stay with internal testers.
   promote:
     name: Send to TestFlight external testers
     if: >-
       github.event_name == 'pull_request' && github.event.action == 'closed' &&
-      github.event.pull_request.merged && startsWith(github.head_ref, 'release/v')
+      github.event.pull_request.merged && startsWith(github.head_ref, 'release/v') &&
+      vars.TESTFLIGHT_EXTERNAL_GROUP != ''
     runs-on: macos-latest
     environment: Release
     env:
@@ -149,4 +152,4 @@ jobs:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          TESTFLIGHT_EXTERNAL_GROUP: ${{ vars.TESTFLIGHT_EXTERNAL_GROUP || 'External testers' }}
+          TESTFLIGHT_EXTERNAL_GROUP: ${{ vars.TESTFLIGHT_EXTERNAL_GROUP }}

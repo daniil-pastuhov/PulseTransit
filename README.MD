@@ -132,12 +132,20 @@ a **team key with the Admin role**: Admin is what lets Xcode create the distribu
 profile on the CI machine (cloud-managed signing), so no certificates are kept in the repository.
 Without `ASC_KEY_P8` the TestFlight upload is skipped, as the Play upload is without its key.
 
-In App Store Connect, also create the app record for `com.homieapps.pulsetransit`, an internal
-TestFlight group with automatic distribution turned on (internal testers get each processed build
-from it), an external group (named "External testers", or set the repository variable
-`TESTFLIGHT_EXTERNAL_GROUP`), and fill in the Test Information that Beta App Review needs before
-the first external build. The app declares only exempt encryption (HTTPS), so builds skip the export
-compliance question. Builds are numbered
+App Store Connect already has the app record (`com.homieapps.pulsetransit`), the TestFlight test
+information, the age rating and an internal group, "Internal testers", that receives every
+processed build automatically; add people to it there. The app declares only exempt encryption
+(HTTPS), so builds skip the export compliance question.
+
+External testing is off until you want it. To turn it on, create an external group, add a phone
+number to the Beta App Review contact (Apple requires one), and set the repository variable
+`TESTFLIGHT_EXTERNAL_GROUP` to the group's name: merging a release PR then sends its build there.
+
+The App Store listing (name, subtitle, description, keywords, promotional text, URLs, categories,
+copyright) lives in `iosApp/fastlane/metadata`, in English (UK, the app's primary language) and
+Norwegian, adapted from the Play listing. `bundle exec fastlane metadata` (from `iosApp/`, with the
+`ASC_*` variables set) pushes it. Until the app's first App Store release, fastlane ends that lane
+with a "No data" error (fastlane#20538) after the texts have been saved. Builds are numbered
 by the iOS workflow's run number.
 
 Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project's iOS app), and the

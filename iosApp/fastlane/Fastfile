@@ -2,6 +2,7 @@
 #
 #   bundle exec fastlane beta version:1.0.2 build_number:42   # build, upload to internal testers
 #   bundle exec fastlane promote version:1.0.2                # send that version's build to external testers
+#   bundle exec fastlane metadata                             # push the App Store texts in fastlane/metadata
 #
 # Both need an App Store Connect API key with the Admin role in ASC_KEY_ID, ASC_ISSUER_ID and
 # ASC_KEY_P8 (the .p8 file's contents). Admin is what lets Xcode create the distribution
@@ -77,6 +78,22 @@ platform :ios do
       dsym_path: lane_context[SharedValues::DSYM_OUTPUT_PATH],
       gsp_path: File.join(ROOT, "iosApp/iosApp/GoogleService-Info.plist"),
       binary_path: File.join(derived_data, "SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"),
+    )
+  end
+
+  desc "Update the App Store listing (texts, URLs, categories) from fastlane/metadata"
+  lane :metadata do
+    # The listing lives in the repo, like the Play listing in app/src/main/play, so changes are
+    # reviewed in PRs. Screenshots and the binary are managed separately. Until the first App Store
+    # release, deliver saves the texts and then fails with "No data" (fastlane#20538).
+    deliver(
+      api_key: api_key,
+      metadata_path: File.join(ROOT, "iosApp/fastlane/metadata"),
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      force: true,
+      submit_for_review: false,
+      run_precheck_before_submit: false,
     )
   end
 

@@ -1,0 +1,20 @@
+PulseTransit gjør en iPhone eller iPad om til en avgangstavle i sanntid for buss-, trikk-, T-bane-, tog- og fergeholdeplassene du bruker hver dag. Heng opp en gammel enhet ved ytterdøra og se med ett blikk når neste avgang går.
+
+AVGANGER I SANNTID
+• Sanntidsavganger for all kollektivtrafikk i Norge, fra Entur
+• Forsinkelser, innstillinger og driftsmeldinger
+• Velg plattformene og retningene du bryr deg om, og skjul linjer du aldri tar
+• Raskeste rute til stedene du reiser oftest til, inkludert gangtid
+
+LAGET FOR VEGGEN
+• Alltid på-modus som holder skjermen våken
+• Vekker skjermen når noen går forbi, ved hjelp av frontkameraet. Bildene analyseres på enheten og blir aldri lagret eller sendt noe sted
+• Demper skjermen når ingen er i nærheten, og kan bytte mellom dag- og nattema etter lyset i rommet
+• Pikselforskyvning beskytter OLED-skjermer mot innbrenning
+• Oppdaterer sjeldnere om natten og når skjermen er dempet, for å spare strøm
+• Viser siste kjente avganger og vær når forbindelsen faller ut
+
+VÆR
+• Nåværende vær og varsel for der du er, fra Meteorologisk institutt
+
+Avgangsdata fra Entur. Værdata fra Meteorologisk institutt (yr.no).
