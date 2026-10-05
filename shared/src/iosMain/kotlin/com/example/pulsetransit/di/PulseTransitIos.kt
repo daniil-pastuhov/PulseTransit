@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import co.touchlab.crashkios.crashlytics.enableCrashlytics
+import co.touchlab.crashkios.crashlytics.setCrashlyticsUnhandledExceptionHook
 import com.example.pulsetransit.platform.CameraFrameMotionDetector
 import com.example.pulsetransit.platform.CameraFrameSource
 import com.example.pulsetransit.platform.ClockFormatter
@@ -25,13 +27,22 @@ import org.koin.dsl.module
 
 /** The iOS app's entry point into the shared code. */
 object PulseTransitIos : KoinComponent {
-    /** Starts Koin with the shared modules and the services the Swift app implements. Call once, at launch. */
+    /**
+     * Starts Koin with the shared modules and the services the Swift app implements. Call once, at
+     * launch. [crashReporting] is true when the app has configured Firebase; unhandled Kotlin
+     * exceptions then reach Crashlytics with Kotlin stack traces rather than as a bare abort.
+     */
     fun start(
+        crashReporting: Boolean,
         clockFormatter: ClockFormatter,
         locationSource: LocationSource,
         lightSource: LightSource,
         cameraFrameSource: CameraFrameSource,
     ) {
+        if (crashReporting) {
+            enableCrashlytics()
+            setCrashlyticsUnhandledExceptionHook()
+        }
         startKoin {
             modules(
                 sharedModule,

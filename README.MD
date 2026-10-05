@@ -104,12 +104,42 @@ Merging to `main` publishes nothing; CI only checks and builds it. A release goe
    lists the commits on `origin/main` since the last `vX.Y.Z` tag and asks for a patch, minor or
    major bump. Then it has the Claude CLI write the "What's new" notes in English and Norwegian
    for you to accept, edit or regenerate. It creates `release/vX.Y.Z` with the new `versionName`
-   and `release-notes/vX.Y.Z/<locale>.txt`, pushes it and opens a PR.
-2. **Internal testing**: CI publishes every push to `release/v*` to the internal track, with those
-   notes and the store listing. Fixes for the release go on the branch; each push becomes a new
-   internal build.
+   (and the iOS `MARKETING_VERSION`) and `release-notes/vX.Y.Z/<locale>.txt`, pushes it and opens
+   a PR.
+2. **Internal testing**: CI publishes every push to `release/v*` to the Play internal track, with
+   those notes and the store listing, and uploads an iOS build to TestFlight for internal testers
+   (`.github/workflows/ios.yml`, fastlane lane `beta`). Fixes for the release go on the branch;
+   each push becomes a new internal build on both.
 3. **Closed testing**: merging the PR promotes the internal release to closed testing (`alpha`) and
-   tags `vX.Y.Z`, with a GitHub release.
+   tags `vX.Y.Z`, with a GitHub release; on iOS it sends the tested TestFlight build to the
+   external testers group (lane `promote`).
 
 Needs `gh` (logged in) and `claude` on your PATH. Play allows 500 characters of notes per
 language, and the script checks that.
+
+### TestFlight setup (once)
+
+The iOS jobs need, in the repository's `Release` environment:
+
+| Secret | Value |
+|---|---|
+| `ASC_KEY_ID` | The App Store Connect API key's Key ID |
+| `ASC_ISSUER_ID` | The Issuer ID shown above the keys list |
+| `ASC_KEY_P8` | The contents of the key's `.p8` file |
+
+Create the key under App Store Connect → Users and Access → Integrations → App Store Connect API as
+a **team key with the Admin role**: Admin is what lets Xcode create the distribution certificate and
+profile on the CI machine (cloud-managed signing), so no certificates are kept in the repository.
+Without `ASC_KEY_P8` the TestFlight upload is skipped, as the Play upload is without its key.
+
+In App Store Connect, also create the app record for `com.homieapps.pulsetransit`, an internal
+TestFlight group with automatic distribution turned on (internal testers get each processed build
+from it), an external group (named "External testers", or set the repository variable
+`TESTFLIGHT_EXTERNAL_GROUP`), and fill in the Test Information that Beta App Review needs before
+the first external build. The app declares only exempt encryption (HTTPS), so builds skip the export
+compliance question. Builds are numbered
+by the iOS workflow's run number.
+
+Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project's iOS app), and the
+`beta` lane uploads the dSYM to Crashlytics. Collection is off in Debug builds, as on Android.
+

@@ -1,0 +1,101 @@
+# TestFlight lanes for the iOS app, run by .github/workflows/ios.yml from iosApp/:
+#
+#   bundle exec fastlane beta version:1.0.2 build_number:42   # build, upload to internal testers
+#   bundle exec fastlane promote version:1.0.2                # send that version's build to external testers
+#
+# Both need an App Store Connect API key with the Admin role in ASC_KEY_ID, ASC_ISSUER_ID and
+# ASC_KEY_P8 (the .p8 file's contents). Admin is what lets Xcode create the distribution
+# certificate and profile itself (cloud-managed signing), so no certificates live in the repo.
+
+# No usage analytics from CI runs that hold the App Store Connect key.
+opt_out_usage
+
+default_platform(:ios)
+
+ROOT = File.expand_path("../..", __dir__)
+
+platform :ios do
+  # Release notes are written once per version by scripts/release and shared with Google Play.
+  # TestFlight's "What to Test" is per language, like Play's "What's new".
+  def build_info(version)
+    notes = ->(locale) { File.read(File.join(ROOT, "release-notes/v#{version}/#{locale}.txt")).strip }
+    {
+      changelog: notes.call("en-US"),
+      localized_build_info: {
+        "default" => { whats_new: notes.call("en-US") },
+        "no" => { whats_new: notes.call("no-NO") },
+      },
+    }
+  end
+
+  def api_key
+    app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+    )
+  end
+
+  # The flags that let xcodebuild sign with the API key instead of a logged-in Xcode account.
+  def signing_xcargs
+    key_path = File.join(Dir.tmpdir, "asc_api_key.p8")
+    File.write(key_path, ENV.fetch("ASC_KEY_P8"))
+    "-allowProvisioningUpdates -authenticationKeyPath #{key_path} " \
+      "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')} -authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
+  end
+
+  desc "Build a signed release and upload it to TestFlight for internal testers"
+  lane :beta do |options|
+    version = options.fetch(:version)
+    build_number = options.fetch(:build_number)
+    key = api_key
+    derived_data = File.join(ROOT, "iosApp/build/DerivedData")
+
+    build_app(
+      project: File.join(ROOT, "iosApp/iosApp.xcodeproj"),
+      scheme: "iosApp",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: File.join(ROOT, "iosApp/build"),
+      derived_data_path: derived_data,
+      xcargs: "#{signing_xcargs} CURRENT_PROJECT_VERSION=#{build_number}",
+      export_xcargs: signing_xcargs,
+      export_options: { signingStyle: "automatic", teamID: "S8Q8KHX6G5" },
+    )
+
+    # Waits for App Store Connect to process the build: the release notes can only be set on a
+    # processed build. Internal groups with automatic distribution then receive it; export
+    # compliance is answered by ITSAppUsesNonExemptEncryption in the app's Info.plist.
+    upload_to_testflight(
+      api_key: key,
+      distribute_external: false,
+      **build_info(version),
+    )
+
+    # The Kotlin framework is static, so its code and symbols are in the app's own dSYM.
+    upload_symbols_to_crashlytics(
+      dsym_path: lane_context[SharedValues::DSYM_OUTPUT_PATH],
+      gsp_path: File.join(ROOT, "iosApp/iosApp/GoogleService-Info.plist"),
+      binary_path: File.join(derived_data, "SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"),
+    )
+  end
+
+  desc "Distribute the newest TestFlight build of a version to the external testers group"
+  lane :promote do |options|
+    version = options.fetch(:version)
+    key = api_key
+    # The build testers have been trying is promoted as is, like the Play internal release.
+    build_number = latest_testflight_build_number(api_key: key, version: version)
+
+    upload_to_testflight(
+      api_key: key,
+      distribute_only: true,
+      app_version: version,
+      build_number: build_number.to_s,
+      distribute_external: true,
+      groups: [ENV.fetch("TESTFLIGHT_EXTERNAL_GROUP", "External testers")],
+      notify_external_testers: true,
+      **build_info(version),
+    )
+  end
+end
