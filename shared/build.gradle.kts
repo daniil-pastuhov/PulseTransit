@@ -76,6 +76,7 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation(libs.crashkios.crashlytics)
             implementation(libs.sqlite.bundled)
         }
         commonTest.dependencies {

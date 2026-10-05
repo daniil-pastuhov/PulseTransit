@@ -5,6 +5,7 @@ import SwiftUI
 struct PulseTransitApp: App {
     init() {
         PulseTransitIos.shared.start(
+            crashReporting: CrashReporting.start(),
             clockFormatter: SystemClockFormatter(),
             locationSource: CoreLocationSource(),
             lightSource: EstimatedLightSource(),
