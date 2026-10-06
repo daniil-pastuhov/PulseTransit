@@ -1,0 +1,27 @@
+1. SCREEN RECORDING
+Attached, recorded on an iPhone 13 Pro Max. It starts at the Home Screen, launches the app on a fresh install and shows the typical flow: adding stops, a fastest-route destination, location and camera permissions, the live board, line filtering, themes and the automatic dim/wake. The app has no accounts, login, user-generated content, in-app purchases or paid features.
+
+2. PURPOSE AND AUDIENCE
+PulseTransit turns an iPhone or iPad, typically a spare device mounted by the front door or in a kitchen or office, into an always-on live departure board for public transport in Norway. It is for commuters and households who want to see at a glance when their next bus, tram, metro, train or ferry leaves, without opening a journey planner every time. It shows real-time departures with delays, cancellations and service messages, the fastest route to frequent destinations, and local weather. For wall use it can keep the screen on, wake when someone walks by (front camera, frames analysed on device only, never stored or sent), dim when nobody is around, switch day/night theme, shift pixels against OLED burn-in, refresh less often at night, and keep showing the last data when offline.
+
+3. HOW TO USE IT
+No login, credentials or sample files are needed.
+- Launch the app and tap "Open Settings to Add Stops".
+- Under "Add Stop Places", search for a Norwegian stop (e.g. "Jernbanetorget") and tap Add. Close Settings with Back: the board shows its live departures.
+- Optional: under "Fastest Route Destinations", add a place (e.g. "Oslo lufthavn") to see the quickest trip there.
+- Optional: "Detect Location Automatically" (or manual coordinates) enables weather and nearby stops.
+- Optional, for wall use: under "Power & Refresh", turn on "Wake screen by front camera motion" and "Always on display", and set the auto-dim delay. Theme and pixel shift are at the top of Settings.
+- Tap a departure on the board to filter out its line.
+Location and camera are requested only when the user turns those features on; the app works fully without them.
+
+4. EXTERNAL SERVICES
+- Entur (entur.org), Norway's national public transport data provider: Journey Planner API (departures, trips) and Geocoder API (stop search). Public open data under NLOD, no API key.
+- MET Norway (api.met.no): Locationforecast for weather, used per MET's terms; open data under CC BY 4.0 / NLOD.
+- Firebase Crashlytics (Google): crash reports only.
+No authentication, payment, advertising, analytics or AI services.
+
+5. REGIONAL DIFFERENCES
+The app and its features behave the same in every region. Its departure data covers public transport in Norway only, since Entur is Norway's national provider; weather works for any location. The app is in English and Norwegian.
+
+6. REGULATED INDUSTRY / PROTECTED MATERIAL
+Not applicable. The app shows only public open data from Entur and MET Norway, under their open licences and with the required attribution in the app ("Data from Entur", "Weather from MET Norway"). It contains no protected third-party material.

@@ -378,8 +378,9 @@ class StopBoardViewModel(
         refreshFastestTrip()
 
         val currentTime = clock.now().toEpochMilliseconds()
-        if (currentTime - lastWeatherUpdateTime >= weatherRefreshIntervalMs) {
-            refreshWeather()
+        // Only a fetch that actually started counts: with no location yet, the first one is due
+        // as soon as a location is saved, not 30 minutes later.
+        if (currentTime - lastWeatherUpdateTime >= weatherRefreshIntervalMs && refreshWeather()) {
             lastWeatherUpdateTime = currentTime
         }
     }
@@ -472,10 +473,11 @@ class StopBoardViewModel(
         }
     }
 
-    private fun refreshWeather() {
+    /** Starts a weather fetch for the saved location; false when there is no location yet. */
+    private fun refreshWeather(): Boolean {
         val lat = settingsRepository.getSavedLatitude()
         val lon = settingsRepository.getSavedLongitude()
-        if (lat == null || lon == null) return
+        if (lat == null || lon == null) return false
 
         viewModelScope.launch {
             // Cached or live, the forecast is hour-stamped and past hours are dropped, so a stale
@@ -484,6 +486,7 @@ class StopBoardViewModel(
             val weather = weatherRepository.getWeather(lat, lon)
             _uiState.update { it.copy(weather = weather.data) }
         }
+        return true
     }
 
     fun reorderFavorites(

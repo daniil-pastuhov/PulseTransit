@@ -521,6 +521,22 @@ class StopBoardViewModelTest {
             assertEquals(0, weather.calls)
         }
 
+    @Test
+    fun `weather is fetched on the next refresh once coordinates are saved`() =
+        boardTest {
+            settings.latitude = null
+            settings.longitude = null
+            val vm = viewModel()
+
+            // As when Settings closes after "Detect location": the board restarts its refresh.
+            settings.latitude = 59.9149
+            settings.longitude = 10.7322
+            vm.startAutoRefresh()
+            runCurrent()
+
+            assertEquals(1, weather.calls, "must not wait out the 30-minute weather cadence")
+        }
+
     // --- Screen dimming --------------------------------------------------------------------
 
     @Test
