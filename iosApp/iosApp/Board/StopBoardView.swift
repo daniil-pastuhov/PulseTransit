@@ -80,8 +80,11 @@ struct StopBoardView: View {
         }
         .sheet(isPresented: $showSettings, onDismiss: {
             // Settings are not reactive: the board re-reads them when Settings closes, as Android
-            // does on navigating back. That may also have switched camera wake on or off.
+            // does on navigating back, and then refetches at once, so stops just added show their
+            // departures without waiting for the next refresh (or forever, with refresh off).
+            // That may also have switched camera wake on or off.
             viewModel.loadSettings()
+            viewModel.startAutoRefresh()
             startCameraIfAllowed()
         }) {
             SettingsView(themeMode: state.themeMode)
