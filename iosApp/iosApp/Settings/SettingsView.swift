@@ -333,7 +333,7 @@ private struct FavoritesSection: View {
             ForEach(state.favorites, id: \.id) { stop in
                 FavoriteRow(
                     stop: stop,
-                    quays: state.favoriteStopsWithQuays[stop.id]?.quays ?? [],
+                    sections: state.favoriteStopsWithQuays[stop.id].map { QuaySectionKt.quaySections(stop: $0) } ?? [],
                     selected: state.selectedQuays[stop.id] ?? [],
                     onToggleQuay: { viewModel.toggleQuay(stopId: stop.id, quayId: $0) }
                 )
@@ -347,25 +347,26 @@ private struct FavoritesSection: View {
 
 private struct FavoriteRow: View {
     let stop: StopPlace
-    let quays: [Quay]
+    let sections: [QuaySection]
     let selected: Set<String>
     let onToggleQuay: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             PlaceLabel(place: stop)
-            if !quays.isEmpty {
+            if !sections.isEmpty {
                 Text(L("directions_quays")).font(.footnote.bold())
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(quays, id: \.id) { quay in
-                            // Nothing selected means every direction is shown.
-                            let isOn = selected.isEmpty || selected.contains(quay.id)
-                            Button(label(for: quay)) { onToggleQuay(quay.id) }
-                                .buttonStyle(.bordered)
-                                .tint(isOn ? .accentColor : .gray)
-                                .lineLimit(1)
+                ForEach(sections, id: \.self) { section in
+                    if let title = section.title {
+                        Text(title).font(.caption).foregroundColor(.secondary).padding(.top, 4)
+                    }
+                    ForEach(section.quays, id: \.id) { quay in
+                        // Nothing selected means every direction is shown.
+                        let isOn = selected.isEmpty || selected.contains(quay.id)
+                        Button { onToggleQuay(quay.id) } label: {
+                            QuayRow(quay: quay, title: title(for: quay, in: section), isOn: isOn)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
                 if selected.isEmpty {
@@ -376,15 +377,40 @@ private struct FavoriteRow: View {
         .padding(.vertical, 4)
     }
 
-    private func label(for quay: Quay) -> String {
-        let platform = quay.publicCode.flatMap { $0.isEmpty ? nil : $0 }
-        let towards = quay.towards.flatMap { $0.isEmpty ? nil : $0 }
-        if let platform, let towards { return L("platform_destination", platform, towards) }
-        if let towards { return L("towards_destination", towards) }
-        if let platform { return L("platform_label", platform) }
+    private func title(for quay: Quay, in section: QuaySection) -> String {
+        if let platform = quay.publicCode, !platform.isEmpty { return L("platform_label", platform) }
         if let description = quay.quayDescription, !description.isEmpty { return description }
-        if let name = quay.name, !name.isEmpty, name != stop.name { return name }
+        // A quay named after its own stop says nothing the heading doesn't.
+        if let name = quay.name, !name.isEmpty, name != stop.name, name != section.title { return name }
         return L("direction_id", String(quay.id.suffix(3)))
+    }
+}
+
+/** One quay in the picker: its platform, then every line it serves and where its next departures go. */
+private struct QuayRow: View {
+    let quay: Quay
+    let title: String
+    let isOn: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: isOn ? "checkmark.square.fill" : "square")
+                .foregroundColor(isOn ? .accentColor : .secondary)
+                .font(.title3)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                if !quay.lines.isEmpty {
+                    Text(quay.lines.joined(separator: "  ")).font(.caption).lineLimit(2)
+                }
+                if !quay.destinations.isEmpty {
+                    Text("→ " + quay.destinations.joined(separator: ", "))
+                        .font(.caption).foregroundColor(.secondary).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+        .padding(.vertical, 2)
     }
 }
 

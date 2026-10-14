@@ -105,7 +105,9 @@ class FakeEnturRepository : EnturRepository {
         radiusKm: Double,
     ) = emptyList<StopPlace>()
 
-    override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? = null
+    var stopsWithQuays = mapOf<String, StopPlace>()
+
+    override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? = stopsWithQuays[stopId]
 
     override suspend fun getDepartures(
         stopId: String,
@@ -345,7 +347,9 @@ class FakeSettingsRepository : SettingsRepository {
     override fun setSelectedQuays(
         stopId: String,
         quayIds: Set<String>?,
-    ) {}
+    ) {
+        selectedQuays = if (quayIds == null) selectedQuays - stopId else selectedQuays + (stopId to quayIds)
+    }
 
     override fun isCameraMotionWakeEnabled() = cameraMotionWake
 

@@ -34,7 +34,16 @@ data class Quay(
     @OptIn(ExperimentalObjCName::class)
     @ObjCName(swiftName = "quayDescription")
     val description: String? = null,
-    val towards: String? = null,
+    /** Public codes of every line scheduled to call here, naturally sorted. */
+    val lines: List<String> = emptyList(),
+    /** Distinct destinations of the next departures; a platform usually serves several. */
+    val destinations: List<String> = emptyList(),
+    /**
+     * The stop place the quay belongs to. A parent stop such as Oslo S has quays from several
+     * children (the station and a bus terminal), and this is what tells them apart.
+     */
+    val stopPlaceId: String? = null,
+    val stopPlaceName: String? = null,
 )
 
 @Serializable

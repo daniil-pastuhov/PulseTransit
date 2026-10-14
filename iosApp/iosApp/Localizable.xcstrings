@@ -1528,23 +1528,6 @@
         }
       }
     },
-    "platform_destination": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@: %2$@"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@: %2$@"
-          }
-        }
-      }
-    },
     "platform_label": {
       "extractionState": "manual",
       "localizations": {
@@ -2051,23 +2034,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "System"
-          }
-        }
-      }
-    },
-    "towards_destination": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Towards %1$@"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mot %1$@"
           }
         }
       }

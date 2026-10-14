@@ -162,16 +162,21 @@ class SettingsViewModel(
         stopId: String,
         quayId: String,
     ) {
-        val current = _uiState.value.selectedQuays[stopId] ?: emptySet()
         val allQuayIds =
             _uiState.value.favoriteStopsWithQuays[stopId]
                 ?.quays
                 ?.asSequence()
                 ?.map { it.id }
                 ?.toSet() ?: emptySet()
+        // A selection can hold a quay the picker no longer lists (it stopped serving any line), and
+        // it could never be unticked; drop it so it doesn't skew the "everything selected" check.
+        val saved = _uiState.value.selectedQuays[stopId] ?: emptySet()
+        val current = if (allQuayIds.isEmpty()) saved else saved intersect allQuayIds
 
         val next =
-            if (current.isEmpty() && allQuayIds.isNotEmpty()) {
+            // Keyed on the saved set, as the rows' ticks are: a selection of only unlisted quays
+            // shows every row unticked, so a tap there must tick one, not untick it.
+            if (saved.isEmpty() && allQuayIds.isNotEmpty()) {
                 // When none are explicitly selected, they are all active by default.
                 // Clicking one should deselect it, meaning we select all others.
                 allQuayIds - quayId

@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -73,6 +74,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -83,9 +85,11 @@ import com.example.pulsetransit.R
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.PlaceKind
+import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -948,34 +952,22 @@ fun FavoriteStopRow(
         if ((stopWithQuays != null) && stopWithQuays.quays.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(stringResource(R.string.directions_quays), style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                stopWithQuays.quays.forEach { quay ->
-                    val isSelected = selectedQuays.isEmpty() || selectedQuays.contains(quay.id)
-                    val platform = quay.publicCode?.takeIf { it.isNotBlank() }
-                    val destination = quay.towards?.takeIf { it.isNotBlank() }
-                    // Copied to locals: Quay comes from :shared, and Kotlin does not smart-cast
-                    // another module's properties.
-                    val description = quay.description?.takeIf { it.isNotBlank() }
-                    val name = quay.name?.takeIf { it.isNotBlank() && it != stop.name }
-
-                    val labelText =
-                        when {
-                            platform != null && destination != null -> stringResource(R.string.platform_destination, platform, destination)
-                            destination != null -> stringResource(R.string.towards_destination, destination)
-                            platform != null -> stringResource(R.string.platform_label, platform)
-                            description != null -> description
-                            name != null -> name
-                            else -> stringResource(R.string.direction_id, quay.id.takeLast(3))
-                        }
-
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onToggleQuay(quay.id) },
-                        label = { Text(labelText, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        modifier = Modifier.padding(vertical = 2.dp),
+            quaySections(stopWithQuays).forEach { section ->
+                section.title?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+                    )
+                }
+                section.quays.forEach { quay ->
+                    QuayRow(
+                        quay = quay,
+                        // A quay named after its own stop says nothing the heading doesn't.
+                        redundantNames = setOfNotNull(stop.name, section.title),
+                        selected = selectedQuays.isEmpty() || selectedQuays.contains(quay.id),
+                        onToggle = { onToggleQuay(quay.id) },
                     )
                 }
             }
@@ -984,6 +976,59 @@ fun FavoriteStopRow(
                     stringResource(R.string.showing_all_directions),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+/** One quay in the picker: its platform, then every line it serves and where its next departures go. */
+@Composable
+private fun QuayRow(
+    quay: Quay,
+    redundantNames: Set<String>,
+    selected: Boolean,
+    onToggle: () -> Unit,
+) {
+    val platform = quay.publicCode?.takeIf { it.isNotBlank() }
+    // Copied to locals: Quay comes from :shared, and Kotlin does not smart-cast
+    // another module's properties.
+    val description = quay.description?.takeIf { it.isNotBlank() }
+    val name = quay.name?.takeIf { it.isNotBlank() && it !in redundantNames }
+    val title =
+        when {
+            platform != null -> stringResource(R.string.platform_label, platform)
+            description != null -> description
+            name != null -> name
+            else -> stringResource(R.string.direction_id, quay.id.takeLast(3))
+        }
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .toggleable(value = selected, role = Role.Checkbox, onValueChange = { onToggle() }),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(checked = selected, onCheckedChange = null, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
+        Column(modifier = Modifier.padding(vertical = 6.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            if (quay.lines.isNotEmpty()) {
+                Text(
+                    quay.lines.joinToString("  "),
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (quay.destinations.isNotEmpty()) {
+                Text(
+                    "→ " + quay.destinations.joinToString(", "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
