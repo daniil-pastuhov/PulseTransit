@@ -4,7 +4,8 @@ import SwiftUI
 /// One favourite stop's card: its name, then its departures, grouped by line and destination.
 /// `groups` is nil until the stop's first load finishes, which shows a blurred placeholder;
 /// `isLoading` on a stop that already has data shows a thin bar instead, so a refresh never blanks
-/// a board that is being read.
+/// a board that is being read. `isFailed` means the empty board is unknown rather than empty, and
+/// shows why with a retry instead of "no departures".
 struct StopPanel: View {
     let stop: StopPlace
     let groups: [DepartureGroup]?
@@ -12,8 +13,11 @@ struct StopPanel: View {
     let showMessages: Bool
     let isLoading: Bool
     let isExtended: Bool
+    let isFailed: Bool
+    let isOnline: Bool
     let onFilterOut: (String) -> Void
     let onSearchFurtherAhead: () -> Void
+    let onRetry: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -33,13 +37,17 @@ struct StopPanel: View {
             } else {
                 Divider().frame(height: 2)
             }
-            if let groups = groups {
-                departures(groups)
-                    .transition(.opacity)
-            } else {
-                BlurredPlaceholder(label: L("loading_departures")) { LoadingPlaceholder() }
-                    .transition(.opacity)
+            // Overlaid, not stacked, so the placeholder and the list cross-fade in place.
+            ZStack(alignment: .top) {
+                if let groups = groups {
+                    departures(groups)
+                        .transition(.opacity)
+                } else {
+                    BlurredPlaceholder(label: L("loading_departures")) { LoadingPlaceholder() }
+                        .transition(.opacity)
+                }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
         }
         .animation(.easeInOut(duration: 0.3), value: groups == nil)
         .foregroundColor(Palette.textPrimary)
@@ -51,7 +59,9 @@ struct StopPanel: View {
 
     @ViewBuilder
     private func departures(_ groups: [DepartureGroup]) -> some View {
-        if groups.isEmpty {
+        if groups.isEmpty && isFailed {
+            LoadFailedMessage(isOnline: isOnline, onRetry: onRetry)
+        } else if groups.isEmpty {
             NoDepartures(isExtended: isExtended, onSearchFurtherAhead: onSearchFurtherAhead)
         } else {
             ScrollView {

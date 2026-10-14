@@ -3,6 +3,8 @@ package com.example.pulsetransit.di
 import com.example.pulsetransit.data.cache.CacheDatabase
 import com.example.pulsetransit.data.cache.buildCacheDatabase
 import com.example.pulsetransit.data.cache.cacheDatabaseBuilder
+import com.example.pulsetransit.platform.ConnectivityMonitor
+import com.example.pulsetransit.platform.PathConnectivityMonitor
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
 import io.ktor.client.engine.HttpClientEngineFactory
@@ -19,4 +21,5 @@ val iosPlatformModule =
         single<HttpClientEngineFactory<*>> { Darwin }
         single<Settings> { NSUserDefaultsSettings(NSUserDefaults.standardUserDefaults) }
         single<CacheDatabase> { cacheDatabaseBuilder().buildCacheDatabase() }
+        single<ConnectivityMonitor> { PathConnectivityMonitor() }
     }

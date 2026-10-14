@@ -31,17 +31,28 @@ struct StopBoardView: View {
                     onOpenSettings: { showSettings = true }
                 )
                 // One banner per destination, each appearing as soon as its own route arrives; a
-                // destination with no route is left out once it has loaded.
+                // destination with no route is left out once it has loaded, but one that failed
+                // keeps its slot.
                 let routes = state.destinationStations.filter {
-                    state.fastestTrips[$0.id] != nil || state.loadingTripDestinationIds.contains($0.id)
+                    state.fastestTrips[$0.id] != nil ||
+                        state.loadingTripDestinationIds.contains($0.id) ||
+                        state.failedTripDestinationIds.contains($0.id)
                 }
                 ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
                     if index > 0 { Divider() }
-                    Group {
+                    // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
+                    ZStack {
                         if let trip = state.fastestTrips[destination.id] {
                             FastestTripBanner(
                                 trip: trip,
                                 isRefreshing: state.loadingTripDestinationIds.contains(destination.id)
+                            )
+                            .transition(.opacity)
+                        } else if state.failedTripDestinationIds.contains(destination.id) {
+                            FastestTripUnavailable(
+                                destinationName: destination.name,
+                                isOnline: state.isOnline,
+                                isRetrying: state.loadingTripDestinationIds.contains(destination.id)
                             )
                             .transition(.opacity)
                         } else {
@@ -194,8 +205,11 @@ private struct StopPanels: View {
                     showMessages: state.showMessages,
                     isLoading: state.loadingStopIds.contains(stop.id),
                     isExtended: state.extendedStopIds.contains(stop.id),
+                    isFailed: state.failedStopIds.contains(stop.id),
+                    isOnline: state.isOnline,
                     onFilterOut: { viewModel.filterOutLine(line: $0) },
-                    onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) }
+                    onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
+                    onRetry: { viewModel.refreshData() }
                 )
                 .onDrag {
                     dragging = stop.id
@@ -251,7 +265,10 @@ private struct BoardFooter: View {
     var body: some View {
         VStack(spacing: 2) {
             if let staleMinutes = state.staleAgeMinutes {
-                Label(L("offline_stale_data", Int(staleMinutes.intValue)), systemImage: "icloud.slash")
+                Label(
+                    L(state.isOnline ? "offline_stale_data" : "offline_no_internet_stale_data", Int(staleMinutes.intValue)),
+                    systemImage: loadFailureSymbol(isOnline: state.isOnline)
+                )
                     .font(.system(size: 11, weight: .bold))
                     .foregroundColor(Palette.error)
             }

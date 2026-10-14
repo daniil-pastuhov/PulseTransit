@@ -89,7 +89,8 @@ private const val DAY_OFFSET_FONT_SCALE = 0.6f
 /**
  * One favorite stop's departures. [departureGroups] is null until the stop's first load finishes,
  * which shows a blurred placeholder; [isLoading] on a stop that already has data shows a thin
- * progress bar instead, so a refresh never blanks a board that is being read.
+ * progress bar instead, so a refresh never blanks a board that is being read. [isFailed] means the
+ * empty board is unknown rather than empty, and shows why with a retry instead of "no departures".
  */
 @Composable
 fun StopBoardPanel(
@@ -100,8 +101,11 @@ fun StopBoardPanel(
     showMessages: Boolean = true,
     isLoading: Boolean = false,
     isExtended: Boolean = false,
+    isFailed: Boolean = false,
+    isOnline: Boolean = true,
     onFilterOut: (String) -> Unit = {},
     onSearchFurtherAhead: () -> Unit = {},
+    onRetry: () -> Unit = {},
 ) {
     Card(
         modifier =
@@ -179,6 +183,8 @@ fun StopBoardPanel(
                     ) {
                         LoadingPlaceholderList()
                     }
+                } else if (groups.isEmpty() && isFailed) {
+                    LoadFailedMessage(isOnline = isOnline, onRetry = onRetry, modifier = Modifier.fillMaxSize())
                 } else if (groups.isEmpty()) {
                     Box(
                         modifier =

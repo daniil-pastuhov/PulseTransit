@@ -630,6 +630,57 @@
         }
       }
     },
+    "error_entur_unreachable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can’t reach Entur"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Får ikke kontakt med Entur"
+          }
+        }
+      }
+    },
+    "error_no_internet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No internet connection"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen internettforbindelse"
+          }
+        }
+      }
+    },
+    "error_retrying_automatically": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retrying automatically"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøver igjen automatisk"
+          }
+        }
+      }
+    },
     "expand": {
       "extractionState": "manual",
       "localizations": {
@@ -694,6 +745,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Raskest til %1$@"
+          }
+        }
+      }
+    },
+    "fastest_route_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fastest route to %1$@ unavailable"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskeste rute til %1$@ er utilgjengelig"
           }
         }
       }
@@ -1375,6 +1443,23 @@
         }
       }
     },
+    "offline_no_internet_stale_data": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No internet — shown data is %1$lld min old"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen internett — dataene er %1$lld min gamle"
+          }
+        }
+      }
+    },
     "offline_stale_data": {
       "extractionState": "manual",
       "localizations": {
@@ -1626,6 +1711,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fjern"
+          }
+        }
+      }
+    },
+    "retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv igjen"
           }
         }
       }

@@ -42,6 +42,7 @@ val sharedModule =
                 sensorManager = get(),
                 cameraMotionDetector = get(),
                 clockFormatter = get(),
+                connectivityMonitor = get(),
             )
         }
         viewModel {
