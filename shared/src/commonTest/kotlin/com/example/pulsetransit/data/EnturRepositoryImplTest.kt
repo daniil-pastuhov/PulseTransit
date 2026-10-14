@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
@@ -195,6 +196,16 @@ class EnturRepositoryImplTest {
             )
         }
 
+    /** A by-quay response: the stop itself, then each quay's own calls (null for an unknown id). */
+    private fun quaysBody(vararg quays: Pair<String, List<String>>?) =
+        """{"data":{"stopPlace":{"id":"$stopId","name":"Oslo S"},"quays":[${
+            quays.joinToString(",") { q ->
+                q?.let { (id, calls) -> """{"id":"$id","estimatedCalls":[${calls.joinToString(",")}]}""" } ?: "null"
+            }
+        }]}}"""
+
+    private fun variables(body: String) = Json.parseToJsonElement(body).jsonObject["variables"]!!.jsonObject
+
     @Test
     fun `a trip from coordinates is cached under a 4-decimal dot-separated key`() =
         runTest {
@@ -224,22 +235,68 @@ class EnturRepositoryImplTest {
         }
 
     @Test
-    fun `quay filtering is applied before caching`() =
+    fun `selected quays are queried directly and their departures merged by time`() =
         runTest {
             val now = nowMillis()
+            val bodies = mutableListOf<String>()
             val engine =
-                jsonOk(
-                    departuresBody(
-                        call("R13", "Drammen", now + 5 * minute, quay = "NSR:Quay:1"),
-                        call("L1", "Lillestrøm", now + 9 * minute, quay = "NSR:Quay:2"),
-                    ),
-                )
+                MockEngine { request ->
+                    bodies += (request.body as TextContent).text
+                    respond(
+                        quaysBody(
+                            "NSR:Quay:1" to
+                                listOf(
+                                    call("L2", "Ski", now + 10 * minute, quay = "NSR:Quay:1"),
+                                    call("L2", "Ski", now + 40 * minute, quay = "NSR:Quay:1"),
+                                ),
+                            null,
+                            "NSR:Quay:2" to listOf(call("L2", "Skøyen", now + 20 * minute, quay = "NSR:Quay:2")),
+                        ),
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
             val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
 
-            val result = repo.getDepartures(stopId, limit = 15, quayIds = setOf("NSR:Quay:2"))
+            val result = repo.getDepartures(stopId, limit = 2, quayIds = setOf("NSR:Quay:1", "NSR:Quay:2"))
 
-            assertEquals(listOf("L1"), result.data.map { it.line })
-            assertEquals(listOf("L1"), departureCache.rows.map { it.line })
+            // Filtering the stop's next calls instead lets a busy bus terminal crowd out the trains.
+            val vars = variables(bodies.single())
+            assertTrue(vars["byQuay"]!!.jsonPrimitive.content.toBoolean())
+            assertEquals(
+                setOf("NSR:Quay:1", "NSR:Quay:2"),
+                vars["quayIds"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet(),
+            )
+            assertEquals(listOf("Ski", "Skøyen"), result.data.map { it.destination })
+            assertEquals(listOf("Ski", "Skøyen"), departureCache.rows.map { it.destination })
+        }
+
+    @Test
+    fun `without a quay selection the whole stop is queried`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val engine =
+                MockEngine { request ->
+                    bodies += (request.body as TextContent).text
+                    respond(departuresBody(), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            repo.getDepartures(stopId, limit = 15)
+
+            assertFalse(variables(bodies.single())["byQuay"]!!.jsonPrimitive.content.toBoolean())
+        }
+
+    @Test
+    fun `an empty quay selection shows nothing`() =
+        runTest {
+            val now = nowMillis()
+            val engine = jsonOk(departuresBody(call("R13", "Drammen", now + 5 * minute)))
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val result = repo.getDepartures(stopId, limit = 15, quayIds = emptySet())
+
+            assertTrue(result.data.isEmpty())
         }
 
     @Test

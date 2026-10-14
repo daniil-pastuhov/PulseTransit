@@ -16,8 +16,10 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import kotlin.math.abs
 import kotlin.math.roundToLong
@@ -98,6 +100,8 @@ class EnturRepositoryImpl(
     @Serializable
     private data class StopPlaceData(
         val stopPlace: StopPlaceGraphQL? = null,
+        // Entur answers an unknown quay id with a null entry rather than an error.
+        val quays: List<QuayGraphQL?>? = null,
     )
 
     @Serializable
@@ -307,44 +311,60 @@ class EnturRepositoryImpl(
     ): Sourced<List<Departure>> {
         val queryStr =
             """
-            query GetDepartures(${'$'}id: String!, ${'$'}limit: Int!, ${'$'}timeRange: Int!) {
+            query GetDepartures(${'$'}id: String!, ${'$'}limit: Int!, ${'$'}timeRange: Int!, ${'$'}quayIds: [String]!, ${'$'}byQuay: Boolean!) {
               stopPlace(id: ${'$'}id) {
                 id
                 name
-                estimatedCalls(numberOfDepartures: ${'$'}limit, timeRange: ${'$'}timeRange, includeCancelledTrips: true) {
-                  expectedDepartureTime
-                  aimedDepartureTime
-                  cancellation
-                  realtimeState
-                  destinationDisplay {
-                    frontText
-                  }
-                  quay {
-                    id
-                  }
-                  serviceJourney {
-                    line {
-                      publicCode
-                      name
-                      transportMode
-                    }
-                    notices {
-                      text
-                    }
-                  }
-                  notices {
-                    text
-                  }
+                estimatedCalls(numberOfDepartures: ${'$'}limit, timeRange: ${'$'}timeRange, includeCancelledTrips: true) @skip(if: ${'$'}byQuay) {
+                  ...Call
                 }
+              }
+              quays(ids: ${'$'}quayIds) @include(if: ${'$'}byQuay) {
+                id
+                estimatedCalls(numberOfDepartures: ${'$'}limit, timeRange: ${'$'}timeRange, includeCancelledTrips: true) {
+                  ...Call
+                }
+              }
+            }
+
+            fragment Call on EstimatedCall {
+              expectedDepartureTime
+              aimedDepartureTime
+              cancellation
+              realtimeState
+              destinationDisplay {
+                frontText
+              }
+              quay {
+                id
+              }
+              serviceJourney {
+                line {
+                  publicCode
+                  name
+                  transportMode
+                }
+                notices {
+                  text
+                }
+              }
+              notices {
+                text
               }
             }
             """.trimIndent()
 
+        // With a quay selection, ask each quay for its own departures. Filtering the stop's calls
+        // here instead lets a busy quay use up the whole limit: at a station shared with a bus
+        // terminal, the trains drop out of the next [limit] calls and the board shows none.
+        val byQuay = !quayIds.isNullOrEmpty()
         val variables =
             buildJsonObject {
                 put("id", stopId)
                 put("limit", limit)
                 put("timeRange", timeRangeSeconds)
+                putJsonArray("quayIds") { quayIds.orEmpty().forEach { add(it) } }
+                put("byQuay", byQuay)
             }
 
         val now = clock.now().toEpochMilliseconds()
@@ -358,11 +378,22 @@ class EnturRepositoryImpl(
                         setBody(GraphQLRequest(queryStr, variables))
                     }.body()
 
+            val data = response.data
+            // A response without the stop is an API-level failure, not an empty stop, so it
+            // falls back rather than wiping the cache.
+            if (data?.stopPlace == null) return departuresFromCache(stopId, now)
             val estimatedCalls =
-                response.data?.stopPlace?.estimatedCalls
-                    // A response without the stop is an API-level failure, not an empty stop, so it
-                    // falls back rather than wiping the cache.
-                    ?: return departuresFromCache(stopId, now)
+                if (byQuay) {
+                    // Stable sort, so calls tied on time keep Entur's order within each quay.
+                    data.quays
+                        .orEmpty()
+                        .filterNotNull()
+                        .flatMap { it.estimatedCalls }
+                        .sortedBy { call -> (call.expectedDepartureTime ?: call.aimedDepartureTime)?.let(::parseIsoToMillis) }
+                        .take(limit)
+                } else {
+                    data.stopPlace.estimatedCalls
+                }
 
             val departures =
                 estimatedCalls
