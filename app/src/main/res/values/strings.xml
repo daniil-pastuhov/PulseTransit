@@ -69,6 +69,8 @@
         <item quantity="other">Maximum of %1$d destinations reached. Remove one to add another.</item>
     </plurals>
     <string name="select">Select</string>
+    <string name="loading_departures">Loading departures…</string>
+    <string name="loading_fastest_route">Finding fastest route to %1$s…</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
     <string name="fastest_route_info">Line %1$s from %2$s</string>
     <string name="leg_walk">🚶 %1$d min</string>

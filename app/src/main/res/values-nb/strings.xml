@@ -69,6 +69,8 @@
         <item quantity="other">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</item>
     </plurals>
     <string name="select">Velg</string>
+    <string name="loading_departures">Henter avganger…</string>
+    <string name="loading_fastest_route">Finner raskeste rute til %1$s…</string>
     <string name="fastest_route_to">Raskest til %1$s</string>
     <string name="fastest_route_info">Linje %1$s fra %2$s</string>
     <string name="leg_walk">🚶 %1$d min</string>

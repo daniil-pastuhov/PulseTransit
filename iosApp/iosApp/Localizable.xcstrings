@@ -868,6 +868,40 @@
         }
       }
     },
+    "loading_departures": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading departures…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Henter avganger…"
+          }
+        }
+      }
+    },
+    "loading_fastest_route": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finding fastest route to %1$@…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finner raskeste rute til %1$@…"
+          }
+        }
+      }
+    },
     "loc_denied": {
       "extractionState": "manual",
       "localizations": {

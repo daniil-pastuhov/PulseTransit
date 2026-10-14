@@ -5,9 +5,13 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,10 +93,14 @@ import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.parseWeatherSymbol
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.BlurredPlaceholder
+import com.example.pulsetransit.ui.components.PlaceholderBlock
 import com.example.pulsetransit.ui.components.PrecipitationBar
+import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
+import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
 import com.example.pulsetransit.ui.components.temperatureColor
 import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.pixelshift.pixelShift
@@ -230,20 +238,38 @@ fun MainScreen(
                     }
                 }
 
-                // Fastest route banners (one per destination station set in Settings).
-                // They share one background colour, so without a rule between them
-                // consecutive banners read as a single block.
-                uiState.fastestTrips.forEachIndexed { index, trip ->
-                    key(trip.destinationName) {
-                        if (index > 0) {
-                            HorizontalDivider(
-                                thickness = 1.dp,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
-                            )
+                // Fastest route banners (one per destination station set in Settings), each
+                // appearing as soon as its own route arrives. A destination with no route is
+                // left out once it has loaded. They share one background colour, so without a
+                // rule between them consecutive banners read as a single block.
+                uiState.destinationStations
+                    .filter { it.id in uiState.fastestTrips || it.id in uiState.loadingTripDestinationIds }
+                    .forEachIndexed { index, destination ->
+                        key(destination.id) {
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    thickness = 1.dp,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                                )
+                            }
+                            val trip = uiState.fastestTrips[destination.id]
+                            AnimatedContent(
+                                targetState = trip,
+                                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                label = "fastestTrip",
+                                contentKey = { it == null },
+                            ) { loaded ->
+                                if (loaded == null) {
+                                    FastestTripPlaceholder(destinationName = destination.name)
+                                } else {
+                                    FastestTripBanner(
+                                        trip = loaded,
+                                        isRefreshing = destination.id in uiState.loadingTripDestinationIds,
+                                    )
+                                }
+                            }
                         }
-                        FastestTripBanner(trip = trip)
                     }
-                }
 
                 // Body Area (Equal screen division between favorite stops)
                 if (uiState.favorites.isEmpty()) {
@@ -273,7 +299,7 @@ fun MainScreen(
                         departures = uiState.departures,
                         showDelays = uiState.showDelays,
                         showMessages = uiState.showMessages,
-                        isLoading = uiState.isLoading,
+                        loadingStopIds = uiState.loadingStopIds,
                         isLandscape = isLandscape,
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
                         onFilterOut = { line -> viewModel.filterOutLine(line) },
@@ -369,6 +395,7 @@ fun MainScreen(
 fun FastestTripBanner(
     trip: TripInfo,
     modifier: Modifier = Modifier,
+    isRefreshing: Boolean = false,
 ) {
     val departureTime =
         try {
@@ -381,67 +408,114 @@ fun FastestTripBanner(
     var hasOverflow by remember { mutableStateOf(false) }
     val canExpand = hasOverflow || expanded
 
-    Row(
+    Box(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .animateContentSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clickable(enabled = canExpand) { expanded = !expanded }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = departureTime,
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.fastest_route_to, trip.destinationName),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                val routeText =
+                    if (trip.legs.isNotEmpty()) {
+                        trip.legs
+                            .mapNotNull { leg ->
+                                when {
+                                    leg.lineName != null -> {
+                                        val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
+                                        leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
+                                    }
+                                    leg.durationMinutes > 0 ->
+                                        stringResource(R.string.leg_walk, leg.durationMinutes)
+                                    else -> null // skip 0-minute foot legs (quay transfers)
+                                }
+                            }.joinToString("  →  ")
+                    } else {
+                        stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
+                    }
+                Text(
+                    text = routeText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                    maxLines = if (expanded) Int.MAX_VALUE else 1,
+                    overflow = TextOverflow.Ellipsis,
+                    onTextLayout = { result ->
+                        if (!expanded) hasOverflow = result.hasVisualOverflow
+                    },
+                )
+            }
+            Text(
+                text = stringResource(R.string.duration_min, trip.durationMinutes),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            if (canExpand) {
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+        if (isRefreshing) {
+            RefreshingIndicator(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .align(Alignment.BottomCenter),
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+            )
+        }
+    }
+}
+
+/** Stand-in for a [FastestTripBanner] whose route hasn't arrived yet, blurred until it does. */
+@Composable
+fun FastestTripPlaceholder(
+    destinationName: String,
+    modifier: Modifier = Modifier,
+) {
+    val alpha = rememberPlaceholderPulse()
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    BlurredPlaceholder(
+        label = stringResource(R.string.loading_fastest_route, destinationName),
+        contentColor = onContainer,
         modifier =
             modifier
                 .fillMaxWidth()
-                .animateContentSize()
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .clickable(enabled = canExpand) { expanded = !expanded }
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                .background(MaterialTheme.colorScheme.primaryContainer),
     ) {
-        Text(
-            text = departureTime,
-            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.fastest_route_to, trip.destinationName),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            val routeText =
-                if (trip.legs.isNotEmpty()) {
-                    trip.legs
-                        .mapNotNull { leg ->
-                            when {
-                                leg.lineName != null -> {
-                                    val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
-                                    leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
-                                }
-                                leg.durationMinutes > 0 ->
-                                    stringResource(R.string.leg_walk, leg.durationMinutes)
-                                else -> null // skip 0-minute foot legs (quay transfers)
-                            }
-                        }.joinToString("  →  ")
-                } else {
-                    stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
-                }
-            Text(
-                text = routeText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                maxLines = if (expanded) Int.MAX_VALUE else 1,
-                overflow = TextOverflow.Ellipsis,
-                onTextLayout = { result ->
-                    if (!expanded) hasOverflow = result.hasVisualOverflow
-                },
-            )
-        }
-        Text(
-            text = stringResource(R.string.duration_min, trip.durationMinutes),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-        )
-        if (canExpand) {
-            Icon(
-                imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
+        // Mirrors the banner's layout: departure time, title over route, duration.
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            PlaceholderBlock(alpha, Modifier.size(width = 64.dp, height = 28.dp), color = onContainer)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                PlaceholderBlock(alpha, Modifier.fillMaxWidth(0.5f).height(18.dp), color = onContainer)
+                PlaceholderBlock(alpha, Modifier.fillMaxWidth(0.8f).height(14.dp), color = onContainer)
+            }
+            PlaceholderBlock(alpha, Modifier.size(width = 48.dp, height = 20.dp), color = onContainer)
         }
     }
 }
@@ -452,7 +526,7 @@ fun ReorderableFavoriteList(
     departures: List<StopDepartures>,
     showDelays: Boolean,
     showMessages: Boolean,
-    isLoading: Boolean,
+    loadingStopIds: Set<String>,
     isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
     onFilterOut: (String) -> Unit,
@@ -542,10 +616,10 @@ fun ReorderableFavoriteList(
                         ) {
                             StopBoardPanel(
                                 stopPlace = stop,
-                                departureGroups = departures.find { it.stopId == stop.id }?.groups ?: emptyList(),
+                                departureGroups = departures.find { it.stopId == stop.id }?.groups,
                                 showDelays = showDelays,
                                 showMessages = showMessages,
-                                isLoading = isLoading,
+                                isLoading = stop.id in loadingStopIds,
                                 isExtended = stop.id in extendedStopIds,
                                 onFilterOut = onFilterOut,
                                 onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
@@ -619,10 +693,10 @@ fun ReorderableFavoriteList(
                         ) {
                             StopBoardPanel(
                                 stopPlace = stop,
-                                departureGroups = departures.find { it.stopId == stop.id }?.groups ?: emptyList(),
+                                departureGroups = departures.find { it.stopId == stop.id }?.groups,
                                 showDelays = showDelays,
                                 showMessages = showMessages,
-                                isLoading = isLoading,
+                                isLoading = stop.id in loadingStopIds,
                                 isExtended = stop.id in extendedStopIds,
                                 onFilterOut = onFilterOut,
                                 onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },

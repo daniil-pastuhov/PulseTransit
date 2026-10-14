@@ -19,6 +19,7 @@ import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,14 +56,16 @@ class StopBoardViewModel(
         const val DIMMED_REFRESH_MULTIPLIER = 2.0
 
         const val MILLIS_PER_SECOND = 1000L
-        const val MILLIS_PER_MINUTE = 60_000L
     }
 
     data class UiState(
         val favorites: List<StopPlace> = emptyList(),
         val departures: List<StopDepartures> = emptyList(),
         val weather: List<WeatherInfo> = emptyList(),
-        val isLoading: Boolean = false,
+        /** Favorites whose departures are being fetched right now. */
+        val loadingStopIds: Set<String> = emptySet(),
+        /** Destination stations whose fastest trip is being fetched right now. */
+        val loadingTripDestinationIds: Set<String> = emptySet(),
         val lastUpdated: String = "",
         val currentTime: String = "",
         val currentDayOfMonth: String = "",
@@ -81,7 +84,8 @@ class StopBoardViewModel(
         val autoThemeDarkLux: Float = 10f,
         val autoThemeLightLux: Float = 40f,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
-        val fastestTrips: List<TripInfo> = emptyList(),
+        /** Fastest trip per destination station id; a destination with no route is absent. */
+        val fastestTrips: Map<String, TripInfo> = emptyMap(),
         val destinationStations: List<StopPlace> = emptyList(),
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
@@ -101,7 +105,9 @@ class StopBoardViewModel(
          * default window. Kept for the session so the next auto-refresh doesn't empty them again.
          */
         val extendedStopIds: Set<String> = emptySet(),
-    )
+    ) {
+        val isLoading: Boolean get() = loadingStopIds.isNotEmpty() || loadingTripDestinationIds.isNotEmpty()
+    }
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -113,6 +119,13 @@ class StopBoardViewModel(
     private val weatherRefreshIntervalMs = 30 * 60 * 1000L // 30 minutes
 
     private var rawDepartures: Map<String, List<Departure>> = emptyMap()
+
+    /** When each stop's departures were fetched if they came from the cache; null when live. */
+    private var stopFetchedAt: Map<String, Long?> = emptyMap()
+
+    // A new refresh supersedes one still in flight instead of racing it to the UI state.
+    private var departuresJob: Job? = null
+    private var tripsJob: Job? = null
 
     init {
         loadSettings() // also starts the light sensor when the theme is AUTO
@@ -217,7 +230,7 @@ class StopBoardViewModel(
                 showMessages = showMessages,
                 showCancelledLines = showCancelledLines,
                 destinationStations = destinations,
-                fastestTrips = if (destinations.isEmpty()) emptyList() else it.fastestTrips,
+                fastestTrips = if (destinations.isEmpty()) emptyMap() else it.fastestTrips,
                 isFullScreenMode = isFullScreen,
                 isAlwaysOnEnabled = alwaysOn,
                 autoDimSeconds = autoDim,
@@ -385,54 +398,59 @@ class StopBoardViewModel(
         }
     }
 
+    /**
+     * Fetches every favorite's departures concurrently and publishes each stop the moment it
+     * arrives, so the board fills in panel by panel instead of waiting for the slowest stop.
+     */
     fun refreshDepartures() {
+        departuresJob?.cancel()
         val favs = _uiState.value.favorites
         if (favs.isEmpty()) {
             rawDepartures = emptyMap()
-            _uiState.update { it.copy(departures = emptyList(), lastUpdated = "No favorites") }
+            stopFetchedAt = emptyMap()
+            _uiState.update {
+                it.copy(departures = emptyList(), loadingStopIds = emptySet(), lastUpdated = "No favorites")
+            }
             return
         }
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            val newRawDepartures = mutableMapOf<String, List<Departure>>()
-            // The board is only as fresh as its stalest stop.
-            var oldestCacheFetch: Long? = null
+        val favIds = favs.map { it.id }.toSet()
+        // Drop stops that are no longer favorites; the rest keep showing until replaced.
+        rawDepartures = rawDepartures.filterKeys { it in favIds }
+        stopFetchedAt = stopFetchedAt.filterKeys { it in favIds }
+        _uiState.update { it.copy(loadingStopIds = favIds) }
+        updateGroupedDepartures()
 
-            for (stop in favs) {
-                val quayIds = settingsRepository.getSelectedQuays(stop.id)
-                val timeRange =
-                    if (stop.id in _uiState.value.extendedStopIds) {
-                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS
-                    } else {
-                        EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS
+        departuresJob =
+            viewModelScope.launch {
+                for (stop in favs) {
+                    launch {
+                        val quayIds = settingsRepository.getSelectedQuays(stop.id)
+                        val timeRange =
+                            if (stop.id in _uiState.value.extendedStopIds) {
+                                EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS
+                            } else {
+                                EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS
+                            }
+                        val result =
+                            enturRepository.getDepartures(
+                                stop.id,
+                                limit = 15,
+                                quayIds = quayIds,
+                                timeRangeSeconds = timeRange,
+                            )
+                        // The repository swallows exceptions, cancellation included, so a
+                        // superseded request still returns here; don't let it overwrite the
+                        // newer refresh.
+                        ensureActive()
+                        rawDepartures = rawDepartures + (stop.id to result.data.filter { it.line !in _uiState.value.filteredLines })
+                        stopFetchedAt = stopFetchedAt + (stop.id to result.fetchedAtMillis)
+                        _uiState.update { it.copy(loadingStopIds = it.loadingStopIds - stop.id) }
+                        updateGroupedDepartures()
+                        _uiState.update { it.withFreshness(stopFetchedAt, clock.now().toEpochMilliseconds(), clockFormatter) }
                     }
-                val result =
-                    enturRepository.getDepartures(stop.id, limit = 15, quayIds = quayIds, timeRangeSeconds = timeRange)
-                result.fetchedAtMillis?.let { fetchedAt ->
-                    oldestCacheFetch = minOf(oldestCacheFetch ?: fetchedAt, fetchedAt)
                 }
-                newRawDepartures[stop.id] = result.data.filter { it.line !in _uiState.value.filteredLines }
             }
-
-            rawDepartures = newRawDepartures
-            val now = clock.now().toEpochMilliseconds()
-            // Report when the data was actually fetched, not when we last tried.
-            val updateTime = clockFormatter.timeWithSeconds(oldestCacheFetch ?: now)
-
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    lastUpdated = updateTime,
-                    staleSinceMillis = oldestCacheFetch,
-                    staleAgeMinutes =
-                        oldestCacheFetch?.let { since ->
-                            ((now - since) / MILLIS_PER_MINUTE).toInt()
-                        },
-                )
-            }
-            updateGroupedDepartures()
-        }
     }
 
     fun searchFurtherAhead(stopId: String) {
@@ -442,35 +460,65 @@ class StopBoardViewModel(
 
     private fun updateGroupedDepartures() {
         val showCancelled = _uiState.value.showCancelledLines
+        // Follow favorites order, not arrival order, and leave out stops that haven't loaded
+        // yet so the panel can tell "not loaded" apart from "no departures".
         val grouped =
-            rawDepartures.map { (stopId, deps) ->
-                StopDepartures(stopId, groupDepartures(deps, showCancelled))
+            _uiState.value.favorites.mapNotNull { stop ->
+                rawDepartures[stop.id]?.let { StopDepartures(stop.id, groupDepartures(it, showCancelled)) }
             }
         _uiState.update { it.copy(departures = grouped) }
     }
 
+    /** Fetches each destination's fastest trip concurrently, publishing each as it arrives. */
     private fun refreshFastestTrip() {
+        tripsJob?.cancel()
         val destinations = _uiState.value.destinationStations
         val lat = settingsRepository.getSavedLatitude()
         val lon = settingsRepository.getSavedLongitude()
 
-        if (destinations.isEmpty()) return
-
-        viewModelScope.launch {
-            val trips =
-                destinations.mapNotNull { destination ->
-                    val result =
-                        if (lat != null && lon != null) {
-                            enturRepository.getFastestTrip(lat = lat, lon = lon, to = destination)
-                        } else {
-                            val fromIds = _uiState.value.favorites.map { it.id }
-                            if (fromIds.isEmpty()) return@mapNotNull null
-                            enturRepository.getFastestTrip(fromIds = fromIds, to = destination)
-                        }
-                    result.data?.copy(destinationName = destination.name)
-                }
-            _uiState.update { it.copy(fastestTrips = trips) }
+        if (destinations.isEmpty()) {
+            _uiState.update { it.copy(loadingTripDestinationIds = emptySet()) }
+            return
         }
+
+        val destinationIds = destinations.map { it.id }.toSet()
+        _uiState.update {
+            it.copy(
+                fastestTrips = it.fastestTrips.filterKeys { id -> id in destinationIds },
+                loadingTripDestinationIds = destinationIds,
+            )
+        }
+
+        tripsJob =
+            viewModelScope.launch {
+                for (destination in destinations) {
+                    launch {
+                        val trip =
+                            if (lat != null && lon != null) {
+                                enturRepository.getFastestTrip(lat = lat, lon = lon, to = destination).data
+                            } else {
+                                val fromIds = _uiState.value.favorites.map { it.id }
+                                if (fromIds.isEmpty()) {
+                                    null
+                                } else {
+                                    enturRepository.getFastestTrip(fromIds = fromIds, to = destination).data
+                                }
+                            }
+                        ensureActive() // see refreshDepartures
+                        _uiState.update {
+                            it.copy(
+                                fastestTrips =
+                                    if (trip != null) {
+                                        it.fastestTrips + (destination.id to trip.copy(destinationName = destination.name))
+                                    } else {
+                                        it.fastestTrips - destination.id
+                                    },
+                                loadingTripDestinationIds = it.loadingTripDestinationIds - destination.id,
+                            )
+                        }
+                    }
+                }
+            }
     }
 
     /** Starts a weather fetch for the saved location; false when there is no location yet. */
@@ -507,6 +555,26 @@ class StopBoardViewModel(
         settingsRepository.addFilteredLine(line)
     }
 }
+
+/**
+ * Sets the board's freshness from each stop's cache fetch time (null for a live stop). The board
+ * is only as fresh as its stalest stop, and reports when the data was actually fetched, not when
+ * we last tried.
+ */
+private fun StopBoardViewModel.UiState.withFreshness(
+    stopFetchedAt: Map<String, Long?>,
+    nowMillis: Long,
+    clockFormatter: ClockFormatter,
+): StopBoardViewModel.UiState {
+    val oldestCacheFetch = stopFetchedAt.values.filterNotNull().minOrNull()
+    return copy(
+        lastUpdated = clockFormatter.timeWithSeconds(oldestCacheFetch ?: nowMillis),
+        staleSinceMillis = oldestCacheFetch,
+        staleAgeMinutes = oldestCacheFetch?.let { since -> ((nowMillis - since) / MILLIS_PER_MINUTE).toInt() },
+    )
+}
+
+private const val MILLIS_PER_MINUTE = 60_000L
 
 /** Collapses consecutive departures of the same line to the same destination into one row. */
 private fun groupDepartures(
