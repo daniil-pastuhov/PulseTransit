@@ -125,6 +125,7 @@ class EnturRepositoryImplTest {
 
             assertTrue(result.data.isEmpty())
             assertNull(result.fetchedAtMillis)
+            assertTrue(result.failed, message = "empty because the fetch failed, not because nothing departs")
         }
 
     @Test
@@ -139,6 +140,7 @@ class EnturRepositoryImplTest {
             // Entur answering "no departures" is a real answer; old ones must not be resurrected.
             assertTrue(result.data.isEmpty())
             assertNull(result.fetchedAtMillis)
+            assertFalse(result.failed)
             assertTrue(departureCache.rows.isEmpty(), message = "the cache should mirror the last good response")
         }
 
@@ -349,4 +351,54 @@ class EnturRepositoryImplTest {
         quayId = "NSR:Quay:1",
         fetchedAt = fetchedAt,
     )
+
+    @Test
+    fun `a cache fallback is stale - not failed`() =
+        runTest {
+            val now = nowMillis()
+            departureCache.rows += cached("R13", "Drammen", now + 5 * minute, position = 0)
+            val engine = MockEngine { throw IOException("offline") }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val result = repo.getDepartures(stopId, limit = 15)
+
+            assertTrue(result.isFromCache)
+            assertFalse(result.failed)
+        }
+
+    @Test
+    fun `a trip that fails with nothing cached is reported as failed`() =
+        runTest {
+            val engine = MockEngine { throw IOException("offline") }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
+
+            val byLocation = repo.getFastestTrip(lat = 59.91, lon = 10.75, to = to)
+            val byOrigins = repo.getFastestTrip(fromIds = listOf(stopId), to = to)
+
+            assertNull(byLocation.data)
+            assertTrue(byLocation.failed)
+            assertNull(byOrigins.data)
+            assertTrue(byOrigins.failed)
+        }
+
+    @Test
+    fun `no trip found is an answer - not a failure`() =
+        runTest {
+            val repo =
+                EnturRepositoryImpl(
+                    client(jsonOk("""{"data":{"trip":{"tripPatterns":[]}}}""")),
+                    departureCache,
+                    tripCache,
+                )
+            val to = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
+
+            val byLocation = repo.getFastestTrip(lat = 59.91, lon = 10.75, to = to)
+            val byOrigins = repo.getFastestTrip(fromIds = listOf(stopId), to = to)
+
+            assertNull(byLocation.data)
+            assertFalse(byLocation.failed)
+            assertNull(byOrigins.data)
+            assertFalse(byOrigins.failed)
+        }
 }

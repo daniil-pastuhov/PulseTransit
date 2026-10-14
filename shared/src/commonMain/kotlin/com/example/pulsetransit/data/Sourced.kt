@@ -9,10 +9,15 @@ package com.example.pulsetransit.data
  * Note that a cache hit does not always mean something went wrong: for departures and trips it
  * means the network call failed, but for weather it is the normal path while MET's `Expires`
  * time has not passed. Callers decide what a cache hit means for them.
+ *
+ * [failed] marks the remaining case: the network call failed and nothing was cached, so [data] is
+ * empty because we don't know, not because there is nothing. Without it that result would look
+ * exactly like a live response that happened to be empty.
  */
 data class Sourced<T>(
     val data: T,
     val fetchedAtMillis: Long? = null,
+    val failed: Boolean = false,
 ) {
     val isFromCache: Boolean get() = fetchedAtMillis != null
 
@@ -23,5 +28,8 @@ data class Sourced<T>(
             data: T,
             fetchedAtMillis: Long,
         ): Sourced<T> = Sourced(data, fetchedAtMillis)
+
+        /** The fetch failed and there was no cache to fall back on; [empty] stands in for data. */
+        fun <T> failed(empty: T): Sourced<T> = Sourced(empty, null, failed = true)
     }
 }

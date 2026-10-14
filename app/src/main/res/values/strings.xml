@@ -134,6 +134,12 @@
     <string name="sensitivity_high">High</string>
 
     <!-- Offline / cached data -->
+    <string name="error_no_internet">No internet connection</string>
+    <string name="error_entur_unreachable">Can’t reach Entur</string>
+    <string name="error_retrying_automatically">Retrying automatically</string>
+    <string name="retry">Retry</string>
+    <string name="fastest_route_unavailable">Fastest route to %1$s unavailable</string>
+    <string name="offline_no_internet_stale_data">No internet — shown data is %1$d min old</string>
     <string name="offline_stale_data">Offline — shown data is %1$d min old</string>
 
     <!-- Weather conditions (MET symbol codes) -->

@@ -457,7 +457,7 @@ class EnturRepositoryImpl(
         nowMillis: Long,
     ): Sourced<List<Departure>> {
         val cached = departureCache.getUpcoming(stopId, nowMillis)
-        val fetchedAt = cached.firstOrNull()?.fetchedAt ?: return Sourced(emptyList())
+        val fetchedAt = cached.firstOrNull()?.fetchedAt ?: return Sourced.failed(emptyList())
         return Sourced.cached(cached.map { it.toDeparture() }, fetchedAt)
     }
 
@@ -765,7 +765,7 @@ class EnturRepositoryImpl(
         routeKey: String,
         nowMillis: Long,
     ): Sourced<TripInfo?> {
-        val cached = tripCache.getUpcoming(routeKey, nowMillis) ?: return Sourced(null)
+        val cached = tripCache.getUpcoming(routeKey, nowMillis) ?: return Sourced.failed(null)
         return Sourced.cached(cached.toTripInfo(), cached.fetchedAt)
     }
 
