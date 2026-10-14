@@ -134,6 +134,12 @@
     <string name="sensitivity_high">Høy</string>
 
     <!-- Offline / cached data -->
+    <string name="error_no_internet">Ingen internettforbindelse</string>
+    <string name="error_entur_unreachable">Får ikke kontakt med Entur</string>
+    <string name="error_retrying_automatically">Prøver igjen automatisk</string>
+    <string name="retry">Prøv igjen</string>
+    <string name="fastest_route_unavailable">Raskeste rute til %1$s er utilgjengelig</string>
+    <string name="offline_no_internet_stale_data">Ingen internett — dataene er %1$d min gamle</string>
     <string name="offline_stale_data">Frakoblet — dataene er %1$d min gamle</string>
 
     <!-- Weather conditions (MET symbol codes) -->

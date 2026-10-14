@@ -1,5 +1,7 @@
 package com.example.pulsetransit.di
 
+import com.example.pulsetransit.data.ConnectivityMonitor
+import com.example.pulsetransit.data.ConnectivityMonitorImpl
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.EnturRepositoryImpl
 import com.example.pulsetransit.data.SettingsRepository
@@ -48,6 +50,7 @@ val appModule =
         }
         single<WeatherRepository> { WeatherRepositoryImpl(client = get(), cache = get()) }
         single<SystemSensorManager> { SystemSensorManagerImpl(context = androidContext()) }
+        single<ConnectivityMonitor> { ConnectivityMonitorImpl(context = androidContext()) }
         single<CameraMotionDetector> {
             CameraMotionDetectorImpl(context = androidContext(), settingsRepository = get())
         }
@@ -58,6 +61,7 @@ val appModule =
                 settingsRepository = get(),
                 sensorManager = get(),
                 cameraMotionDetector = get(),
+                connectivityMonitor = get(),
             )
         }
         viewModel {

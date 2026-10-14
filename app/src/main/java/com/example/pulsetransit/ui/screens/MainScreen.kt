@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
@@ -99,6 +98,8 @@ import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
+import com.example.pulsetransit.ui.components.loadFailureIcon
+import com.example.pulsetransit.ui.components.loadFailureReason
 import com.example.pulsetransit.ui.components.parseWeatherSymbol
 import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
 import com.example.pulsetransit.ui.components.temperatureColor
@@ -239,8 +240,11 @@ fun MainScreen(
                 // left out once it has loaded. They share one background colour, so without a
                 // rule between them consecutive banners read as a single block.
                 uiState.destinationStations
-                    .filter { it.id in uiState.fastestTrips || it.id in uiState.loadingTripDestinationIds }
-                    .forEachIndexed { index, destination ->
+                    .filter {
+                        it.id in uiState.fastestTrips ||
+                            it.id in uiState.loadingTripDestinationIds ||
+                            it.id in uiState.failedTripDestinationIds
+                    }.forEachIndexed { index, destination ->
                         key(destination.id) {
                             if (index > 0) {
                                 HorizontalDivider(
@@ -255,7 +259,13 @@ fun MainScreen(
                                 label = "fastestTrip",
                                 contentKey = { it == null },
                             ) { loaded ->
-                                if (loaded == null) {
+                                if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
+                                    FastestTripUnavailable(
+                                        destinationName = destination.name,
+                                        isOnline = uiState.isOnline,
+                                        isRetrying = destination.id in uiState.loadingTripDestinationIds,
+                                    )
+                                } else if (loaded == null) {
                                     FastestTripPlaceholder(destinationName = destination.name)
                                 } else {
                                     FastestTripBanner(
@@ -300,7 +310,10 @@ fun MainScreen(
                         onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
                         onFilterOut = { line -> viewModel.filterOutLine(line) },
                         extendedStopIds = uiState.extendedStopIds,
+                        failedStopIds = uiState.failedStopIds,
+                        isOnline = uiState.isOnline,
                         onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
+                        onRetry = { viewModel.refreshData() },
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -324,13 +337,17 @@ fun MainScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Icon(
-                                imageVector = Icons.Default.CloudOff,
+                                imageVector = loadFailureIcon(uiState.isOnline),
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(12.dp),
                             )
                             Text(
-                                text = stringResource(R.string.offline_stale_data, ageMinutes),
+                                text =
+                                    stringResource(
+                                        if (uiState.isOnline) R.string.offline_stale_data else R.string.offline_no_internet_stale_data,
+                                        ageMinutes,
+                                    ),
                                 style =
                                     MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 10.sp,
@@ -481,6 +498,59 @@ fun FastestTripBanner(
     }
 }
 
+/** Keeps a destination's slot when its route failed to load, rather than silently dropping it. */
+@Composable
+fun FastestTripUnavailable(
+    destinationName: String,
+    isOnline: Boolean,
+    isRetrying: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    Box(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = loadFailureIcon(isOnline),
+                contentDescription = null,
+                tint = onContainer.copy(alpha = 0.8f),
+                modifier = Modifier.size(20.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.fastest_route_unavailable, destinationName),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = onContainer,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = loadFailureReason(isOnline),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = onContainer.copy(alpha = 0.8f),
+                )
+            }
+        }
+        if (isRetrying) {
+            RefreshingIndicator(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .align(Alignment.BottomCenter),
+                color = onContainer.copy(alpha = 0.6f),
+            )
+        }
+    }
+}
+
 /** Stand-in for a [FastestTripBanner] whose route hasn't arrived yet, blurred until it does. */
 @Composable
 fun FastestTripPlaceholder(
@@ -527,7 +597,10 @@ fun ReorderableFavoriteList(
     onReorder: (Int, Int) -> Unit,
     onFilterOut: (String) -> Unit,
     extendedStopIds: Set<String>,
+    failedStopIds: Set<String>,
+    isOnline: Boolean,
     onSearchFurtherAhead: (String) -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
@@ -617,8 +690,11 @@ fun ReorderableFavoriteList(
                                 showMessages = showMessages,
                                 isLoading = stop.id in loadingStopIds,
                                 isExtended = stop.id in extendedStopIds,
+                                isFailed = stop.id in failedStopIds,
+                                isOnline = isOnline,
                                 onFilterOut = onFilterOut,
                                 onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
+                                onRetry = onRetry,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -694,8 +770,11 @@ fun ReorderableFavoriteList(
                                 showMessages = showMessages,
                                 isLoading = stop.id in loadingStopIds,
                                 isExtended = stop.id in extendedStopIds,
+                                isFailed = stop.id in failedStopIds,
+                                isOnline = isOnline,
                                 onFilterOut = onFilterOut,
                                 onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
+                                onRetry = onRetry,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

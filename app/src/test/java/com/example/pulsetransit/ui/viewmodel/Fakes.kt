@@ -5,6 +5,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
+import com.example.pulsetransit.data.ConnectivityMonitor
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
@@ -41,6 +42,12 @@ class FakeCameraMotionDetector : CameraMotionDetector {
     }
 }
 
+class FakeConnectivityMonitor : ConnectivityMonitor {
+    val online = MutableStateFlow(true)
+
+    override fun isOnlineFlow(): Flow<Boolean> = online
+}
+
 /** Returns whatever each test sets, per stop id. */
 class FakeEnturRepository : EnturRepository {
     var departures: (String) -> Sourced<List<Departure>> = { Sourced(emptyList()) }
@@ -52,6 +59,8 @@ class FakeEnturRepository : EnturRepository {
     /** Simulated network latency, so tests can observe results arriving one at a time. */
     var departuresDelayMillis: (String) -> Long = { 0L }
     var tripDelayMillis: (StopPlace) -> Long = { 0L }
+    var departureCalls = 0
+    var tripCalls = 0
     val requestedQuays = mutableMapOf<String, Set<String>?>()
     val requestedTimeRanges = mutableMapOf<String, Int>()
     var lastFastestTripFromIds: List<String>? = null
@@ -91,6 +100,7 @@ class FakeEnturRepository : EnturRepository {
         quayIds: Set<String>?,
         timeRangeSeconds: Int,
     ): Sourced<List<Departure>> {
+        departureCalls++
         requestedQuays[stopId] = quayIds
         requestedTimeRanges[stopId] = timeRangeSeconds
         // Answer as of when the request was sent, so a slow superseded request still carries its
@@ -104,6 +114,7 @@ class FakeEnturRepository : EnturRepository {
         fromIds: List<String>,
         to: StopPlace,
     ): Sourced<TripInfo?> {
+        tripCalls++
         lastFastestTripFromIds = fromIds
         val result = tripTo(to)
         latency(tripDelayMillis(to))
@@ -115,6 +126,7 @@ class FakeEnturRepository : EnturRepository {
         lon: Double,
         to: StopPlace,
     ): Sourced<TripInfo?> {
+        tripCalls++
         lastFastestTripCoords = lat to lon
         val result = tripTo(to)
         latency(tripDelayMillis(to))

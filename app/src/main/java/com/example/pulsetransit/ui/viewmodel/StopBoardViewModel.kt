@@ -4,11 +4,13 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.BurnInProtectionLevel
+import com.example.pulsetransit.data.ConnectivityMonitor
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.SettingsRepository
+import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -40,6 +42,7 @@ class StopBoardViewModel(
     private val settingsRepository: SettingsRepository,
     private val sensorManager: SystemSensorManager,
     private val cameraMotionDetector: CameraMotionDetector,
+    private val connectivityMonitor: ConnectivityMonitor,
 ) : ViewModel() {
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
@@ -52,6 +55,10 @@ class StopBoardViewModel(
         const val DIMMED_REFRESH_MULTIPLIER = 2.0
 
         const val MILLIS_PER_SECOND = 1000L
+
+        // While anything failed to load, try again this soon rather than waiting out the
+        // (possibly stretched) normal interval, so a board recovers quickly once Entur answers.
+        const val FAILURE_RETRY_SECONDS = 15
     }
 
     data class UiState(
@@ -101,8 +108,22 @@ class StopBoardViewModel(
          * default window. Kept for the session so the next auto-refresh doesn't empty them again.
          */
         val extendedStopIds: Set<String> = emptySet(),
+        /**
+         * Favorites whose last fetch failed with nothing cached to fall back on, so their empty
+         * board means "unknown", not "no departures". A failure that was covered by the cache
+         * shows up as [staleSinceMillis] instead.
+         */
+        val failedStopIds: Set<String> = emptySet(),
+        /** Destinations whose fastest trip failed to load with nothing cached. */
+        val failedTripDestinationIds: Set<String> = emptySet(),
+        /** Whether the device has a working connection; explains failures, never gates requests. */
+        val isOnline: Boolean = true,
     ) {
         val isLoading: Boolean get() = loadingStopIds.isNotEmpty() || loadingTripDestinationIds.isNotEmpty()
+
+        /** True while any part of the transit board is missing or stale because a fetch failed. */
+        val hasLoadFailure: Boolean
+            get() = failedStopIds.isNotEmpty() || failedTripDestinationIds.isNotEmpty() || staleSinceMillis != null
     }
 
     private val _uiState = MutableStateFlow(UiState())
@@ -127,6 +148,20 @@ class StopBoardViewModel(
         startClock()
         startAutoRefresh()
         observeSettings()
+
+        var wasOnline = true
+        connectivityMonitor
+            .isOnlineFlow()
+            .onEach { online ->
+                _uiState.update { it.copy(isOnline = online) }
+                // Back online: refresh now instead of waiting for the next tick. Weather is on a
+                // 30-minute cadence, so a forecast that failed while offline is retried too.
+                if (online && !wasOnline) {
+                    if (_uiState.value.weather.isEmpty()) lastWeatherUpdateTime = 0
+                    refreshData()
+                }
+                wasOnline = online
+            }.launchIn(viewModelScope)
     }
 
     private fun observeSettings() {
@@ -354,8 +389,12 @@ class StopBoardViewModel(
             viewModelScope.launch {
                 while (true) {
                     refreshData()
-                    val seconds = calculateNextRefreshInterval()
+                    // Wait for this round's results, so the next interval knows whether it failed.
+                    awaitLatest { departuresJob }
+                    awaitLatest { tripsJob }
+                    var seconds = calculateNextRefreshInterval()
                     if (seconds <= 0) break
+                    if (_uiState.value.hasLoadFailure) seconds = minOf(seconds, FAILURE_RETRY_SECONDS)
                     delay((seconds * MILLIS_PER_SECOND).milliseconds)
                 }
             }
@@ -401,7 +440,12 @@ class StopBoardViewModel(
             rawDepartures = emptyMap()
             stopFetchedAt = emptyMap()
             _uiState.update {
-                it.copy(departures = emptyList(), loadingStopIds = emptySet(), lastUpdated = "No favorites")
+                it.copy(
+                    departures = emptyList(),
+                    loadingStopIds = emptySet(),
+                    failedStopIds = emptySet(),
+                    lastUpdated = "No favorites",
+                )
             }
             return
         }
@@ -410,7 +454,9 @@ class StopBoardViewModel(
         // Drop stops that are no longer favorites; the rest keep showing until replaced.
         rawDepartures = rawDepartures.filterKeys { it in favIds }
         stopFetchedAt = stopFetchedAt.filterKeys { it in favIds }
-        _uiState.update { it.copy(loadingStopIds = favIds) }
+        _uiState.update {
+            it.copy(loadingStopIds = favIds, failedStopIds = it.failedStopIds.intersect(favIds))
+        }
         updateGroupedDepartures()
 
         departuresJob =
@@ -437,7 +483,13 @@ class StopBoardViewModel(
                         ensureActive()
                         rawDepartures = rawDepartures + (stop.id to result.data.filter { it.line !in _uiState.value.filteredLines })
                         stopFetchedAt = stopFetchedAt + (stop.id to result.fetchedAtMillis)
-                        _uiState.update { it.copy(loadingStopIds = it.loadingStopIds - stop.id) }
+                        _uiState.update {
+                            it.copy(
+                                loadingStopIds = it.loadingStopIds - stop.id,
+                                failedStopIds =
+                                    if (result.failed) it.failedStopIds + stop.id else it.failedStopIds - stop.id,
+                            )
+                        }
                         updateGroupedDepartures()
                         _uiState.update { it.withFreshness(stopFetchedAt, System.currentTimeMillis()) }
                     }
@@ -469,7 +521,7 @@ class StopBoardViewModel(
         val lon = settingsRepository.getSavedLongitude()
 
         if (destinations.isEmpty()) {
-            _uiState.update { it.copy(loadingTripDestinationIds = emptySet()) }
+            _uiState.update { it.copy(loadingTripDestinationIds = emptySet(), failedTripDestinationIds = emptySet()) }
             return
         }
 
@@ -478,6 +530,7 @@ class StopBoardViewModel(
             it.copy(
                 fastestTrips = it.fastestTrips.filterKeys { id -> id in destinationIds },
                 loadingTripDestinationIds = destinationIds,
+                failedTripDestinationIds = it.failedTripDestinationIds.intersect(destinationIds),
             )
         }
 
@@ -485,17 +538,18 @@ class StopBoardViewModel(
             viewModelScope.launch {
                 for (destination in destinations) {
                     launch {
-                        val trip =
+                        val result =
                             if (lat != null && lon != null) {
-                                enturRepository.getFastestTrip(lat = lat, lon = lon, to = destination).data
+                                enturRepository.getFastestTrip(lat = lat, lon = lon, to = destination)
                             } else {
                                 val fromIds = _uiState.value.favorites.map { it.id }
                                 if (fromIds.isEmpty()) {
-                                    null
+                                    Sourced(null)
                                 } else {
-                                    enturRepository.getFastestTrip(fromIds = fromIds, to = destination).data
+                                    enturRepository.getFastestTrip(fromIds = fromIds, to = destination)
                                 }
                             }
+                        val trip = result.data
                         ensureActive() // see refreshDepartures
                         _uiState.update {
                             it.copy(
@@ -506,6 +560,12 @@ class StopBoardViewModel(
                                         it.fastestTrips - destination.id
                                     },
                                 loadingTripDestinationIds = it.loadingTripDestinationIds - destination.id,
+                                failedTripDestinationIds =
+                                    if (result.failed) {
+                                        it.failedTripDestinationIds + destination.id
+                                    } else {
+                                        it.failedTripDestinationIds - destination.id
+                                    },
                             )
                         }
                     }
@@ -543,6 +603,20 @@ class StopBoardViewModel(
 
     fun filterOutLine(line: String) {
         settingsRepository.addFilteredLine(line)
+    }
+}
+
+/**
+ * Joins the job [current] returns, following on to any newer job that supersedes it meanwhile: a
+ * settings change can start a fresh refresh that cancels the one being waited on.
+ */
+private suspend fun awaitLatest(current: () -> Job?) {
+    var job = current()
+    while (job != null) {
+        job.join()
+        val next = current()
+        if (next === job) return
+        job = next
     }
 }
 
