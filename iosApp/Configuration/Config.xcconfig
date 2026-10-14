@@ -1,5 +1,6 @@
 // Version numbers for the iOS app. scripts/release bumps MARKETING_VERSION together with Android's
-// versionName; CI overrides CURRENT_PROJECT_VERSION with its run number, like Android's versionCode.
+// versionName; CI overrides CURRENT_PROJECT_VERSION with the build number it also gives Android's
+// versionCode.
 MARKETING_VERSION = 1.1.0
 CURRENT_PROJECT_VERSION = 1
 

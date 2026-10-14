@@ -12,7 +12,7 @@
 set -euo pipefail
 
 PACKAGE=com.homieapps.pulsetransit
-WORKFLOW=android.yml
+WORKFLOW=ci.yml
 ARTIFACT=app-release
 
 branch=main

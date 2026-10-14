@@ -42,10 +42,11 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
 `release/v*` to Play internal (copying the notes into GPP's git-ignored
 `app/src/main/play/release-notes/` via `scripts/stage-release-notes.sh`), and on the PR's merge
 promotes that release to closed testing and tags `vX.Y.Z`. Main publishes nothing. See "Releasing"
-in README.MD. The iOS app follows the same flow in `.github/workflows/ios.yml`: release-branch pushes
-go to TestFlight internal testers and the merge sends that build to the external group, through the
-fastlane lanes in `iosApp/fastlane/Fastfile`. Signing is cloud-managed with an App Store Connect API
-key (secrets `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`); there are no certificates in the repo.
+in README.MD. Both apps are checked and released by one workflow, `.github/workflows/ci.yml`, whose
+jobs run in parallel. The iOS app follows the same flow: release-branch pushes go to TestFlight
+internal testers and the merge sends that build to the external group, through the fastlane lanes
+in `iosApp/fastlane/Fastfile`. Signing is cloud-managed with an App Store Connect API key (secrets
+`ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`); there are no certificates in the repo.
 `GoogleService-Info.plist` is committed like `google-services.json`, and Crashlytics on iOS is
 skipped when it is absent (`CrashReporting.start()`); Kotlin crashes reach it through CrashKiOS.
 
