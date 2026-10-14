@@ -26,6 +26,7 @@ interface EnturRepository {
      *
      * [timeRangeSeconds] is how far ahead Entur looks. [limit] still caps the count, so a wider
      * window only changes the answer for stops with fewer than [limit] departures inside it.
+     * With [quayIds], the limit applies to the selected quays' departures, not the whole stop's.
      */
     suspend fun getDepartures(
         stopId: String,
