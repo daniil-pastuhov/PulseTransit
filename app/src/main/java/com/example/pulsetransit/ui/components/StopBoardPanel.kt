@@ -1,11 +1,9 @@
 package com.example.pulsetransit.ui.components
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -88,10 +86,15 @@ private const val MILLIS_PER_DAY = 86_400_000.0
 // Size of the "+1" next-day marker relative to the time it follows.
 private const val DAY_OFFSET_FONT_SCALE = 0.6f
 
+/**
+ * One favorite stop's departures. [departureGroups] is null until the stop's first load finishes,
+ * which shows a blurred placeholder; [isLoading] on a stop that already has data shows a thin
+ * progress bar instead, so a refresh never blanks a board that is being read.
+ */
 @Composable
 fun StopBoardPanel(
     stopPlace: StopPlace,
-    departureGroups: List<DepartureGroup>,
+    departureGroups: List<DepartureGroup>?,
     modifier: Modifier = Modifier,
     showDelays: Boolean = true,
     showMessages: Boolean = true,
@@ -149,67 +152,86 @@ fun StopBoardPanel(
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), thickness = 1.dp)
+            // Same height either way, so the list below doesn't jump when a refresh starts.
+            if (isLoading && departureGroups != null) {
+                RefreshingIndicator(modifier = Modifier.fillMaxWidth().height(1.dp))
+            } else {
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), thickness = 1.dp)
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Departures list
-            if (isLoading && departureGroups.isEmpty()) {
-                LoadingPlaceholderList()
-            } else if (departureGroups.isEmpty()) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text =
-                                if (isExtended) {
-                                    pluralStringResource(
-                                        R.plurals.no_departures_extended,
-                                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
-                                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
-                                    )
-                                } else {
-                                    stringResource(R.string.no_departures)
-                                },
-                            style =
-                                MaterialTheme.typography.bodyLarge.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                            textAlign = TextAlign.Center,
-                        )
-                        if (!isExtended) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedButton(onClick = onSearchFurtherAhead) {
-                                Text(stringResource(R.string.search_further_ahead))
+            // Departures list. Fades from the blurred placeholder into focus once the stop has
+            // loaded; keyed on loaded-ness only, so later refreshes swap the rows in place.
+            AnimatedContent(
+                targetState = departureGroups,
+                modifier = Modifier.weight(1f),
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "departures",
+                contentKey = { it == null },
+            ) { groups ->
+                if (groups == null) {
+                    BlurredPlaceholder(
+                        label = stringResource(R.string.loading_departures),
+                        modifier =
+                            Modifier
+                                .fillMaxSize(),
+                    ) {
+                        LoadingPlaceholderList()
+                    }
+                } else if (groups.isEmpty()) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text =
+                                    if (isExtended) {
+                                        pluralStringResource(
+                                            R.plurals.no_departures_extended,
+                                            EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
+                                            EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
+                                        )
+                                    } else {
+                                        stringResource(R.string.no_departures)
+                                    },
+                                style =
+                                    MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                                textAlign = TextAlign.Center,
+                            )
+                            if (!isExtended) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(onClick = onSearchFurtherAhead) {
+                                    Text(stringResource(R.string.search_further_ahead))
+                                }
                             }
                         }
                     }
-                }
-            } else {
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    itemsIndexed(
-                        items = departureGroups,
-                        // Entur can return several service journeys that are identical in line,
-                        // destination, time and quay (replacement buses, for one), and when two
-                        // land non-consecutively they form two groups with the same identity.
-                        // The index keeps the key unique, which Compose requires.
-                        key = { index, group ->
-                            val first = group.departures.first()
-                            "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
-                        },
-                    ) { _, group ->
-                        DepartureRow(group, showDelays, showMessages, onFilterOut)
+                } else {
+                    LazyColumn(
+                        modifier =
+                            Modifier
+                                .fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        itemsIndexed(
+                            items = groups,
+                            // Entur can return several service journeys that are identical in line,
+                            // destination, time and quay (replacement buses, for one), and when two
+                            // land non-consecutively they form two groups with the same identity.
+                            // The index keeps the key unique, which Compose requires.
+                            key = { index, group ->
+                                val first = group.departures.first()
+                                "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
+                            },
+                        ) { _, group ->
+                            DepartureRow(group, showDelays, showMessages, onFilterOut)
+                        }
                     }
                 }
             }
@@ -219,22 +241,9 @@ fun StopBoardPanel(
 
 @Composable
 fun LoadingPlaceholderList() {
-    val infiniteTransition = rememberInfiniteTransition(label = "loading")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.1f,
-        targetValue = 0.3f,
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(1000, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "alpha",
-    )
-
+    val alpha = rememberPlaceholderPulse()
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize(),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         repeat(6) {
@@ -245,52 +254,23 @@ fun LoadingPlaceholderList() {
 
 @Composable
 fun DepartureRowPlaceholder(alpha: Float) {
-    Column(
+    Row(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                 .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Line badge placeholder
-            Box(
-                modifier =
-                    Modifier
-                        .width(48.dp)
-                        .height(24.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)),
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Destination placeholder
-            Box(
-                modifier =
-                    Modifier
-                        .weight(1f)
-                        .height(20.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)),
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Time placeholder
-            Box(
-                modifier =
-                    Modifier
-                        .width(40.dp)
-                        .height(20.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha)),
-            )
-        }
+        // Line badge
+        PlaceholderBlock(alpha, Modifier.width(48.dp).height(24.dp), cornerRadius = 6.dp)
+        Spacer(modifier = Modifier.width(10.dp))
+        // Destination
+        PlaceholderBlock(alpha, Modifier.weight(1f).height(20.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        // Time
+        PlaceholderBlock(alpha, Modifier.width(40.dp).height(20.dp))
     }
 }
 
