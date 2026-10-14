@@ -1,6 +1,6 @@
 #!/bin/bash
 # Prepares a release branch for Gradle Play Publisher, and exports RELEASE_VERSION for later
-# steps. Used by .github/workflows/android.yml with the version from the branch name:
+# steps. Used by .github/workflows/ci.yml with the version from the branch name:
 #
 #   scripts/stage-release-notes.sh 1.0.1
 #

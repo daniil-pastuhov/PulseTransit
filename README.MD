@@ -1,6 +1,6 @@
 # PulseTransit
 
-[![Android CI](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/android.yml/badge.svg?branch=main&event=push)](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/android.yml)
+[![CI](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/ci.yml)
 
 PulseTransit is an Android application designed to show public transport stop boards.
 
@@ -83,8 +83,9 @@ store listings.
   here rather than in Play Console, or the next release overwrites your Console edits. Graphics, country
   availability, the content rating, Data safety and other policy declarations are managed in Play
   Console.
-- **Releases**: see [Releasing](#releasing). CI uploads a signed AAB, with the workflow run number
-  as its `versionCode`, via [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher).
+- **Releases**: see [Releasing](#releasing). CI uploads a signed AAB, with the CI run number plus
+  `BUILD_NUMBER_BASE` (`.github/workflows/ci.yml`) as its `versionCode`, via
+  [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher).
 - **Secrets** (GitHub `Release` environment): `PLAY_SERVICE_ACCOUNT_JSON` holds the service account
   key. The upload step is skipped while the secret is missing.
 - **Release status**: releases go out to testers as `completed`. Set the repository variable
@@ -108,7 +109,7 @@ Merging to `main` publishes nothing; CI only checks and builds it. A release goe
    a PR.
 2. **Internal testing**: CI publishes every push to `release/v*` to the Play internal track, with
    those notes and the store listing, and uploads an iOS build to TestFlight for internal testers
-   (`.github/workflows/ios.yml`, fastlane lane `beta`). Fixes for the release go on the branch;
+   (`.github/workflows/ci.yml`, fastlane lane `beta`). Fixes for the release go on the branch;
    each push becomes a new internal build on both.
 3. **Closed testing**: merging the PR promotes the internal release to closed testing (`alpha`) and
    tags `vX.Y.Z`, with a GitHub release; on iOS it sends the tested TestFlight build to the
@@ -146,7 +147,7 @@ copyright) lives in `iosApp/fastlane/metadata`, in English (UK, the app's primar
 Norwegian, adapted from the Play listing. `bundle exec fastlane metadata` (from `iosApp/`, with the
 `ASC_*` variables set) pushes it. Until the app's first App Store release, fastlane ends that lane
 with a "No data" error (fastlane#20538) after the texts have been saved. Builds are numbered
-by the iOS workflow's run number.
+like Android's `versionCode`: the CI run number plus `BUILD_NUMBER_BASE`.
 
 Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project's iOS app), and the
 `beta` lane uploads the dSYM to Crashlytics. Collection is off in Debug builds, as on Android.

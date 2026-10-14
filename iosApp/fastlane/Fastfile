@@ -1,4 +1,4 @@
-# TestFlight lanes for the iOS app, run by .github/workflows/ios.yml from iosApp/:
+# TestFlight lanes for the iOS app, run by .github/workflows/ci.yml from iosApp/:
 #
 #   bundle exec fastlane beta version:1.0.2 build_number:42   # build, upload to internal testers
 #   bundle exec fastlane promote version:1.0.2                # send that version's build to external testers

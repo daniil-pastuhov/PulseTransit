@@ -21,7 +21,8 @@ android {
         minSdk = 24
         targetSdk = 37
         // Play rejects an upload whose versionCode is not higher than every earlier one, so CI
-        // passes its run number. Local builds stay at 1 and are never uploaded.
+        // passes its run number plus BUILD_NUMBER_BASE (see .github/workflows/ci.yml). Local builds
+        // stay at 1 and are never uploaded.
         versionCode =
             providers
                 .gradleProperty("pulseVersionCode")
