@@ -148,7 +148,39 @@ class EnturRepositoryImpl(
         val publicCode: String? = null,
         val name: String? = null,
         val description: String? = null,
+        val stopPlace: StopPlaceRefGraphQL? = null,
+        val lines: List<LineRefGraphQL> = emptyList(),
         val estimatedCalls: List<EstimatedCallGraphQL> = emptyList(),
+    ) {
+        fun toQuay() =
+            Quay(
+                id = id,
+                publicCode = publicCode,
+                name = name,
+                description = description,
+                lines =
+                    lines
+                        .mapNotNull { it.publicCode?.takeIf(String::isNotBlank) }
+                        .distinct()
+                        .sortedWith(::naturalCompare),
+                destinations =
+                    estimatedCalls
+                        .mapNotNull { it.destinationDisplay?.frontText?.takeIf(String::isNotBlank) }
+                        .distinct(),
+                stopPlaceId = stopPlace?.id,
+                stopPlaceName = stopPlace?.name,
+            )
+    }
+
+    @Serializable
+    private data class StopPlaceRefGraphQL(
+        val id: String,
+        val name: String? = null,
+    )
+
+    @Serializable
+    private data class LineRefGraphQL(
+        val publicCode: String? = null,
     )
 
     @Serializable
@@ -508,7 +540,14 @@ class EnturRepositoryImpl(
                   publicCode
                   name
                   description
-                  estimatedCalls(numberOfDepartures: 1) {
+                  stopPlace {
+                    id
+                    name
+                  }
+                  lines {
+                    publicCode
+                  }
+                  estimatedCalls(numberOfDepartures: 10, timeRange: 43200) {
                     destinationDisplay {
                       frontText
                     }
@@ -537,18 +576,11 @@ class EnturRepositoryImpl(
                 id = stop.id,
                 name = stop.name,
                 quays =
-                    stop.quays.map {
-                        Quay(
-                            it.id,
-                            it.publicCode,
-                            it.name,
-                            it.description,
-                            it.estimatedCalls
-                                .firstOrNull()
-                                ?.destinationDisplay
-                                ?.frontText,
-                        )
-                    },
+                    stop.quays
+                        // A parent stop lists taxi ranks and unused bus bays too. Nothing ever
+                        // departs from them, so they would only be noise in the quay picker.
+                        .filter { it.lines.isNotEmpty() || it.estimatedCalls.isNotEmpty() }
+                        .map { it.toQuay() },
             )
         } catch (e: Exception) {
             e.printStackTrace()

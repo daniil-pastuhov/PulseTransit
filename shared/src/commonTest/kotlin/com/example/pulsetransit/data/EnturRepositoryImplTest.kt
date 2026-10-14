@@ -401,4 +401,31 @@ class EnturRepositoryImplTest {
             assertNull(byOrigins.data)
             assertFalse(byOrigins.failed)
         }
+
+    @Test
+    fun `quays carry every line and their child stop and empty bays are dropped`() =
+        runTest {
+            val body =
+                """
+                {"data":{"stopPlace":{"id":"$stopId","name":"Oslo S","quays":[
+                  {"id":"NSR:Quay:562","publicCode":"16","name":"Oslo S",
+                   "stopPlace":{"id":"NSR:StopPlace:337","name":"Oslo S"},
+                   "lines":[{"publicCode":"R23"},{"publicCode":"L2x"},{"publicCode":"L2"},{"publicCode":"R23"}],
+                   "estimatedCalls":[{"destinationDisplay":{"frontText":"Ski"}},
+                                     {"destinationDisplay":{"frontText":"Halden"}},
+                                     {"destinationDisplay":{"frontText":"Ski"}}]},
+                  {"id":"NSR:Quay:9","description":"Taxi",
+                   "stopPlace":{"id":"NSR:StopPlace:2","name":"Oslo S Trelastgata"},
+                   "lines":[],"estimatedCalls":[]}
+                ]}}}
+                """.trimIndent()
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+
+            val quays = repo.getStopPlaceWithQuays(stopId)!!.quays
+
+            assertEquals(listOf("NSR:Quay:562"), quays.map { it.id })
+            assertEquals(listOf("L2", "L2x", "R23"), quays.single().lines)
+            assertEquals(listOf("Ski", "Halden"), quays.single().destinations)
+            assertEquals("NSR:StopPlace:337", quays.single().stopPlaceId)
+        }
 }

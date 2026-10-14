@@ -42,8 +42,6 @@
     <string name="no_favorites">Ingen favoritter lagt til ennå</string>
     <string name="directions_quays">Retninger / plattformer:</string>
     <string name="showing_all_directions">Viser alle retninger</string>
-    <string name="platform_destination">%1$s: %2$s</string>
-    <string name="towards_destination">Mot %1$s</string>
     <string name="platform_label">Plattform %1$s</string>
     <string name="direction_id">Retning %1$s</string>
     <string name="delete">Slett</string>

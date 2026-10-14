@@ -42,8 +42,6 @@
     <string name="no_favorites">No favorites added yet</string>
     <string name="directions_quays">Directions / Quays:</string>
     <string name="showing_all_directions">Showing all directions</string>
-    <string name="platform_destination">%1$s: %2$s</string>
-    <string name="towards_destination">Towards %1$s</string>
     <string name="platform_label">Platform %1$s</string>
     <string name="direction_id">Direction %1$s</string>
     <string name="delete">Delete</string>
