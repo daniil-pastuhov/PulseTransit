@@ -30,9 +30,26 @@ struct StopBoardView: View {
                     onRefresh: { viewModel.refreshData() },
                     onOpenSettings: { showSettings = true }
                 )
-                ForEach(Array(state.fastestTrips.enumerated()), id: \.element.destinationName) { index, trip in
+                // One banner per destination, each appearing as soon as its own route arrives; a
+                // destination with no route is left out once it has loaded.
+                let routes = state.destinationStations.filter {
+                    state.fastestTrips[$0.id] != nil || state.loadingTripDestinationIds.contains($0.id)
+                }
+                ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
                     if index > 0 { Divider() }
-                    FastestTripBanner(trip: trip)
+                    Group {
+                        if let trip = state.fastestTrips[destination.id] {
+                            FastestTripBanner(
+                                trip: trip,
+                                isRefreshing: state.loadingTripDestinationIds.contains(destination.id)
+                            )
+                            .transition(.opacity)
+                        } else {
+                            FastestTripPlaceholder(destinationName: destination.name)
+                                .transition(.opacity)
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
                 }
                 if state.favorites.isEmpty {
                     EmptyBoard(onOpenSettings: { showSettings = true })
@@ -172,10 +189,10 @@ private struct StopPanels: View {
             ForEach(Array(state.favorites.enumerated()), id: \.element.id) { index, stop in
                 StopPanel(
                     stop: stop,
-                    groups: state.departures.first { $0.stopId == stop.id }?.groups ?? [],
+                    groups: state.departures.first { $0.stopId == stop.id }?.groups,
                     showDelays: state.showDelays,
                     showMessages: state.showMessages,
-                    isLoading: state.isLoading,
+                    isLoading: state.loadingStopIds.contains(stop.id),
                     isExtended: state.extendedStopIds.contains(stop.id),
                     onFilterOut: { viewModel.filterOutLine(line: $0) },
                     onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) }

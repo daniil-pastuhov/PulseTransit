@@ -1,100 +1,23 @@
 package com.example.pulsetransit.ui.viewmodel
 
-import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.DateDisplayStyle
-import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.Sourced
-import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WeatherInfo
-import com.example.pulsetransit.data.isoOslo
 import com.example.pulsetransit.data.nowMillis
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
-/**
- * Note on driving the ViewModel: its clock and auto-refresh are `while (true)` loops, so
- * `advanceUntilIdle()` would never return. These tests use [runCurrent] to run the work that is
- * already scheduled, and advance virtual time explicitly where a delay matters.
- */
+/** See [BoardTestBase] for how these tests drive the ViewModel's endless loops. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class StopBoardViewModelTest {
-    private val dispatcher = StandardTestDispatcher()
-    private val entur = FakeEnturRepository()
-    private val weather = FakeWeatherRepository()
-    private val settings = FakeSettingsRepository()
-    private val sensors = FakeSystemSensorManager()
-    private val camera = FakeCameraMotionDetector()
-    private val clockFormatter = FakeClockFormatter()
-
-    private val minute = 60 * 1000L
-    private val oslo = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S", locality = "Oslo")
-
-    @BeforeTest
-    fun setUp() = Dispatchers.setMain(dispatcher)
-
-    @AfterTest
-    fun tearDown() = Dispatchers.resetMain()
-
-    private val created = mutableListOf<StopBoardViewModel>()
-
-    /**
-     * Runs [body], then cancels every ViewModel it created.
-     *
-     * This is not optional: the ViewModel's clock and auto-refresh are `while (true)` loops
-     * scheduled on the test dispatcher, and runTest drains the scheduler once the body returns.
-     * Leaving them running means the scheduler never goes idle and the test stalls until its
-     * timeout rather than finishing.
-     */
-    private fun boardTest(body: suspend TestScope.() -> Unit) =
-        // These tests drive a ViewModel whose loops never end, so a mistake stalls rather than
-        // fails. The timeout turns that into a fast, diagnosable failure instead of a hung build.
-        runTest(dispatcher, timeout = 10.seconds) {
-            try {
-                body()
-            } finally {
-                created.forEach { it.viewModelScope.cancel() }
-                created.clear()
-            }
-        }
-
-    private fun TestScope.viewModel(): StopBoardViewModel {
-        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter)
-        created += vm
-        runCurrent() // let init's loadSettings / first refresh / sensor wiring run
-        return vm
-    }
-
-    private fun departure(
-        line: String,
-        destination: String,
-        atMillis: Long,
-    ) = Departure(
-        line = line,
-        destination = destination,
-        expectedTime = isoOslo(atMillis),
-        aimedTime = isoOslo(atMillis),
-        isRealtime = true,
-        quayId = "NSR:Quay:1",
-    )
-
+class StopBoardViewModelTest : BoardTestBase() {
     // --- Header date style -----------------------------------------------------------------
 
     @Test

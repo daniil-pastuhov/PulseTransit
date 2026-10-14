@@ -2,9 +2,12 @@ import Shared
 import SwiftUI
 
 /// One favourite stop's card: its name, then its departures, grouped by line and destination.
+/// `groups` is nil until the stop's first load finishes, which shows a blurred placeholder;
+/// `isLoading` on a stop that already has data shows a thin bar instead, so a refresh never blanks
+/// a board that is being read.
 struct StopPanel: View {
     let stop: StopPlace
-    let groups: [DepartureGroup]
+    let groups: [DepartureGroup]?
     let showDelays: Bool
     let showMessages: Bool
     let isLoading: Bool
@@ -24,34 +27,49 @@ struct StopPanel: View {
                         .foregroundColor(Palette.textSecondary)
                 }
             }
-            Divider()
-            if isLoading && groups.isEmpty {
-                LoadingPlaceholder()
-            } else if groups.isEmpty {
-                NoDepartures(isExtended: isExtended, onSearchFurtherAhead: onSearchFurtherAhead)
+            // Same height either way, so the list below doesn't jump when a refresh starts.
+            if isLoading && groups != nil {
+                RefreshBar()
             } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        // Identified by content, so a refresh that shifts the list gives a changed group
-                        // fresh row state. Entur can return identical-looking journeys, so the index
-                        // is part of the id to keep it unique, as on Android.
-                        ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
-                            DepartureGroupRow(
-                                group: row.group,
-                                showDelays: showDelays,
-                                showMessages: showMessages,
-                                onFilterOut: onFilterOut
-                            )
-                        }
-                    }
-                }
+                Divider().frame(height: 2)
+            }
+            if let groups = groups {
+                departures(groups)
+                    .transition(.opacity)
+            } else {
+                BlurredPlaceholder(label: L("loading_departures")) { LoadingPlaceholder() }
+                    .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: groups == nil)
         .foregroundColor(Palette.textPrimary)
         .padding(12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface).shadow(color: .black.opacity(0.08), radius: 2, y: 1))
         .padding(6)
+    }
+
+    @ViewBuilder
+    private func departures(_ groups: [DepartureGroup]) -> some View {
+        if groups.isEmpty {
+            NoDepartures(isExtended: isExtended, onSearchFurtherAhead: onSearchFurtherAhead)
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    // Identified by content, so a refresh that shifts the list gives a changed group
+                    // fresh row state. Entur can return identical-looking journeys, so the index
+                    // is part of the id to keep it unique, as on Android.
+                    ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
+                        DepartureGroupRow(
+                            group: row.group,
+                            showDelays: showDelays,
+                            showMessages: showMessages,
+                            onFilterOut: onFilterOut
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -84,19 +102,16 @@ private struct LoadingPlaceholder: View {
         VStack(spacing: 8) {
             ForEach(0 ..< 6, id: \.self) { _ in
                 HStack(spacing: 10) {
-                    RoundedRectangle(cornerRadius: 6).frame(width: 48, height: 24)
-                    RoundedRectangle(cornerRadius: 4).frame(height: 20)
-                    RoundedRectangle(cornerRadius: 4).frame(width: 40, height: 20)
+                    PlaceholderBlock(width: 48, height: 24, cornerRadius: 6, pulse: pulse)
+                    PlaceholderBlock(height: 20, pulse: pulse)
+                    PlaceholderBlock(width: 40, height: 20, pulse: pulse)
                 }
-                .foregroundColor(Palette.textSecondary.opacity(pulse ? 0.3 : 0.1))
                 .padding(8)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card.opacity(0.4)))
             }
             Spacer()
         }
-        .onAppear {
-            withAnimation(.linear(duration: 1).repeatForever(autoreverses: true)) { pulse = true }
-        }
+        .modifier(PlaceholderPulse(pulse: $pulse))
     }
 }
 

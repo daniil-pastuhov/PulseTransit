@@ -19,6 +19,8 @@ import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.LocationResult
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -56,10 +58,29 @@ class FakeClockFormatter : ClockFormatter {
 class FakeEnturRepository : EnturRepository {
     var departures: (String) -> Sourced<List<Departure>> = { Sourced(emptyList()) }
     var trip: Sourced<TripInfo?> = Sourced(null)
+
+    /** Per-destination override of [trip]. */
+    var tripTo: (StopPlace) -> Sourced<TripInfo?> = { trip }
+
+    /** Simulated network latency, so tests can observe results arriving one at a time. */
+    var departuresDelayMillis: (String) -> Long = { 0L }
+    var tripDelayMillis: (StopPlace) -> Long = { 0L }
     val requestedQuays = mutableMapOf<String, Set<String>?>()
     val requestedTimeRanges = mutableMapOf<String, Int>()
     var lastFastestTripFromIds: List<String>? = null
     var lastFastestTripCoords: Pair<Double, Double>? = null
+
+    /**
+     * Waits like a network call, and like the real repository (which catches `Exception`) swallows
+     * cancellation and returns anyway, so the ViewModel's own guard against stale results is tested.
+     */
+    @Suppress("SwallowedException")
+    private suspend fun latency(millis: Long) {
+        try {
+            delay(millis)
+        } catch (_: CancellationException) {
+        }
+    }
 
     override suspend fun searchStopPlaces(query: String) = emptyList<StopPlace>()
 
@@ -85,7 +106,11 @@ class FakeEnturRepository : EnturRepository {
     ): Sourced<List<Departure>> {
         requestedQuays[stopId] = quayIds
         requestedTimeRanges[stopId] = timeRangeSeconds
-        return departures(stopId)
+        // Answer as of when the request was sent, so a slow superseded request still carries its
+        // own (older) data when it returns.
+        val result = departures(stopId)
+        latency(departuresDelayMillis(stopId))
+        return result
     }
 
     override suspend fun getFastestTrip(
@@ -93,7 +118,9 @@ class FakeEnturRepository : EnturRepository {
         to: StopPlace,
     ): Sourced<TripInfo?> {
         lastFastestTripFromIds = fromIds
-        return trip
+        val result = tripTo(to)
+        latency(tripDelayMillis(to))
+        return result
     }
 
     override suspend fun getFastestTrip(
@@ -102,7 +129,9 @@ class FakeEnturRepository : EnturRepository {
         to: StopPlace,
     ): Sourced<TripInfo?> {
         lastFastestTripCoords = lat to lon
-        return trip
+        val result = tripTo(to)
+        latency(tripDelayMillis(to))
+        return result
     }
 }
 

@@ -4,6 +4,7 @@ import SwiftUI
 /// The next fastest journey to one destination set in Settings; tap to show the full route.
 struct FastestTripBanner: View {
     let trip: TripInfo
+    var isRefreshing = false
     @State private var expanded = false
 
     var body: some View {
@@ -31,6 +32,9 @@ struct FastestTripBanner: View {
         .background(Palette.primary.opacity(0.18))
         .contentShape(Rectangle())
         .onTapGesture { withAnimation { expanded.toggle() } }
+        .overlay(alignment: .bottom) {
+            if isRefreshing { RefreshBar(color: Palette.textPrimary.opacity(0.6)) }
+        }
     }
 
     /// "HH:mm" straight out of the ISO timestamp, which is already in local Oslo time.
@@ -52,5 +56,30 @@ struct FastestTripBanner: View {
             return leg.durationMinutes > 0 ? L("leg_walk", Int(leg.durationMinutes)) : nil
         }
         .joined(separator: "  →  ")
+    }
+}
+
+/// Stands in for a `FastestTripBanner` whose route hasn't arrived yet, blurred until it does.
+struct FastestTripPlaceholder: View {
+    let destinationName: String
+    @State private var pulse = false
+
+    var body: some View {
+        BlurredPlaceholder(label: L("loading_fastest_route", destinationName), tint: Palette.textPrimary) {
+            // Mirrors the banner's layout: departure time, title over route, duration.
+            HStack(spacing: 16) {
+                PlaceholderBlock(width: 64, height: 28, color: Palette.textPrimary, pulse: pulse)
+                VStack(alignment: .leading, spacing: 6) {
+                    PlaceholderBlock(width: 150, height: 18, color: Palette.textPrimary, pulse: pulse)
+                    PlaceholderBlock(height: 14, color: Palette.textPrimary, pulse: pulse)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                PlaceholderBlock(width: 48, height: 20, color: Palette.textPrimary, pulse: pulse)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+        }
+        .background(Palette.primary.opacity(0.18))
+        .modifier(PlaceholderPulse(pulse: $pulse))
     }
 }
