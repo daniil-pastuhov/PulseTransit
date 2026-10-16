@@ -1,0 +1,4 @@
+• New "On the spot" mode follows you: it picks the nearest stop and shows route options to your destinations from where you are. Choose a mode on first launch or in Settings.
+• Tap a departure to see all its times, platform, delays and the stops left on the trip.
+• The fastest-route banner now shows when you'll arrive.
+• Each departure row now lists its next five times, so busy stops stay tidy.

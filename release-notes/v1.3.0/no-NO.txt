@@ -1,0 +1,4 @@
+• Ny modus «Der du er» følger deg: den velger nærmeste stoppested og viser reisealternativer til målene dine herfra. Velg modus ved første oppstart eller i Innstillinger.
+• Trykk på en avgang for å se alle tidene, plattform, forsinkelser og stoppene som gjenstår på turen.
+• Banneret for raskeste reise viser nå når du er fremme.
+• Hver avgangsrad viser nå de neste fem tidene, så travle stoppesteder blir mer oversiktlige.
