@@ -1,0 +1,5 @@
+• Scroll a stop's departures to load more, up to three days ahead.
+• The platform picker is easier to read at big stations: platforms are grouped, sorted and show their lines.
+• Boards showing only some platforms no longer miss departures at busy stations.
+• Departures and routes appear as soon as each one loads, and stay on screen while refreshing.
+• If loading fails, the board says why (like no internet) with a retry button, and refreshes once you're back online.

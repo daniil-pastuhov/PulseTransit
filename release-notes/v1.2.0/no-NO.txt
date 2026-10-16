@@ -1,0 +1,5 @@
+• Rull i avgangene for et stopp for å laste flere, opptil tre dager frem.
+• Plattformvelgeren er lettere å lese på store stasjoner: plattformer grupperes, sorteres og viser linjene.
+• Tavler med bare noen plattformer valgt mister ikke lenger avganger på travle stasjoner.
+• Avganger og ruter vises så snart de er lastet, og blir stående mens de oppdateres.
+• Ved feil ser du hvorfor (f.eks. ingen internett) og kan prøve igjen. Tavlen oppdateres når nettet er tilbake.
