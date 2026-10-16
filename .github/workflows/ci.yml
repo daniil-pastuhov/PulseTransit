@@ -137,6 +137,9 @@ jobs:
           api-level: ${{ matrix.api-level }}
           arch: x86_64
           disable-animations: true
+          # The default userdata partition (~7.2 GB) can exceed a runner's free disk, and the
+          # emulator then dies at launch while the action waits out its whole boot timeout.
+          disk-size: 4096M
           script: ./gradlew connectedDebugAndroidTest :shared:connectedAndroidDeviceTest --stacktrace
 
       - name: Upload Instrumentation Test Reports
