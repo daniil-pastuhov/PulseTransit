@@ -112,8 +112,11 @@ Merging to `main` publishes nothing; CI only checks and builds it. A release goe
    (`.github/workflows/ci.yml`, fastlane lane `beta`). Fixes for the release go on the branch;
    each push becomes a new internal build on both.
 3. **Closed testing**: merging the PR promotes the internal release to closed testing (`alpha`) and
-   tags `vX.Y.Z`, with a GitHub release; on iOS it sends the tested TestFlight build to the
-   external testers group (lane `promote`).
+   tags `vX.Y.Z`, with a GitHub release; on iOS it submits the tested TestFlight build for App
+   Store review (lane `release`), and the version goes live as soon as Apple approves it. Its
+   "What's New" is the en-US / no-NO notes, from the app's second App Store version on (App Store
+   Connect has no such field on the first). To submit a version whose merge did not, run CI by
+   hand: `gh workflow run ci.yml -f app_store_version=X.Y.Z`; that run does nothing else.
 
 Needs `gh` (logged in) and `claude` on your PATH. Play allows 500 characters of notes per
 language, and the script checks that.
@@ -138,9 +141,11 @@ information, the age rating and an internal group, "Internal testers", that rece
 processed build automatically; add people to it there. The app declares only exempt encryption
 (HTTPS), so builds skip the export compliance question.
 
-External testing is off until you want it. To turn it on, create an external group, add a phone
-number to the Beta App Review contact (Apple requires one), and set the repository variable
-`TESTFLIGHT_EXTERNAL_GROUP` to the group's name: merging a release PR then sends its build there.
+The `release` lane submits the version as App Store Connect has it: the listing, screenshots,
+App Review notes and attachment, pricing, App Privacy answers and content rights declaration must
+already be filled in there (the first time by hand or with the lanes and script below). It does
+not upload the listing texts, because deliver's metadata upload also deletes the App Review
+attachment. A version still in review blocks the submission of the next one.
 
 The App Store listing (name, subtitle, description, keywords, promotional text, URLs, categories,
 copyright) lives in `iosApp/fastlane/metadata`, in English (UK, the app's primary language) and
