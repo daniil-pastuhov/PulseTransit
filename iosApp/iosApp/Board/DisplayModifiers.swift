@@ -16,6 +16,19 @@ extension View {
             .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 
+    /// Sizes a sheet's content as a page rather than iPad's default form sheet, a small fixed-size
+    /// card in the middle of the display. Not a full-screen cover: that would take the board out of
+    /// the hierarchy and run its `onDisappear`, letting the screen lock while Settings is open.
+    /// iOS 15–17 have no SwiftUI API for it and keep the form sheet; iPhone is unaffected.
+    @ViewBuilder
+    func pageSizedSheet() -> some View {
+        if #available(iOS 18, *) {
+            presentationSizing(.page)
+        } else {
+            self
+        }
+    }
+
     /// Hides the home indicator in full-screen mode. iOS 15 has no SwiftUI API for it, so there it
     /// only hides the status bar.
     @ViewBuilder

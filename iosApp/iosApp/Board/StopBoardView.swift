@@ -116,6 +116,7 @@ struct StopBoardView: View {
             startCameraIfAllowed()
         }) {
             SettingsView(themeMode: state.themeMode)
+                .pageSizedSheet()
         }
     }
 }
