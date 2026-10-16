@@ -70,15 +70,18 @@ import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
@@ -91,6 +94,7 @@ import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.parseWeatherSymbol
+import com.example.pulsetransit.data.tripArrival
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.BlurredPlaceholder
 import com.example.pulsetransit.ui.components.PlaceholderBlock
@@ -447,7 +451,7 @@ fun FastestTripBanner(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.fastest_route_to, trip.destinationName),
+                    text = fastestTripTitle(trip),
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -502,6 +506,26 @@ fun FastestTripBanner(
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
             )
         }
+    }
+}
+
+// Size of the "+1" next-day marker on an arrival time, as on the board's departure times.
+private const val ARRIVAL_DAY_OFFSET_FONT_SCALE = 0.6f
+
+/** "Fastest to Majorstuen 18:31", with a raised "+1" when the trip arrives after midnight. */
+@Composable
+private fun fastestTripTitle(trip: TripInfo): AnnotatedString {
+    val arrival = tripArrival(trip) ?: return AnnotatedString(stringResource(R.string.fastest_route_to, trip.destinationName))
+    val title = stringResource(R.string.fastest_route_to_arriving, trip.destinationName, arrival.time)
+    if (arrival.dayOffset <= 0) return AnnotatedString(title)
+    // The marker follows the time wherever the translation puts it.
+    val timeEnd = title.lastIndexOf(arrival.time) + arrival.time.length
+    return buildAnnotatedString {
+        append(title.substring(0, timeEnd))
+        withStyle(SpanStyle(fontSize = ARRIVAL_DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
+            append("+${arrival.dayOffset}")
+        }
+        append(title.substring(timeEnd))
     }
 }
 

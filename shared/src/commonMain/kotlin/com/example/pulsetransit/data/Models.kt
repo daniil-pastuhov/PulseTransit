@@ -89,6 +89,8 @@ data class TripLeg(
 data class TripInfo(
     val destinationName: String,
     val expectedStartTime: String,
+    /** When the trip reaches the destination, ISO-8601 like [expectedStartTime]; null if Entur omitted it. */
+    val expectedEndTime: String? = null,
     val lineName: String,
     val durationMinutes: Int,
     val originName: String,

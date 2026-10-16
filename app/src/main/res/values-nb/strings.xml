@@ -70,6 +70,8 @@
     <string name="loading_departures">Henter avganger…</string>
     <string name="loading_fastest_route">Finner raskeste rute til %1$s…</string>
     <string name="fastest_route_to">Raskest til %1$s</string>
+    <!-- %2$s er ankomsttiden, f.eks. "Raskest til Majorstuen 18:31" -->
+    <string name="fastest_route_to_arriving">Raskest til %1$s %2$s</string>
     <string name="fastest_route_info">Linje %1$s fra %2$s</string>
     <string name="leg_walk">🚶 %1$d min</string>
     <string name="leg_from">fra %1$s</string>

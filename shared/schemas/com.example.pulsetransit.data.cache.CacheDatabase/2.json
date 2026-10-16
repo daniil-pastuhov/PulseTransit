@@ -1,0 +1,321 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "4e4d6f05fa9ff97f6836b33977c1026f",
+    "entities": [
+      {
+        "tableName": "cached_departures",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `stopId` TEXT NOT NULL, `position` INTEGER NOT NULL, `line` TEXT NOT NULL, `destination` TEXT NOT NULL, `expectedTime` TEXT NOT NULL, `aimedTime` TEXT NOT NULL, `expectedAtMillis` INTEGER NOT NULL, `isRealtime` INTEGER NOT NULL, `isCancelled` INTEGER NOT NULL, `transportMode` TEXT, `delayMinutes` INTEGER NOT NULL, `notices` TEXT NOT NULL, `quayId` TEXT, `fetchedAt` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stopId",
+            "columnName": "stopId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "line",
+            "columnName": "line",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destination",
+            "columnName": "destination",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedTime",
+            "columnName": "expectedTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "aimedTime",
+            "columnName": "aimedTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedAtMillis",
+            "columnName": "expectedAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRealtime",
+            "columnName": "isRealtime",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isCancelled",
+            "columnName": "isCancelled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "transportMode",
+            "columnName": "transportMode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "delayMinutes",
+            "columnName": "delayMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notices",
+            "columnName": "notices",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quayId",
+            "columnName": "quayId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_departures_stopId",
+            "unique": false,
+            "columnNames": [
+              "stopId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_departures_stopId` ON `${TABLE_NAME}` (`stopId`)"
+          },
+          {
+            "name": "index_cached_departures_expectedAtMillis",
+            "unique": false,
+            "columnNames": [
+              "expectedAtMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_departures_expectedAtMillis` ON `${TABLE_NAME}` (`expectedAtMillis`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_trips",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`routeKey` TEXT NOT NULL, `destinationName` TEXT NOT NULL, `expectedStartTime` TEXT NOT NULL, `expectedStartAtMillis` INTEGER NOT NULL, `expectedEndTime` TEXT, `lineName` TEXT NOT NULL, `durationMinutes` INTEGER NOT NULL, `originName` TEXT NOT NULL, `legs` TEXT NOT NULL, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`routeKey`))",
+        "fields": [
+          {
+            "fieldPath": "routeKey",
+            "columnName": "routeKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "destinationName",
+            "columnName": "destinationName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedStartTime",
+            "columnName": "expectedStartTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedStartAtMillis",
+            "columnName": "expectedStartAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expectedEndTime",
+            "columnName": "expectedEndTime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lineName",
+            "columnName": "lineName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "durationMinutes",
+            "columnName": "durationMinutes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originName",
+            "columnName": "originName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "legs",
+            "columnName": "legs",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "routeKey"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_forecasts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`locationKey` TEXT NOT NULL, `lastModified` TEXT, `expiresAtMillis` INTEGER NOT NULL, `fetchedAt` INTEGER NOT NULL, PRIMARY KEY(`locationKey`))",
+        "fields": [
+          {
+            "fieldPath": "locationKey",
+            "columnName": "locationKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastModified",
+            "columnName": "lastModified",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "expiresAtMillis",
+            "columnName": "expiresAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fetchedAt",
+            "columnName": "fetchedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "locationKey"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_forecast_hours",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`locationKey` TEXT NOT NULL, `time` TEXT NOT NULL, `timeAtMillis` INTEGER NOT NULL, `temperature` REAL NOT NULL, `symbolCode` TEXT NOT NULL, `precipitation` REAL NOT NULL, PRIMARY KEY(`locationKey`, `time`), FOREIGN KEY(`locationKey`) REFERENCES `cached_forecasts`(`locationKey`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "locationKey",
+            "columnName": "locationKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "time",
+            "columnName": "time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timeAtMillis",
+            "columnName": "timeAtMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "temperature",
+            "columnName": "temperature",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "symbolCode",
+            "columnName": "symbolCode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "precipitation",
+            "columnName": "precipitation",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "locationKey",
+            "time"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_forecast_hours_locationKey",
+            "unique": false,
+            "columnNames": [
+              "locationKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_forecast_hours_locationKey` ON `${TABLE_NAME}` (`locationKey`)"
+          },
+          {
+            "name": "index_cached_forecast_hours_timeAtMillis",
+            "unique": false,
+            "columnNames": [
+              "timeAtMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_forecast_hours_timeAtMillis` ON `${TABLE_NAME}` (`timeAtMillis`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cached_forecasts",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "locationKey"
+            ],
+            "referencedColumns": [
+              "locationKey"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4e4d6f05fa9ff97f6836b33977c1026f')"
+    ]
+  }
+}

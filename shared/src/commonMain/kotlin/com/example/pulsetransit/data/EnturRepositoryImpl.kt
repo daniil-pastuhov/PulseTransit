@@ -117,6 +117,7 @@ class EnturRepositoryImpl(
     @Serializable
     private data class TripPatternGraphQL(
         val expectedStartTime: String,
+        val expectedEndTime: String? = null,
         val duration: Long,
         val legs: List<LegGraphQL> = emptyList(),
     )
@@ -608,6 +609,7 @@ class EnturRepositoryImpl(
               ) {
                 tripPatterns {
                   expectedStartTime
+                  expectedEndTime
                   duration
                   legs {
                     mode
@@ -687,6 +689,7 @@ class EnturRepositoryImpl(
                   ) {
                     tripPatterns {
                       expectedStartTime
+                      expectedEndTime
                       duration
                       legs {
                         mode
@@ -751,6 +754,7 @@ class EnturRepositoryImpl(
         return TripInfo(
             destinationName = "", // Will be filled by ViewModel or if we query for destination separately
             expectedStartTime = pattern.expectedStartTime,
+            expectedEndTime = pattern.expectedEndTime,
             lineName = transitLeg?.line?.publicCode ?: transitLeg?.line?.name ?: "?",
             durationMinutes = (pattern.duration / 60).toInt(),
             originName =
@@ -809,6 +813,7 @@ class EnturRepositoryImpl(
         destinationName = destinationName,
         expectedStartTime = expectedStartTime,
         expectedStartAtMillis = parseIsoToMillis(expectedStartTime) ?: 0L,
+        expectedEndTime = expectedEndTime,
         lineName = lineName,
         durationMinutes = durationMinutes,
         originName = originName,
@@ -820,6 +825,7 @@ class EnturRepositoryImpl(
         TripInfo(
             destinationName = destinationName,
             expectedStartTime = expectedStartTime,
+            expectedEndTime = expectedEndTime,
             lineName = lineName,
             durationMinutes = durationMinutes,
             originName = originName,

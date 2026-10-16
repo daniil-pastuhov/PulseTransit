@@ -749,6 +749,23 @@
         }
       }
     },
+    "fastest_route_to_arriving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fastest to %1$@ %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskest til %1$@ %2$@"
+          }
+        }
+      }
+    },
     "fastest_route_unavailable": {
       "extractionState": "manual",
       "localizations": {

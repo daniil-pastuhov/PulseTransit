@@ -70,6 +70,8 @@
     <string name="loading_departures">Loading departures…</string>
     <string name="loading_fastest_route">Finding fastest route to %1$s…</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
+    <!-- %2$s is the arrival time, e.g. "Fastest to Majorstuen 18:31" -->
+    <string name="fastest_route_to_arriving">Fastest to %1$s %2$s</string>
     <string name="fastest_route_info">Line %1$s from %2$s</string>
     <string name="leg_walk">🚶 %1$d min</string>
     <string name="leg_from">from %1$s</string>

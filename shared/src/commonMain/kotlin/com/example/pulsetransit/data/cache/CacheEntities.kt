@@ -43,6 +43,8 @@ data class CachedTrip(
     val destinationName: String,
     val expectedStartTime: String,
     val expectedStartAtMillis: Long,
+    /** Arrival at the destination, as Entur wrote it; null if Entur left it out. */
+    val expectedEndTime: String? = null,
     val lineName: String,
     val durationMinutes: Int,
     val originName: String,

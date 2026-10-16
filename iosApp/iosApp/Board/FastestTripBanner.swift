@@ -13,7 +13,7 @@ struct FastestTripBanner: View {
                 .font(.title2.bold())
                 .monospacedDigit()
             VStack(alignment: .leading, spacing: 2) {
-                Text(L("fastest_route_to", trip.destinationName))
+                Text(title)
                     .font(.headline)
                 Text(routeText)
                     .font(.subheadline)
@@ -43,6 +43,15 @@ struct FastestTripBanner: View {
         guard time.count >= 16 else { return "--:--" }
         let start = time.index(time.startIndex, offsetBy: 11)
         return String(time[start ..< time.index(start, offsetBy: 5)])
+    }
+
+    /// "Fastest to Majorstuen 18:31", marked "⁺1" like the board's times when it arrives after midnight.
+    private var title: String {
+        guard let arrival = TripArrivalKt.tripArrival(trip: trip) else {
+            return L("fastest_route_to", trip.destinationName)
+        }
+        let time = arrival.dayOffset > 0 ? "\(arrival.time)⁺\(arrival.dayOffset)" : arrival.time
+        return L("fastest_route_to_arriving", trip.destinationName, time)
     }
 
     private var routeText: String {
