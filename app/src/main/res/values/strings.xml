@@ -57,6 +57,8 @@
     <string name="now">Now</string>
     <string name="cancelled">Cancelled</string>
     <string name="unit_minute">m</string>
+    <!-- Shown after a row's times when more departures of the same line are not listed. -->
+    <string name="more_departures_hidden">+%1$d more</string>
     <string name="refresh">Refresh</string>
 
     <!-- Fastest Route -->

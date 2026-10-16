@@ -1249,6 +1249,23 @@
         }
       }
     },
+    "more_departures_hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%1$lld more"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%1$lld til"
+          }
+        }
+      }
+    },
     "nearby_stops": {
       "extractionState": "manual",
       "localizations": {

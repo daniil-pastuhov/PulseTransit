@@ -24,7 +24,8 @@ struct StopPanel: View {
     let onRetry: () -> Void
     let onLoadMore: () -> Void
 
-    @State private var contentHeight: CGFloat = 0
+    /// Whether the end-of-list sentinel is on screen; scrolling while it is asks for a page.
+    @State private var isAtEnd = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -71,20 +72,15 @@ struct StopPanel: View {
         } else if groups.isEmpty {
             NoDepartures(isExtended: isExtended, onSearchFurtherAhead: onSearchFurtherAhead)
         } else {
-            GeometryReader { viewport in
-                list(groups, viewportHeight: viewport.size.height)
-            }
+            list(groups)
         }
     }
 
-    private func list(_ groups: [DepartureGroup], viewportHeight: CGFloat) -> some View {
-        // Content that doesn't fill the card can't be scrolled, so it asks for pages by itself
-        // until it does, as on Android. Rerun after every load and refresh, never once it scrolls.
-        let fill = FillCheck(
-            fits: contentHeight > 0 && contentHeight <= viewportHeight,
-            canLoad: canLoadMore && !isLoading && !isLoadingMore
-        )
-        return ScrollView {
+    private func list(_ groups: [DepartureGroup]) -> some View {
+        // Only the user's scrolling asks for a page, as on Android. A list that fits the card
+        // never does: a single line folds every page into the same row, so it would keep fitting
+        // and keep asking. Nor may a board left at its end on the wall grow on every refresh.
+        ScrollView {
             LazyVStack(spacing: 8) {
                 // Identified by content, so a refresh that shifts the list gives a changed group
                 // fresh row state. Entur can return identical-looking journeys, so the index
@@ -101,32 +97,33 @@ struct StopPanel: View {
                     ProgressView()
                         .padding(.vertical, 8)
                 }
-                // Appears when the user scrolls to the end. Always present, never toggled by
-                // refreshes or loading state, so a board left at its end on the wall cannot
-                // re-appear it and grow by itself.
+                // Marks the end of the list. Always present, never toggled by refreshes or
+                // loading state; being on screen is not enough to load, the user must scroll.
                 Color.clear
                     .frame(height: 1)
-                    .onAppear { if canLoadMore { onLoadMore() } }
+                    .onAppear { isAtEnd = true }
+                    .onDisappear { isAtEnd = false }
             }
             .background(GeometryReader { content in
-                Color.clear.preference(key: ContentHeightKey.self, value: content.size.height)
+                Color.clear.preference(key: ScrollOffsetKey.self, value: content.frame(in: .named(Self.scrollSpace)).minY)
             })
         }
-        .onPreferenceChange(ContentHeightKey.self) { contentHeight = $0 }
-        .task(id: fill) { if fill.fits && fill.canLoad { onLoadMore() } }
+        .coordinateSpace(name: Self.scrollSpace)
+        // The content only moves under the user's finger (or its momentum): a refresh changes rows,
+        // not where the list starts. So a move with the end in sight is a scroll to the end.
+        .onPreferenceChange(ScrollOffsetKey.self) { _ in
+            if isAtEnd && canLoadMore && !isLoading && !isLoadingMore { onLoadMore() }
+        }
     }
+
+    private static let scrollSpace = "stopPanelScroll"
 }
 
-/// Whether a list fits its card without scrolling, and whether a page could be asked for now.
-private struct FillCheck: Hashable {
-    let fits: Bool
-    let canLoad: Bool
-}
-
-private struct ContentHeightKey: PreferenceKey {
+/// Where a list's content starts within its scroll view, which changes only as it is scrolled.
+private struct ScrollOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
+        value = nextValue()
     }
 }
 
@@ -184,6 +181,9 @@ private struct DepartureGroupRow: View {
 
     var body: some View {
         let departures = group.departures
+        // Only the next few: a frequent line would otherwise list a timetable's worth of times.
+        let visible = group.visibleDepartures
+        let hidden = Int(group.hiddenDepartureCount)
         if let first = departures.first {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 10) {
@@ -209,7 +209,7 @@ private struct DepartureGroupRow: View {
                     // Ticks on its own: the shared state only changes about once a minute, and a row
                     // whose input is the same Departure object would not be redrawn at all.
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                        let times = DepartureTimes(departures: departures, now: timeline.date)
+                        let times = DepartureTimes(departures: visible, now: timeline.date)
                         Text(times.primary)
                             .font(.title3.weight(.heavy))
                             .monospacedDigit()
@@ -217,11 +217,11 @@ private struct DepartureGroupRow: View {
                     }
                 }
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                    let secondary = DepartureTimes(departures: departures, now: timeline.date).secondary
-                    if !secondary.isEmpty {
-                        Text(secondary.joined(separator: "    "))
+                    let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
+                    if !secondary.isEmpty || hidden > 0 {
+                        secondaryText(secondary, hidden: hidden)
                             .font(.body.weight(.medium))
-                            .foregroundColor(Palette.textSecondary)
+                            .lineLimit(2) // a backstop: the capped times wrap at most once
                             .padding(.leading, 58)
                     }
                 }
@@ -251,6 +251,19 @@ private struct DepartureGroupRow: View {
             }
         }
     }
+}
+
+/// The later times, then a muted "+K" for the departures left out. Concatenated `Text`s, so they
+/// wrap as one line of text like Android's annotated string.
+private func secondaryText(_ secondary: [String], hidden: Int) -> Text {
+    var text = Text(secondary.joined(separator: "    ")).foregroundColor(Palette.textSecondary)
+    if hidden > 0 {
+        let more = Text(L("more_departures_hidden", hidden))
+            .font(.subheadline.weight(.medium))
+            .foregroundColor(Palette.textSecondary.opacity(0.6))
+        text = secondary.isEmpty ? more : text + Text(verbatim: "    ") + more
+    }
+    return text
 }
 
 /// The time column's texts for a group, de-duplicated so two departures in the same minute show once.

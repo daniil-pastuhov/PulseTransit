@@ -62,7 +62,21 @@ data class Departure(
 
 data class DepartureGroup(
     val departures: List<Departure>,
-)
+) {
+    /**
+     * The departures a row shows: the next one plus a few after it. A busy single line can have
+     * dozens in one group, which would turn a wall-display row into a timetable.
+     */
+    val visibleDepartures: List<Departure> get() = departures.take(MAX_VISIBLE_DEPARTURES)
+
+    /** How many of [departures] [visibleDepartures] leaves out, shown as "+K" after the times. */
+    val hiddenDepartureCount: Int get() = (departures.size - MAX_VISIBLE_DEPARTURES).coerceAtLeast(0)
+
+    companion object {
+        /** The primary time and four secondary ones. */
+        const val MAX_VISIBLE_DEPARTURES = 5
+    }
+}
 
 data class StopDepartures(
     val stopId: String,

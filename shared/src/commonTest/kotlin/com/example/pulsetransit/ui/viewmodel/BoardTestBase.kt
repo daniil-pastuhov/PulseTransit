@@ -16,7 +16,9 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 /**
  * Shared harness for the [StopBoardViewModel] tests: fakes, the [boardTest] runner and fixtures.
@@ -67,11 +69,19 @@ abstract class BoardTestBase {
             }
         }
 
-    protected fun TestScope.viewModel(): StopBoardViewModel {
-        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter, connectivity)
+    protected fun TestScope.viewModel(clock: Clock = Clock.System): StopBoardViewModel {
+        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter, connectivity, clock)
         created += vm
         runCurrent() // let init's loadSettings / first refresh / sensor wiring run
         return vm
+    }
+
+    /** A clock that starts at the real time and then follows the test's virtual time, so `advanceTimeBy` moves it. */
+    protected fun TestScope.virtualClock(): Clock {
+        val start = Clock.System.now().toEpochMilliseconds()
+        return object : Clock {
+            override fun now() = Instant.fromEpochMilliseconds(start + testScheduler.currentTime)
+        }
     }
 
     protected fun departure(

@@ -233,9 +233,10 @@ fun StopBoardPanel(
                     }
                 } else {
                     val listState = rememberLazyListState()
-                    // Only the user's scrolling asks for a page, or a list too short to fill the panel.
-                    // A board left at its end on the wall must not grow on every auto-refresh,
-                    // which restarts this effect.
+                    // Only the user's scrolling asks for a page. A list that fits the panel never
+                    // does: a single line folds every page into the same row, so it would keep
+                    // fitting and keep asking. Nor may a board left at its end on the wall grow on
+                    // every auto-refresh, which restarts this effect.
                     LaunchedEffect(listState, canLoadMore, isLoading, isLoadingMore) {
                         if (!canLoadMore || isLoading || isLoadingMore) return@LaunchedEffect
                         snapshotFlow {
@@ -243,8 +244,7 @@ fun StopBoardPanel(
                             // Empty until the list is first measured, which is not "at the end".
                             val last = info.visibleItemsInfo.lastOrNull() ?: return@snapshotFlow false
                             val nearEnd = last.index >= info.totalItemsCount - LOAD_MORE_THRESHOLD
-                            val fitsPanel = !listState.canScrollForward && !listState.canScrollBackward
-                            nearEnd && (listState.isScrollInProgress || fitsPanel)
+                            nearEnd && listState.isScrollInProgress
                         }.first { it }
                         onLoadMore()
                     }
@@ -335,8 +335,10 @@ fun DepartureRow(
     val cancelledText = stringResource(R.string.cancelled)
     val minUnit = stringResource(R.string.unit_minute)
 
+    // Only the next few: a frequent line would otherwise list a timetable's worth of times.
+    val hiddenCount = group.hiddenDepartureCount
     val formattedTimes =
-        departures
+        group.visibleDepartures
             .map { dep ->
                 if (dep.isCancelled) AnnotatedString(cancelledText) else formatDepartureTime(dep.expectedTime, nowText, minUnit)
             }.distinct()
@@ -437,15 +439,21 @@ fun DepartureRow(
             )
         }
 
-        // Secondary Departure Times
-        if (formattedTimes.size > 1) {
+        // Secondary Departure Times, then a muted count of the ones left out
+        if (formattedTimes.size > 1 || hiddenCount > 0) {
             val secondaryTimes = formattedTimes.drop(1)
+            val hiddenText = stringResource(R.string.more_departures_hidden, hiddenCount)
+            val hiddenColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             Text(
                 text =
                     buildAnnotatedString {
                         secondaryTimes.forEachIndexed { index, time ->
                             if (index > 0) append("    ")
                             append(time)
+                        }
+                        if (hiddenCount > 0) {
+                            if (secondaryTimes.isNotEmpty()) append("    ")
+                            withStyle(SpanStyle(color = hiddenColor, fontSize = 0.85.em)) { append(hiddenText) }
                         }
                     },
                 style =
@@ -457,6 +465,9 @@ fun DepartureRow(
                     Modifier
                         .fillMaxWidth()
                         .padding(start = 58.dp, top = 2.dp, end = 4.dp),
+                // A backstop: the capped times wrap at most once even on a narrow panel.
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
             )
         }
 

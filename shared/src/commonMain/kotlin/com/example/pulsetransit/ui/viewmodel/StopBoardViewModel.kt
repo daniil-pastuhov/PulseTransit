@@ -70,6 +70,10 @@ class StopBoardViewModel(
         // (refetched on every refresh) without bound.
         const val DEPARTURE_PAGE_SIZE = 15
         const val MAX_DEPARTURES = 150
+
+        // A grown board shrinks back to one page this long after the user last asked for more,
+        // so a board scrolled once doesn't refetch the bigger request on every refresh for good.
+        const val LOAD_MORE_EXPIRY_MILLIS = 5 * 60 * 1000L
     }
 
     data class UiState(
@@ -122,7 +126,8 @@ class StopBoardViewModel(
         /**
          * Stops whose board can grow when scrolled to its end: the last fetch was live and either
          * filled its limit or can still widen to the extended window. Cached or failed boards
-         * can't, since there is nothing more to show until Entur answers again.
+         * can't, since there is nothing more to show until Entur answers again, and neither can a
+         * board whose last page added no rows (a single line folds every page into one row).
          */
         val canLoadMoreStopIds: Set<String> = emptySet(),
         /**
@@ -162,8 +167,31 @@ class StopBoardViewModel(
     /** When each stop's departures were fetched if they came from the cache; null when live. */
     private var stopFetchedAt: Map<String, Long?> = emptyMap()
 
-    /** How many departures each stop asks for; absent means one page. Kept for the session. */
+    /**
+     * How many departures each stop asks for; absent means one page. Reset to one page
+     * [LOAD_MORE_EXPIRY_MILLIS] after the stop's last load-more, timed by [loadMoreAtMillis].
+     */
     private var departureLimits: Map<String, Int> = emptyMap()
+
+    /** When each stop last asked for another page, by [clock]. */
+    private var loadMoreAtMillis: Map<String, Long> = emptyMap()
+
+    /**
+     * Load-mores in flight: the stop's limit and row count before the page was asked for, so a
+     * page that adds no rows can be undone.
+     */
+    private var loadMoreBases: Map<String, LoadMoreBase> = emptyMap()
+
+    /**
+     * Stops whose last page added no rows, so asking again would only fold more times into the
+     * same rows. They can't load more until their grown limit expires.
+     */
+    private var saturatedStopIds: Set<String> = emptySet()
+
+    private data class LoadMoreBase(
+        val limit: Int,
+        val groupCount: Int,
+    )
 
     /** Stops whose last live fetch returned fewer departures than asked: the window ran out. */
     private var exhaustedStopIds: Set<String> = emptySet()
@@ -472,6 +500,8 @@ class StopBoardViewModel(
         departuresJob?.cancel()
         loadMoreJobs.values.forEach { it.cancel() }
         loadMoreJobs = emptyMap()
+        loadMoreBases = emptyMap()
+        expireGrownLimits()
         val favs = _uiState.value.favorites
         if (favs.isEmpty()) {
             rawDepartures = emptyMap()
@@ -493,6 +523,8 @@ class StopBoardViewModel(
         rawDepartures = rawDepartures.filterKeys { it in favIds }
         stopFetchedAt = stopFetchedAt.filterKeys { it in favIds }
         departureLimits = departureLimits.filterKeys { it in favIds }
+        loadMoreAtMillis = loadMoreAtMillis.filterKeys { it in favIds }
+        saturatedStopIds = saturatedStopIds.intersect(favIds)
         exhaustedStopIds = exhaustedStopIds.intersect(favIds)
         _uiState.update {
             it.copy(
@@ -510,6 +542,16 @@ class StopBoardViewModel(
                     launch { fetchStopDepartures(stop) }
                 }
             }
+    }
+
+    /** Drops every stop's grown limit once [LOAD_MORE_EXPIRY_MILLIS] have passed since its last load-more. */
+    private fun expireGrownLimits() {
+        val now = clock.now().toEpochMilliseconds()
+        val expired = loadMoreAtMillis.filterValues { now - it >= LOAD_MORE_EXPIRY_MILLIS }.keys
+        if (expired.isEmpty()) return
+        departureLimits = departureLimits - expired
+        loadMoreAtMillis = loadMoreAtMillis - expired
+        saturatedStopIds = saturatedStopIds - expired
     }
 
     /** Fetches one stop's departures at its current limit and window, and publishes them. */
@@ -544,7 +586,8 @@ class StopBoardViewModel(
         limit: Int,
         result: Sourced<List<Departure>>,
     ) {
-        rawDepartures = rawDepartures + (stopId to result.data.filter { it.line !in _uiState.value.filteredLines })
+        val departures = result.data.filter { it.line !in _uiState.value.filteredLines }
+        rawDepartures = rawDepartures + (stopId to departures)
         stopFetchedAt = stopFetchedAt + (stopId to result.fetchedAtMillis)
         val isLive = !result.failed && !result.isFromCache
         // Counted before the line filter, which is ours, not the window's.
@@ -552,9 +595,21 @@ class StopBoardViewModel(
         if (isLive) {
             exhaustedStopIds = if (exhausted) exhaustedStopIds + stopId else exhaustedStopIds - stopId
         }
+        val base = loadMoreBases[stopId]
+        loadMoreBases = loadMoreBases - stopId
+        if (isLive && base != null) {
+            // Rows, not departures, are what the user scrolled for: a page whose departures all
+            // folded into rows already shown changed nothing visible, so undo it and stop asking.
+            val groupCount = groupDepartures(departures, _uiState.value.showCancelledLines).size
+            if (groupCount <= base.groupCount) {
+                departureLimits = departureLimits + (stopId to base.limit)
+                saturatedStopIds = saturatedStopIds + stopId
+            }
+        }
         val canLoadMore =
             isLive &&
                 limit < MAX_DEPARTURES &&
+                stopId !in saturatedStopIds &&
                 (!exhausted || stopId !in _uiState.value.extendedStopIds)
         _uiState.update {
             it.copy(
@@ -577,7 +632,8 @@ class StopBoardViewModel(
      * Shows more of [stopId]'s departures, for a board scrolled to its end. Asks for another page,
      * and once the default window has run out, widens it to the extended one instead, so a quiet
      * stop keeps scrolling into the next days. Only that stop is fetched; the rest of the board is
-     * left alone. Ignored while that stop is still loading, since the list stays at its end until
+     * left alone. A page that adds no rows is undone, and the grown limit lapses back to one page
+     * [LOAD_MORE_EXPIRY_MILLIS] after the last call. Ignored while that stop is still loading, since the list stays at its end until
      * the answer arrives and would ask again on every scroll frame.
      */
     fun loadMoreDepartures(stopId: String) {
@@ -586,6 +642,9 @@ class StopBoardViewModel(
         if (stopId !in state.canLoadMoreStopIds || stopId in state.loadingStopIds || stopId in state.loadingMoreStopIds) return
         val limit = departureLimits[stopId] ?: DEPARTURE_PAGE_SIZE
         departureLimits = departureLimits + (stopId to minOf(limit + DEPARTURE_PAGE_SIZE, MAX_DEPARTURES))
+        loadMoreAtMillis = loadMoreAtMillis + (stopId to clock.now().toEpochMilliseconds())
+        val groupCount = rawDepartures[stopId]?.let { groupDepartures(it, state.showCancelledLines).size } ?: 0
+        loadMoreBases = loadMoreBases + (stopId to LoadMoreBase(limit, groupCount))
         _uiState.update {
             it.copy(
                 loadingMoreStopIds = it.loadingMoreStopIds + stopId,
