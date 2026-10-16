@@ -8,10 +8,16 @@ name: CI
 # - Each push to a release/vX.Y.Z branch publishes the bundle and the store listing to the Play
 #   internal track and uploads a TestFlight build for internal testers, with the notes in
 #   release-notes/vX.Y.Z/.
-# - Merging that branch's PR promotes the internal Play release to closed testing (alpha), sends
-#   the TestFlight build to the external testers group, and tags vX.Y.Z.
-# Main itself publishes nothing.
+# - Merging that branch's PR promotes the internal Play release to closed testing (alpha), submits
+#   the TestFlight build for App Store review (released once Apple approves it), and tags vX.Y.Z.
+# Main itself publishes nothing. Run by hand (workflow_dispatch), it only submits the given version's
+# TestFlight build to the App Store, for a release whose merge did not.
 on:
+  workflow_dispatch:
+    inputs:
+      app_store_version:
+        description: "Version (X.Y.Z) whose newest TestFlight build to submit to the App Store"
+        required: true
   push:
     branches: [ main, "release/v*" ]
   pull_request:
@@ -19,10 +25,12 @@ on:
     types: [ opened, synchronize, reopened, closed ]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # A run started by hand gets a group of its own, so a later push to the same branch, whose run
+  # decides the cancelling, cannot cut its App Store submission off.
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'workflow_dispatch' && '-dispatch' || '' }}
   # Release-branch pushes are never cancelled, so a store upload is never cut off halfway, and
-  # neither is the run that promotes a merged release PR.
-  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release/') && github.event.action != 'closed' }}
+  # neither is the run that promotes a merged release PR or submits a version by hand.
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/heads/release/') && github.event.action != 'closed' && github.event_name != 'workflow_dispatch' }}
 
 env:
   # The Play versionCode and the iOS build number are this run number plus this base. The base
@@ -36,7 +44,7 @@ jobs:
 
   android-static-analysis:
     name: "Android: Static Analysis"
-    if: github.event.action != 'closed'
+    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +81,7 @@ jobs:
 
   android-unit-tests:
     name: "Android: Unit Tests"
-    if: github.event.action != 'closed'
+    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -100,7 +108,7 @@ jobs:
 
   android-instrumentation-tests:
     name: "Android: Instrumentation Tests"
-    if: github.event.action != 'closed'
+    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -142,7 +150,7 @@ jobs:
 
   android-build:
     name: "Android: Build Release"
-    if: github.event.action != 'closed'
+    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: Release
     env:
@@ -209,7 +217,7 @@ jobs:
 
   ios-build:
     name: "iOS: Build and Test"
-    if: github.event.action != 'closed'
+    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -310,7 +318,7 @@ jobs:
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
 
-  # --- Merged release PR: move the tested builds on to closed / external testing ----------------
+  # --- Merged release PR: move the tested builds on to closed testing / the App Store ------------
 
   android-promote:
     name: "Android: Promote to closed testing"
@@ -346,14 +354,12 @@ jobs:
           pulsePlayCredentials: ${{ runner.temp }}/play-service-account.json
           pulsePlayReleaseStatus: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
 
-  # Runs only once an external TestFlight group exists and its name is set in the repository
-  # variable TESTFLIGHT_EXTERNAL_GROUP; until then releases stay with internal testers.
-  ios-promote:
-    name: "iOS: Send to TestFlight external testers"
+  ios-release:
+    name: "iOS: Submit to the App Store"
     if: >-
-      github.event_name == 'pull_request' && github.event.action == 'closed' &&
-      github.event.pull_request.merged && startsWith(github.head_ref, 'release/v') &&
-      vars.TESTFLIGHT_EXTERNAL_GROUP != ''
+      github.event_name == 'workflow_dispatch' || (
+        github.event_name == 'pull_request' && github.event.action == 'closed' &&
+        github.event.pull_request.merged && startsWith(github.head_ref, 'release/v'))
     runs-on: macos-latest
     environment: Release
     env:
@@ -369,15 +375,15 @@ jobs:
           bundler-cache: true
           working-directory: iosApp
 
-      # The build internal testers have been trying is distributed as is, not rebuilt.
-      - name: Distribute to external testers
+      # The build internal testers have been trying is submitted as is, not rebuilt.
+      - name: Submit for App Store review
         working-directory: iosApp
-        run: bundle exec fastlane promote version:"${GITHUB_HEAD_REF#release/v}"
+        run: bundle exec fastlane release version:"${APP_STORE_VERSION:-${GITHUB_HEAD_REF#release/v}}"
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-          TESTFLIGHT_EXTERNAL_GROUP: ${{ vars.TESTFLIGHT_EXTERNAL_GROUP }}
+          APP_STORE_VERSION: ${{ inputs.app_store_version }}
 
   tag-release:
     name: Tag the release

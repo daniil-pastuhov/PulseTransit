@@ -1,10 +1,10 @@
-# TestFlight lanes for the iOS app, run by .github/workflows/ci.yml from iosApp/:
+# TestFlight and App Store lanes for the iOS app, run by .github/workflows/ci.yml from iosApp/
 #
 #   bundle exec fastlane beta version:1.0.2 build_number:42   # build, upload to internal testers
-#   bundle exec fastlane promote version:1.0.2                # send that version's build to external testers
+#   bundle exec fastlane release version:1.0.2                # submit that version's build to the App Store
 #   bundle exec fastlane metadata                             # push the App Store texts in fastlane/metadata
 #
-# Both need an App Store Connect API key with the Admin role in ASC_KEY_ID, ASC_ISSUER_ID and
+# All need an App Store Connect API key with the Admin role in ASC_KEY_ID, ASC_ISSUER_ID and
 # ASC_KEY_P8 (the .p8 file's contents). Admin is what lets Xcode create the distribution
 # certificate and profile itself (cloud-managed signing), so no certificates live in the repo.
 
@@ -97,22 +97,42 @@ platform :ios do
     )
   end
 
-  desc "Distribute the newest TestFlight build of a version to the external testers group"
-  lane :promote do |options|
+  desc "Submit the newest TestFlight build of a version for App Store review, released on approval"
+  lane :release do |options|
     version = options.fetch(:version)
     key = api_key
-    # The build testers have been trying is promoted as is, like the Play internal release.
+    # The build testers have been trying is submitted as is, like the Play internal release.
     build_number = latest_testflight_build_number(api_key: key, version: version)
 
-    upload_to_testflight(
+    app = Spaceship::ConnectAPI::App.find(CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier))
+    platform = Spaceship::ConnectAPI::Platform::IOS
+    app.ensure_version!(version, platform: platform)
+    edit_version = app.get_edit_app_store_version(platform: platform)
+    # Released as soon as Apple approves it. deliver's automatic_release would only take effect
+    # through the metadata upload skipped below.
+    edit_version.update(attributes: { releaseType: Spaceship::ConnectAPI::AppStoreVersion::ReleaseType::AFTER_APPROVAL })
+
+    # "What's New" is set here rather than by deliver's metadata upload, which would also delete the
+    # App Review attachment (the screen recording the review notes refer to). App Store Connect
+    # refuses it on an app's first version, so it is left out until a version has been released.
+    if app.get_live_app_store_version(platform: platform)
+      edit_version.get_app_store_version_localizations.each do |localization|
+        notes = File.read(File.join(ROOT, "release-notes/v#{version}/#{localization.locale.start_with?('no', 'nb') ? 'no-NO' : 'en-US'}.txt")).strip
+        localization.update(attributes: { whatsNew: notes })
+      end
+    end
+
+    # Export compliance is answered by ITSAppUsesNonExemptEncryption in the app's Info.plist.
+    deliver(
       api_key: key,
-      distribute_only: true,
       app_version: version,
       build_number: build_number.to_s,
-      distribute_external: true,
-      groups: [ENV.fetch("TESTFLIGHT_EXTERNAL_GROUP", "External testers")],
-      notify_external_testers: true,
-      **build_info(version),
+      skip_binary_upload: true,
+      skip_metadata: true,
+      skip_screenshots: true,
+      force: true,
+      submit_for_review: true,
+      run_precheck_before_submit: false,
     )
   end
 end
