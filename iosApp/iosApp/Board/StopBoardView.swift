@@ -207,9 +207,12 @@ private struct StopPanels: View {
                     isExtended: state.extendedStopIds.contains(stop.id),
                     isFailed: state.failedStopIds.contains(stop.id),
                     isOnline: state.isOnline,
+                    canLoadMore: state.canLoadMoreStopIds.contains(stop.id),
+                    isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
                     onFilterOut: { viewModel.filterOutLine(line: $0) },
                     onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
-                    onRetry: { viewModel.refreshData() }
+                    onRetry: { viewModel.refreshData() },
+                    onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) }
                 )
                 .onDrag {
                     dragging = stop.id

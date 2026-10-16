@@ -318,6 +318,9 @@ fun MainScreen(
                         isOnline = uiState.isOnline,
                         onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
                         onRetry = { viewModel.refreshData() },
+                        canLoadMoreStopIds = uiState.canLoadMoreStopIds,
+                        loadingMoreStopIds = uiState.loadingMoreStopIds,
+                        onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -605,6 +608,9 @@ fun ReorderableFavoriteList(
     isOnline: Boolean,
     onSearchFurtherAhead: (String) -> Unit,
     onRetry: () -> Unit,
+    canLoadMoreStopIds: Set<String>,
+    loadingMoreStopIds: Set<String>,
+    onLoadMore: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
@@ -699,6 +705,9 @@ fun ReorderableFavoriteList(
                                 onFilterOut = onFilterOut,
                                 onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
                                 onRetry = onRetry,
+                                canLoadMore = stop.id in canLoadMoreStopIds,
+                                isLoadingMore = stop.id in loadingMoreStopIds,
+                                onLoadMore = { onLoadMore(stop.id) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -779,6 +788,9 @@ fun ReorderableFavoriteList(
                                 onFilterOut = onFilterOut,
                                 onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
                                 onRetry = onRetry,
+                                canLoadMore = stop.id in canLoadMoreStopIds,
+                                isLoadingMore = stop.id in loadingMoreStopIds,
+                                onLoadMore = { onLoadMore(stop.id) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

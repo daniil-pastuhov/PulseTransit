@@ -5,7 +5,9 @@ import SwiftUI
 /// `groups` is nil until the stop's first load finishes, which shows a blurred placeholder;
 /// `isLoading` on a stop that already has data shows a thin bar instead, so a refresh never blanks
 /// a board that is being read. `isFailed` means the empty board is unknown rather than empty, and
-/// shows why with a retry instead of "no departures".
+/// shows why with a retry instead of "no departures". With `canLoadMore`, scrolling near the end of
+/// the list calls `onLoadMore` for the next page; `isLoadingMore` is that page in flight, shown as a
+/// spinner at the end of the list only.
 struct StopPanel: View {
     let stop: StopPlace
     let groups: [DepartureGroup]?
@@ -15,9 +17,14 @@ struct StopPanel: View {
     let isExtended: Bool
     let isFailed: Bool
     let isOnline: Bool
+    let canLoadMore: Bool
+    let isLoadingMore: Bool
     let onFilterOut: (String) -> Void
     let onSearchFurtherAhead: () -> Void
     let onRetry: () -> Void
+    let onLoadMore: () -> Void
+
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -64,22 +71,62 @@ struct StopPanel: View {
         } else if groups.isEmpty {
             NoDepartures(isExtended: isExtended, onSearchFurtherAhead: onSearchFurtherAhead)
         } else {
-            ScrollView {
-                LazyVStack(spacing: 8) {
-                    // Identified by content, so a refresh that shifts the list gives a changed group
-                    // fresh row state. Entur can return identical-looking journeys, so the index
-                    // is part of the id to keep it unique, as on Android.
-                    ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
-                        DepartureGroupRow(
-                            group: row.group,
-                            showDelays: showDelays,
-                            showMessages: showMessages,
-                            onFilterOut: onFilterOut
-                        )
-                    }
-                }
+            GeometryReader { viewport in
+                list(groups, viewportHeight: viewport.size.height)
             }
         }
+    }
+
+    private func list(_ groups: [DepartureGroup], viewportHeight: CGFloat) -> some View {
+        // Content that doesn't fill the card can't be scrolled, so it asks for pages by itself
+        // until it does, as on Android. Rerun after every load and refresh, never once it scrolls.
+        let fill = FillCheck(
+            fits: contentHeight > 0 && contentHeight <= viewportHeight,
+            canLoad: canLoadMore && !isLoading && !isLoadingMore
+        )
+        return ScrollView {
+            LazyVStack(spacing: 8) {
+                // Identified by content, so a refresh that shifts the list gives a changed group
+                // fresh row state. Entur can return identical-looking journeys, so the index
+                // is part of the id to keep it unique, as on Android.
+                ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
+                    DepartureGroupRow(
+                        group: row.group,
+                        showDelays: showDelays,
+                        showMessages: showMessages,
+                        onFilterOut: onFilterOut
+                    )
+                }
+                if isLoadingMore {
+                    ProgressView()
+                        .padding(.vertical, 8)
+                }
+                // Appears when the user scrolls to the end. Always present, never toggled by
+                // refreshes or loading state, so a board left at its end on the wall cannot
+                // re-appear it and grow by itself.
+                Color.clear
+                    .frame(height: 1)
+                    .onAppear { if canLoadMore { onLoadMore() } }
+            }
+            .background(GeometryReader { content in
+                Color.clear.preference(key: ContentHeightKey.self, value: content.size.height)
+            })
+        }
+        .onPreferenceChange(ContentHeightKey.self) { contentHeight = $0 }
+        .task(id: fill) { if fill.fits && fill.canLoad { onLoadMore() } }
+    }
+}
+
+/// Whether a list fits its card without scrolling, and whether a page could be asked for now.
+private struct FillCheck: Hashable {
+    let fits: Bool
+    let canLoad: Bool
+}
+
+private struct ContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 

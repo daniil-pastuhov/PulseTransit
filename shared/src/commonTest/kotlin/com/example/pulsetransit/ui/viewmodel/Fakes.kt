@@ -76,6 +76,7 @@ class FakeEnturRepository : EnturRepository {
     var tripCalls = 0
     val requestedQuays = mutableMapOf<String, Set<String>?>()
     val requestedTimeRanges = mutableMapOf<String, Int>()
+    val requestedLimits = mutableMapOf<String, Int>()
     var lastFastestTripFromIds: List<String>? = null
     var lastFastestTripCoords: Pair<Double, Double>? = null
 
@@ -118,6 +119,7 @@ class FakeEnturRepository : EnturRepository {
         departureCalls++
         requestedQuays[stopId] = quayIds
         requestedTimeRanges[stopId] = timeRangeSeconds
+        requestedLimits[stopId] = limit
         // Answer as of when the request was sent, so a slow superseded request still carries its
         // own (older) data when it returns.
         val result = departures(stopId)
