@@ -32,6 +32,12 @@ data class CachedDeparture(
     val delayMinutes: Int,
     val notices: List<String>,
     val quayId: String?,
+    val platform: String? = null,
+    val lineName: String? = null,
+    val authority: String? = null,
+    val operator: String? = null,
+    val serviceJourneyId: String? = null,
+    val serviceDate: String? = null,
     /** When this row was fetched from Entur, used to tell the user how stale the board is. */
     val fetchedAt: Long,
 )

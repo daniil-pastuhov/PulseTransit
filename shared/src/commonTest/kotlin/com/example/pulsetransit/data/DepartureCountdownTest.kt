@@ -42,4 +42,15 @@ class DepartureCountdownTest {
     fun `an unreadable timestamp is unknown rather than a crash`() {
         assertEquals(DepartureCountdown.Unknown, departureCountdown("tomorrow-ish", now, oslo))
     }
+
+    @Test
+    fun `a departure's clock is a wall-clock time even when it is minutes away`() {
+        assertEquals(DepartureCountdown.Clock(now + 5 * minute, 0), departureClock(at(5 * minute), now, oslo))
+        assertEquals(DepartureCountdown.Clock(now + 15 * 60 * minute, 1), departureClock(at(15 * 60 * minute), now, oslo))
+    }
+
+    @Test
+    fun `an unreadable timestamp has no clock`() {
+        assertEquals(null, departureClock("tomorrow-ish", now, oslo))
+    }
 }

@@ -58,6 +58,28 @@ data class Departure(
     val delayMinutes: Int = 0,
     val notices: List<String> = emptyList(),
     val quayId: String? = null,
+    /** The quay's public code ("2", "A") when it has one, shown as the platform. */
+    val platform: String? = null,
+    /** The line's full name, e.g. "Holmlia stasjon - Brenna". */
+    val lineName: String? = null,
+    /** The transport authority whose line this is, e.g. "Ruter". */
+    val authority: String? = null,
+    /** The company running the line for [authority], e.g. "Connect Bus AS". */
+    val operator: String? = null,
+    /** The trip, with [serviceDate], as Entur names it: what its stops are asked for by. */
+    val serviceJourneyId: String? = null,
+    /** The operating day of [serviceJourneyId] as yyyy-MM-dd, which can be before a night trip's date. */
+    val serviceDate: String? = null,
+)
+
+/** One stop on a trip, from [EnturRepository.getJourneyStops]. */
+data class JourneyStop(
+    val quayId: String?,
+    val stopPlaceId: String?,
+    val name: String,
+    /** When the trip reaches this stop (leaves it, at the first), as ISO-8601. */
+    val expectedTime: String,
+    val isCancelled: Boolean = false,
 )
 
 data class DepartureGroup(
@@ -71,6 +93,20 @@ data class DepartureGroup(
 
     /** How many of [departures] [visibleDepartures] leaves out, shown as "+K" after the times. */
     val hiddenDepartureCount: Int get() = (departures.size - MAX_VISIBLE_DEPARTURES).coerceAtLeast(0)
+
+    /**
+     * Every departure in [groups] of this group's line to its destination, in board order: what the
+     * row's details list. At a stop served by several lines one line splits into many groups, so
+     * this gathers them. Falls back to this group's own departures when a refresh has replaced
+     * them all, so details opened on a row that just left still show something.
+     */
+    fun departuresLike(groups: List<DepartureGroup>): List<Departure> {
+        val first = departures.firstOrNull() ?: return departures
+        return groups
+            .flatMap { it.departures }
+            .filter { it.line == first.line && it.destination == first.destination }
+            .ifEmpty { departures }
+    }
 
     companion object {
         /** The primary time and four secondary ones. */

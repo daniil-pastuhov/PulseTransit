@@ -54,10 +54,32 @@ fun departureCountdown(
         diffSeconds < DepartureCountdown.DEPARTING_NOW_SECONDS -> DepartureCountdown.Now
         diffSeconds < SECONDS_PER_MINUTE -> DepartureCountdown.Minutes(1)
         diffSeconds < DepartureCountdown.RELATIVE_TIME_CUTOFF_SECONDS -> DepartureCountdown.Minutes(diffSeconds / SECONDS_PER_MINUTE)
-        else -> {
-            val today = Instant.fromEpochMilliseconds(nowMillis).toLocalDateTime(timeZone).date
-            val day = expected.toLocalDateTime(timeZone).date
-            DepartureCountdown.Clock(expected.toEpochMilliseconds(), today.daysUntil(day))
-        }
+        else -> clockOf(expected, nowMillis, timeZone)
     }
+}
+
+/** [departureClock] in the device's time zone. A separate overload, since Swift has no default arguments. */
+fun departureClock(
+    time: String,
+    nowMillis: Long,
+): DepartureCountdown.Clock? = departureClock(time, nowMillis, TimeZone.currentSystemDefault())
+
+/**
+ * An ISO-8601 [time] as a wall-clock time however close it is, with its day offset from
+ * [nowMillis] in [timeZone]: how a departure's details list it. Null if [time] cannot be read.
+ */
+fun departureClock(
+    time: String,
+    nowMillis: Long,
+    timeZone: TimeZone,
+): DepartureCountdown.Clock? = Instant.parseOrNull(time)?.let { clockOf(it, nowMillis, timeZone) }
+
+private fun clockOf(
+    time: Instant,
+    nowMillis: Long,
+    timeZone: TimeZone,
+): DepartureCountdown.Clock {
+    val today = Instant.fromEpochMilliseconds(nowMillis).toLocalDateTime(timeZone).date
+    val day = time.toLocalDateTime(timeZone).date
+    return DepartureCountdown.Clock(time.toEpochMilliseconds(), today.daysUntil(day))
 }

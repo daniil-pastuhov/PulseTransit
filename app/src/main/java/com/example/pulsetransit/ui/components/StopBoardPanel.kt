@@ -24,8 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -57,8 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
+import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.theme.ColorBus
 import com.example.pulsetransit.theme.ColorDefaultLine
@@ -100,7 +100,8 @@ private const val LOAD_MORE_THRESHOLD = 3
  * progress bar instead, so a refresh never blanks a board that is being read. [isFailed] means the
  * empty board is unknown rather than empty, and shows why with a retry instead of "no departures".
  * With [canLoadMore], scrolling near the end of the list calls [onLoadMore] for the next page;
- * [isLoadingMore] is that page in flight, shown as a spinner at the end of the list only.
+ * [isLoadingMore] is that page in flight, shown as a spinner at the end of the list only. Tapping a
+ * row opens its line's details, which list every loaded departure the row leaves out.
  */
 @Composable
 fun StopBoardPanel(
@@ -119,7 +120,22 @@ fun StopBoardPanel(
     onSearchFurtherAhead: () -> Unit = {},
     onRetry: () -> Unit = {},
     onLoadMore: () -> Unit = {},
+    loadJourney: suspend (Departure) -> List<JourneyStop> = { emptyList() },
 ) {
+    // The tapped row, captured at the tap. The details follow refreshes through departuresLike,
+    // which gathers the line's current departures and falls back to these once they have all gone.
+    var detailsGroup by remember { mutableStateOf<DepartureGroup?>(null) }
+    detailsGroup?.let { group ->
+        DepartureDetailsSheet(
+            stopName = stopPlace.name,
+            departures = group.departuresLike(departureGroups.orEmpty()),
+            showDelays = showDelays,
+            showMessages = showMessages,
+            onFilterOut = onFilterOut,
+            loadJourney = loadJourney,
+            onDismiss = { detailsGroup = null },
+        )
+    }
     Card(
         modifier =
             modifier
@@ -266,7 +282,7 @@ fun StopBoardPanel(
                                 "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
                             },
                         ) { _, group ->
-                            DepartureRow(group, showDelays, showMessages, onFilterOut)
+                            DepartureRow(group, showDelays, showMessages, onClick = { detailsGroup = group })
                         }
                         if (isLoadingMore) {
                             item(key = "load_more") {
@@ -325,7 +341,7 @@ fun DepartureRow(
     group: DepartureGroup,
     showDelays: Boolean,
     showMessages: Boolean,
-    onFilterOut: (String) -> Unit,
+    onClick: () -> Unit,
 ) {
     val departures = group.departures
     val firstDeparture = departures.first()
@@ -343,15 +359,13 @@ fun DepartureRow(
                 if (dep.isCancelled) AnnotatedString(cancelledText) else formatDepartureTime(dep.expectedTime, nowText, minUnit)
             }.distinct()
 
-    var showMenu by remember { mutableStateOf(false) }
-
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (firstDeparture.isCancelled) 0.2f else 0.5f))
-                .clickable { showMenu = true }
+                .clickable(onClick = onClick)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
     ) {
         Row(
@@ -494,19 +508,6 @@ fun DepartureRow(
                 }
             }
         }
-
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false },
-        ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.filter_out_line, firstDeparture.line)) },
-                onClick = {
-                    onFilterOut(firstDeparture.line)
-                    showMenu = false
-                },
-            )
-        }
     }
 }
 
@@ -520,7 +521,7 @@ internal fun getTransportEmoji(mode: String?): String =
         else -> "🚌" // fallback
     }
 
-private fun getTransportColor(mode: String?): Color =
+internal fun getTransportColor(mode: String?): Color =
     when (mode?.lowercase()) {
         "bus" -> ColorBus
         "tram" -> ColorTram

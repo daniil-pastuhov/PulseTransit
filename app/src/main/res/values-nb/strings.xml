@@ -59,6 +59,16 @@
     <string name="unit_minute">min</string>
     <!-- Shown after a row's times when more departures of the same line are not listed. -->
     <string name="more_departures_hidden">+%1$d til</string>
+    <!-- A departure's details, opened by tapping its row. -->
+    <string name="details_every">Ca. hvert %1$d. min</string>
+    <string name="details_platform">Plattform %1$s</string>
+    <string name="details_live">Sanntid</string>
+    <string name="details_in_minutes">om %1$d min</string>
+    <string name="details_in_hours">om %1$d t %2$d min</string>
+    <string name="details_departures">Avganger</string>
+    <string name="details_route">Stopp for avgangen %1$s</string>
+    <string name="details_ride">%1$d min til %2$s</string>
+    <string name="details_route_unavailable">Ingen stoppliste for denne avgangen</string>
     <string name="refresh">Oppdater</string>
 
     <!-- Fastest Route -->

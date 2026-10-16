@@ -88,6 +88,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.DateDisplayStyle
+import com.example.pulsetransit.data.Departure
+import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -325,6 +327,7 @@ fun MainScreen(
                         canLoadMoreStopIds = uiState.canLoadMoreStopIds,
                         loadingMoreStopIds = uiState.loadingMoreStopIds,
                         onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
+                        loadJourney = viewModel::journeyStopsAhead,
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -635,6 +638,7 @@ fun ReorderableFavoriteList(
     canLoadMoreStopIds: Set<String>,
     loadingMoreStopIds: Set<String>,
     onLoadMore: (String) -> Unit,
+    loadJourney: suspend (Departure, String) -> List<JourneyStop>,
     modifier: Modifier = Modifier,
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
@@ -732,6 +736,7 @@ fun ReorderableFavoriteList(
                                 canLoadMore = stop.id in canLoadMoreStopIds,
                                 isLoadingMore = stop.id in loadingMoreStopIds,
                                 onLoadMore = { onLoadMore(stop.id) },
+                                loadJourney = { departure -> loadJourney(departure, stop.id) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }
@@ -815,6 +820,7 @@ fun ReorderableFavoriteList(
                                 canLoadMore = stop.id in canLoadMoreStopIds,
                                 isLoadingMore = stop.id in loadingMoreStopIds,
                                 onLoadMore = { onLoadMore(stop.id) },
+                                loadJourney = { departure -> loadJourney(departure, stop.id) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

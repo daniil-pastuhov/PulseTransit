@@ -7,7 +7,8 @@ import SwiftUI
 /// a board that is being read. `isFailed` means the empty board is unknown rather than empty, and
 /// shows why with a retry instead of "no departures". With `canLoadMore`, scrolling near the end of
 /// the list calls `onLoadMore` for the next page; `isLoadingMore` is that page in flight, shown as a
-/// spinner at the end of the list only.
+/// spinner at the end of the list only. Tapping a row opens its line's details, which list every
+/// loaded departure the row leaves out.
 struct StopPanel: View {
     let stop: StopPlace
     let groups: [DepartureGroup]?
@@ -23,9 +24,14 @@ struct StopPanel: View {
     let onSearchFurtherAhead: () -> Void
     let onRetry: () -> Void
     let onLoadMore: () -> Void
+    /// The stops a departure's trip has ahead of it, for its details; empty when unavailable.
+    let loadJourney: (Departure) async -> [JourneyStop]
 
     /// Whether the end-of-list sentinel is on screen; scrolling while it is asks for a page.
     @State private var isAtEnd = false
+    /// The tapped row, captured at the tap. The details follow refreshes through `departuresLike`,
+    /// which gathers the line's current departures and falls back to these once they have all gone.
+    @State private var detailsGroup: DepartureGroup?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -63,6 +69,18 @@ struct StopPanel: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface).shadow(color: .black.opacity(0.08), radius: 2, y: 1))
         .padding(6)
+        .sheet(isPresented: Binding(get: { detailsGroup != nil }, set: { if !$0 { detailsGroup = nil } })) {
+            if let group = detailsGroup {
+                DepartureDetailsView(
+                    stopName: stop.name,
+                    departures: group.departuresLike(groups: groups ?? []),
+                    showDelays: showDelays,
+                    showMessages: showMessages,
+                    onFilterOut: onFilterOut,
+                    loadJourney: loadJourney
+                )
+            }
+        }
     }
 
     @ViewBuilder
@@ -90,7 +108,7 @@ struct StopPanel: View {
                         group: row.group,
                         showDelays: showDelays,
                         showMessages: showMessages,
-                        onFilterOut: onFilterOut
+                        onTap: { detailsGroup = row.group }
                     )
                 }
                 if isLoadingMore {
@@ -174,10 +192,7 @@ private struct DepartureGroupRow: View {
     let group: DepartureGroup
     let showDelays: Bool
     let showMessages: Bool
-    let onFilterOut: (String) -> Void
-    /// The line the user tapped, captured at the tap: the dialog acts on it even if a refresh
-    /// changes this row's group while the dialog is open.
-    @State private var lineToFilter: String?
+    let onTap: () -> Void
 
     var body: some View {
         let departures = group.departures
@@ -241,14 +256,7 @@ private struct DepartureGroupRow: View {
             .padding(8)
             .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card.opacity(first.isCancelled ? 0.2 : 0.5)))
             .contentShape(Rectangle())
-            .onTapGesture { lineToFilter = first.line }
-            .confirmationDialog(
-                lineToFilter ?? first.line,
-                isPresented: Binding(get: { lineToFilter != nil }, set: { if !$0 { lineToFilter = nil } }),
-                presenting: lineToFilter
-            ) { line in
-                Button(L("filter_out_line", line)) { onFilterOut(line) }
-            }
+            .onTapGesture(perform: onTap)
         }
     }
 }

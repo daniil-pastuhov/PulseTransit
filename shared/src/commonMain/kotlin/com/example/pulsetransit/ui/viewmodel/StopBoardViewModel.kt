@@ -7,6 +7,7 @@ import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopDepartures
@@ -15,6 +16,7 @@ import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.data.stopsAhead
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
@@ -626,6 +628,20 @@ class StopBoardViewModel(
     fun searchFurtherAhead(stopId: String) {
         _uiState.update { it.copy(extendedStopIds = it.extendedStopIds + stopId) }
         refreshDepartures()
+    }
+
+    /**
+     * The stops [departure]'s trip still has ahead of it from [stopPlaceId], for its details. Asked
+     * for only while the details are open, so it is not part of the board's state; empty when
+     * Entur has no trip for it or cannot be reached.
+     */
+    suspend fun journeyStopsAhead(
+        departure: Departure,
+        stopPlaceId: String,
+    ): List<JourneyStop> {
+        val journeyId = departure.serviceJourneyId ?: return emptyList()
+        val date = departure.serviceDate ?: return emptyList()
+        return enturRepository.getJourneyStops(journeyId, date).stopsAhead(departure, stopPlaceId)
     }
 
     /**

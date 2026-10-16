@@ -212,7 +212,10 @@ private struct StopPanels: View {
                     onFilterOut: { viewModel.filterOutLine(line: $0) },
                     onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
                     onRetry: { viewModel.refreshData() },
-                    onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) }
+                    onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
+                    loadJourney: { departure in
+                        (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
+                    }
                 )
                 .onDrag {
                     dragging = stop.id

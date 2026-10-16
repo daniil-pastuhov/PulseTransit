@@ -5,6 +5,7 @@ import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
@@ -109,6 +110,17 @@ class FakeEnturRepository : EnturRepository {
     var stopsWithQuays = mapOf<String, StopPlace>()
 
     override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? = stopsWithQuays[stopId]
+
+    var journeyStops = listOf<JourneyStop>()
+    var journeyStopsCalls = 0
+
+    override suspend fun getJourneyStops(
+        serviceJourneyId: String,
+        serviceDate: String,
+    ): List<JourneyStop> {
+        journeyStopsCalls++
+        return journeyStops
+    }
 
     override suspend fun getDepartures(
         stopId: String,

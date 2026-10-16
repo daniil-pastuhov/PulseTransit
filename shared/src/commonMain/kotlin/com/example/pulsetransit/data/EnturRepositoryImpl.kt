@@ -1,6 +1,5 @@
 package com.example.pulsetransit.data
 
-import com.example.pulsetransit.data.cache.CachedDeparture
 import com.example.pulsetransit.data.cache.CachedTrip
 import com.example.pulsetransit.data.cache.CachedTripLeg
 import com.example.pulsetransit.data.cache.DepartureCacheDao
@@ -194,11 +193,18 @@ class EnturRepositoryImpl(
         val serviceJourney: ServiceJourneyGraphQL? = null,
         val notices: List<NoticeGraphQL> = emptyList(),
         val quay: QuayIdGraphQL? = null,
+        val date: String? = null,
     )
 
     @Serializable
     private data class QuayIdGraphQL(
         val id: String,
+        val publicCode: String? = null,
+    )
+
+    @Serializable
+    private data class NamedGraphQL(
+        val name: String? = null,
     )
 
     @Serializable
@@ -213,6 +219,7 @@ class EnturRepositoryImpl(
 
     @Serializable
     private data class ServiceJourneyGraphQL(
+        val id: String? = null,
         val line: LineGraphQL? = null,
         val notices: List<NoticeGraphQL> = emptyList(),
     )
@@ -222,6 +229,8 @@ class EnturRepositoryImpl(
         val publicCode: String? = null,
         val name: String? = null,
         val transportMode: String? = null,
+        val authority: NamedGraphQL? = null,
+        val operator: NamedGraphQL? = null,
     )
 
     override suspend fun searchStopPlaces(query: String): List<StopPlace> {
@@ -365,17 +374,26 @@ class EnturRepositoryImpl(
               aimedDepartureTime
               cancellation
               realtimeState
+              date
               destinationDisplay {
                 frontText
               }
               quay {
                 id
+                publicCode
               }
               serviceJourney {
+                id
                 line {
                   publicCode
                   name
                   transportMode
+                  authority {
+                    name
+                  }
+                  operator {
+                    name
+                  }
                 }
                 notices {
                   text
@@ -465,6 +483,26 @@ class EnturRepositoryImpl(
                             delayMinutes = delay,
                             notices = notices,
                             quayId = call.quay?.id,
+                            platform = call.quay?.publicCode?.takeIf(String::isNotBlank),
+                            lineName =
+                                call.serviceJourney
+                                    ?.line
+                                    ?.name
+                                    ?.takeIf(String::isNotBlank),
+                            authority =
+                                call.serviceJourney
+                                    ?.line
+                                    ?.authority
+                                    ?.name
+                                    ?.takeIf(String::isNotBlank),
+                            operator =
+                                call.serviceJourney
+                                    ?.line
+                                    ?.operator
+                                    ?.name
+                                    ?.takeIf(String::isNotBlank),
+                            serviceJourneyId = call.serviceJourney?.id,
+                            serviceDate = call.date,
                         )
                     }
 
@@ -494,40 +532,10 @@ class EnturRepositoryImpl(
         return Sourced.cached(cached.map { it.toDeparture() }, fetchedAt)
     }
 
-    private fun Departure.toCacheEntity(
-        stopId: String,
-        position: Int,
-        fetchedAt: Long,
-    ) = CachedDeparture(
-        stopId = stopId,
-        position = position,
-        line = line,
-        destination = destination,
-        expectedTime = expectedTime,
-        aimedTime = aimedTime,
-        expectedAtMillis = parseIsoToMillis(expectedTime) ?: 0L,
-        isRealtime = isRealtime,
-        isCancelled = isCancelled,
-        transportMode = transportMode,
-        delayMinutes = delayMinutes,
-        notices = notices,
-        quayId = quayId,
-        fetchedAt = fetchedAt,
-    )
-
-    private fun CachedDeparture.toDeparture() =
-        Departure(
-            line = line,
-            destination = destination,
-            expectedTime = expectedTime,
-            aimedTime = aimedTime,
-            isRealtime = isRealtime,
-            isCancelled = isCancelled,
-            transportMode = transportMode,
-            delayMinutes = delayMinutes,
-            notices = notices,
-            quayId = quayId,
-        )
+    override suspend fun getJourneyStops(
+        serviceJourneyId: String,
+        serviceDate: String,
+    ): List<JourneyStop> = client.fetchJourneyStops(serviceJourneyId, serviceDate, clientNameHeader, clientNameValue)
 
     override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? {
         val queryStr =

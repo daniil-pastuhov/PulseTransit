@@ -37,6 +37,15 @@ interface EnturRepository {
 
     suspend fun getStopPlaceWithQuays(stopId: String): StopPlace?
 
+    /**
+     * Every stop of one trip, in order, for a departure's details. Not cached: the details ask
+     * only while open, and an empty answer just leaves the route out.
+     */
+    suspend fun getJourneyStops(
+        serviceJourneyId: String,
+        serviceDate: String,
+    ): List<JourneyStop>
+
     /** As [getDepartures], but for the fastest route to a destination from a set of stop places. */
     suspend fun getFastestTrip(
         fromIds: List<String>,
