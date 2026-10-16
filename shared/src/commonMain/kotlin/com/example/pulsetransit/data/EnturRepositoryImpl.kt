@@ -599,21 +599,22 @@ class EnturRepositoryImpl(
 
     // Length here is the inlined GraphQL query string, not branching logic.
     @Suppress("LongMethod")
-    override suspend fun getFastestTrip(
+    override suspend fun getTripOptions(
         lat: Double,
         lon: Double,
         to: StopPlace,
-    ): Sourced<TripInfo?> {
+        count: Int,
+    ): Sourced<List<TripInfo>> {
         val now = clock.now().toEpochMilliseconds()
         val routeKey = routeKey(lat, lon, to.id)
 
         val queryStr =
             """
-            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: Location!) {
+            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: Location!, ${'$'}count: Int!) {
               trip(
                 from: { coordinates: { latitude: ${'$'}lat, longitude: ${'$'}lon } }
                 to: ${'$'}to
-                numTripPatterns: 1
+                numTripPatterns: ${'$'}count
               ) {
                 tripPatterns {
                   expectedStartTime
@@ -640,6 +641,7 @@ class EnturRepositoryImpl(
                 put("lat", lat)
                 put("lon", lon)
                 put("to", to.toTripLocation())
+                put("count", count.coerceAtLeast(1))
             }
 
         return try {
@@ -651,23 +653,28 @@ class EnturRepositoryImpl(
                         setBody(GraphQLRequest(queryStr, variables))
                     }.body()
 
-            val pattern =
+            val trips =
                 response.data
                     ?.trip
                     ?.tripPatterns
-                    ?.firstOrNull()
-            if (pattern == null) {
-                return Sourced(null)
+                    .orEmpty()
+                    .take(count.coerceAtLeast(1))
+                    .map(::parseTripPattern)
+            if (trips.isEmpty()) {
+                return Sourced(emptyList())
             }
 
-            val tripInfo = parseTripPattern(pattern)
-
-            tripCache.upsert(tripInfo.toCacheEntity(routeKey, now))
+            tripCache.replaceRoute(routeKey, trips.mapIndexed { index, trip -> trip.toCacheEntity(routeKey, index, now) })
             tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
-            Sourced.live(tripInfo)
+            Sourced.live(trips)
         } catch (e: Exception) {
             e.printStackTrace()
-            tripFromCache(routeKey, now)
+            val cached = tripCache.getUpcoming(routeKey, now)
+            if (cached.isEmpty()) {
+                Sourced.failed(emptyList())
+            } else {
+                Sourced.cached(cached.take(count.coerceAtLeast(1)).map { it.toTripInfo() }, cached.minOf { it.fetchedAt })
+            }
         }
     }
 
@@ -751,7 +758,7 @@ class EnturRepositoryImpl(
             return if (anyRequestFailed) tripFromCache(routeKey, now) else Sourced(null)
         }
 
-        tripCache.upsert(fastestTrip.toCacheEntity(routeKey, now))
+        tripCache.replaceRoute(routeKey, listOf(fastestTrip.toCacheEntity(routeKey, 0, now)))
         tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
         return Sourced.live(fastestTrip)
     }
@@ -809,15 +816,17 @@ class EnturRepositoryImpl(
         routeKey: String,
         nowMillis: Long,
     ): Sourced<TripInfo?> {
-        val cached = tripCache.getUpcoming(routeKey, nowMillis) ?: return Sourced.failed(null)
+        val cached = tripCache.getUpcoming(routeKey, nowMillis).firstOrNull() ?: return Sourced.failed(null)
         return Sourced.cached(cached.toTripInfo(), cached.fetchedAt)
     }
 
     private fun TripInfo.toCacheEntity(
         routeKey: String,
+        position: Int,
         fetchedAt: Long,
     ) = CachedTrip(
         routeKey = routeKey,
+        position = position,
         destinationName = destinationName,
         expectedStartTime = expectedStartTime,
         expectedStartAtMillis = parseIsoToMillis(expectedStartTime) ?: 0L,

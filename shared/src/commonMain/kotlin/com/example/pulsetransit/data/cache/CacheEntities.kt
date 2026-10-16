@@ -42,10 +42,14 @@ data class CachedDeparture(
     val fetchedAt: Long,
 )
 
-/** One cached fastest-route trip, keyed by the origin/destination pair it was requested for. */
-@Entity(tableName = "cached_trips")
+/**
+ * One cached route alternative, keyed by the origin/destination pair it was requested for and its
+ * [position] among the alternatives Entur returned (0 is the one the board shows).
+ */
+@Entity(tableName = "cached_trips", primaryKeys = ["routeKey", "position"])
 data class CachedTrip(
-    @PrimaryKey val routeKey: String,
+    val routeKey: String,
+    val position: Int = 0,
     val destinationName: String,
     val expectedStartTime: String,
     val expectedStartAtMillis: Long,

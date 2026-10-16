@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -102,6 +103,7 @@ private const val LOAD_MORE_THRESHOLD = 3
  * With [canLoadMore], scrolling near the end of the list calls [onLoadMore] for the next page;
  * [isLoadingMore] is that page in flight, shown as a spinner at the end of the list only. Tapping a
  * row opens its line's details, which list every loaded departure the row leaves out.
+ * [header] replaces the stop's name and locality, as on-spot mode does with its stop picker.
  */
 @Composable
 fun StopBoardPanel(
@@ -121,6 +123,7 @@ fun StopBoardPanel(
     onRetry: () -> Unit = {},
     onLoadMore: () -> Unit = {},
     loadJourney: suspend (Departure) -> List<JourneyStop> = { emptyList() },
+    header: (@Composable RowScope.() -> Unit)? = null,
 ) {
     // The tapped row, captured at the tap. The details follow refreshes through departuresLike,
     // which gathers the line's current departures and falls back to these once they have all gone.
@@ -162,25 +165,29 @@ fun StopBoardPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stopPlace.name,
-                        style =
-                            MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp,
-                            ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    stopPlace.locality?.let {
+                if (header != null) {
+                    header()
+                } else {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = it,
+                            text = stopPlace.name,
                             style =
-                                MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
                                 ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
+                        stopPlace.locality?.let {
+                            Text(
+                                text = it,
+                                style =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    ),
+                            )
+                        }
                     }
                 }
             }

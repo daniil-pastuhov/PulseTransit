@@ -52,12 +52,16 @@ interface EnturRepository {
         to: StopPlace,
     ): Sourced<TripInfo?>
 
-    /** As [getDepartures], but for the fastest route to a destination from a coordinate. */
-    suspend fun getFastestTrip(
+    /**
+     * As [getDepartures], but for the next [count] route alternatives to a destination from a
+     * coordinate, in Entur's order (the first is the one to take). Empty when there are none.
+     */
+    suspend fun getTripOptions(
         lat: Double,
         lon: Double,
         to: StopPlace,
-    ): Sourced<TripInfo?>
+        count: Int,
+    ): Sourced<List<TripInfo>>
 
     companion object {
         /** Entur's own default for `estimatedCalls`. */

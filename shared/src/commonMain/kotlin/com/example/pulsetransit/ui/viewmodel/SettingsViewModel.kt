@@ -2,6 +2,7 @@ package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.EnturRepository
@@ -54,6 +55,9 @@ class SettingsViewModel(
     }
 
     data class UiState(
+        val appMode: AppMode = AppMode.BOARD,
+        /** Route alternatives per destination in on-spot mode; [SettingsRepository.TRIP_OPTIONS_AUTO] fits the screen. */
+        val tripOptionsCount: Int = SettingsRepository.TRIP_OPTIONS_AUTO,
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -112,6 +116,8 @@ class SettingsViewModel(
 
         _uiState.update {
             it.copy(
+                appMode = settingsRepository.getAppMode() ?: AppMode.BOARD,
+                tripOptionsCount = settingsRepository.getTripOptionsCount(),
                 themeMode = settingsRepository.getThemeMode(),
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
@@ -194,6 +200,16 @@ class SettingsViewModel(
         _uiState.update {
             it.copy(selectedQuays = it.selectedQuays + (stopId to finalNext))
         }
+    }
+
+    fun updateAppMode(mode: AppMode) {
+        settingsRepository.setAppMode(mode)
+        _uiState.update { it.copy(appMode = mode) }
+    }
+
+    fun updateTripOptionsCount(count: Int) {
+        settingsRepository.setTripOptionsCount(count)
+        _uiState.update { it.copy(tripOptionsCount = settingsRepository.getTripOptionsCount()) }
     }
 
     fun updateShowDelays(show: Boolean) {

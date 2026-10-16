@@ -18,6 +18,23 @@
         }
       }
     },
+    "add_destination": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add destination"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til reisemål"
+          }
+        }
+      }
+    },
     "add_stop_places": {
       "extractionState": "manual",
       "localizations": {
@@ -222,6 +239,23 @@
         }
       }
     },
+    "back_to_nearest": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to nearest"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbake til nærmeste"
+          }
+        }
+      }
+    },
     "burn_in_high": {
       "extractionState": "manual",
       "localizations": {
@@ -354,6 +388,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Endre datovisning"
+          }
+        }
+      }
+    },
+    "choose_stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose stop"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg stoppested"
           }
         }
       }
@@ -728,6 +779,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retninger / plattformer:"
+          }
+        }
+      }
+    },
+    "distance_kilometers": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ km"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ km"
+          }
+        }
+      }
+    },
+    "distance_meters": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld m"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld m"
           }
         }
       }
@@ -1293,6 +1378,57 @@
         }
       }
     },
+    "locating_approximate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finding your approximate location…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finner omtrentlig posisjon…"
+          }
+        }
+      }
+    },
+    "locating_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finding your location…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finner posisjonen din…"
+          }
+        }
+      }
+    },
+    "location_allow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gi posisjonstilgang"
+          }
+        }
+      }
+    },
     "location_config": {
       "extractionState": "manual",
       "localizations": {
@@ -1306,6 +1442,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Posisjonsinnstillinger"
+          }
+        }
+      }
+    },
+    "location_denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access is needed to show routes and stops from where you are."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjonstilgang trengs for å vise reiser og stoppesteder der du er."
+          }
+        }
+      }
+    },
+    "location_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not find your location."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ikke posisjonen din."
           }
         }
       }
@@ -1398,6 +1568,108 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "mode_board": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wall board"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Veggtavle"
+          }
+        }
+      }
+    },
+    "mode_board_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An always-on display for the stops you choose, with burn-in protection and screen dimming."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En skjerm som alltid står på for stoppestedene du velger, med innbrenningsvern og dimming."
+          }
+        }
+      }
+    },
+    "mode_choose_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can change this later in Settings."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan endre dette senere i Innstillinger."
+          }
+        }
+      }
+    },
+    "mode_choose_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How will you use PulseTransit?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvordan vil du bruke PulseTransit?"
+          }
+        }
+      }
+    },
+    "mode_on_spot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the spot"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der du er"
+          }
+        }
+      }
+    },
+    "mode_on_spot_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follows where you are: routes to your destinations from right here, and departures from the nearest stop."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested."
           }
         }
       }
@@ -1592,6 +1864,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingen stoppesteder funnet"
+          }
+        }
+      }
+    },
+    "no_stops_nearby": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No stops within 1 km."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen stoppesteder innen 1 km."
           }
         }
       }
@@ -1902,6 +2191,57 @@
         }
       }
     },
+    "route_arrival": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "arr. %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ank. %1$@"
+          }
+        }
+      }
+    },
+    "route_to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Til %1$@"
+          }
+        }
+      }
+    },
+    "routes_add_destination": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a destination to see routes from where you are."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til et reisemål for å se reiser herfra."
+          }
+        }
+      }
+    },
     "save_coords": {
       "extractionState": "manual",
       "localizations": {
@@ -2051,6 +2391,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Middels"
+          }
+        }
+      }
+    },
+    "settings_mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modus"
           }
         }
       }
@@ -2238,6 +2595,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transportinformasjon"
+          }
+        }
+      }
+    },
+    "trip_options_auto": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        }
+      }
+    },
+    "trip_options_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How many departures to show for each destination. Auto fits as many as the screen has room for."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvor mange avganger som vises per reisemål. Auto viser så mange som får plass."
+          }
+        }
+      }
+    },
+    "trip_options_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route alternatives"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reisealternativer"
           }
         }
       }

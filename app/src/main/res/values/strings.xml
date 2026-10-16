@@ -177,4 +177,30 @@
     <string name="attribution_entur">Data from Entur</string>
     <string name="attribution_met">Weather from MET Norway</string>
     <string name="change_date_style">Change date style</string>
+    <!-- Modes -->
+    <string name="mode_choose_title">How will you use PulseTransit?</string>
+    <string name="mode_choose_hint">You can change this later in Settings.</string>
+    <string name="mode_on_spot">On the spot</string>
+    <string name="mode_on_spot_description">Follows where you are: routes to your destinations from right here, and departures from the nearest stop.</string>
+    <string name="mode_board">Wall board</string>
+    <string name="mode_board_description">An always-on display for the stops you choose, with burn-in protection and screen dimming.</string>
+    <string name="settings_mode">Mode</string>
+    <!-- On the spot -->
+    <string name="locating_precise">Finding your location…</string>
+    <string name="locating_approximate">Finding your approximate location…</string>
+    <string name="location_unavailable">Could not find your location.</string>
+    <string name="location_denied">Location access is needed to show routes and stops from where you are.</string>
+    <string name="location_allow">Allow location</string>
+    <string name="distance_meters">%1$d m</string>
+    <string name="distance_kilometers">%1$s km</string>
+    <string name="back_to_nearest">Back to nearest</string>
+    <string name="choose_stop">Choose stop</string>
+    <string name="no_stops_nearby">No stops within 1 km.</string>
+    <string name="routes_add_destination">Add a destination to see routes from where you are.</string>
+    <string name="add_destination">Add destination</string>
+    <string name="route_to">To %1$s</string>
+    <string name="route_arrival">arr. %1$s</string>
+    <string name="trip_options_title">Route alternatives</string>
+    <string name="trip_options_hint">How many departures to show for each destination. Auto fits as many as the screen has room for.</string>
+    <string name="trip_options_auto">Auto</string>
 </resources>

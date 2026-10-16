@@ -9,7 +9,7 @@ import com.example.pulsetransit.data.cache.ForecastCacheDao
 import com.example.pulsetransit.data.cache.TripCacheDao
 
 /**
- * In-memory stand-ins for the Room DAOs. The `@Transaction` default methods (`replaceStop`,
+ * In-memory stand-ins for the Room DAOs. The `@Transaction` default methods (`replaceStop`, `replaceRoute`,
  * `replaceForecast`) are inherited from the interfaces, so these fakes exercise the same
  * clear-then-insert sequence the generated implementations run.
  */
@@ -39,19 +39,26 @@ class FakeDepartureCacheDao : DepartureCacheDao {
 }
 
 class FakeTripCacheDao : TripCacheDao {
-    val rows = mutableMapOf<String, CachedTrip>()
+    val rows = mutableListOf<CachedTrip>()
 
     override suspend fun getUpcoming(
         routeKey: String,
         nowMillis: Long,
-    ): CachedTrip? = rows[routeKey]?.takeIf { it.expectedStartAtMillis >= nowMillis }
+    ): List<CachedTrip> =
+        rows
+            .filter { it.routeKey == routeKey && it.expectedStartAtMillis >= nowMillis }
+            .sortedBy { it.position }
 
-    override suspend fun upsert(trip: CachedTrip) {
-        rows[trip.routeKey] = trip
+    override suspend fun clearRoute(routeKey: String) {
+        rows.removeAll { it.routeKey == routeKey }
+    }
+
+    override suspend fun insertAll(trips: List<CachedTrip>) {
+        rows += trips
     }
 
     override suspend fun pruneStartedBefore(cutoffMillis: Long) {
-        rows.values.removeAll { it.expectedStartAtMillis < cutoffMillis }
+        rows.removeAll { it.expectedStartAtMillis < cutoffMillis }
     }
 }
 

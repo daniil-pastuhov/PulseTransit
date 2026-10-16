@@ -120,6 +120,8 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   version. Kotlin `Duration` values and default arguments do not reach Swift usefully, so such APIs
   also offer millisecond properties and explicit overloads (see `PixelShiftSchedule`).
 
+**Modes** (`AppMode`, chosen on first launch by `ModeSelectionViewModel`, changeable in Settings): `BOARD` is the wall display described below; `ON_SPOT` follows the device. Both run through the same `StopBoardViewModel` and departures pipeline: in on-spot mode `favorites` holds the one selected nearby stop, routes come from the live fix via `getTripOptions` (several alternatives per destination, `fastestTrips` is a list per destination), and the wall-board features (pixel shift, auto-dim, camera wake, full screen, always-on, night refresh stretch) are off. `DeviceFollower` does the following: precise then approximate fix, acting only after 20 m of movement and at most every 15 s. Settings screens show only the sections for the current mode. An install from before modes with stops or destinations counts as `BOARD`, so wall displays are not stopped by the first-launch prompt.
+
 **State**: each ViewModel exposes a single `UiState` data class through one `MutableStateFlow`. Settings are not reactive — screens call `viewModel.loadSettings()` from a `LaunchedEffect` on navigation entry to re-read SharedPreferences, which is how changes made on the Settings screen reach the main board.
 
 **Always-on display machinery** (mostly wired through `StopBoardViewModel`):

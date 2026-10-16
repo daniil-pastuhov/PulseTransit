@@ -48,4 +48,31 @@ class SettingsRepositoryImplTest {
         assertNull(repo.getSavedLatitude())
         assertNull(repo.getSavedLongitude())
     }
+
+    @Test
+    fun `a fresh install has no mode until one is chosen`() {
+        assertNull(repo.getAppMode())
+
+        repo.setAppMode(AppMode.ON_SPOT)
+
+        assertEquals(AppMode.ON_SPOT, SettingsRepositoryImpl(store).getAppMode())
+    }
+
+    @Test
+    fun `an install from before modes with stops set up is a board`() {
+        repo.addDestinationStation(StopPlace(id = "NSR:StopPlace:1", name = "Oslo S"))
+
+        assertEquals(AppMode.BOARD, SettingsRepositoryImpl(store).getAppMode())
+    }
+
+    @Test
+    fun `route alternatives default to auto and stay within range`() {
+        assertEquals(SettingsRepository.TRIP_OPTIONS_AUTO, repo.getTripOptionsCount())
+
+        repo.setTripOptionsCount(3)
+        assertEquals(3, repo.getTripOptionsCount())
+
+        repo.setTripOptionsCount(99)
+        assertEquals(SettingsRepository.MAX_TRIP_OPTIONS, repo.getTripOptionsCount())
+    }
 }

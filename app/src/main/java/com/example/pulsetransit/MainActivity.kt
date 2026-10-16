@@ -12,8 +12,10 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.SettingsRepository
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
@@ -25,8 +27,12 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        // Full screen and always-on are wall-board settings; on-spot mode is a phone in the hand.
+        val appMode = settingsRepository.getAppModeFlow()
         lifecycleScope.launch {
-            settingsRepository.getFullScreenModeFlow().collectLatest { isFullScreen ->
+            combine(settingsRepository.getFullScreenModeFlow(), appMode) { fullScreen, mode ->
+                fullScreen && mode == AppMode.BOARD
+            }.collectLatest { isFullScreen ->
                 if (isFullScreen) {
                     hideSystemBars()
                 } else {
@@ -36,7 +42,9 @@ class MainActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
-            settingsRepository.getAlwaysOnEnabledFlow().collectLatest { alwaysOn ->
+            combine(settingsRepository.getAlwaysOnEnabledFlow(), appMode) { alwaysOn, mode ->
+                alwaysOn && mode == AppMode.BOARD
+            }.collectLatest { alwaysOn ->
                 if (alwaysOn) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 } else {

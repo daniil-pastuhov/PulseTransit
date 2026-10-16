@@ -3,7 +3,8 @@ import Foundation
 import Shared
 import UIKit
 
-/// One-shot device location through CoreLocation, asking for when-in-use permission the first time.
+/// Device location through CoreLocation, one-shot or continuous, asking for when-in-use permission
+/// the first time.
 final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDelegate {
     /// How long to wait for a fix before reporting none, like the fused provider's own timeout.
     private static let timeout: TimeInterval = 15
@@ -14,6 +15,8 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
     private let manager = CLLocationManager()
     private var pending: ((any LocationResult) -> Void)?
     private var timeoutWork: DispatchWorkItem?
+    /// Receives every fix while continuous updates run (on-spot mode).
+    private var updates: ((any LocationResult) -> Void)?
 
     override init() {
         super.init()
@@ -27,7 +30,7 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
     }
 
     @objc private func appDidBecomeActive() {
-        guard pending != nil, manager.authorizationStatus == .notDetermined else { return }
+        guard pending != nil || updates != nil, manager.authorizationStatus == .notDetermined else { return }
         manager.requestWhenInUseAuthorization()
     }
 
@@ -44,7 +47,39 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
         DispatchQueue.main.async { [self] in
             pending = nil
             timeoutWork?.cancel()
+            if updates == nil { manager.stopUpdatingLocation() }
+        }
+    }
+
+    func startUpdates(
+        accuracy: LocationAccuracy, distanceFilterMeters: Double, onResult: @escaping (any LocationResult) -> Void
+    ) {
+        DispatchQueue.main.async { [self] in
+            updates = onResult
+            manager.desiredAccuracy = accuracy == .precise ? kCLLocationAccuracyBest : kCLLocationAccuracyHundredMeters
+            manager.distanceFilter = distanceFilterMeters
+            proceedUpdates()
+        }
+    }
+
+    func stopUpdates() {
+        DispatchQueue.main.async { [self] in
+            updates = nil
+            manager.distanceFilter = kCLDistanceFilterNone
             manager.stopUpdatingLocation()
+        }
+    }
+
+    private func proceedUpdates() {
+        switch manager.authorizationStatus {
+        case .notDetermined:
+            manager.requestWhenInUseAuthorization() // continues in locationManagerDidChangeAuthorization
+        case .denied, .restricted:
+            let callback = updates
+            updates = nil
+            callback?(LocationResultPermissionDenied.shared)
+        default:
+            manager.startUpdatingLocation()
         }
     }
 
@@ -81,17 +116,26 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        guard pending != nil, manager.authorizationStatus != .notDetermined else { return }
-        proceed()
+        guard manager.authorizationStatus != .notDetermined else { return }
+        if pending != nil { proceed() }
+        if updates != nil { proceedUpdates() }
     }
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        finish(LocationResultFix(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude))
+        let fix = LocationResultFix(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+        updates?(fix)
+        finish(fix)
     }
 
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         let denied = (error as? CLError)?.code == .denied
-        finish(denied ? LocationResultPermissionDenied.shared : LocationResultUnavailable.shared)
+        let result: any LocationResult = denied ? LocationResultPermissionDenied.shared : LocationResultUnavailable.shared
+        if let callback = updates {
+            // A transient "location unknown" keeps updates running; a denial ends them.
+            if denied { updates = nil }
+            callback(result)
+        }
+        finish(result)
     }
 }

@@ -25,6 +25,19 @@ interface LocationSource {
 
     /** Abandons the request in flight; a later [requestLocation] starts afresh. */
     fun cancel()
+
+    /**
+     * Starts continuous updates: [onResult] gets a fix each time the device has moved
+     * [distanceFilterMeters], and the other [LocationResult]s as described on
+     * [LocationProvider.locationUpdates]. Runs until [stopUpdates]; a new call replaces the last.
+     */
+    fun startUpdates(
+        accuracy: LocationAccuracy,
+        distanceFilterMeters: Double,
+        onResult: (LocationResult) -> Unit,
+    )
+
+    fun stopUpdates()
 }
 
 /** Ambient light, or the best estimate iOS allows, in lux. Emits through [onLux] until [stop]. */
@@ -55,6 +68,18 @@ internal class LocationSourceProvider(
             source.requestLocation(accuracy) { result ->
                 if (continuation.isActive) continuation.resume(result)
             }
+        }
+
+    override fun locationUpdates(
+        accuracy: LocationAccuracy,
+        minDistanceMeters: Float,
+    ): Flow<LocationResult> =
+        callbackFlow {
+            source.startUpdates(accuracy, minDistanceMeters.toDouble()) { result ->
+                trySend(result)
+                if (result is LocationResult.PermissionDenied) close()
+            }
+            awaitClose { source.stopUpdates() }
         }
 }
 

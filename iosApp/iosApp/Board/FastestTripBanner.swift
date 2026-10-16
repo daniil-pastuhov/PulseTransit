@@ -37,13 +37,7 @@ struct FastestTripBanner: View {
         }
     }
 
-    /// "HH:mm" straight out of the ISO timestamp, which is already in local Oslo time.
-    private var departureTime: String {
-        let time = trip.expectedStartTime
-        guard time.count >= 16 else { return "--:--" }
-        let start = time.index(time.startIndex, offsetBy: 11)
-        return String(time[start ..< time.index(start, offsetBy: 5)])
-    }
+    private var departureTime: String { isoClockTime(trip.expectedStartTime) }
 
     /// "Fastest to Majorstuen 18:31", marked "⁺1" like the board's times when it arrives after midnight.
     private var title: String {
@@ -54,18 +48,28 @@ struct FastestTripBanner: View {
         return L("fastest_route_to_arriving", trip.destinationName, time)
     }
 
-    private var routeText: String {
-        guard !trip.legs.isEmpty else { return L("fastest_route_info", trip.lineName, trip.originName) }
-        return trip.legs.compactMap { leg -> String? in
-            if let line = leg.lineName {
-                let prefix = "\(Palette.transportEmoji(leg.mode)) \(line)"
-                return leg.fromName.map { "\(prefix) \(L("leg_from", $0))" } ?? prefix
-            }
-            // Zero-minute foot legs are quay transfers, not worth a mention.
-            return leg.durationMinutes > 0 ? L("leg_walk", Int(leg.durationMinutes)) : nil
+    private var routeText: String { tripRouteText(trip) }
+}
+
+/// A trip's legs as "🚇 2 from Oslo S  →  🚶 4 min", or its first line and origin if Entur sent no legs.
+func tripRouteText(_ trip: TripInfo) -> String {
+    guard !trip.legs.isEmpty else { return L("fastest_route_info", trip.lineName, trip.originName) }
+    return trip.legs.compactMap { leg -> String? in
+        if let line = leg.lineName {
+            let prefix = "\(Palette.transportEmoji(leg.mode)) \(line)"
+            return leg.fromName.map { "\(prefix) \(L("leg_from", $0))" } ?? prefix
         }
-        .joined(separator: "  →  ")
+        // Zero-minute foot legs are quay transfers, not worth a mention.
+        return leg.durationMinutes > 0 ? L("leg_walk", Int(leg.durationMinutes)) : nil
     }
+    .joined(separator: "  →  ")
+}
+
+/// "HH:mm" straight out of an ISO timestamp, which is already in local Oslo time.
+func isoClockTime(_ iso: String) -> String {
+    guard iso.count >= 16 else { return "--:--" }
+    let start = iso.index(iso.startIndex, offsetBy: 11)
+    return String(iso[start ..< iso.index(start, offsetBy: 5)])
 }
 
 /// Stands in for a `FastestTripBanner` whose route hasn't arrived yet, blurred until it does.

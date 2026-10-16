@@ -174,6 +174,7 @@ class StopBoardLoadingTest : BoardTestBase() {
             assertEquals(
                 "Oslo S",
                 vm.uiState.value.fastestTrips[oslo.id]
+                    ?.firstOrNull()
                     ?.destinationName,
             )
             assertEquals(setOf(bergen.id), vm.uiState.value.loadingTripDestinationIds)
@@ -210,6 +211,7 @@ class StopBoardLoadingTest : BoardTestBase() {
             assertEquals(
                 "NEW",
                 vm.uiState.value.fastestTrips[oslo.id]
+                    ?.firstOrNull()
                     ?.lineName,
             )
             assertTrue(

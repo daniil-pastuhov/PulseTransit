@@ -5,7 +5,26 @@ import kotlinx.coroutines.flow.Flow
 interface SettingsRepository {
     companion object {
         const val MAX_DESTINATION_STATIONS = 5
+
+        /** [getTripOptionsCount] value meaning "as many as fit the screen". */
+        const val TRIP_OPTIONS_AUTO = 0
+        const val MAX_TRIP_OPTIONS = 5
     }
+
+    /**
+     * The chosen mode, or null if the user has not picked one yet. Installs from before modes
+     * existed that already have stops or destinations count as [AppMode.BOARD].
+     */
+    fun getAppMode(): AppMode?
+
+    fun setAppMode(mode: AppMode)
+
+    fun getAppModeFlow(): Flow<AppMode?>
+
+    /** Route alternatives per destination in on-spot mode: [TRIP_OPTIONS_AUTO] or 1..[MAX_TRIP_OPTIONS]. */
+    fun getTripOptionsCount(): Int
+
+    fun setTripOptionsCount(count: Int)
 
     fun getFavorites(): List<StopPlace>
 

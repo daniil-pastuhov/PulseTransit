@@ -2,6 +2,7 @@ package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
@@ -16,9 +17,12 @@ import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.stopsAhead
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
+import com.example.pulsetransit.platform.LocationProvider
+import com.example.pulsetransit.platform.LocationResult
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.Job
@@ -39,8 +43,9 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 // The constructor is the DI seam: every collaborator is injected so the board runs on the JVM in
-// tests. The function count is the board's public surface plus its refresh/clock loops.
-@Suppress("LongParameterList", "TooManyFunctions")
+// tests. The function count is the board's public surface plus its refresh/clock loops. Its size
+// is both modes sharing one departures pipeline; following the device lives in DeviceFollower.
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 class StopBoardViewModel(
     private val enturRepository: EnturRepository,
     private val weatherRepository: WeatherRepository,
@@ -49,6 +54,7 @@ class StopBoardViewModel(
     private val cameraMotionDetector: CameraMotionDetector,
     private val clockFormatter: ClockFormatter,
     private val connectivityMonitor: ConnectivityMonitor,
+    private val locationProvider: LocationProvider,
     private val clock: Clock = Clock.System,
 ) : ViewModel() {
     private companion object {
@@ -76,9 +82,19 @@ class StopBoardViewModel(
         // A grown board shrinks back to one page this long after the user last asked for more,
         // so a board scrolled once doesn't refetch the bigger request on every refresh for good.
         const val LOAD_MORE_EXPIRY_MILLIS = 5 * 60 * 1000L
+
+        // The forecast is for an area, so it is refetched early only after moving this far.
+        const val WEATHER_MOVE_METERS = 1_000.0
+
+        const val NEARBY_RADIUS_KM = 1.0
     }
 
     data class UiState(
+        val mode: AppMode = AppMode.BOARD,
+        /**
+         * The stops whose departures the board shows: the saved favourites in board mode, and the
+         * selected nearby stop (at most one) in on-spot mode.
+         */
         val favorites: List<StopPlace> = emptyList(),
         val departures: List<StopDepartures> = emptyList(),
         val weather: List<WeatherInfo> = emptyList(),
@@ -104,8 +120,22 @@ class StopBoardViewModel(
         val autoThemeDarkLux: Float = 10f,
         val autoThemeLightLux: Float = 40f,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
-        /** Fastest trip per destination station id; a destination with no route is absent. */
-        val fastestTrips: Map<String, TripInfo> = emptyMap(),
+        /**
+         * Route alternatives per destination station id, best first; a destination with no route
+         * is absent. Board mode asks for one, on-spot mode for up to [tripOptionsCount].
+         */
+        val fastestTrips: Map<String, List<TripInfo>> = emptyMap(),
+        /** The on-spot alternatives setting: [SettingsRepository.TRIP_OPTIONS_AUTO] or a fixed count. */
+        val tripOptionsCount: Int = SettingsRepository.TRIP_OPTIONS_AUTO,
+        /** On-spot mode only: finding the device. */
+        val location: OnSpotLocation = OnSpotLocation.Idle,
+        /** On-spot mode only: stops near the device, nearest first. */
+        val nearbyStops: List<NearbyStop> = emptyList(),
+        /** On-spot mode only: the stop whose departures are shown. */
+        val selectedStopId: String? = null,
+        /** On-spot mode only: the user picked [selectedStopId], so it no longer follows the nearest. */
+        val isStopPinned: Boolean = false,
+        val isSearchingNearby: Boolean = false,
         val destinationStations: List<StopPlace> = emptyList(),
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
@@ -205,6 +235,21 @@ class StopBoardViewModel(
     private var loadMoreJobs: Map<String, Job> = emptyMap()
     private var tripsJob: Job? = null
 
+    /** On-spot: follows the device while the screen is showing (see [startLocationTracking]). */
+    private val follower =
+        DeviceFollower(
+            locationProvider,
+            clock,
+            viewModelScope,
+            onLocation = ::showLocation,
+            onMoved = ::onDeviceMoved,
+        )
+    private var isTrackingRequested = false
+    private var nearbyJob: Job? = null
+    private var lastWeatherFix: Pair<Double, Double>? = null
+
+    private val isOnSpot: Boolean get() = _uiState.value.mode == AppMode.ON_SPOT
+
     init {
         loadSettings() // also starts the light sensor when the theme is AUTO
         startClock()
@@ -229,12 +274,12 @@ class StopBoardViewModel(
     private fun observeSettings() {
         settingsRepository
             .getFullScreenModeFlow()
-            .onEach { isFullScreen -> _uiState.update { it.copy(isFullScreenMode = isFullScreen) } }
+            .onEach { isFullScreen -> _uiState.update { it.copy(isFullScreenMode = isFullScreen && !isOnSpot) } }
             .launchIn(viewModelScope)
 
         settingsRepository
             .getAlwaysOnEnabledFlow()
-            .onEach { alwaysOn -> _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn) } }
+            .onEach { alwaysOn -> _uiState.update { it.copy(isAlwaysOnEnabled = alwaysOn && !isOnSpot) } }
             .launchIn(viewModelScope)
 
         settingsRepository
@@ -282,7 +327,8 @@ class StopBoardViewModel(
 
         settingsRepository
             .getCameraMotionWakeFlow()
-            .onEach { enabled ->
+            .onEach { setting ->
+                val enabled = setting && !isOnSpot
                 _uiState.update { it.copy(cameraMotionWake = enabled) }
                 if (enabled && !uiState.value.isScreenDimmed) {
                     wakeScreen()
@@ -293,7 +339,10 @@ class StopBoardViewModel(
     }
 
     fun loadSettings() {
-        val favs = settingsRepository.getFavorites()
+        val mode = settingsRepository.getAppMode() ?: AppMode.BOARD
+        if (mode != _uiState.value.mode) switchMode(mode)
+        val onSpot = mode == AppMode.ON_SPOT
+        val favs = if (onSpot) _uiState.value.favorites else settingsRepository.getFavorites()
         val theme = settingsRepository.getThemeMode()
         val burnIn = settingsRepository.getBurnInProtectionLevel()
         val dateStyle = settingsRepository.getDateDisplayStyle()
@@ -309,13 +358,16 @@ class StopBoardViewModel(
         val autoLight = settingsRepository.getAutoThemeLightLux()
         val cameraWake = settingsRepository.isCameraMotionWakeEnabled()
         val filtered = settingsRepository.getFilteredLines()
+        val tripOptions = settingsRepository.getTripOptionsCount()
 
         _uiState.update {
             it.copy(
                 favorites = favs,
                 themeMode = theme,
                 activeTheme = theme,
-                burnInLevel = burnIn,
+                // Pixel shift, auto-dim, camera wake, full screen and always-on are for the wall
+                // board; a phone in the hand needs none of them.
+                burnInLevel = if (onSpot) BurnInProtectionLevel.OFF else burnIn,
                 dateStyle = dateStyle,
                 refreshIntervalSeconds = interval,
                 showDelays = showDelays,
@@ -323,17 +375,59 @@ class StopBoardViewModel(
                 showCancelledLines = showCancelledLines,
                 destinationStations = destinations,
                 fastestTrips = if (destinations.isEmpty()) emptyMap() else it.fastestTrips,
-                isFullScreenMode = isFullScreen,
-                isAlwaysOnEnabled = alwaysOn,
+                isFullScreenMode = isFullScreen && !onSpot,
+                isAlwaysOnEnabled = alwaysOn && !onSpot,
                 autoDimSeconds = autoDim,
                 autoThemeDarkLux = autoDark,
                 autoThemeLightLux = autoLight,
-                cameraMotionWake = cameraWake,
+                cameraMotionWake = cameraWake && !onSpot,
                 filteredLines = filtered,
+                tripOptionsCount = tripOptions,
             )
         }
 
         setupSensors()
+    }
+
+    /**
+     * Drops everything that belongs to the mode being left, so neither mode shows the other's
+     * stops or routes, and starts or stops following the device to match.
+     */
+    private fun switchMode(mode: AppMode) {
+        follower.reset()
+        nearbyJob?.cancel()
+        departuresJob?.cancel()
+        tripsJob?.cancel()
+        rawDepartures = emptyMap()
+        stopFetchedAt = emptyMap()
+        lastWeatherFix = null
+        lastWeatherUpdateTime = 0
+        _uiState.update {
+            it.copy(
+                mode = mode,
+                favorites = emptyList(),
+                departures = emptyList(),
+                fastestTrips = emptyMap(),
+                weather = emptyList(),
+                loadingStopIds = emptySet(),
+                loadingTripDestinationIds = emptySet(),
+                failedStopIds = emptySet(),
+                failedTripDestinationIds = emptySet(),
+                staleSinceMillis = null,
+                staleAgeMinutes = null,
+                location = OnSpotLocation.Idle,
+                nearbyStops = emptyList(),
+                selectedStopId = null,
+                isStopPinned = false,
+                isSearchingNearby = false,
+                isScreenDimmed = false,
+            )
+        }
+        if (mode == AppMode.ON_SPOT) {
+            dimJob?.cancel()
+            stopCameraMotion()
+            if (isTrackingRequested) follower.start()
+        }
     }
 
     /**
@@ -393,7 +487,7 @@ class StopBoardViewModel(
         _uiState.update { it.copy(isScreenDimmed = true) }
     }
 
-    fun isCameraMotionEnabled(): Boolean = settingsRepository.isCameraMotionWakeEnabled()
+    fun isCameraMotionEnabled(): Boolean = !isOnSpot && settingsRepository.isCameraMotionWakeEnabled()
 
     /**
      * Starts watching the camera for motion, if the setting is on. The camera stays open until
@@ -402,7 +496,7 @@ class StopBoardViewModel(
     fun startCameraMotion() {
         cameraMotionJob?.cancel()
         cameraMotionJob = null
-        if (!settingsRepository.isCameraMotionWakeEnabled()) return
+        if (!isCameraMotionEnabled()) return
 
         cameraMotionJob =
             cameraMotionDetector
@@ -467,7 +561,8 @@ class StopBoardViewModel(
 
     private fun calculateNextRefreshInterval(): Int {
         val base = _uiState.value.refreshIntervalSeconds
-        if (!settingsRepository.isDynamicRefreshEnabled()) return base
+        // Someone holding the phone is reading it, whatever the hour.
+        if (isOnSpot || !settingsRepository.isDynamicRefreshEnabled()) return base
 
         val hour = clock.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
 
@@ -681,14 +776,21 @@ class StopBoardViewModel(
         _uiState.update { it.copy(departures = grouped) }
     }
 
-    /** Fetches each destination's fastest trip concurrently, publishing each as it arrives. */
+    /**
+     * Fetches each destination's routes concurrently, publishing each as it arrives: one from the
+     * saved location (or the favourites) in board mode, several from the device in on-spot mode.
+     */
     private fun refreshFastestTrip() {
         tripsJob?.cancel()
         val destinations = _uiState.value.destinationStations
-        val lat = settingsRepository.getSavedLatitude()
-        val lon = settingsRepository.getSavedLongitude()
+        val onSpot = isOnSpot
+        val fix = follower.latestFix
+        val lat = if (onSpot) fix?.latitude else settingsRepository.getSavedLatitude()
+        val lon = if (onSpot) fix?.longitude else settingsRepository.getSavedLongitude()
+        val count = if (onSpot) tripOptionsToFetch() else 1
 
-        if (destinations.isEmpty()) {
+        // On-spot mode has nowhere to route from until the device is found.
+        if (destinations.isEmpty() || (onSpot && fix == null)) {
             _uiState.update { it.copy(loadingTripDestinationIds = emptySet(), failedTripDestinationIds = emptySet()) }
             return
         }
@@ -706,24 +808,14 @@ class StopBoardViewModel(
             viewModelScope.launch {
                 for (destination in destinations) {
                     launch {
-                        val result =
-                            if (lat != null && lon != null) {
-                                enturRepository.getFastestTrip(lat = lat, lon = lon, to = destination)
-                            } else {
-                                val fromIds = _uiState.value.favorites.map { it.id }
-                                if (fromIds.isEmpty()) {
-                                    Sourced(null)
-                                } else {
-                                    enturRepository.getFastestTrip(fromIds = fromIds, to = destination)
-                                }
-                            }
-                        val trip = result.data
+                        val result = fetchTrips(destination, lat, lon, count)
+                        val trips = result.data.map { it.copy(destinationName = destination.name) }
                         ensureActive() // see fetchStopDepartures
                         _uiState.update {
                             it.copy(
                                 fastestTrips =
-                                    if (trip != null) {
-                                        it.fastestTrips + (destination.id to trip.copy(destinationName = destination.name))
+                                    if (trips.isNotEmpty()) {
+                                        it.fastestTrips + (destination.id to trips)
                                     } else {
                                         it.fastestTrips - destination.id
                                     },
@@ -741,11 +833,35 @@ class StopBoardViewModel(
             }
     }
 
-    /** Starts a weather fetch for the saved location; false when there is no location yet. */
+    /** The most alternatives the screen may show: the set count, or the maximum when it fits them itself. */
+    private fun tripOptionsToFetch(): Int =
+        _uiState.value.tripOptionsCount.takeIf { it != SettingsRepository.TRIP_OPTIONS_AUTO } ?: SettingsRepository.MAX_TRIP_OPTIONS
+
+    /** Routes to [destination] from the coordinates, or failing those from the favourites. */
+    private suspend fun fetchTrips(
+        destination: StopPlace,
+        lat: Double?,
+        lon: Double?,
+        count: Int,
+    ): Sourced<List<TripInfo>> {
+        if (lat != null && lon != null) {
+            return enturRepository.getTripOptions(lat = lat, lon = lon, to = destination, count = count)
+        }
+        val fromIds = _uiState.value.favorites.map { it.id }
+        if (fromIds.isEmpty()) return Sourced(emptyList())
+        val trip = enturRepository.getFastestTrip(fromIds = fromIds, to = destination)
+        return Sourced(listOfNotNull(trip.data), trip.fetchedAtMillis, trip.failed)
+    }
+
+    /**
+     * Starts a weather fetch for the saved location, or the device's in on-spot mode; false when
+     * there is no location yet.
+     */
     private fun refreshWeather(): Boolean {
-        val lat = settingsRepository.getSavedLatitude()
-        val lon = settingsRepository.getSavedLongitude()
+        val lat = if (isOnSpot) follower.latestFix?.latitude else settingsRepository.getSavedLatitude()
+        val lon = if (isOnSpot) follower.latestFix?.longitude else settingsRepository.getSavedLongitude()
         if (lat == null || lon == null) return false
+        lastWeatherFix = lat to lon
 
         viewModelScope.launch {
             // Cached or live, the forecast is hour-stamped and past hours are dropped, so a stale
@@ -761,6 +877,7 @@ class StopBoardViewModel(
         fromIndex: Int,
         toIndex: Int,
     ) {
+        if (isOnSpot) return
         val currentList = _uiState.value.favorites.toMutableList()
         if (fromIndex !in currentList.indices || toIndex !in currentList.indices) return
 
@@ -773,6 +890,122 @@ class StopBoardViewModel(
 
     fun filterOutLine(line: String) {
         settingsRepository.addFilteredLine(line)
+    }
+
+    /**
+     * Starts following the device in on-spot mode; in board mode it only remembers that the
+     * screen is showing, so switching to on-spot starts it. Stays on until
+     * [stopLocationTracking], so the screen calls the pair from its start/stop lifecycle events.
+     */
+    fun startLocationTracking() {
+        isTrackingRequested = true
+        if (isOnSpot) follower.start()
+    }
+
+    fun stopLocationTracking() {
+        isTrackingRequested = false
+        follower.stop()
+    }
+
+    /** Looks for the device again after it could not be found or access was refused. */
+    fun retryLocation() {
+        if (isOnSpot) follower.start()
+    }
+
+    /** Shows [stopId]'s departures and keeps it, instead of the nearest stop, until [followNearest]. */
+    fun selectStop(stopId: String) {
+        val state = _uiState.value
+        val stop = state.nearbyStops.firstOrNull { it.stop.id == stopId }?.stop ?: return
+        _uiState.update {
+            it.copy(
+                isStopPinned =
+                    stopId !=
+                        state.nearbyStops
+                            .first()
+                            .stop.id,
+            )
+        }
+        showStop(stop)
+    }
+
+    /** Goes back to showing whichever stop is nearest, and following it as the device moves. */
+    fun followNearest() {
+        _uiState.update { it.copy(isStopPinned = false) }
+        _uiState.value.nearbyStops
+            .firstOrNull()
+            ?.let { showStop(it.stop) }
+    }
+
+    /**
+     * Shows where on-spot mode stands in finding the device. Starting to look again (each time the
+     * board comes back on screen) keeps showing a location already found rather than a spinner.
+     */
+    private fun showLocation(location: OnSpotLocation) {
+        _uiState.update {
+            val keepFound =
+                it.location is OnSpotLocation.Located &&
+                    (location is OnSpotLocation.Locating || location is OnSpotLocation.Unavailable)
+            if (keepFound) it else it.copy(location = location)
+        }
+    }
+
+    /** Refreshes what depends on where the device is, now it has moved far enough to matter. */
+    private fun onDeviceMoved(fix: LocationResult.Fix) {
+        refreshNearbyStops(fix)
+        refreshFastestTrip()
+        val weatherAt = lastWeatherFix
+        val movedFar =
+            weatherAt == null ||
+                distanceMeters(weatherAt.first, weatherAt.second, fix.latitude, fix.longitude) >= WEATHER_MOVE_METERS
+        if (movedFar && refreshWeather()) lastWeatherUpdateTime = clock.now().toEpochMilliseconds()
+    }
+
+    private fun refreshNearbyStops(fix: LocationResult.Fix) {
+        nearbyJob?.cancel()
+        _uiState.update { it.copy(isSearchingNearby = true) }
+        nearbyJob =
+            viewModelScope.launch {
+                val stops = enturRepository.getNearbyStopPlaces(fix.latitude, fix.longitude, NEARBY_RADIUS_KM)
+                ensureActive() // see fetchStopDepartures
+                val nearby =
+                    stops
+                        .map { stop ->
+                            val distance =
+                                if (stop.latitude != null && stop.longitude != null) {
+                                    distanceMeters(fix.latitude, fix.longitude, stop.latitude, stop.longitude).toInt()
+                                } else {
+                                    null
+                                }
+                            NearbyStop(stop, distance)
+                        }.sortedBy { it.distanceMeters ?: Int.MAX_VALUE }
+                applyNearbyStops(nearby)
+            }
+    }
+
+    private fun applyNearbyStops(nearby: List<NearbyStop>) {
+        // The geocoder fails silently to an empty list, so an empty answer while stops are already
+        // listed is more likely a failed request than an empty neighbourhood: keep what we have.
+        if (nearby.isEmpty() && _uiState.value.nearbyStops.isNotEmpty()) {
+            _uiState.update { it.copy(isSearchingNearby = false) }
+            return
+        }
+        val state = _uiState.value
+        val keepPinned = state.isStopPinned && nearby.any { it.stop.id == state.selectedStopId }
+        val selected = if (keepPinned) nearby.first { it.stop.id == state.selectedStopId } else nearby.firstOrNull()
+        _uiState.update { it.copy(nearbyStops = nearby, isStopPinned = keepPinned, isSearchingNearby = false) }
+        if (selected == null) {
+            _uiState.update { it.copy(selectedStopId = null, favorites = emptyList()) }
+            refreshDepartures()
+        } else {
+            showStop(selected.stop)
+        }
+    }
+
+    /** Makes [stop] the one on-spot board stop, fetching its departures if it is a change. */
+    private fun showStop(stop: StopPlace) {
+        if (_uiState.value.selectedStopId == stop.id) return
+        _uiState.update { it.copy(selectedStopId = stop.id, favorites = listOf(stop)) }
+        refreshDepartures()
     }
 }
 

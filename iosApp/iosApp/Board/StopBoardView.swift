@@ -30,47 +30,10 @@ struct StopBoardView: View {
                     onRefresh: { viewModel.refreshData() },
                     onOpenSettings: { showSettings = true }
                 )
-                // One banner per destination, each appearing as soon as its own route arrives; a
-                // destination with no route is left out once it has loaded, but one that failed
-                // keeps its slot.
-                let routes = state.destinationStations.filter {
-                    state.fastestTrips[$0.id] != nil ||
-                        state.loadingTripDestinationIds.contains($0.id) ||
-                        state.failedTripDestinationIds.contains($0.id)
-                }
-                ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
-                    if index > 0 { Divider() }
-                    // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
-                    ZStack {
-                        if let trip = state.fastestTrips[destination.id] {
-                            FastestTripBanner(
-                                trip: trip,
-                                isRefreshing: state.loadingTripDestinationIds.contains(destination.id)
-                            )
-                            .transition(.opacity)
-                        } else if state.failedTripDestinationIds.contains(destination.id) {
-                            FastestTripUnavailable(
-                                destinationName: destination.name,
-                                isOnline: state.isOnline,
-                                isRetrying: state.loadingTripDestinationIds.contains(destination.id)
-                            )
-                            .transition(.opacity)
-                        } else {
-                            FastestTripPlaceholder(destinationName: destination.name)
-                                .transition(.opacity)
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
-                }
-                if state.favorites.isEmpty {
-                    EmptyBoard(onOpenSettings: { showSettings = true })
+                if state.mode == .onSpot {
+                    OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })
                 } else {
-                    // Side by side when the space is wider than tall. Read from the layout rather than
-                    // the screen, so an iPad rotation (regular size class both ways) re-lays it out.
-                    GeometryReader { geometry in
-                        StopPanels(state: state, viewModel: viewModel, isLandscape: geometry.size.width > geometry.size.height)
-                    }
-                    .padding(6)
+                    boardBody(state: state, viewModel: viewModel)
                 }
                 BoardFooter(state: state)
             }
@@ -90,7 +53,11 @@ struct StopBoardView: View {
         .keepingScreenAwake(state.isAlwaysOnEnabled)
         // The camera runs only while the board is on screen and the app is active, as on Android:
         // released in the background and while Settings is open, reopened when the board returns.
-        .onAppear { startCameraIfAllowed() }
+        // On-spot mode follows the device on the same terms, except that Settings leaves it running.
+        .onAppear {
+            startCameraIfAllowed()
+            viewModel.startLocationTracking()
+        }
         #if DEBUG
         // -PTDemo YES plays a short scripted tour for recording App Store previews in a simulator,
         // where nothing can be tapped. Debug builds only.
@@ -99,9 +66,13 @@ struct StopBoardView: View {
             await runDemo()
         }
         #endif
-        .onDisappear { viewModel.stopCameraMotion() }
+        .onDisappear {
+            viewModel.stopCameraMotion()
+            viewModel.stopLocationTracking()
+        }
         .onChange(of: scenePhase) { phase in
             if phase == .active && !showSettings { startCameraIfAllowed() } else { viewModel.stopCameraMotion() }
+            if phase == .active { viewModel.startLocationTracking() } else if phase == .background { viewModel.stopLocationTracking() }
         }
         .onChange(of: showSettings) { open in
             if open { viewModel.stopCameraMotion() }
@@ -110,13 +81,60 @@ struct StopBoardView: View {
             // Settings are not reactive: the board re-reads them when Settings closes, as Android
             // does on navigating back, and then refetches at once, so stops just added show their
             // departures without waiting for the next refresh (or forever, with refresh off).
-            // That may also have switched camera wake on or off.
+            // That may also have switched camera wake on or off, or switched modes.
             viewModel.loadSettings()
             viewModel.startAutoRefresh()
             startCameraIfAllowed()
         }) {
             SettingsView(themeMode: state.themeMode)
                 .pageSizedSheet()
+        }
+    }
+
+    /// The wall board's body: a banner per destination, then a panel per favourite stop.
+    @ViewBuilder
+    private func boardBody(state: StopBoardViewModel.UiState, viewModel: StopBoardViewModel) -> some View {
+        // One banner per destination, each appearing as soon as its own route arrives; a
+        // destination with no route is left out once it has loaded, but one that failed
+        // keeps its slot.
+        let routes = state.destinationStations.filter {
+            state.fastestTrips[$0.id] != nil ||
+                state.loadingTripDestinationIds.contains($0.id) ||
+                state.failedTripDestinationIds.contains($0.id)
+        }
+        ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
+            if index > 0 { Divider() }
+            // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
+            ZStack {
+                if let trip = state.fastestTrips[destination.id]?.first {
+                    FastestTripBanner(
+                        trip: trip,
+                        isRefreshing: state.loadingTripDestinationIds.contains(destination.id)
+                    )
+                    .transition(.opacity)
+                } else if state.failedTripDestinationIds.contains(destination.id) {
+                    FastestTripUnavailable(
+                        destinationName: destination.name,
+                        isOnline: state.isOnline,
+                        isRetrying: state.loadingTripDestinationIds.contains(destination.id)
+                    )
+                    .transition(.opacity)
+                } else {
+                    FastestTripPlaceholder(destinationName: destination.name)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
+        }
+        if state.favorites.isEmpty {
+            EmptyBoard(onOpenSettings: { showSettings = true })
+        } else {
+            // Side by side when the space is wider than tall. Read from the layout rather than
+            // the screen, so an iPad rotation (regular size class both ways) re-lays it out.
+            GeometryReader { geometry in
+                StopPanels(state: state, viewModel: viewModel, isLandscape: geometry.size.width > geometry.size.height)
+            }
+            .padding(6)
         }
     }
 }

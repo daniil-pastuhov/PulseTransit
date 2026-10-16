@@ -1,5 +1,6 @@
 package com.example.pulsetransit.ui.viewmodel
 
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DateDisplayStyle
@@ -26,6 +27,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
 
 /** Feeds lux values to the ViewModel on demand. */
 class FakeSystemSensorManager : SystemSensorManager {
@@ -80,6 +83,17 @@ class FakeEnturRepository : EnturRepository {
     val requestedLimits = mutableMapOf<String, Int>()
     var lastFastestTripFromIds: List<String>? = null
     var lastFastestTripCoords: Pair<Double, Double>? = null
+    var lastTripOptionsCount: Int? = null
+
+    /** Route alternatives by coordinates; defaults to the single [tripTo] answer. */
+    var tripOptionsTo: (StopPlace, Int) -> Sourced<List<TripInfo>> = { to, _ ->
+        tripTo(to).let { Sourced(listOfNotNull(it.data), it.fetchedAtMillis, it.failed) }
+    }
+
+    /** Stops [getNearbyStopPlaces] answers with, whatever the coordinates. */
+    var nearby: List<StopPlace> = emptyList()
+    var nearbyCalls = 0
+    var lastNearbyCoords: Pair<Double, Double>? = null
 
     /**
      * Waits like a network call, and like the real repository (which catches `Exception`) swallows
@@ -105,7 +119,11 @@ class FakeEnturRepository : EnturRepository {
         lat: Double,
         lon: Double,
         radiusKm: Double,
-    ) = emptyList<StopPlace>()
+    ): List<StopPlace> {
+        nearbyCalls++
+        lastNearbyCoords = lat to lon
+        return nearby
+    }
 
     var stopsWithQuays = mapOf<String, StopPlace>()
 
@@ -150,14 +168,16 @@ class FakeEnturRepository : EnturRepository {
         return result
     }
 
-    override suspend fun getFastestTrip(
+    override suspend fun getTripOptions(
         lat: Double,
         lon: Double,
         to: StopPlace,
-    ): Sourced<TripInfo?> {
+        count: Int,
+    ): Sourced<List<TripInfo>> {
         tripCalls++
         lastFastestTripCoords = lat to lon
-        val result = tripTo(to)
+        lastTripOptionsCount = count
+        val result = tripOptionsTo(to, count)
         latency(tripDelayMillis(to))
         return result
     }
@@ -181,6 +201,25 @@ class FakeWeatherRepository : WeatherRepository {
  * them in `init`, and the flows are hot so tests can push changes afterwards.
  */
 class FakeSettingsRepository : SettingsRepository {
+    var mode: AppMode? = AppMode.BOARD
+    var tripOptions = SettingsRepository.TRIP_OPTIONS_AUTO
+    val appModeFlow = MutableStateFlow<AppMode?>(AppMode.BOARD)
+
+    override fun getAppMode() = mode
+
+    override fun setAppMode(mode: AppMode) {
+        this.mode = mode
+        appModeFlow.value = mode
+    }
+
+    override fun getAppModeFlow(): Flow<AppMode?> = appModeFlow
+
+    override fun getTripOptionsCount() = tripOptions
+
+    override fun setTripOptionsCount(count: Int) {
+        tripOptions = count
+    }
+
     var favoriteStops = listOf<StopPlace>()
     var theme = ThemeMode.SYSTEM
     var refreshInterval = 60
@@ -416,13 +455,34 @@ class FakeSettingsRepository : SettingsRepository {
     override fun getShowCancelledLinesFlow(): Flow<Boolean> = showCancelledFlow
 }
 
-/** Answers each accuracy with whatever the test queued, recording what was asked for. */
+/**
+ * Answers each accuracy with whatever the test queued, recording what was asked for. Continuous
+ * updates come from [updates], one hot flow per accuracy that a test emits fixes into.
+ */
 class FakeLocationProvider : LocationProvider {
     var results: Map<LocationAccuracy, LocationResult> = emptyMap()
     val requested = mutableListOf<LocationAccuracy>()
+
+    val updates = LocationAccuracy.entries.associateWith { MutableSharedFlow<LocationResult>(extraBufferCapacity = 16) }
+    val updateRequests = mutableListOf<LocationAccuracy>()
+
+    /** How many update flows are being collected right now, i.e. how many "GPS sessions" are open. */
+    var activeCollectors = 0
+        private set
 
     override suspend fun currentLocation(accuracy: LocationAccuracy): LocationResult {
         requested += accuracy
         return results[accuracy] ?: LocationResult.Unavailable
     }
+
+    override fun locationUpdates(
+        accuracy: LocationAccuracy,
+        minDistanceMeters: Float,
+    ): Flow<LocationResult> =
+        updates
+            .getValue(accuracy)
+            .onStart {
+                updateRequests += accuracy
+                activeCollectors++
+            }.onCompletion { activeCollectors-- }
 }

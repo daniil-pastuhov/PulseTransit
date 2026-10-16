@@ -31,6 +31,10 @@ class SettingsRepositoryImpl(
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val _appMode = MutableStateFlow(getAppMode())
+
+    override fun getAppModeFlow(): Flow<AppMode?> = _appMode.asStateFlow()
+
     private val _fullScreenMode = MutableStateFlow(isFullScreenMode())
 
     override fun getFullScreenModeFlow(): Flow<Boolean> = _fullScreenMode.asStateFlow()
@@ -70,6 +74,29 @@ class SettingsRepositoryImpl(
     private val _filteredLines = MutableStateFlow(getFilteredLines())
 
     override fun getFilteredLinesFlow(): Flow<Set<String>> = _filteredLines.asStateFlow()
+
+    override fun getAppMode(): AppMode? {
+        val stored = prefs.getStringOrNull("app_mode")?.let { name -> AppMode.entries.firstOrNull { it.name == name } }
+        return stored
+            ?: if (getFavorites().isNotEmpty() || getDestinationStations().isNotEmpty()) AppMode.BOARD else null
+    }
+
+    override fun setAppMode(mode: AppMode) {
+        prefs.putString("app_mode", mode.name)
+        _appMode.value = mode
+    }
+
+    override fun getTripOptionsCount(): Int =
+        prefs
+            .getInt("trip_options_count", SettingsRepository.TRIP_OPTIONS_AUTO)
+            .coerceIn(SettingsRepository.TRIP_OPTIONS_AUTO, SettingsRepository.MAX_TRIP_OPTIONS)
+
+    override fun setTripOptionsCount(count: Int) {
+        prefs.putInt(
+            "trip_options_count",
+            count.coerceIn(SettingsRepository.TRIP_OPTIONS_AUTO, SettingsRepository.MAX_TRIP_OPTIONS),
+        )
+    }
 
     override fun getFavorites(): List<StopPlace> {
         val jsonStr = prefs.getStringOrNull("favorites") ?: return emptyList()

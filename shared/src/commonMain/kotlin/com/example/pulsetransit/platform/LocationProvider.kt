@@ -1,8 +1,24 @@
 package com.example.pulsetransit.platform
 
-/** One-shot device location, used to find nearby stops and to centre the weather forecast. */
+import kotlinx.coroutines.flow.Flow
+
+/** Device location: one-shot for Settings' "Detect location", and continuous for on-spot mode. */
 interface LocationProvider {
     suspend fun currentLocation(accuracy: LocationAccuracy): LocationResult
+
+    /**
+     * Follows the device while collected, and stops the platform's location updates when the
+     * collection ends (the flow is cold, like `motionEvents()`).
+     *
+     * Emits a [LocationResult.Fix] for the first location and then each time the device has moved
+     * at least [minDistanceMeters]. Emits [LocationResult.Unavailable] when the platform reports it
+     * cannot locate the device at this accuracy (fixes may still follow), and
+     * [LocationResult.PermissionDenied] when access is not granted, after which nothing more comes.
+     */
+    fun locationUpdates(
+        accuracy: LocationAccuracy,
+        minDistanceMeters: Float,
+    ): Flow<LocationResult>
 }
 
 enum class LocationAccuracy {

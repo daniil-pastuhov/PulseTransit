@@ -20,7 +20,7 @@ import kotlinx.serialization.json.Json
         CachedForecast::class,
         CachedForecastHour::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(CacheConverters::class)

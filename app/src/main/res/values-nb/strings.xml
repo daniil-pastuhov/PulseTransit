@@ -177,4 +177,30 @@
     <string name="attribution_entur">Data fra Entur</string>
     <string name="attribution_met">Værdata fra MET Norway</string>
     <string name="change_date_style">Endre datovisning</string>
+    <!-- Modes -->
+    <string name="mode_choose_title">Hvordan vil du bruke PulseTransit?</string>
+    <string name="mode_choose_hint">Du kan endre dette senere i Innstillinger.</string>
+    <string name="mode_on_spot">Der du er</string>
+    <string name="mode_on_spot_description">Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested.</string>
+    <string name="mode_board">Veggtavle</string>
+    <string name="mode_board_description">En skjerm som alltid står på for stoppestedene du velger, med innbrenningsvern og dimming.</string>
+    <string name="settings_mode">Modus</string>
+    <!-- On the spot -->
+    <string name="locating_precise">Finner posisjonen din…</string>
+    <string name="locating_approximate">Finner omtrentlig posisjon…</string>
+    <string name="location_unavailable">Fant ikke posisjonen din.</string>
+    <string name="location_denied">Posisjonstilgang trengs for å vise reiser og stoppesteder der du er.</string>
+    <string name="location_allow">Gi posisjonstilgang</string>
+    <string name="distance_meters">%1$d m</string>
+    <string name="distance_kilometers">%1$s km</string>
+    <string name="back_to_nearest">Tilbake til nærmeste</string>
+    <string name="choose_stop">Velg stoppested</string>
+    <string name="no_stops_nearby">Ingen stoppesteder innen 1 km.</string>
+    <string name="routes_add_destination">Legg til et reisemål for å se reiser herfra.</string>
+    <string name="add_destination">Legg til reisemål</string>
+    <string name="route_to">Til %1$s</string>
+    <string name="route_arrival">ank. %1$s</string>
+    <string name="trip_options_title">Reisealternativer</string>
+    <string name="trip_options_hint">Hvor mange avganger som vises per reisemål. Auto viser så mange som får plass.</string>
+    <string name="trip_options_auto">Auto</string>
 </resources>

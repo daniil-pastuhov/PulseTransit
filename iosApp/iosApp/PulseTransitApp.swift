@@ -15,7 +15,7 @@ struct PulseTransitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            StopBoardView()
+            RootView()
         }
     }
 }

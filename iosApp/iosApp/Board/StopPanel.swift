@@ -26,6 +26,8 @@ struct StopPanel: View {
     let onLoadMore: () -> Void
     /// The stops a departure's trip has ahead of it, for its details; empty when unavailable.
     let loadJourney: (Departure) async -> [JourneyStop]
+    /// Replaces the stop's name and locality, as on-spot mode does with its stop picker.
+    var header: AnyView?
 
     /// Whether the end-of-list sentinel is on screen; scrolling while it is asks for a page.
     @State private var isAtEnd = false
@@ -35,14 +37,18 @@ struct StopPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 0) {
-                Text(stop.name)
-                    .font(.title3.bold())
-                    .lineLimit(1)
-                if let locality = stop.locality {
-                    Text(locality)
-                        .font(.subheadline)
-                        .foregroundColor(Palette.textSecondary)
+            if let header {
+                header
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(stop.name)
+                        .font(.title3.bold())
+                        .lineLimit(1)
+                    if let locality = stop.locality {
+                        Text(locality)
+                            .font(.subheadline)
+                            .foregroundColor(Palette.textSecondary)
+                    }
                 }
             }
             // Same height either way, so the list below doesn't jump when a refresh starts.

@@ -44,14 +44,31 @@ interface DepartureCacheDao {
 
 @Dao
 interface TripCacheDao {
-    @Query("SELECT * FROM cached_trips WHERE routeKey = :routeKey AND expectedStartAtMillis >= :nowMillis")
+    /** The route's alternatives that have not left yet, in the order Entur returned them. */
+    @Query(
+        "SELECT * FROM cached_trips WHERE routeKey = :routeKey AND expectedStartAtMillis >= :nowMillis " +
+            "ORDER BY position ASC",
+    )
     suspend fun getUpcoming(
         routeKey: String,
         nowMillis: Long,
-    ): CachedTrip?
+    ): List<CachedTrip>
 
-    @Upsert
-    suspend fun upsert(trip: CachedTrip)
+    @Query("DELETE FROM cached_trips WHERE routeKey = :routeKey")
+    suspend fun clearRoute(routeKey: String)
+
+    @Insert
+    suspend fun insertAll(trips: List<CachedTrip>)
+
+    /** Replaces every alternative cached for [routeKey], so the cache mirrors the last good response. */
+    @Transaction
+    suspend fun replaceRoute(
+        routeKey: String,
+        trips: List<CachedTrip>,
+    ) {
+        clearRoute(routeKey)
+        insertAll(trips)
+    }
 
     @Query("DELETE FROM cached_trips WHERE expectedStartAtMillis < :cutoffMillis")
     suspend fun pruneStartedBefore(cutoffMillis: Long)

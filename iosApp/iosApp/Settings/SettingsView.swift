@@ -14,17 +14,28 @@ struct SettingsView: View {
         let state = model.state
         let viewModel = model.viewModel
         NavigationView {
+            // Only what applies to the chosen mode is shown: the wall board's screen care, power and
+            // stop settings mean nothing to a phone following its owner.
+            let isBoard = state.appMode == .board
             Form {
+                ModeSection(state: state, viewModel: viewModel)
                 ThemeSection(state: state, viewModel: viewModel)
                 RefreshSection(state: state, viewModel: viewModel)
-                ScreenCareSection(state: state, viewModel: viewModel)
-                PowerSection(state: state, viewModel: viewModel)
+                if isBoard {
+                    ScreenCareSection(state: state, viewModel: viewModel)
+                    PowerSection(state: state, viewModel: viewModel)
+                }
                 TransportSection(state: state, viewModel: viewModel)
                 FilteredLinesSection(state: state, viewModel: viewModel)
+                if !isBoard {
+                    TripOptionsSection(state: state, viewModel: viewModel)
+                }
                 DestinationsSection(state: state, viewModel: viewModel)
-                LocationSection(state: state, viewModel: viewModel)
-                AddStopsSection(state: state, viewModel: viewModel)
-                FavoritesSection(state: state, viewModel: viewModel)
+                if isBoard {
+                    LocationSection(state: state, viewModel: viewModel)
+                    AddStopsSection(state: state, viewModel: viewModel)
+                    FavoritesSection(state: state, viewModel: viewModel)
+                }
             }
             .navigationTitle(L("settings_title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -43,6 +54,44 @@ struct SettingsView: View {
             #if DEBUG
             if UserDefaults.standard.bool(forKey: "PTRequestLocation") { viewModel.requestLocationAndNearbyStops() }
             #endif
+        }
+    }
+}
+
+// MARK: - Mode
+
+private struct ModeSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+
+    var body: some View {
+        Section(L("settings_mode")) {
+            OptionPicker(
+                title: L("settings_mode"),
+                footnote: L(state.appMode == .board ? "mode_board_description" : "mode_on_spot_description"),
+                options: [(AppMode.onSpot, L("mode_on_spot")), (.board, L("mode_board"))],
+                selection: state.appMode,
+                onSelect: { viewModel.updateAppMode(mode: $0) }
+            )
+        }
+    }
+}
+
+private struct TripOptionsSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+
+    var body: some View {
+        Section(L("trip_options_title")) {
+            OptionPicker(
+                title: L("trip_options_title"),
+                footnote: L("trip_options_hint"),
+                options: (0 ... 5).map { count in
+                    (Int32(count), count == 0 ? L("trip_options_auto") : String(count))
+                },
+                selection: state.tripOptionsCount,
+                onSelect: { viewModel.updateTripOptionsCount(count: $0) }
+            )
         }
     }
 }

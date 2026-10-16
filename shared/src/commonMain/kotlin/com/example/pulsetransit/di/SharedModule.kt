@@ -8,6 +8,7 @@ import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.WeatherRepositoryImpl
 import com.example.pulsetransit.data.cache.CacheDatabase
 import com.example.pulsetransit.data.createHttpClient
+import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import io.ktor.client.engine.HttpClientEngineFactory
@@ -43,8 +44,10 @@ val sharedModule =
                 cameraMotionDetector = get(),
                 clockFormatter = get(),
                 connectivityMonitor = get(),
+                locationProvider = get(),
             )
         }
+        viewModel { ModeSelectionViewModel(settingsRepository = get()) }
         viewModel {
             SettingsViewModel(
                 enturRepository = get(),

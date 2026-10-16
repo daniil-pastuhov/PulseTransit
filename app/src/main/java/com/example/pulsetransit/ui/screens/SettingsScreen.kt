@@ -82,6 +82,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.R
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.PlaceKind
@@ -139,9 +140,33 @@ fun SettingsScreen(
             val containerSizePx = LocalWindowInfo.current.containerSize
             val containerWidthDp = with(LocalDensity.current) { containerSizePx.width.toDp() }
             val isCompact = containerWidthDp < 600.dp
+            // Only what applies to the chosen mode is shown: the wall board's screen care, power and
+            // stop settings mean nothing to a phone following its owner.
+            val isBoard = uiState.appMode == AppMode.BOARD
 
             // Section groups shared by the compact (phone) and wide (tablet) layouts
             val configSections: @Composable ColumnScope.() -> Unit = {
+                SettingsCard(title = stringResource(R.string.settings_mode)) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        listOf(AppMode.ON_SPOT to R.string.mode_on_spot, AppMode.BOARD to R.string.mode_board).forEach { (mode, labelId) ->
+                            FilterChip(
+                                selected = uiState.appMode == mode,
+                                onClick = { viewModel.updateAppMode(mode) },
+                                label = { Text(stringResource(labelId)) },
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        stringResource(if (isBoard) R.string.mode_board_description else R.string.mode_on_spot_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
                 // Section 1: Theme Settings
                 SettingsCard(title = stringResource(R.string.theme_settings)) {
                     Text(
@@ -251,115 +276,119 @@ fun SettingsScreen(
                     }
                 }
 
-                // Section 3: OLED Screen Care
-                SettingsCard(title = stringResource(R.string.oled_screen_care)) {
-                    Text(
-                        stringResource(R.string.pixel_shift_level),
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        BurnInProtectionLevel.entries.forEach { level ->
-                            val isSelected = uiState.burnInLevel == level
-                            val labelId =
-                                when (level) {
-                                    BurnInProtectionLevel.OFF -> R.string.burn_in_off
-                                    BurnInProtectionLevel.LOW -> R.string.burn_in_low
-                                    BurnInProtectionLevel.MEDIUM -> R.string.burn_in_medium
-                                    BurnInProtectionLevel.HIGH -> R.string.burn_in_high
-                                }
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { viewModel.updateBurnInLevel(level) },
-                                label = { Text(stringResource(labelId)) },
-                            )
-                        }
-                    }
-                }
-
-                // Section: Power & Refresh
-                SettingsCard(title = stringResource(R.string.power_refresh)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = uiState.cameraMotionWake, onCheckedChange = { viewModel.updateCameraMotionWake(it) })
-                        Text(stringResource(R.string.wake_camera))
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = uiState.dynamicRefresh, onCheckedChange = { viewModel.updateDynamicRefresh(it) })
-                        Text(stringResource(R.string.dynamic_refresh))
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = uiState.isFullScreenMode, onCheckedChange = { viewModel.updateFullScreenMode(it) })
-                        Text(stringResource(R.string.full_screen_mode))
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = uiState.isAlwaysOnEnabled, onCheckedChange = { viewModel.updateAlwaysOnMode(it) })
-                        Text(stringResource(R.string.always_on_display))
-                    }
-
-                    if (uiState.cameraMotionWake) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                if (isBoard) {
+                    // Section 3: OLED Screen Care
+                    SettingsCard(title = stringResource(R.string.oled_screen_care)) {
                         Text(
-                            stringResource(R.string.auto_dim_delay),
+                            stringResource(R.string.pixel_shift_level),
                             style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         )
-                        Text(
-                            stringResource(R.string.auto_dim_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                         Spacer(modifier = Modifier.height(8.dp))
-                        val dimIntervals =
-                            listOf(
-                                R.string.dim_15s to 15,
-                                R.string.dim_30s to 30,
-                                R.string.dim_1m to 60,
-                                R.string.dim_2m to 120,
-                                R.string.dim_never to 0,
-                            )
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            dimIntervals.forEach { (labelId, seconds) ->
-                                val isSelected = uiState.autoDimSeconds == seconds
+                            BurnInProtectionLevel.entries.forEach { level ->
+                                val isSelected = uiState.burnInLevel == level
+                                val labelId =
+                                    when (level) {
+                                        BurnInProtectionLevel.OFF -> R.string.burn_in_off
+                                        BurnInProtectionLevel.LOW -> R.string.burn_in_low
+                                        BurnInProtectionLevel.MEDIUM -> R.string.burn_in_medium
+                                        BurnInProtectionLevel.HIGH -> R.string.burn_in_high
+                                    }
                                 FilterChip(
                                     selected = isSelected,
-                                    onClick = { viewModel.updateAutoDimSeconds(seconds) },
+                                    onClick = { viewModel.updateBurnInLevel(level) },
                                     label = { Text(stringResource(labelId)) },
                                 )
                             }
                         }
+                    }
+                }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            stringResource(R.string.camera_sensitivity),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                        )
-                        Text(
-                            stringResource(R.string.camera_sensitivity_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            CameraSensitivity.entries.forEach { sensitivity ->
-                                val labelId =
-                                    when (sensitivity) {
-                                        CameraSensitivity.LOW -> R.string.sensitivity_low
-                                        CameraSensitivity.MEDIUM -> R.string.sensitivity_medium
-                                        CameraSensitivity.HIGH -> R.string.sensitivity_high
-                                    }
-                                FilterChip(
-                                    selected = uiState.cameraSensitivity == sensitivity,
-                                    onClick = { viewModel.updateCameraSensitivity(sensitivity) },
-                                    label = { Text(stringResource(labelId)) },
+                if (isBoard) {
+                    // Section: Power & Refresh
+                    SettingsCard(title = stringResource(R.string.power_refresh)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.cameraMotionWake, onCheckedChange = { viewModel.updateCameraMotionWake(it) })
+                            Text(stringResource(R.string.wake_camera))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.dynamicRefresh, onCheckedChange = { viewModel.updateDynamicRefresh(it) })
+                            Text(stringResource(R.string.dynamic_refresh))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.isFullScreenMode, onCheckedChange = { viewModel.updateFullScreenMode(it) })
+                            Text(stringResource(R.string.full_screen_mode))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = uiState.isAlwaysOnEnabled, onCheckedChange = { viewModel.updateAlwaysOnMode(it) })
+                            Text(stringResource(R.string.always_on_display))
+                        }
+
+                        if (uiState.cameraMotionWake) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                stringResource(R.string.auto_dim_delay),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                            )
+                            Text(
+                                stringResource(R.string.auto_dim_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            val dimIntervals =
+                                listOf(
+                                    R.string.dim_15s to 15,
+                                    R.string.dim_30s to 30,
+                                    R.string.dim_1m to 60,
+                                    R.string.dim_2m to 120,
+                                    R.string.dim_never to 0,
                                 )
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                dimIntervals.forEach { (labelId, seconds) ->
+                                    val isSelected = uiState.autoDimSeconds == seconds
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = { viewModel.updateAutoDimSeconds(seconds) },
+                                        label = { Text(stringResource(labelId)) },
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                stringResource(R.string.camera_sensitivity),
+                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                            )
+                            Text(
+                                stringResource(R.string.camera_sensitivity_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                CameraSensitivity.entries.forEach { sensitivity ->
+                                    val labelId =
+                                        when (sensitivity) {
+                                            CameraSensitivity.LOW -> R.string.sensitivity_low
+                                            CameraSensitivity.MEDIUM -> R.string.sensitivity_medium
+                                            CameraSensitivity.HIGH -> R.string.sensitivity_high
+                                        }
+                                    FilterChip(
+                                        selected = uiState.cameraSensitivity == sensitivity,
+                                        onClick = { viewModel.updateCameraSensitivity(sensitivity) },
+                                        label = { Text(stringResource(labelId)) },
+                                    )
+                                }
                             }
                         }
                     }
@@ -411,6 +440,37 @@ fun SettingsScreen(
                                                 modifier = Modifier.size(18.dp),
                                             )
                                         }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (!isBoard) {
+                    SettingsCard(title = stringResource(R.string.trip_options_title)) {
+                        Text(
+                            stringResource(R.string.trip_options_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            for (count in SettingsRepository.TRIP_OPTIONS_AUTO..SettingsRepository.MAX_TRIP_OPTIONS) {
+                                FilterChip(
+                                    selected = uiState.tripOptionsCount == count,
+                                    onClick = { viewModel.updateTripOptionsCount(count) },
+                                    label = {
+                                        Text(
+                                            if (count == SettingsRepository.TRIP_OPTIONS_AUTO) {
+                                                stringResource(R.string.trip_options_auto)
+                                            } else {
+                                                count.toString()
+                                            },
+                                        )
                                     },
                                 )
                             }
@@ -543,72 +603,74 @@ fun SettingsScreen(
                     }
                 }
 
-                // Section 4: Location Settings
-                SettingsCard(title = stringResource(R.string.location_config)) {
-                    Text(
-                        stringResource(R.string.current_coords),
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    val latVal = uiState.latitude?.toString() ?: stringResource(R.string.not_set)
-                    val lonVal = uiState.longitude?.toString() ?: stringResource(R.string.not_set)
-                    Text("${stringResource(R.string.latitude_val, latVal)}, ${stringResource(R.string.longitude_val, lonVal)}")
-
-                    Text(
-                        locationStatusText(uiState.locationStatus),
-                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            locationPermissionLauncher.launch(
-                                arrayOf(
-                                    android.Manifest.permission.ACCESS_FINE_LOCATION,
-                                    android.Manifest.permission.ACCESS_COARSE_LOCATION,
-                                ),
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.detect_location))
-                    }
-
-                    if (uiState.showManualCoordinatesPrompt) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                if (isBoard) {
+                    // Section 4: Location Settings
+                    SettingsCard(title = stringResource(R.string.location_config)) {
                         Text(
-                            stringResource(R.string.enter_manual),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                            stringResource(R.string.current_coords),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            OutlinedTextField(
-                                value = manualLat,
-                                onValueChange = { manualLat = it },
-                                label = { Text(stringResource(R.string.latitude_label)) },
-                                modifier = Modifier.weight(1f),
-                            )
-                            OutlinedTextField(
-                                value = manualLon,
-                                onValueChange = { manualLon = it },
-                                label = { Text(stringResource(R.string.longitude_label)) },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val latVal = uiState.latitude?.toString() ?: stringResource(R.string.not_set)
+                        val lonVal = uiState.longitude?.toString() ?: stringResource(R.string.not_set)
+                        Text("${stringResource(R.string.latitude_val, latVal)}, ${stringResource(R.string.longitude_val, lonVal)}")
+
+                        Text(
+                            locationStatusText(uiState.locationStatus),
+                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Button(
                             onClick = {
-                                viewModel.setManualCoordinates(manualLat, manualLon)
+                                locationPermissionLauncher.launch(
+                                    arrayOf(
+                                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                        android.Manifest.permission.ACCESS_COARSE_LOCATION,
+                                    ),
+                                )
                             },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(stringResource(R.string.save_coords))
+                            Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.detect_location))
+                        }
+
+                        if (uiState.showManualCoordinatesPrompt) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                stringResource(R.string.enter_manual),
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                OutlinedTextField(
+                                    value = manualLat,
+                                    onValueChange = { manualLat = it },
+                                    label = { Text(stringResource(R.string.latitude_label)) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                OutlinedTextField(
+                                    value = manualLon,
+                                    onValueChange = { manualLon = it },
+                                    label = { Text(stringResource(R.string.longitude_label)) },
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    viewModel.setManualCoordinates(manualLat, manualLon)
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(stringResource(R.string.save_coords))
+                            }
                         }
                     }
                 }
@@ -702,8 +764,8 @@ fun SettingsScreen(
                 }
             }
 
-            if (isCompact) {
-                // Phone: single scrollable column
+            if (isCompact || !isBoard) {
+                // Phone, or on-spot mode with no stop sections: single scrollable column
                 Column(
                     modifier =
                         Modifier
@@ -714,7 +776,7 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
                     configSections()
-                    stopsSections()
+                    if (isBoard) stopsSections()
                 }
             } else {
                 // Tablet / wide: two columns side by side

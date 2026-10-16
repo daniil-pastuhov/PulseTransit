@@ -215,7 +215,7 @@ class EnturRepositoryImplTest {
             val destination = StopPlace(id = "NSR:StopPlace:2", name = "Lillestrøm")
             // The key a previous lookup from (59.9149, 10.7322) stored. It must not depend on the
             // device locale, which on a Norwegian phone would otherwise write "59,9149".
-            tripCache.rows["59.9149,10.7322>NSR:StopPlace:2"] =
+            tripCache.rows +=
                 CachedTrip(
                     routeKey = "59.9149,10.7322>NSR:StopPlace:2",
                     destinationName = "Lillestrøm",
@@ -230,9 +230,9 @@ class EnturRepositoryImplTest {
             val repo = EnturRepositoryImpl(client(MockEngine { throw IOException("offline") }), departureCache, tripCache)
 
             // A few metres away: the same key after rounding, so the same cached trip.
-            val result = repo.getFastestTrip(lat = 59.914_91, lon = 10.732_24, to = destination)
+            val result = repo.getTripOptions(lat = 59.914_91, lon = 10.732_24, to = destination, count = 1)
 
-            assertEquals("L1", result.data?.lineName)
+            assertEquals(listOf("L1"), result.data.map { it.lineName })
             assertTrue(result.isFromCache)
         }
 
@@ -373,10 +373,10 @@ class EnturRepositoryImplTest {
             val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
             val to = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
 
-            val byLocation = repo.getFastestTrip(lat = 59.91, lon = 10.75, to = to)
+            val byLocation = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 3)
             val byOrigins = repo.getFastestTrip(fromIds = listOf(stopId), to = to)
 
-            assertNull(byLocation.data)
+            assertTrue(byLocation.data.isEmpty())
             assertTrue(byLocation.failed)
             assertNull(byOrigins.data)
             assertTrue(byOrigins.failed)
@@ -422,13 +422,52 @@ class EnturRepositoryImplTest {
                 )
             val to = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
 
-            val byLocation = repo.getFastestTrip(lat = 59.91, lon = 10.75, to = to)
+            val byLocation = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 3)
             val byOrigins = repo.getFastestTrip(fromIds = listOf(stopId), to = to)
 
-            assertNull(byLocation.data)
+            assertTrue(byLocation.data.isEmpty())
             assertFalse(byLocation.failed)
             assertNull(byOrigins.data)
             assertFalse(byOrigins.failed)
+        }
+
+    @Test
+    fun `route alternatives keep Entur's order live and from the cache`() =
+        runTest {
+            val now = nowMillis()
+
+            fun pattern(
+                line: String,
+                startMinutes: Int,
+            ) = """{"expectedStartTime":"${isoOslo(now + startMinutes * minute)}","duration":1200,
+                   "legs":[{"mode":"bus","duration":1200,"line":{"publicCode":"$line","name":"$line"},
+                   "fromPlace":{"name":"Oslo S"}}]}"""
+            val body =
+                """{"data":{"trip":{"tripPatterns":[${pattern("31", 5)},${pattern("2", 3)},${pattern("20", 9)}]}}}"""
+            val bodies = mutableListOf<String>()
+            var online = true
+            val engine =
+                MockEngine { request ->
+                    if (!online) throw IOException("offline")
+                    bodies += (request.body as TextContent).text
+                    respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+
+            val live = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 3)
+            online = false
+            val cached = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 3)
+
+            assertEquals("3", variables(bodies.first())["count"].toString())
+            assertEquals(listOf("31", "2", "20"), live.data.map { it.lineName })
+            assertFalse(live.isFromCache)
+            assertEquals(listOf("31", "2", "20"), cached.data.map { it.lineName })
+            assertTrue(cached.isFromCache)
+
+            // Entur may return more patterns than asked for; only the first `count` are kept.
+            online = true
+            assertEquals(listOf("31", "2"), repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 2).data.map { it.lineName })
         }
 
     @Test

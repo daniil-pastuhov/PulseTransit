@@ -37,6 +37,7 @@ abstract class BoardTestBase {
     protected val camera = FakeCameraMotionDetector()
     protected val clockFormatter = FakeClockFormatter()
     protected val connectivity = FakeConnectivityMonitor()
+    protected val location = FakeLocationProvider()
 
     protected val minute = 60 * 1000L
     protected val oslo = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S", locality = "Oslo")
@@ -70,7 +71,7 @@ abstract class BoardTestBase {
         }
 
     protected fun TestScope.viewModel(clock: Clock = Clock.System): StopBoardViewModel {
-        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter, connectivity, clock)
+        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter, connectivity, location, clock)
         created += vm
         runCurrent() // let init's loadSettings / first refresh / sensor wiring run
         return vm

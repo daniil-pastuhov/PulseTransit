@@ -195,3 +195,14 @@ enum class CameraSensitivity(
     MEDIUM(5000),
     HIGH(2000),
 }
+
+/**
+ * What the app is for. Chosen on first launch and changeable in Settings.
+ */
+enum class AppMode {
+    /** Follows the device: nearest stop, and route options from where the user is standing. */
+    ON_SPOT,
+
+    /** The always-on wall board: favourite stops and routes from a saved location. */
+    BOARD,
+}

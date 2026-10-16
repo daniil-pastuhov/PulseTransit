@@ -23,6 +23,7 @@ abstract class CacheDatabaseContract {
     private val db by lazy { createDatabase() }
     private val departures by lazy { db.departureCacheDao() }
     private val forecasts by lazy { db.forecastCacheDao() }
+    private val trips by lazy { db.tripCacheDao() }
 
     private val stopId = "NSR:StopPlace:59872"
     private val now = Clock.System.now().toEpochMilliseconds()
@@ -53,6 +54,54 @@ abstract class CacheDatabaseContract {
         quayId = "NSR:Quay:1",
         fetchedAt = now,
     )
+
+    private fun trip(
+        routeKey: String,
+        position: Int,
+        startAtMillis: Long,
+        line: String = "L$position",
+    ) = CachedTrip(
+        routeKey = routeKey,
+        position = position,
+        destinationName = "Majorstuen",
+        expectedStartTime = "iso-$position",
+        expectedStartAtMillis = startAtMillis,
+        lineName = line,
+        durationMinutes = 20,
+        originName = "Oslo S",
+        legs = emptyList(),
+        fetchedAt = now,
+    )
+
+    @Test
+    fun tripGetUpcoming_ordersByPositionAndDropsStartedTrips() =
+        runTest {
+            val key = "59.9100,10.7500>NSR:StopPlace:3"
+            trips.replaceRoute(
+                key,
+                listOf(
+                    trip(key, 0, now + 9 * minute),
+                    trip(key, 1, now - minute),
+                    trip(key, 2, now + 3 * minute),
+                ),
+            )
+
+            assertEquals(listOf("L0", "L2"), trips.getUpcoming(key, now).map { it.lineName })
+        }
+
+    @Test
+    fun tripReplaceRoute_replacesOnlyThatRoute() =
+        runTest {
+            val key = "a>NSR:StopPlace:3"
+            val other = "b>NSR:StopPlace:3"
+            trips.replaceRoute(key, listOf(trip(key, 0, now + minute), trip(key, 1, now + 2 * minute)))
+            trips.replaceRoute(other, listOf(trip(other, 0, now + minute)))
+
+            trips.replaceRoute(key, listOf(trip(key, 0, now + 5 * minute, line = "NEW")))
+
+            assertEquals(listOf("NEW"), trips.getUpcoming(key, now).map { it.lineName })
+            assertEquals(1, trips.getUpcoming(other, now).size)
+        }
 
     @Test
     fun getUpcoming_dropsDeparturesAlreadyDue() =

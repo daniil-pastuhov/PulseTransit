@@ -87,6 +87,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.example.pulsetransit.R
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.JourneyStop
@@ -148,11 +149,18 @@ fun MainScreen(
 
     // The camera runs only while the board is visible: it is released when the app goes to the
     // background or the board leaves the screen, and reopened when it comes back.
-    LifecycleStartEffect(Unit) {
+    // Keyed on the mode so a switch made in Settings starts or stops the camera here too.
+    LifecycleStartEffect(uiState.mode) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             viewModel.startCameraMotion()
         }
         onStopOrDispose { viewModel.stopCameraMotion() }
+    }
+
+    // On-spot mode follows the device only while the board is showing, like the camera.
+    LifecycleStartEffect(Unit) {
+        viewModel.startLocationTracking()
+        onStopOrDispose { viewModel.stopLocationTracking() }
     }
 
     val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
@@ -245,95 +253,105 @@ fun MainScreen(
                     }
                 }
 
-                // Fastest route banners (one per destination station set in Settings), each
-                // appearing as soon as its own route arrives. A destination with no route is
-                // left out once it has loaded. They share one background colour, so without a
-                // rule between them consecutive banners read as a single block.
-                uiState.destinationStations
-                    .filter {
-                        it.id in uiState.fastestTrips ||
-                            it.id in uiState.loadingTripDestinationIds ||
-                            it.id in uiState.failedTripDestinationIds
-                    }.forEachIndexed { index, destination ->
-                        key(destination.id) {
-                            if (index > 0) {
-                                HorizontalDivider(
-                                    thickness = 1.dp,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
-                                )
-                            }
-                            val trip = uiState.fastestTrips[destination.id]
-                            AnimatedContent(
-                                targetState = trip,
-                                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                label = "fastestTrip",
-                                contentKey = { it == null },
-                            ) { loaded ->
-                                if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
-                                    FastestTripUnavailable(
-                                        destinationName = destination.name,
-                                        isOnline = uiState.isOnline,
-                                        isRetrying = destination.id in uiState.loadingTripDestinationIds,
+                if (uiState.mode == AppMode.ON_SPOT) {
+                    OnSpotContent(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        isLandscape = isLandscape,
+                        onNavigateToSettings = onNavigateToSettings,
+                        modifier = Modifier.fillMaxSize().weight(1f),
+                    )
+                } else {
+                    // Fastest route banners (one per destination station set in Settings), each
+                    // appearing as soon as its own route arrives. A destination with no route is
+                    // left out once it has loaded. They share one background colour, so without a
+                    // rule between them consecutive banners read as a single block.
+                    uiState.destinationStations
+                        .filter {
+                            it.id in uiState.fastestTrips ||
+                                it.id in uiState.loadingTripDestinationIds ||
+                                it.id in uiState.failedTripDestinationIds
+                        }.forEachIndexed { index, destination ->
+                            key(destination.id) {
+                                if (index > 0) {
+                                    HorizontalDivider(
+                                        thickness = 1.dp,
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
                                     )
-                                } else if (loaded == null) {
-                                    FastestTripPlaceholder(destinationName = destination.name)
-                                } else {
-                                    FastestTripBanner(
-                                        trip = loaded,
-                                        isRefreshing = destination.id in uiState.loadingTripDestinationIds,
-                                    )
+                                }
+                                val trip = uiState.fastestTrips[destination.id]?.firstOrNull()
+                                AnimatedContent(
+                                    targetState = trip,
+                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                    label = "fastestTrip",
+                                    contentKey = { it == null },
+                                ) { loaded ->
+                                    if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
+                                        FastestTripUnavailable(
+                                            destinationName = destination.name,
+                                            isOnline = uiState.isOnline,
+                                            isRetrying = destination.id in uiState.loadingTripDestinationIds,
+                                        )
+                                    } else if (loaded == null) {
+                                        FastestTripPlaceholder(destinationName = destination.name)
+                                    } else {
+                                        FastestTripBanner(
+                                            trip = loaded,
+                                            isRefreshing = destination.id in uiState.loadingTripDestinationIds,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                // Body Area (Equal screen division between favorite stops)
-                if (uiState.favorites.isEmpty()) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .weight(1f),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    // Body Area (Equal screen division between favorite stops)
+                    if (uiState.favorites.isEmpty()) {
+                        Box(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .weight(1f),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = stringResource(R.string.no_stops_configured),
-                                style = MaterialTheme.typography.headlineSmall,
-                            )
-                            Button(onClick = onNavigateToSettings) {
-                                Text(stringResource(R.string.open_settings_to_add))
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(16.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_stops_configured),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                )
+                                Button(onClick = onNavigateToSettings) {
+                                    Text(stringResource(R.string.open_settings_to_add))
+                                }
                             }
                         }
+                    } else {
+                        ReorderableFavoriteList(
+                            favorites = uiState.favorites,
+                            departures = uiState.departures,
+                            showDelays = uiState.showDelays,
+                            showMessages = uiState.showMessages,
+                            loadingStopIds = uiState.loadingStopIds,
+                            isLandscape = isLandscape,
+                            onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
+                            onFilterOut = { line -> viewModel.filterOutLine(line) },
+                            extendedStopIds = uiState.extendedStopIds,
+                            failedStopIds = uiState.failedStopIds,
+                            isOnline = uiState.isOnline,
+                            onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
+                            onRetry = { viewModel.refreshData() },
+                            canLoadMoreStopIds = uiState.canLoadMoreStopIds,
+                            loadingMoreStopIds = uiState.loadingMoreStopIds,
+                            onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
+                            loadJourney = viewModel::journeyStopsAhead,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .weight(1f)
+                                    .padding(6.dp),
+                        )
                     }
-                } else {
-                    ReorderableFavoriteList(
-                        favorites = uiState.favorites,
-                        departures = uiState.departures,
-                        showDelays = uiState.showDelays,
-                        showMessages = uiState.showMessages,
-                        loadingStopIds = uiState.loadingStopIds,
-                        isLandscape = isLandscape,
-                        onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
-                        onFilterOut = { line -> viewModel.filterOutLine(line) },
-                        extendedStopIds = uiState.extendedStopIds,
-                        failedStopIds = uiState.failedStopIds,
-                        isOnline = uiState.isOnline,
-                        onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
-                        onRetry = { viewModel.refreshData() },
-                        canLoadMoreStopIds = uiState.canLoadMoreStopIds,
-                        loadingMoreStopIds = uiState.loadingMoreStopIds,
-                        onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
-                        loadJourney = viewModel::journeyStopsAhead,
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .weight(1f)
-                                .padding(6.dp),
-                    )
                 }
 
                 // Subtle Last Updated and Attribution at the bottom
@@ -458,25 +476,8 @@ fun FastestTripBanner(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
-                val routeText =
-                    if (trip.legs.isNotEmpty()) {
-                        trip.legs
-                            .mapNotNull { leg ->
-                                when {
-                                    leg.lineName != null -> {
-                                        val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
-                                        leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
-                                    }
-                                    leg.durationMinutes > 0 ->
-                                        stringResource(R.string.leg_walk, leg.durationMinutes)
-                                    else -> null // skip 0-minute foot legs (quay transfers)
-                                }
-                            }.joinToString("  →  ")
-                    } else {
-                        stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
-                    }
                 Text(
-                    text = routeText,
+                    text = tripRouteText(trip),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                     maxLines = if (expanded) Int.MAX_VALUE else 1,
@@ -511,6 +512,26 @@ fun FastestTripBanner(
         }
     }
 }
+
+/** A trip's legs as "🚇 2 from Oslo S  →  🚶 4 min", or its first line and origin if Entur sent no legs. */
+@Composable
+internal fun tripRouteText(trip: TripInfo): String =
+    if (trip.legs.isNotEmpty()) {
+        trip.legs
+            .mapNotNull { leg ->
+                when {
+                    leg.lineName != null -> {
+                        val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
+                        leg.fromName?.let { "$prefix ${stringResource(R.string.leg_from, it)}" } ?: prefix
+                    }
+                    leg.durationMinutes > 0 ->
+                        stringResource(R.string.leg_walk, leg.durationMinutes)
+                    else -> null // skip 0-minute foot legs (quay transfers)
+                }
+            }.joinToString("  →  ")
+    } else {
+        stringResource(R.string.fastest_route_info, trip.lineName, trip.originName)
+    }
 
 // Size of the "+1" next-day marker on an arrival time, as on the board's departure times.
 private const val ARRIVAL_DAY_OFFSET_FONT_SCALE = 0.6f
