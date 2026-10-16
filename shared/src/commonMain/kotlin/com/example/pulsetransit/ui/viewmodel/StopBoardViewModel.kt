@@ -20,6 +20,7 @@ import com.example.pulsetransit.platform.ConnectivityMonitor
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,6 +64,12 @@ class StopBoardViewModel(
         // While anything failed to load, try again this soon rather than waiting out the
         // (possibly stretched) normal interval, so a board recovers quickly once Entur answers.
         const val FAILURE_RETRY_SECONDS = 15
+
+        // A stop's board starts with one page of departures and grows by a page each time the
+        // user scrolls to its end, up to the cap, so an endless scroll can't grow the request
+        // (refetched on every refresh) without bound.
+        const val DEPARTURE_PAGE_SIZE = 15
+        const val MAX_DEPARTURES = 150
     }
 
     data class UiState(
@@ -113,6 +120,17 @@ class StopBoardViewModel(
          */
         val extendedStopIds: Set<String> = emptySet(),
         /**
+         * Stops whose board can grow when scrolled to its end: the last fetch was live and either
+         * filled its limit or can still widen to the extended window. Cached or failed boards
+         * can't, since there is nothing more to show until Entur answers again.
+         */
+        val canLoadMoreStopIds: Set<String> = emptySet(),
+        /**
+         * Stops fetching their next page. Kept apart from [loadingStopIds] on purpose: growing one
+         * board is not a board refresh, so it shows only at the end of that stop's list.
+         */
+        val loadingMoreStopIds: Set<String> = emptySet(),
+        /**
          * Favorites whose last fetch failed with nothing cached to fall back on, so their empty
          * board means "unknown", not "no departures". A failure that was covered by the cache
          * shows up as [staleSinceMillis] instead.
@@ -144,8 +162,17 @@ class StopBoardViewModel(
     /** When each stop's departures were fetched if they came from the cache; null when live. */
     private var stopFetchedAt: Map<String, Long?> = emptyMap()
 
+    /** How many departures each stop asks for; absent means one page. Kept for the session. */
+    private var departureLimits: Map<String, Int> = emptyMap()
+
+    /** Stops whose last live fetch returned fewer departures than asked: the window ran out. */
+    private var exhaustedStopIds: Set<String> = emptySet()
+
     // A new refresh supersedes one still in flight instead of racing it to the UI state.
     private var departuresJob: Job? = null
+
+    /** Load-more fetches in flight, one per stop; a full refresh supersedes them all. */
+    private var loadMoreJobs: Map<String, Job> = emptyMap()
     private var tripsJob: Job? = null
 
     init {
@@ -443,6 +470,8 @@ class StopBoardViewModel(
      */
     fun refreshDepartures() {
         departuresJob?.cancel()
+        loadMoreJobs.values.forEach { it.cancel() }
+        loadMoreJobs = emptyMap()
         val favs = _uiState.value.favorites
         if (favs.isEmpty()) {
             rawDepartures = emptyMap()
@@ -451,6 +480,7 @@ class StopBoardViewModel(
                 it.copy(
                     departures = emptyList(),
                     loadingStopIds = emptySet(),
+                    loadingMoreStopIds = emptySet(),
                     failedStopIds = emptySet(),
                     lastUpdated = "No favorites",
                 )
@@ -462,52 +492,107 @@ class StopBoardViewModel(
         // Drop stops that are no longer favorites; the rest keep showing until replaced.
         rawDepartures = rawDepartures.filterKeys { it in favIds }
         stopFetchedAt = stopFetchedAt.filterKeys { it in favIds }
+        departureLimits = departureLimits.filterKeys { it in favIds }
+        exhaustedStopIds = exhaustedStopIds.intersect(favIds)
         _uiState.update {
-            it.copy(loadingStopIds = favIds, failedStopIds = it.failedStopIds.intersect(favIds))
+            it.copy(
+                loadingStopIds = favIds,
+                loadingMoreStopIds = emptySet(),
+                failedStopIds = it.failedStopIds.intersect(favIds),
+                canLoadMoreStopIds = it.canLoadMoreStopIds.intersect(favIds),
+            )
         }
         updateGroupedDepartures()
 
         departuresJob =
             viewModelScope.launch {
                 for (stop in favs) {
-                    launch {
-                        val quayIds = settingsRepository.getSelectedQuays(stop.id)
-                        val timeRange =
-                            if (stop.id in _uiState.value.extendedStopIds) {
-                                EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS
-                            } else {
-                                EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS
-                            }
-                        val result =
-                            enturRepository.getDepartures(
-                                stop.id,
-                                limit = 15,
-                                quayIds = quayIds,
-                                timeRangeSeconds = timeRange,
-                            )
-                        // The repository swallows exceptions, cancellation included, so a
-                        // superseded request still returns here; don't let it overwrite the
-                        // newer refresh.
-                        ensureActive()
-                        rawDepartures = rawDepartures + (stop.id to result.data.filter { it.line !in _uiState.value.filteredLines })
-                        stopFetchedAt = stopFetchedAt + (stop.id to result.fetchedAtMillis)
-                        _uiState.update {
-                            it.copy(
-                                loadingStopIds = it.loadingStopIds - stop.id,
-                                failedStopIds =
-                                    if (result.failed) it.failedStopIds + stop.id else it.failedStopIds - stop.id,
-                            )
-                        }
-                        updateGroupedDepartures()
-                        _uiState.update { it.withFreshness(stopFetchedAt, clock.now().toEpochMilliseconds(), clockFormatter) }
-                    }
+                    launch { fetchStopDepartures(stop) }
                 }
             }
+    }
+
+    /** Fetches one stop's departures at its current limit and window, and publishes them. */
+    private suspend fun fetchStopDepartures(stop: StopPlace) {
+        val stopId = stop.id
+        val quayIds = settingsRepository.getSelectedQuays(stopId)
+        val timeRange =
+            if (stopId in _uiState.value.extendedStopIds) {
+                EnturRepository.EXTENDED_DEPARTURE_WINDOW_SECONDS
+            } else {
+                EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS
+            }
+        val limit = departureLimits[stopId] ?: DEPARTURE_PAGE_SIZE
+        val result =
+            enturRepository.getDepartures(
+                stopId,
+                limit = limit,
+                quayIds = quayIds,
+                timeRangeSeconds = timeRange,
+            )
+        // The repository swallows exceptions, cancellation included, so a superseded request
+        // still returns here; don't let it overwrite the newer one.
+        currentCoroutineContext().ensureActive()
+        publishStopDepartures(stopId, limit, result)
+        updateGroupedDepartures()
+        _uiState.update { it.withFreshness(stopFetchedAt, clock.now().toEpochMilliseconds(), clockFormatter) }
+    }
+
+    /** Records one stop's answer: its departures, freshness, failure and whether it can grow. */
+    private fun publishStopDepartures(
+        stopId: String,
+        limit: Int,
+        result: Sourced<List<Departure>>,
+    ) {
+        rawDepartures = rawDepartures + (stopId to result.data.filter { it.line !in _uiState.value.filteredLines })
+        stopFetchedAt = stopFetchedAt + (stopId to result.fetchedAtMillis)
+        val isLive = !result.failed && !result.isFromCache
+        // Counted before the line filter, which is ours, not the window's.
+        val exhausted = result.data.size < limit
+        if (isLive) {
+            exhaustedStopIds = if (exhausted) exhaustedStopIds + stopId else exhaustedStopIds - stopId
+        }
+        val canLoadMore =
+            isLive &&
+                limit < MAX_DEPARTURES &&
+                (!exhausted || stopId !in _uiState.value.extendedStopIds)
+        _uiState.update {
+            it.copy(
+                loadingStopIds = it.loadingStopIds - stopId,
+                loadingMoreStopIds = it.loadingMoreStopIds - stopId,
+                failedStopIds =
+                    if (result.failed) it.failedStopIds + stopId else it.failedStopIds - stopId,
+                canLoadMoreStopIds =
+                    if (canLoadMore) it.canLoadMoreStopIds + stopId else it.canLoadMoreStopIds - stopId,
+            )
+        }
     }
 
     fun searchFurtherAhead(stopId: String) {
         _uiState.update { it.copy(extendedStopIds = it.extendedStopIds + stopId) }
         refreshDepartures()
+    }
+
+    /**
+     * Shows more of [stopId]'s departures, for a board scrolled to its end. Asks for another page,
+     * and once the default window has run out, widens it to the extended one instead, so a quiet
+     * stop keeps scrolling into the next days. Only that stop is fetched; the rest of the board is
+     * left alone. Ignored while that stop is still loading, since the list stays at its end until
+     * the answer arrives and would ask again on every scroll frame.
+     */
+    fun loadMoreDepartures(stopId: String) {
+        val state = _uiState.value
+        val stop = state.favorites.firstOrNull { it.id == stopId } ?: return
+        if (stopId !in state.canLoadMoreStopIds || stopId in state.loadingStopIds || stopId in state.loadingMoreStopIds) return
+        val limit = departureLimits[stopId] ?: DEPARTURE_PAGE_SIZE
+        departureLimits = departureLimits + (stopId to minOf(limit + DEPARTURE_PAGE_SIZE, MAX_DEPARTURES))
+        _uiState.update {
+            it.copy(
+                loadingMoreStopIds = it.loadingMoreStopIds + stopId,
+                extendedStopIds = if (stopId in exhaustedStopIds) it.extendedStopIds + stopId else it.extendedStopIds,
+            )
+        }
+        loadMoreJobs = loadMoreJobs + (stopId to viewModelScope.launch { fetchStopDepartures(stop) })
     }
 
     private fun updateGroupedDepartures() {
@@ -558,7 +643,7 @@ class StopBoardViewModel(
                                 }
                             }
                         val trip = result.data
-                        ensureActive() // see refreshDepartures
+                        ensureActive() // see fetchStopDepartures
                         _uiState.update {
                             it.copy(
                                 fastestTrips =

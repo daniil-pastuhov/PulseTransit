@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -29,11 +31,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -63,6 +67,7 @@ import com.example.pulsetransit.theme.ColorFerry
 import com.example.pulsetransit.theme.ColorMetro
 import com.example.pulsetransit.theme.ColorTrain
 import com.example.pulsetransit.theme.ColorTram
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -86,11 +91,16 @@ private const val MILLIS_PER_DAY = 86_400_000.0
 // Size of the "+1" next-day marker relative to the time it follows.
 private const val DAY_OFFSET_FONT_SCALE = 0.6f
 
+/** Rows from the end of the list at which the next page is requested, so it arrives before the end. */
+private const val LOAD_MORE_THRESHOLD = 3
+
 /**
  * One favorite stop's departures. [departureGroups] is null until the stop's first load finishes,
  * which shows a blurred placeholder; [isLoading] on a stop that already has data shows a thin
  * progress bar instead, so a refresh never blanks a board that is being read. [isFailed] means the
  * empty board is unknown rather than empty, and shows why with a retry instead of "no departures".
+ * With [canLoadMore], scrolling near the end of the list calls [onLoadMore] for the next page;
+ * [isLoadingMore] is that page in flight, shown as a spinner at the end of the list only.
  */
 @Composable
 fun StopBoardPanel(
@@ -103,9 +113,12 @@ fun StopBoardPanel(
     isExtended: Boolean = false,
     isFailed: Boolean = false,
     isOnline: Boolean = true,
+    canLoadMore: Boolean = false,
+    isLoadingMore: Boolean = false,
     onFilterOut: (String) -> Unit = {},
     onSearchFurtherAhead: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onLoadMore: () -> Unit = {},
 ) {
     Card(
         modifier =
@@ -219,7 +232,24 @@ fun StopBoardPanel(
                         }
                     }
                 } else {
+                    val listState = rememberLazyListState()
+                    // Only the user's scrolling asks for a page, or a list too short to fill the panel.
+                    // A board left at its end on the wall must not grow on every auto-refresh,
+                    // which restarts this effect.
+                    LaunchedEffect(listState, canLoadMore, isLoading, isLoadingMore) {
+                        if (!canLoadMore || isLoading || isLoadingMore) return@LaunchedEffect
+                        snapshotFlow {
+                            val info = listState.layoutInfo
+                            // Empty until the list is first measured, which is not "at the end".
+                            val last = info.visibleItemsInfo.lastOrNull() ?: return@snapshotFlow false
+                            val nearEnd = last.index >= info.totalItemsCount - LOAD_MORE_THRESHOLD
+                            val fitsPanel = !listState.canScrollForward && !listState.canScrollBackward
+                            nearEnd && (listState.isScrollInProgress || fitsPanel)
+                        }.first { it }
+                        onLoadMore()
+                    }
                     LazyColumn(
+                        state = listState,
                         modifier =
                             Modifier
                                 .fillMaxSize(),
@@ -237,6 +267,16 @@ fun StopBoardPanel(
                             },
                         ) { _, group ->
                             DepartureRow(group, showDelays, showMessages, onFilterOut)
+                        }
+                        if (isLoadingMore) {
+                            item(key = "load_more") {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                }
+                            }
                         }
                     }
                 }
