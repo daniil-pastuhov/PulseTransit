@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -441,19 +442,24 @@ private fun RowScope.StopPicker(
                 Icon(Icons.Default.ArrowDropDown, contentDescription = stringResource(R.string.choose_stop))
             }
         }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.widthIn(min = 280.dp),
+        ) {
             nearbyStops.forEach { nearby ->
                 DropdownMenuItem(
                     text = {
-                        Column {
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
                             Text(
                                 text = nearby.stop.name,
+                                style = MaterialTheme.typography.titleMedium,
                                 fontWeight = if (nearby.stop.id == selected.id) FontWeight.Bold else FontWeight.Normal,
                             )
                             nearby.distanceMeters?.let {
                                 Text(
                                     text = distanceText(it),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
