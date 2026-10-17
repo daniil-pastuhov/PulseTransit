@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Installs the release APK built by GitHub Actions onto a connected device and launches it.
 #
-#   scripts/install-ci-apk.sh                 # latest successful run on main, auto-picked device
+#   scripts/install-ci-apk.sh                 # newest APK CI built, on any branch; auto-picked device
 #   scripts/install-ci-apk.sh -s HVA6G0AF     # a specific device
-#   scripts/install-ci-apk.sh -b my-branch    # latest successful run on another branch
+#   scripts/install-ci-apk.sh -b my-branch    # newest APK built on one branch
 #   scripts/install-ci-apk.sh -r 35915861599  # a specific run
 #   scripts/install-ci-apk.sh --reinstall     # uninstall first (WIPES app settings) — needed when
 #                                             # the device has a build signed with another key
@@ -12,10 +12,9 @@
 set -euo pipefail
 
 PACKAGE=com.homieapps.pulsetransit
-WORKFLOW=ci.yml
 ARTIFACT=app-release
 
-branch=main
+branch=""
 run_id=""
 serial="${ANDROID_SERIAL:-}"
 reinstall=false
@@ -60,10 +59,14 @@ fi
 model=$(adb -s "$serial" shell getprop ro.product.model | tr -d '\r')
 echo "Device:   $serial ($model)"
 
+# The newest run that still has the APK. Not just the newest successful run: CI skips the Android
+# build in a PR that only touches iOS, main is not built, and artifacts expire.
 if [ -z "$run_id" ]; then
-    run_id=$(gh run list --workflow "$WORKFLOW" --branch "$branch" --status success --limit 1 \
-        --json databaseId --jq '.[0].databaseId // empty')
-    [ -n "$run_id" ] || { echo "error: no successful $WORKFLOW run on $branch" >&2; exit 1; }
+    run_id=$(gh api "repos/{owner}/{repo}/actions/artifacts?name=$ARTIFACT&per_page=100" \
+        --jq "[.artifacts[] | select(.expired | not)
+               | select(\"$branch\" == \"\" or .workflow_run.head_branch == \"$branch\")]
+              | sort_by(.created_at) | last | .workflow_run.id // empty")
+    [ -n "$run_id" ] || { echo "error: no unexpired $ARTIFACT artifact${branch:+ on $branch}" >&2; exit 1; }
 fi
 gh run view "$run_id" --json headSha,headBranch,displayTitle,createdAt \
     --jq '"Run:      '"$run_id"' \(.headBranch)@\(.headSha[0:7]) \(.createdAt)\nCommit:   \(.displayTitle)"'

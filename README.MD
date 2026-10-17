@@ -99,7 +99,8 @@ To upload from your machine instead:
 
 ## Releasing
 
-Merging to `main` publishes nothing; CI only checks and builds the PRs into it. A release goes out like this:
+Merging to `main` publishes nothing; CI only checks and builds the PRs into it (only the app a PR
+can affect, by path). A release goes out like this:
 
 1. **Start it**: `scripts/release` (add `--dry-run` to try it without changing anything). It
    lists the commits on `origin/main` since the last `vX.Y.Z` tag and asks for a patch, minor or

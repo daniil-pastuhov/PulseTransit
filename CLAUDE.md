@@ -43,7 +43,8 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
 `app/src/main/play/release-notes/` via `scripts/stage-release-notes.sh`), and on the PR's merge
 promotes that release to closed testing and tags `vX.Y.Z`. Main publishes nothing. See "Releasing"
 in README.MD. Both apps are checked and released by one workflow, `.github/workflows/ci.yml`, whose
-jobs run in parallel. The iOS app follows the same flow: release-branch pushes go to TestFlight
+jobs run in parallel. On PRs its `changes` job skips the app a change cannot affect, by path; a new
+top-level directory or script that feeds a build must be added to its filters. The iOS app follows the same flow: release-branch pushes go to TestFlight
 internal testers and the merge submits that build for App Store review, through the fastlane lanes
 in `iosApp/fastlane/Fastfile`. Signing is cloud-managed with an App Store Connect API key (secrets
 `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`); there are no certificates in the repo.

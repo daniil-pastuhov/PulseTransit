@@ -1,11 +1,13 @@
 name: CI
 
-# Android and iOS in one workflow, so a run shows every job on one screen. The jobs do not depend
-# on each other and start in parallel; only tagging waits, for the Play promotion.
+# Android and iOS in one workflow, so a run shows every job on one screen. The jobs start in
+# parallel once `changes` has decided which apps a PR touches; only tagging waits, for the Play
+# promotion.
 #
 # Release flow (scripts/release starts it; see "Releasing" in README.MD):
-# - Every PR checks and builds both apps, except a release PR: its branch's pushes already do,
-#   on the same commit. Main is not built on push; its PRs were checked before merging.
+# - Every PR checks and builds the apps it touches (`changes`), except a release PR: its branch's
+#   pushes already do, on the same commit, and always both apps. Main is not built on push; its PRs
+#   were checked before merging.
 # - Each push to a release/vX.Y.Z branch publishes the bundle and the store listing to the Play
 #   internal track and uploads a TestFlight build for internal testers, with the notes in
 #   release-notes/vX.Y.Z/.
@@ -41,14 +43,69 @@ env:
   BUILD_NUMBER_BASE: 1000
 
 jobs:
-  # --- Android ----------------------------------------------------------------------------------
-
-  android-static-analysis:
-    name: "Android: Static Analysis"
+  # Which apps a PR touches, so the other app's jobs (the macOS ones above all) can be skipped, and
+  # both when only docs or release notes changed. Done here rather than with paths-ignore on the
+  # trigger: a release push always builds both apps, since publishing depends on those jobs, even
+  # when it only changes release notes. Skipped jobs count as passed for required checks.
+  changes:
+    name: Detect changes
     if: >-
       github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
       !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists a PR's files through the API, without a checkout
+    outputs:
+      android: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.android == 'true' }}
+      # Whether code that runs on the emulator changed; lint config, scripts or the store listing
+      # alone do not need the instrumentation tests.
+      android_code: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.android_code == 'true' }}
+      ios: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' || steps.filter.outputs.ios == 'true' }}
+      # Whether the Kotlin code ios-build tests on the simulator changed; Swift-only changes skip it.
+      shared: ${{ github.event_name != 'pull_request' || steps.filter.outputs.shared == 'true' }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          # The workflow itself and the Gradle build count as shared: they can break either app.
+          filters: |
+            shared:
+              - 'shared/**'
+              - 'gradle/**'
+              - '*.gradle.kts'
+              - 'gradle.properties'
+              - 'gradlew'
+              - '.editorconfig' # ktlint's rules
+              - '.github/**'
+            android:
+              - 'app/**'
+              - 'config/**'
+              - 'scripts/sync-ios-strings.py'
+              - 'scripts/stage-release-notes.sh'
+              - 'iosApp/iosApp/Localizable.xcstrings'
+            android_code:
+              - 'app/src/main/java/**'
+              - 'app/src/main/res/**'
+              - 'app/src/main/AndroidManifest.xml'
+              - 'app/src/androidTest/**'
+              - 'app/*.gradle.kts'
+            ios:
+              - 'iosApp/**'
+              - 'scripts/build-shared-framework.sh'
+
+  # --- Android ----------------------------------------------------------------------------------
+
+  # Static analysis and unit tests share one job, so the JDK and Gradle are set up and the build
+  # configured once.
+  android-checks:
+    name: "Android: Static Analysis and Unit Tests"
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: set up JDK 21
@@ -63,59 +120,41 @@ jobs:
       - name: Check the iOS string catalog matches the Android strings
         run: scripts/sync-ios-strings.py --check
 
-      - name: Run Ktlint
-        run: ./gradlew ktlintCheck --stacktrace
+      # --continue reports every tool's findings, not just the first one's.
+      - name: Run Ktlint, Detekt and Lint
+        id: static-analysis
+        run: ./gradlew ktlintCheck detekt lintDebug :shared:lint --continue --stacktrace
 
-      - name: Run Detekt
-        run: ./gradlew detekt --stacktrace
-
-      - name: Run Lint
-        run: ./gradlew lintDebug :shared:lint --stacktrace
+      # Runs even when static analysis failed, so one run reports both.
+      - name: Run Unit Tests
+        if: ${{ !cancelled() }}
+        # The unit tests live in :shared's commonTest; this runs them on the JVM. The iOS run of the
+        # same tests is in ios-build.
+        run: ./gradlew :shared:testAndroidHostTest testDebugUnitTest --stacktrace
 
       - name: Upload Static Analysis Reports
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: failure() && steps.static-analysis.outcome == 'failure'
         with:
           name: static-analysis-reports
+          retention-days: 7
           path: |
             **/build/reports/lint-results*.html
             **/build/reports/detekt/detekt.xml
             **/build/reports/ktlint/*.txt
 
-  android-unit-tests:
-    name: "Android: Unit Tests"
-    if: >-
-      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
-      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Run Unit Tests
-        # The unit tests live in :shared's commonTest; this runs them on the JVM. The iOS run of the
-        # same tests is in ios-build.
-        run: ./gradlew :shared:testAndroidHostTest testDebugUnitTest --stacktrace
-
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4
-        if: always()
+        if: ${{ !cancelled() }}
         with:
           name: unit-test-reports
+          retention-days: 7
           path: shared/build/reports/tests/testAndroidHostTest/
 
   android-instrumentation-tests:
     name: "Android: Instrumentation Tests"
-    if: >-
-      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
-      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
+    needs: changes
+    if: needs.changes.outputs.android_code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -147,6 +186,8 @@ jobs:
           # The default userdata partition (~7.2 GB) can exceed a runner's free disk, and the
           # emulator then dies at launch while the action waits out its whole boot timeout.
           disk-size: 4096M
+          # A healthy boot takes a minute or two; the default 600 s only delays a failure.
+          emulator-boot-timeout: 300
           script: ./gradlew connectedDebugAndroidTest :shared:connectedAndroidDeviceTest --stacktrace
 
       - name: Upload Instrumentation Test Reports
@@ -154,16 +195,17 @@ jobs:
         if: always()
         with:
           name: instrumentation-test-reports
+          retention-days: 7
           path: |
             app/build/reports/androidTests/connected/
             shared/build/reports/androidTests/connected/
 
   android-build:
     name: "Android: Build Release"
-    if: >-
-      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
-      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     environment: Release
     env:
       # A flag rather than the key itself: secrets stay scoped to the one step that needs them,
@@ -200,12 +242,16 @@ jobs:
         with:
           name: app-release
           path: app/build/outputs/apk/release/app-release.apk
+          # Artifacts count against the repository's storage quota; scripts/install-ci-apk.sh only
+          # needs a recent one.
+          retention-days: 14
 
       - name: Upload Release Bundle
         uses: actions/upload-artifact@v4
         with:
           name: app-release-bundle
           path: app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
 
       - name: Stage the release notes
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v')
@@ -229,10 +275,10 @@ jobs:
 
   ios-build:
     name: "iOS: Build and Test"
-    if: >-
-      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
-      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
+    needs: changes
+    if: needs.changes.outputs.ios == 'true'
     runs-on: macos-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -257,18 +303,25 @@ jobs:
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
 
       - name: Run shared tests on the iOS simulator
+        if: needs.changes.outputs.shared == 'true'
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
+      # Not on a release push: ios-testflight archives the app from the same commit, which compiles
+      # everything this would. A generic destination builds the Swift packages for every simulator
+      # architecture (the app target already excludes x86_64), so it is narrowed to arm64.
       - name: Build the iOS app
+        if: github.event_name != 'push'
         run: |
           xcodebuild build -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+            -destination 'generic/platform=iOS Simulator' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: ios-test-reports
+          retention-days: 7
           path: shared/build/reports/tests/iosSimulatorArm64Test/
 
   # Runs alongside ios-build rather than after it, as the Play upload does alongside the Android
@@ -277,6 +330,8 @@ jobs:
     name: "iOS: Upload to TestFlight"
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v')
     runs-on: macos-latest
+    # Includes waiting for App Store Connect to process the build.
+    timeout-minutes: 60
     environment: Release
     env:
       # A flag rather than the key itself, as for Play; skipped on forks without the secret.
@@ -340,6 +395,7 @@ jobs:
       github.event_name == 'pull_request' && github.event.action == 'closed' &&
       github.event.pull_request.merged && startsWith(github.head_ref, 'release/v')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     environment: Release
     steps:
       - uses: actions/checkout@v4
@@ -375,6 +431,7 @@ jobs:
         github.event_name == 'pull_request' && github.event.action == 'closed' &&
         github.event.pull_request.merged && startsWith(github.head_ref, 'release/v'))
     runs-on: macos-latest
+    timeout-minutes: 20
     environment: Release
     env:
       BUNDLE_FROZEN: "true"
@@ -403,6 +460,7 @@ jobs:
     name: Tag the release
     needs: android-promote
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
     steps:
