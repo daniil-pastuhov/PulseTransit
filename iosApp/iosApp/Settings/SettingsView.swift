@@ -505,7 +505,7 @@ private struct QuayRow: View {
 
 // MARK: - Building blocks
 
-private struct PlaceLabel: View {
+struct PlaceLabel: View {
     let place: StopPlace
 
     var body: some View {
@@ -518,7 +518,7 @@ private struct PlaceLabel: View {
     }
 }
 
-private struct PlaceKindIcon: View {
+struct PlaceKindIcon: View {
     let kind: PlaceKind
 
     var body: some View {

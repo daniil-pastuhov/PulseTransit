@@ -71,6 +71,7 @@ import com.example.pulsetransit.data.visibleTripOptionCount
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
+import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
 import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
@@ -213,7 +214,7 @@ private fun RoutesSection(
     onNavigateToSettings: () -> Unit,
     modifier: Modifier,
 ) {
-    if (uiState.destinationStations.isEmpty()) {
+    if (uiState.routeDestinations.isEmpty()) {
         Card(modifier = modifier.padding(6.dp)) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -233,7 +234,7 @@ private fun RoutesSection(
 
     // A destination with no route is left out once it has loaded, as on the wall board.
     val destinations =
-        uiState.destinationStations.filter {
+        uiState.routeDestinations.filter {
             it.id in uiState.fastestTrips ||
                 it.id in uiState.loadingTripDestinationIds ||
                 it.id in uiState.failedTripDestinationIds
@@ -270,6 +271,18 @@ private fun RoutesSection(
                         isFailed = destination.id in uiState.failedTripDestinationIds,
                         isOnline = uiState.isOnline,
                         onTripClick = { detailsTrip = destination.id to it },
+                        actions =
+                            if (destination.id == uiState.temporaryDestination?.id) {
+                                {
+                                    TemporaryRouteActions(
+                                        canSave = uiState.canSaveTemporaryDestination,
+                                        onSave = { viewModel.saveTemporaryDestination() },
+                                        onDismiss = { viewModel.dismissTemporaryDestination() },
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                     )
                 }
             }
@@ -277,7 +290,7 @@ private fun RoutesSection(
     }
 }
 
-/** One destination's next [count] route alternatives, best first. */
+/** One destination's next [count] route alternatives, best first, with [actions] beside its title. */
 @Composable
 private fun DestinationRoutesCard(
     destination: StopPlace,
@@ -287,26 +300,38 @@ private fun DestinationRoutesCard(
     isFailed: Boolean,
     isOnline: Boolean,
     onTripClick: (TripInfo) -> Unit,
+    actions: (@Composable () -> Unit)? = null,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(6.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
     ) {
         when {
-            trips == null && isFailed ->
-                FastestTripUnavailable(destinationName = destination.name, isOnline = isOnline, isRetrying = isRefreshing)
-            trips == null -> FastestTripPlaceholder(destinationName = destination.name)
+            trips == null ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (isFailed) {
+                            FastestTripUnavailable(destinationName = destination.name, isOnline = isOnline, isRetrying = isRefreshing)
+                        } else {
+                            FastestTripPlaceholder(destinationName = destination.name)
+                        }
+                    }
+                    actions?.invoke()
+                }
             else -> {
                 Box {
                     Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                        Text(
-                            text = stringResource(R.string.route_to, destination.name),
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(R.string.route_to, destination.name),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 4.dp),
+                            )
+                            actions?.invoke()
+                        }
                         trips.take(count).forEachIndexed { index, trip ->
                             if (index > 0) {
                                 HorizontalDivider(

@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -101,7 +102,9 @@ import com.example.pulsetransit.ui.components.BlurredPlaceholder
 import com.example.pulsetransit.ui.components.PlaceholderBlock
 import com.example.pulsetransit.ui.components.PrecipitationBar
 import com.example.pulsetransit.ui.components.RefreshingIndicator
+import com.example.pulsetransit.ui.components.RouteSearchSheet
 import com.example.pulsetransit.ui.components.StopBoardPanel
+import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
@@ -164,6 +167,7 @@ fun MainScreen(
 
     // The fastest route whose details are open, with its destination's id.
     var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
+    var showRouteSearch by remember { mutableStateOf(false) }
 
     val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
     val screenAlpha = if (uiState.isScreenDimmed) 0.05f else 1f
@@ -238,6 +242,13 @@ fun MainScreen(
                         if (uiState.isLoading) {
                             CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                         }
+                        IconButton(onClick = { showRouteSearch = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = stringResource(R.string.search_route),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
                         IconButton(onClick = { viewModel.refreshData() }) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -274,11 +285,12 @@ fun MainScreen(
                             onDismiss = { detailsTrip = null },
                         )
                     }
-                    // Fastest route banners (one per destination station set in Settings), each
-                    // appearing as soon as its own route arrives. A destination with no route is
-                    // left out once it has loaded. They share one background colour, so without a
-                    // rule between them consecutive banners read as a single block.
-                    uiState.destinationStations
+                    // Fastest route banners (one per destination station set in Settings, after the
+                    // one searched for from the board), each appearing as soon as its own route
+                    // arrives. A destination with no route is left out once it has loaded. They
+                    // share one background colour, so without a rule between them consecutive
+                    // banners read as a single block.
+                    uiState.routeDestinations
                         .filter {
                             it.id in uiState.fastestTrips ||
                                 it.id in uiState.loadingTripDestinationIds ||
@@ -292,25 +304,38 @@ fun MainScreen(
                                     )
                                 }
                                 val trip = uiState.fastestTrips[destination.id]?.firstOrNull()
-                                AnimatedContent(
-                                    targetState = trip,
-                                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                    label = "fastestTrip",
-                                    contentKey = { it == null },
-                                ) { loaded ->
-                                    if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
-                                        FastestTripUnavailable(
-                                            destinationName = destination.name,
-                                            isOnline = uiState.isOnline,
-                                            isRetrying = destination.id in uiState.loadingTripDestinationIds,
-                                        )
-                                    } else if (loaded == null) {
-                                        FastestTripPlaceholder(destinationName = destination.name)
-                                    } else {
-                                        FastestTripBanner(
-                                            trip = loaded,
-                                            onClick = { detailsTrip = destination.id to loaded },
-                                            isRefreshing = destination.id in uiState.loadingTripDestinationIds,
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    AnimatedContent(
+                                        targetState = trip,
+                                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                        label = "fastestTrip",
+                                        contentKey = { it == null },
+                                        modifier = Modifier.weight(1f),
+                                    ) { loaded ->
+                                        if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
+                                            FastestTripUnavailable(
+                                                destinationName = destination.name,
+                                                isOnline = uiState.isOnline,
+                                                isRetrying = destination.id in uiState.loadingTripDestinationIds,
+                                            )
+                                        } else if (loaded == null) {
+                                            FastestTripPlaceholder(destinationName = destination.name)
+                                        } else {
+                                            FastestTripBanner(
+                                                trip = loaded,
+                                                onClick = { detailsTrip = destination.id to loaded },
+                                                isRefreshing = destination.id in uiState.loadingTripDestinationIds,
+                                            )
+                                        }
+                                    }
+                                    if (destination.id == uiState.temporaryDestination?.id) {
+                                        TemporaryRouteActions(
+                                            canSave = uiState.canSaveTemporaryDestination,
+                                            onSave = { viewModel.saveTemporaryDestination() },
+                                            onDismiss = { viewModel.dismissTemporaryDestination() },
                                         )
                                     }
                                 }
@@ -432,6 +457,23 @@ fun MainScreen(
                         )
                     }
                 }
+            }
+
+            if (showRouteSearch) {
+                RouteSearchSheet(
+                    query = uiState.routeSearchQuery,
+                    results = uiState.routeSearchResults,
+                    isSearching = uiState.isSearchingRoutePlaces,
+                    onQueryChange = { viewModel.onRouteSearchQueryChanged(it) },
+                    onPick = { place ->
+                        showRouteSearch = false
+                        viewModel.showTemporaryDestination(place)
+                    },
+                    onDismiss = {
+                        showRouteSearch = false
+                        viewModel.clearRouteSearch()
+                    },
+                )
             }
 
             if (uiState.isScreenDimmed) {

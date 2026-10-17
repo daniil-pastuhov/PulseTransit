@@ -5,6 +5,7 @@ struct BoardHeader: View {
     let state: StopBoardViewModel.UiState
     let onCycleDateStyle: () -> Void
     let onRefresh: () -> Void
+    let onSearchRoute: () -> Void
     let onOpenSettings: () -> Void
 
     var body: some View {
@@ -23,6 +24,10 @@ struct BoardHeader: View {
                 if state.isLoading {
                     ProgressView()
                 }
+                Button(action: onSearchRoute) {
+                    Image(systemName: "magnifyingglass")
+                }
+                .accessibilityLabel(L("search_route"))
                 Button(action: onRefresh) {
                     Image(systemName: "arrow.clockwise")
                 }

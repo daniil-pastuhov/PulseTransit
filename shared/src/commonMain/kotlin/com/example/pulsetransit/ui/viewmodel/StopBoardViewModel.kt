@@ -90,6 +90,9 @@ class StopBoardViewModel(
         const val WEATHER_MOVE_METERS = 1_000.0
 
         const val NEARBY_RADIUS_KM = 1.0
+
+        // Each keystroke in the route search waits this long, so typing doesn't fire a request per letter.
+        const val SEARCH_DEBOUNCE_MS = 300L
     }
 
     data class UiState(
@@ -140,6 +143,14 @@ class StopBoardViewModel(
         val isStopPinned: Boolean = false,
         val isSearchingNearby: Boolean = false,
         val destinationStations: List<StopPlace> = emptyList(),
+        /**
+         * A place picked from the board's route search, routed to like a saved destination until
+         * it is dismissed or saved. Kept in memory only; never one of [destinationStations].
+         */
+        val temporaryDestination: StopPlace? = null,
+        val routeSearchQuery: String = "",
+        val routeSearchResults: List<StopPlace> = emptyList(),
+        val isSearchingRoutePlaces: Boolean = false,
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
         val autoDimSeconds: Int = 30,
@@ -181,6 +192,13 @@ class StopBoardViewModel(
         /** Whether the device has a working connection; explains failures, never gates requests. */
         val isOnline: Boolean = true,
     ) {
+        /** Every destination routes are shown for: the temporary one first, then the saved ones. */
+        val routeDestinations: List<StopPlace> get() = listOfNotNull(temporaryDestination) + destinationStations
+
+        /** Whether [temporaryDestination] fits among the saved destinations. */
+        val canSaveTemporaryDestination: Boolean
+            get() = temporaryDestination != null && destinationStations.size < SettingsRepository.MAX_DESTINATION_STATIONS
+
         val isLoading: Boolean get() = loadingStopIds.isNotEmpty() || loadingTripDestinationIds.isNotEmpty()
 
         /** True while any part of the transit board is missing or stale because a fetch failed. */
@@ -249,6 +267,7 @@ class StopBoardViewModel(
         )
     private var isTrackingRequested = false
     private var nearbyJob: Job? = null
+    private var routeSearchJob: Job? = null
     private var lastWeatherFix: Pair<Double, Double>? = null
 
     private val isOnSpot: Boolean get() = _uiState.value.mode == AppMode.ON_SPOT
@@ -368,6 +387,8 @@ class StopBoardViewModel(
         val tripOptions = settingsRepository.getTripOptionsCount()
 
         _uiState.update {
+            // A temporary destination saved in Settings meanwhile is now just a saved one.
+            val temporary = it.temporaryDestination?.takeIf { temp -> destinations.none { d -> d.id == temp.id } }
             it.copy(
                 favorites = favs,
                 themeMode = theme,
@@ -381,7 +402,8 @@ class StopBoardViewModel(
                 showMessages = showMessages,
                 showCancelledLines = showCancelledLines,
                 destinationStations = destinations,
-                fastestTrips = if (destinations.isEmpty()) emptyMap() else it.fastestTrips,
+                temporaryDestination = temporary,
+                fastestTrips = if (destinations.isEmpty() && temporary == null) emptyMap() else it.fastestTrips,
                 isFullScreenMode = isFullScreen && !onSpot,
                 isAlwaysOnEnabled = alwaysOn && !onSpot,
                 autoDimSeconds = autoDim,
@@ -405,6 +427,7 @@ class StopBoardViewModel(
         nearbyJob?.cancel()
         departuresJob?.cancel()
         tripsJob?.cancel()
+        routeSearchJob?.cancel()
         rawDepartures = emptyMap()
         stopFetchedAt = emptyMap()
         lastWeatherFix = null
@@ -428,6 +451,10 @@ class StopBoardViewModel(
                 isStopPinned = false,
                 isSearchingNearby = false,
                 isScreenDimmed = false,
+                temporaryDestination = null,
+                routeSearchQuery = "",
+                routeSearchResults = emptyList(),
+                isSearchingRoutePlaces = false,
             )
         }
         if (mode == AppMode.ON_SPOT) {
@@ -800,7 +827,7 @@ class StopBoardViewModel(
      */
     private fun refreshFastestTrip() {
         tripsJob?.cancel()
-        val destinations = _uiState.value.destinationStations
+        val destinations = _uiState.value.routeDestinations
         val onSpot = isOnSpot
         val fix = follower.latestFix
         val lat = if (onSpot) fix?.latitude else settingsRepository.getSavedLatitude()
@@ -836,6 +863,8 @@ class StopBoardViewModel(
                         val result = fetchTrips(destination, lat, lon, count, options)
                         val trips = result.data.map { it.copy(destinationName = destination.name) }
                         ensureActive() // see fetchStopDepartures
+                        // A temporary destination may have been dismissed while its routes were on the way.
+                        if (_uiState.value.routeDestinations.none { it.id == destination.id }) return@launch
                         _uiState.update {
                             it.copy(
                                 fastestTrips =
@@ -916,6 +945,77 @@ class StopBoardViewModel(
 
     fun filterOutLine(line: String) {
         settingsRepository.addFilteredLine(line)
+    }
+
+    /**
+     * Searches for a place to route to from the board, near the device in on-spot mode and the
+     * saved location otherwise. Each keystroke supersedes the last search.
+     */
+    fun onRouteSearchQueryChanged(query: String) {
+        _uiState.update { it.copy(routeSearchQuery = query) }
+        routeSearchJob?.cancel()
+        if (query.isBlank()) {
+            _uiState.update { it.copy(routeSearchResults = emptyList(), isSearchingRoutePlaces = false) }
+            return
+        }
+        routeSearchJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isSearchingRoutePlaces = true) }
+                delay(SEARCH_DEBOUNCE_MS.milliseconds)
+                val lat = if (isOnSpot) follower.latestFix?.latitude else settingsRepository.getSavedLatitude()
+                val lon = if (isOnSpot) follower.latestFix?.longitude else settingsRepository.getSavedLongitude()
+                val results = enturRepository.searchPlaces(query, lat, lon)
+                ensureActive() // see fetchStopDepartures
+                _uiState.update { it.copy(routeSearchResults = results, isSearchingRoutePlaces = false) }
+            }
+    }
+
+    /** Forgets the route search, for when its sheet closes. */
+    fun clearRouteSearch() {
+        routeSearchJob?.cancel()
+        _uiState.update { it.copy(routeSearchQuery = "", routeSearchResults = emptyList(), isSearchingRoutePlaces = false) }
+    }
+
+    /**
+     * Routes to [place] alongside the saved destinations until [dismissTemporaryDestination],
+     * replacing any earlier temporary one. A place already saved is shown by its own banner.
+     */
+    fun showTemporaryDestination(place: StopPlace) {
+        clearRouteSearch()
+        val state = _uiState.value
+        if (state.destinationStations.any { it.id == place.id }) return
+        val previous = state.temporaryDestination
+        if (previous?.id == place.id) return
+        if (previous != null) dropTrips(previous.id)
+        _uiState.update { it.copy(temporaryDestination = place) }
+        refreshFastestTrip()
+    }
+
+    fun dismissTemporaryDestination() {
+        val temporary = _uiState.value.temporaryDestination ?: return
+        _uiState.update { it.copy(temporaryDestination = null) }
+        dropTrips(temporary.id)
+    }
+
+    /** Makes the temporary destination a saved one; its routes are already loaded, so they stay. */
+    fun saveTemporaryDestination() {
+        val state = _uiState.value
+        val temporary = state.temporaryDestination ?: return
+        if (!state.canSaveTemporaryDestination) return
+        settingsRepository.addDestinationStation(temporary)
+        _uiState.update {
+            it.copy(destinationStations = settingsRepository.getDestinationStations(), temporaryDestination = null)
+        }
+    }
+
+    private fun dropTrips(destinationId: String) {
+        _uiState.update {
+            it.copy(
+                fastestTrips = it.fastestTrips - destinationId,
+                loadingTripDestinationIds = it.loadingTripDestinationIds - destinationId,
+                failedTripDestinationIds = it.failedTripDestinationIds - destinationId,
+            )
+        }
     }
 
     /**

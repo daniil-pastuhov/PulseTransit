@@ -15,6 +15,7 @@ struct StopBoardView: View {
     #endif
     /// The fastest route whose details are open.
     @State private var detailsTrip: TripSelection?
+    @State private var showRouteSearch = false
 
     var body: some View {
         let state = model.state
@@ -30,8 +31,13 @@ struct StopBoardView: View {
                     state: state,
                     onCycleDateStyle: { viewModel.cycleDateStyle() },
                     onRefresh: { viewModel.refreshData() },
+                    onSearchRoute: { showRouteSearch = true },
                     onOpenSettings: { showSettings = true }
                 )
+                // Its own anchor: two sheets on one view do not both present on iOS 15.
+                .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
+                    RouteSearchView(state: model.state, viewModel: viewModel)
+                }
                 if state.mode == .onSpot {
                     OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })
                 } else {
@@ -93,13 +99,13 @@ struct StopBoardView: View {
         }
     }
 
-    /// The wall board's body: a banner per destination, then a panel per favourite stop.
+    /// The wall board's body: a banner per destination (the searched-for one first), then a panel per favourite stop.
     @ViewBuilder
     private func boardBody(state: StopBoardViewModel.UiState, viewModel: StopBoardViewModel) -> some View {
         // One banner per destination, each appearing as soon as its own route arrives; a
         // destination with no route is left out once it has loaded, but one that failed
         // keeps its slot.
-        let routes = state.destinationStations.filter {
+        let routes = state.routeDestinations.filter {
             state.fastestTrips[$0.id] != nil ||
                 state.loadingTripDestinationIds.contains($0.id) ||
                 state.failedTripDestinationIds.contains($0.id)
@@ -107,28 +113,40 @@ struct StopBoardView: View {
         VStack(spacing: 0) {
             ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
                 if index > 0 { Divider() }
-                // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
-                ZStack {
-                    if let trip = state.fastestTrips[destination.id]?.first {
-                        FastestTripBanner(
-                            trip: trip,
-                            isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
-                            onTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: trip) }
-                        )
-                        .transition(.opacity)
-                    } else if state.failedTripDestinationIds.contains(destination.id) {
-                        FastestTripUnavailable(
-                            destinationName: destination.name,
-                            isOnline: state.isOnline,
-                            isRetrying: state.loadingTripDestinationIds.contains(destination.id)
-                        )
-                        .transition(.opacity)
-                    } else {
-                        FastestTripPlaceholder(destinationName: destination.name)
+                HStack(spacing: 0) {
+                    // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
+                    ZStack {
+                        if let trip = state.fastestTrips[destination.id]?.first {
+                            FastestTripBanner(
+                                trip: trip,
+                                isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
+                                onTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: trip) }
+                            )
                             .transition(.opacity)
+                        } else if state.failedTripDestinationIds.contains(destination.id) {
+                            FastestTripUnavailable(
+                                destinationName: destination.name,
+                                isOnline: state.isOnline,
+                                isRetrying: state.loadingTripDestinationIds.contains(destination.id)
+                            )
+                            .transition(.opacity)
+                        } else {
+                            FastestTripPlaceholder(destinationName: destination.name)
+                                .transition(.opacity)
+                        }
+                    }
+                    .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
+                    if destination.id == state.temporaryDestination?.id {
+                        TemporaryRouteActions(
+                            canSave: state.canSaveTemporaryDestination,
+                            onSave: { viewModel.saveTemporaryDestination() },
+                            onDismiss: { viewModel.dismissTemporaryDestination() },
+                            fillsBackground: true
+                        )
                     }
                 }
-                .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
+                // The banner fills its own slot; the buttons share its colour at its height.
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .sheet(item: $detailsTrip) { selection in

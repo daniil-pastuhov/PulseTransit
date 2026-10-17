@@ -213,6 +213,10 @@
     <string name="no_stops_nearby">Ingen stoppesteder innen 1 km.</string>
     <string name="routes_add_destination">Legg til et reisemål for å se reiser herfra.</string>
     <string name="add_destination">Legg til reisemål</string>
+    <string name="search_route">Finn en reise</string>
+    <string name="search_route_no_results">Fant ingen steder</string>
+    <string name="save_destination">Lagre reisemål</string>
+    <string name="dismiss_route">Lukk reisen</string>
     <string name="route_to">Til %1$s</string>
     <string name="route_arrival">ank. %1$s</string>
     <string name="trip_options_title">Reisealternativer</string>

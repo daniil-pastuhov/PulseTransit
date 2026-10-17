@@ -96,7 +96,7 @@ private struct RoutesSection: View {
     @State private var detailsTrip: TripSelection?
 
     var body: some View {
-        if state.destinationStations.isEmpty {
+        if state.routeDestinations.isEmpty {
             VStack(spacing: 16) {
                 Text(L("routes_add_destination"))
                     .font(.headline)
@@ -111,7 +111,7 @@ private struct RoutesSection: View {
             .padding(6)
         } else {
             // A destination with no route is left out once it has loaded, as on the wall board.
-            let destinations = state.destinationStations.filter {
+            let destinations = state.routeDestinations.filter {
                 state.fastestTrips[$0.id] != nil ||
                     state.loadingTripDestinationIds.contains($0.id) ||
                     state.failedTripDestinationIds.contains($0.id)
@@ -134,7 +134,14 @@ private struct RoutesSection: View {
                                 isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
                                 isFailed: state.failedTripDestinationIds.contains(destination.id),
                                 isOnline: state.isOnline,
-                                onTripTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: $0) }
+                                onTripTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: $0) },
+                                actions: destination.id == state.temporaryDestination?.id
+                                    ? TemporaryRouteActions(
+                                        canSave: state.canSaveTemporaryDestination,
+                                        onSave: { viewModel.saveTemporaryDestination() },
+                                        onDismiss: { viewModel.dismissTemporaryDestination() }
+                                    )
+                                    : nil
                             )
                         }
                     }
@@ -152,7 +159,7 @@ private struct RoutesSection: View {
     }
 }
 
-/// One destination's next `count` route alternatives, best first.
+/// One destination's next `count` route alternatives, best first, with `actions` beside its title.
 private struct DestinationRoutesCard: View {
     let destination: StopPlace
     let trips: [TripInfo]?
@@ -161,16 +168,21 @@ private struct DestinationRoutesCard: View {
     let isFailed: Bool
     let isOnline: Bool
     let onTripTap: (TripInfo) -> Void
+    var actions: TemporaryRouteActions?
 
     var body: some View {
         Group {
             if let trips {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(L("route_to", destination.name))
-                        .font(.headline)
-                        .lineLimit(1)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 4)
+                    HStack(spacing: 0) {
+                        Text(L("route_to", destination.name))
+                            .font(.headline)
+                            .lineLimit(1)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        actions
+                    }
                     ForEach(Array(trips.prefix(count).enumerated()), id: \.offset) { index, trip in
                         if index > 0 { Divider().padding(.horizontal, 16) }
                         TripOptionRow(trip: trip, isFirst: index == 0)
@@ -184,10 +196,20 @@ private struct DestinationRoutesCard: View {
                 .overlay(alignment: .bottom) {
                     if isRefreshing { RefreshBar(color: Palette.textPrimary.opacity(0.6)) }
                 }
-            } else if isFailed {
-                FastestTripUnavailable(destinationName: destination.name, isOnline: isOnline, isRetrying: isRefreshing)
             } else {
-                FastestTripPlaceholder(destinationName: destination.name)
+                HStack(spacing: 0) {
+                    if isFailed {
+                        FastestTripUnavailable(destinationName: destination.name, isOnline: isOnline, isRetrying: isRefreshing)
+                    } else {
+                        FastestTripPlaceholder(destinationName: destination.name)
+                    }
+                    actions.map { actions in
+                        var filled = actions
+                        filled.fillsBackground = true
+                        return filled
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 12))

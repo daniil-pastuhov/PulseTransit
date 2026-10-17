@@ -114,11 +114,20 @@ class FakeEnturRepository : EnturRepository {
 
     override suspend fun searchStopPlaces(query: String) = emptyList<StopPlace>()
 
+    /** What [searchPlaces] answers with, by query; the queries it was asked, in order. */
+    var places: (String) -> List<StopPlace> = { emptyList() }
+    val placeQueries = mutableListOf<String>()
+    var lastPlaceFocus: Pair<Double?, Double?>? = null
+
     override suspend fun searchPlaces(
         query: String,
         focusLat: Double?,
         focusLon: Double?,
-    ) = emptyList<StopPlace>()
+    ): List<StopPlace> {
+        placeQueries += query
+        lastPlaceFocus = focusLat to focusLon
+        return places(query)
+    }
 
     override suspend fun getNearbyStopPlaces(
         lat: Double,
@@ -457,7 +466,9 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun getDestinationStations() = destinations
 
-    override fun addDestinationStation(stopPlace: StopPlace) {}
+    override fun addDestinationStation(stopPlace: StopPlace) {
+        destinations = destinations + stopPlace
+    }
 
     override fun removeDestinationStation(stopId: String) {}
 

@@ -766,6 +766,23 @@
         }
       }
     },
+    "dismiss_route": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close route"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lukk reisen"
+          }
+        }
+      }
+    },
     "distance_kilometers": {
       "extractionState": "manual",
       "localizations": {
@@ -2735,6 +2752,23 @@
         }
       }
     },
+    "save_destination": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save destination"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagre reisemål"
+          }
+        }
+      }
+    },
     "search_destination_hint": {
       "extractionState": "manual",
       "localizations": {
@@ -2799,6 +2833,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Søkeresultater"
+          }
+        }
+      }
+    },
+    "search_route": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Find a route"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finn en reise"
+          }
+        }
+      }
+    },
+    "search_route_no_results": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No places found"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ingen steder"
           }
         }
       }

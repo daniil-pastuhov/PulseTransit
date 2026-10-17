@@ -39,11 +39,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -87,7 +83,6 @@ import com.example.pulsetransit.R
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
-import com.example.pulsetransit.data.PlaceKind
 import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
@@ -98,6 +93,7 @@ import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.PlaceKindIcon
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -1177,22 +1173,6 @@ private fun QuayRow(
             }
         }
     }
-}
-
-/** Tells a stop apart from an address or place in destination search, where they sit side by side. */
-@Composable
-private fun PlaceKindIcon(kind: PlaceKind) {
-    Icon(
-        imageVector =
-            when (kind) {
-                PlaceKind.STOP -> Icons.Default.DirectionsBus
-                PlaceKind.ADDRESS -> Icons.Default.Home
-                PlaceKind.POI -> Icons.Default.Place
-                PlaceKind.PLACE -> Icons.Default.Map
-            },
-        contentDescription = null,
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
 }
 
 @Composable

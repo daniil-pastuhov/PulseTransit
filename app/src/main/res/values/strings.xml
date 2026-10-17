@@ -213,6 +213,10 @@
     <string name="no_stops_nearby">No stops within 1 km.</string>
     <string name="routes_add_destination">Add a destination to see routes from where you are.</string>
     <string name="add_destination">Add destination</string>
+    <string name="search_route">Find a route</string>
+    <string name="search_route_no_results">No places found</string>
+    <string name="save_destination">Save destination</string>
+    <string name="dismiss_route">Close route</string>
     <string name="route_to">To %1$s</string>
     <string name="route_arrival">arr. %1$s</string>
     <string name="trip_options_title">Route alternatives</string>
