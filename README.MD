@@ -1,6 +1,6 @@
 # PulseTransit
 
-[![CI](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/ci.yml)
+[![CI](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/ci.yml/badge.svg?event=pull_request)](https://github.com/daniil-pastuhov/PulseTransit/actions/workflows/ci.yml)
 
 PulseTransit is an Android application designed to show public transport stop boards.
 
@@ -99,7 +99,7 @@ To upload from your machine instead:
 
 ## Releasing
 
-Merging to `main` publishes nothing; CI only checks and builds it. A release goes out like this:
+Merging to `main` publishes nothing; CI only checks and builds the PRs into it. A release goes out like this:
 
 1. **Start it**: `scripts/release` (add `--dry-run` to try it without changing anything). It
    lists the commits on `origin/main` since the last `vX.Y.Z` tag and asks for a patch, minor or

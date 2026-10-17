@@ -4,7 +4,8 @@ name: CI
 # on each other and start in parallel; only tagging waits, for the Play promotion.
 #
 # Release flow (scripts/release starts it; see "Releasing" in README.MD):
-# - Every PR and push checks and builds both apps.
+# - Every PR checks and builds both apps, except a release PR: its branch's pushes already do,
+#   on the same commit. Main is not built on push; its PRs were checked before merging.
 # - Each push to a release/vX.Y.Z branch publishes the bundle and the store listing to the Play
 #   internal track and uploads a TestFlight build for internal testers, with the notes in
 #   release-notes/vX.Y.Z/.
@@ -19,7 +20,7 @@ on:
         description: "Version (X.Y.Z) whose newest TestFlight build to submit to the App Store"
         required: true
   push:
-    branches: [ main, "release/v*" ]
+    branches: [ "release/v*" ]
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened, closed ]
@@ -44,7 +45,9 @@ jobs:
 
   android-static-analysis:
     name: "Android: Static Analysis"
-    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
+    if: >-
+      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +84,9 @@ jobs:
 
   android-unit-tests:
     name: "Android: Unit Tests"
-    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
+    if: >-
+      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -108,7 +113,9 @@ jobs:
 
   android-instrumentation-tests:
     name: "Android: Instrumentation Tests"
-    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
+    if: >-
+      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
@@ -153,7 +160,9 @@ jobs:
 
   android-build:
     name: "Android: Build Release"
-    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
+    if: >-
+      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: ubuntu-latest
     environment: Release
     env:
@@ -220,7 +229,9 @@ jobs:
 
   ios-build:
     name: "iOS: Build and Test"
-    if: github.event.action != 'closed' && github.event_name != 'workflow_dispatch'
+    if: >-
+      github.event.action != 'closed' && github.event_name != 'workflow_dispatch' &&
+      !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'release/'))
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
