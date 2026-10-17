@@ -133,6 +133,28 @@ data class TripLeg(
     val lineName: String? = null, // null for foot legs
     val fromName: String? = null,
     val durationMinutes: Int = 0,
+    /** Where the leg ends; Entur names a coordinate destination just "Destination". */
+    val toName: String? = null,
+    /** When the leg leaves and arrives, ISO-8601. Null on trips cached before they were kept. */
+    val expectedStartTime: String? = null,
+    val expectedEndTime: String? = null,
+    /** The timetabled start, which [expectedStartTime] differs from when the leg runs late. */
+    val aimedStartTime: String? = null,
+    val distanceMeters: Int = 0,
+    val isRealtime: Boolean = false,
+    /** The boarding quay's public code ("2", "A") when it has one, shown as the platform. */
+    val platform: String? = null,
+    /** What the vehicle shows on its front, e.g. "Ringen via Majorstuen". */
+    val destination: String? = null,
+    /** The line's full name, e.g. "Sognsvann - Vestli". */
+    val lineFullName: String? = null,
+    val authority: String? = null,
+    val notices: List<String> = emptyList(),
+    /** The trip ridden, with [serviceDate], as Entur names it: what the leg's stops are asked for by. */
+    val serviceJourneyId: String? = null,
+    val serviceDate: String? = null,
+    val fromQuayId: String? = null,
+    val toQuayId: String? = null,
 )
 
 @Serializable

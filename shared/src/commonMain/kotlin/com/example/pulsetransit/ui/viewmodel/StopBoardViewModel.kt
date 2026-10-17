@@ -15,9 +15,11 @@ import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.distanceMeters
+import com.example.pulsetransit.data.legStops
 import com.example.pulsetransit.data.stopsAhead
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
@@ -737,6 +739,17 @@ class StopBoardViewModel(
         val journeyId = departure.serviceJourneyId ?: return emptyList()
         val date = departure.serviceDate ?: return emptyList()
         return enturRepository.getJourneyStops(journeyId, date).stopsAhead(departure, stopPlaceId)
+    }
+
+    /**
+     * The stops [leg] of a route rides through, boarding and alighting stops included, for the
+     * route's details. Like [journeyStopsAhead], asked for only while they are open; empty for a
+     * walk, or when Entur has no trip for it or cannot be reached.
+     */
+    suspend fun tripLegStops(leg: TripLeg): List<JourneyStop> {
+        val journeyId = leg.serviceJourneyId ?: return emptyList()
+        val date = leg.serviceDate ?: return emptyList()
+        return enturRepository.getJourneyStops(journeyId, date).legStops(leg)
     }
 
     /**

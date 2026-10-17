@@ -243,7 +243,7 @@ private struct RouteColumn: View {
     }
 }
 
-private struct RouteStopRow: View {
+struct RouteStopRow: View {
     let stop: JourneyStop
     let nowMillis: Int64
     let isFirst: Bool
@@ -277,14 +277,14 @@ private struct RouteStopRow: View {
 }
 
 /// "in 14 min", or "in 1 h 5 min" from an hour out.
-private func inTimeText(_ minutes: Int64) -> String {
+func inTimeText(_ minutes: Int64) -> String {
     minutes < 60
         ? L("details_in_minutes", Int(minutes))
         : L("details_in_hours", Int(minutes / 60), Int(minutes % 60))
 }
 
 /// "HH:mm", with the board's "⁺1" when it falls on a later day.
-private func clockText(_ time: String, nowMillis: Int64) -> String {
+func clockText(_ time: String, nowMillis: Int64) -> String {
     guard let clock = DepartureCountdownKt.departureClock(time: time, nowMillis: nowMillis) else { return "?" }
     let text = clockFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(clock.epochMillis) / 1000))
     return clock.dayOffset > 0 ? "\(text)⁺\(clock.dayOffset)" : text

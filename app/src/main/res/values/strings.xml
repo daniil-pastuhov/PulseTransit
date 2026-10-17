@@ -69,6 +69,23 @@
     <string name="details_route">Stops for the %1$s departure</string>
     <string name="details_ride">%1$d min to %2$s</string>
     <string name="details_route_unavailable">No stop list for this departure</string>
+    <!-- A route's details, opened by tapping a fastest route. -->
+    <string name="trip_details_title">To %1$s</string>
+    <string name="trip_details_direct">Direct</string>
+    <plurals name="trip_details_changes">
+        <item quantity="one">%1$d change</item>
+        <item quantity="other">%1$d changes</item>
+    </plurals>
+    <string name="trip_details_walk_total">%1$d m walking</string>
+    <string name="trip_details_walk">Walk %1$d min</string>
+    <string name="trip_details_to_place">to %1$s</string>
+    <string name="trip_details_wait">Wait %1$d min</string>
+    <plurals name="trip_details_stops">
+        <item quantity="one">%1$d stop</item>
+        <item quantity="other">%1$d stops</item>
+    </plurals>
+    <string name="trip_details_show_stops">Show stops</string>
+    <string name="trip_details_hide_stops">Hide stops</string>
     <string name="refresh">Refresh</string>
 
     <!-- Fastest Route -->
@@ -87,8 +104,6 @@
     <string name="fastest_route_info">Line %1$s from %2$s</string>
     <string name="leg_walk">🚶 %1$d min</string>
     <string name="leg_from">from %1$s</string>
-    <string name="expand">Show full route</string>
-    <string name="collapse">Collapse route</string>
     <string name="duration_min">%1$d min</string>
 
     <!-- Refresh Intervals -->

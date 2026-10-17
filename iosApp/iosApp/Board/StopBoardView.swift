@@ -13,6 +13,8 @@ struct StopBoardView: View {
     #else
     @State private var showSettings = false
     #endif
+    /// The fastest route whose details are open.
+    @State private var detailsTrip: TripSelection?
 
     var body: some View {
         let state = model.state
@@ -102,29 +104,40 @@ struct StopBoardView: View {
                 state.loadingTripDestinationIds.contains($0.id) ||
                 state.failedTripDestinationIds.contains($0.id)
         }
-        ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
-            if index > 0 { Divider() }
-            // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
-            ZStack {
-                if let trip = state.fastestTrips[destination.id]?.first {
-                    FastestTripBanner(
-                        trip: trip,
-                        isRefreshing: state.loadingTripDestinationIds.contains(destination.id)
-                    )
-                    .transition(.opacity)
-                } else if state.failedTripDestinationIds.contains(destination.id) {
-                    FastestTripUnavailable(
-                        destinationName: destination.name,
-                        isOnline: state.isOnline,
-                        isRetrying: state.loadingTripDestinationIds.contains(destination.id)
-                    )
-                    .transition(.opacity)
-                } else {
-                    FastestTripPlaceholder(destinationName: destination.name)
+        VStack(spacing: 0) {
+            ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
+                if index > 0 { Divider() }
+                // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
+                ZStack {
+                    if let trip = state.fastestTrips[destination.id]?.first {
+                        FastestTripBanner(
+                            trip: trip,
+                            isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
+                            onTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: trip) }
+                        )
                         .transition(.opacity)
+                    } else if state.failedTripDestinationIds.contains(destination.id) {
+                        FastestTripUnavailable(
+                            destinationName: destination.name,
+                            isOnline: state.isOnline,
+                            isRetrying: state.loadingTripDestinationIds.contains(destination.id)
+                        )
+                        .transition(.opacity)
+                    } else {
+                        FastestTripPlaceholder(destinationName: destination.name)
+                            .transition(.opacity)
+                    }
                 }
+                .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
             }
-            .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
+        }
+        .sheet(item: $detailsTrip) { selection in
+            TripDetailsView(
+                trip: TripDetailsKt.currentTrip(trips: state.fastestTrips[selection.destinationId], selected: selection.trip),
+                showDelays: state.showDelays,
+                showMessages: state.showMessages,
+                loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] }
+            )
         }
         if state.favorites.isEmpty {
             EmptyBoard(onOpenSettings: { showSettings = true })

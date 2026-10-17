@@ -1,7 +1,5 @@
 package com.example.pulsetransit.data
 
-import com.example.pulsetransit.data.cache.CachedTrip
-import com.example.pulsetransit.data.cache.CachedTripLeg
 import com.example.pulsetransit.data.cache.DepartureCacheDao
 import com.example.pulsetransit.data.cache.TripCacheDao
 import io.ktor.client.HttpClient
@@ -21,6 +19,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 import kotlin.time.Clock
 
@@ -39,6 +38,60 @@ class EnturRepositoryImpl(
 
         const val COORDINATE_DECIMALS = 4
         const val COORDINATE_SCALE = 10_000.0
+
+        /** What both trip queries ask of a route: enough per leg for the board and its details. */
+        val TRIP_PATTERN_FRAGMENT =
+            """
+            fragment TripPatternFields on TripPattern {
+              expectedStartTime
+              expectedEndTime
+              duration
+              legs {
+                mode
+                duration
+                distance
+                expectedStartTime
+                expectedEndTime
+                aimedStartTime
+                realtime
+                serviceDate
+                line {
+                  publicCode
+                  name
+                  authority {
+                    name
+                  }
+                }
+                fromPlace {
+                  name
+                  quay {
+                    id
+                    publicCode
+                  }
+                }
+                toPlace {
+                  name
+                  quay {
+                    id
+                  }
+                }
+                fromEstimatedCall {
+                  destinationDisplay {
+                    frontText
+                  }
+                  notices {
+                    text
+                  }
+                }
+                serviceJourney {
+                  id
+                  notices {
+                    text
+                  }
+                }
+              }
+            }
+            """.trimIndent()
     }
 
     // Geocoder V3 response data structures
@@ -125,13 +178,29 @@ class EnturRepositoryImpl(
     private data class LegGraphQL(
         val mode: String? = null,
         val duration: Long = 0,
+        val distance: Double = 0.0,
+        val expectedStartTime: String? = null,
+        val expectedEndTime: String? = null,
+        val aimedStartTime: String? = null,
+        val realtime: Boolean = false,
+        val serviceDate: String? = null,
         val line: LineGraphQL? = null,
         val fromPlace: TripPlaceGraphQL? = null,
+        val toPlace: TripPlaceGraphQL? = null,
+        val fromEstimatedCall: LegCallGraphQL? = null,
+        val serviceJourney: ServiceJourneyGraphQL? = null,
     )
 
     @Serializable
     private data class TripPlaceGraphQL(
         val name: String? = null,
+        val quay: QuayIdGraphQL? = null,
+    )
+
+    @Serializable
+    private data class LegCallGraphQL(
+        val destinationDisplay: DestinationDisplayGraphQL? = null,
+        val notices: List<NoticeGraphQL> = emptyList(),
     )
 
     @Serializable
@@ -617,24 +686,11 @@ class EnturRepositoryImpl(
                 numTripPatterns: ${'$'}count
               ) {
                 tripPatterns {
-                  expectedStartTime
-                  expectedEndTime
-                  duration
-                  legs {
-                    mode
-                    duration
-                    line {
-                      publicCode
-                      name
-                    }
-                    fromPlace {
-                      name
-                    }
-                  }
+                  ...TripPatternFields
                 }
               }
             }
-            """.trimIndent()
+            """.trimIndent() + "\n" + TRIP_PATTERN_FRAGMENT
 
         val variables =
             buildJsonObject {
@@ -703,24 +759,11 @@ class EnturRepositoryImpl(
                     numTripPatterns: 1
                   ) {
                     tripPatterns {
-                      expectedStartTime
-                      expectedEndTime
-                      duration
-                      legs {
-                        mode
-                        duration
-                        line {
-                          publicCode
-                          name
-                        }
-                        fromPlace {
-                          name
-                        }
-                      }
+                      ...TripPatternFields
                     }
                   }
                 }
-                """.trimIndent()
+                """.trimIndent() + "\n" + TRIP_PATTERN_FRAGMENT
 
             val variables =
                 buildJsonObject {
@@ -777,17 +820,54 @@ class EnturRepositoryImpl(
                     .firstOrNull()
                     ?.fromPlace
                     ?.name ?: "Unknown",
-            legs =
-                pattern.legs.map { leg ->
-                    TripLeg(
-                        mode = leg.mode,
-                        lineName = leg.line?.publicCode ?: leg.line?.name,
-                        fromName = leg.fromPlace?.name,
-                        durationMinutes = (leg.duration / 60).toInt(),
-                    )
-                },
+            legs = pattern.legs.map(::parseLeg),
         )
     }
+
+    private fun parseLeg(leg: LegGraphQL) =
+        TripLeg(
+            mode = leg.mode,
+            lineName = leg.line?.publicCode ?: leg.line?.name,
+            fromName = leg.fromPlace?.name,
+            durationMinutes = (leg.duration / 60).toInt(),
+            toName = leg.toPlace?.name,
+            expectedStartTime = leg.expectedStartTime,
+            expectedEndTime = leg.expectedEndTime,
+            aimedStartTime = leg.aimedStartTime,
+            distanceMeters = leg.distance.roundToInt(),
+            isRealtime = leg.realtime,
+            platform =
+                leg.fromPlace
+                    ?.quay
+                    ?.publicCode
+                    ?.takeIf(String::isNotBlank),
+            destination =
+                leg.fromEstimatedCall
+                    ?.destinationDisplay
+                    ?.frontText
+                    ?.takeIf(String::isNotBlank),
+            lineFullName = leg.line?.name?.takeIf(String::isNotBlank),
+            authority =
+                leg.line
+                    ?.authority
+                    ?.name
+                    ?.takeIf(String::isNotBlank),
+            notices =
+                (
+                    leg.fromEstimatedCall
+                        ?.notices
+                        .orEmpty()
+                        .mapNotNull { it.text } +
+                        leg.serviceJourney
+                            ?.notices
+                            .orEmpty()
+                            .mapNotNull { it.text }
+                ).distinct(),
+            serviceJourneyId = leg.serviceJourney?.id,
+            serviceDate = leg.serviceDate,
+            fromQuayId = leg.fromPlace?.quay?.id,
+            toQuayId = leg.toPlace?.quay?.id,
+        )
 
     /** Stable key for an origin set and destination, independent of the order favourites are in. */
     private fun routeKey(
@@ -819,33 +899,4 @@ class EnturRepositoryImpl(
         val cached = tripCache.getUpcoming(routeKey, nowMillis).firstOrNull() ?: return Sourced.failed(null)
         return Sourced.cached(cached.toTripInfo(), cached.fetchedAt)
     }
-
-    private fun TripInfo.toCacheEntity(
-        routeKey: String,
-        position: Int,
-        fetchedAt: Long,
-    ) = CachedTrip(
-        routeKey = routeKey,
-        position = position,
-        destinationName = destinationName,
-        expectedStartTime = expectedStartTime,
-        expectedStartAtMillis = parseIsoToMillis(expectedStartTime) ?: 0L,
-        expectedEndTime = expectedEndTime,
-        lineName = lineName,
-        durationMinutes = durationMinutes,
-        originName = originName,
-        legs = legs.map { CachedTripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) },
-        fetchedAt = fetchedAt,
-    )
-
-    private fun CachedTrip.toTripInfo() =
-        TripInfo(
-            destinationName = destinationName,
-            expectedStartTime = expectedStartTime,
-            expectedEndTime = expectedEndTime,
-            lineName = lineName,
-            durationMinutes = durationMinutes,
-            originName = originName,
-            legs = legs.map { TripLeg(it.mode, it.lineName, it.fromName, it.durationMinutes) },
-        )
 }

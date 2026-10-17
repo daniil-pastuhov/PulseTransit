@@ -69,6 +69,23 @@ data class CachedTripLeg(
     val lineName: String? = null,
     val fromName: String? = null,
     val durationMinutes: Int = 0,
+    // Added after the first release of this column. It is JSON, so rows written before decode
+    // with these defaults and the schema needs no new version.
+    val toName: String? = null,
+    val expectedStartTime: String? = null,
+    val expectedEndTime: String? = null,
+    val aimedStartTime: String? = null,
+    val distanceMeters: Int = 0,
+    val isRealtime: Boolean = false,
+    val platform: String? = null,
+    val destination: String? = null,
+    val lineFullName: String? = null,
+    val authority: String? = null,
+    val notices: List<String> = emptyList(),
+    val serviceJourneyId: String? = null,
+    val serviceDate: String? = null,
+    val fromQuayId: String? = null,
+    val toQuayId: String? = null,
 )
 
 /**

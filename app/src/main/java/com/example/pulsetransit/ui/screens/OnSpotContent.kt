@@ -65,11 +65,13 @@ import com.example.pulsetransit.R
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.autoTripOptionCount
+import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.tripArrival
 import com.example.pulsetransit.data.visibleTripOptionCount
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
+import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
 import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
@@ -139,12 +141,12 @@ private fun LocatedContent(
 ) {
     if (isLandscape) {
         Row(modifier = modifier.padding(6.dp)) {
-            RoutesSection(uiState, onNavigateToSettings, Modifier.weight(1.4f).fillMaxHeight())
+            RoutesSection(uiState, viewModel, onNavigateToSettings, Modifier.weight(1.4f).fillMaxHeight())
             NearbyStopSection(uiState, viewModel, Modifier.weight(1f).fillMaxHeight())
         }
     } else {
         Column(modifier = modifier.padding(6.dp)) {
-            RoutesSection(uiState, onNavigateToSettings, Modifier.weight(2f).fillMaxWidth())
+            RoutesSection(uiState, viewModel, onNavigateToSettings, Modifier.weight(2f).fillMaxWidth())
             NearbyStopSection(uiState, viewModel, Modifier.weight(1f).fillMaxWidth())
         }
     }
@@ -207,6 +209,7 @@ private fun LocationStatus(
 @Composable
 private fun RoutesSection(
     uiState: StopBoardViewModel.UiState,
+    viewModel: StopBoardViewModel,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier,
 ) {
@@ -235,6 +238,17 @@ private fun RoutesSection(
                 it.id in uiState.loadingTripDestinationIds ||
                 it.id in uiState.failedTripDestinationIds
         }
+    // The tapped alternative, with its destination's id; the details follow its refreshes.
+    var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
+    detailsTrip?.let { (destinationId, selected) ->
+        TripDetailsSheet(
+            trip = currentTrip(uiState.fastestTrips[destinationId], selected),
+            showDelays = uiState.showDelays,
+            showMessages = uiState.showMessages,
+            loadLegStops = viewModel::tripLegStops,
+            onDismiss = { detailsTrip = null },
+        )
+    }
     BoxWithConstraints(modifier = modifier) {
         val fontScale = LocalDensity.current.fontScale
         val autoCount =
@@ -255,6 +269,7 @@ private fun RoutesSection(
                         isRefreshing = destination.id in uiState.loadingTripDestinationIds,
                         isFailed = destination.id in uiState.failedTripDestinationIds,
                         isOnline = uiState.isOnline,
+                        onTripClick = { detailsTrip = destination.id to it },
                     )
                 }
             }
@@ -271,6 +286,7 @@ private fun DestinationRoutesCard(
     isRefreshing: Boolean,
     isFailed: Boolean,
     isOnline: Boolean,
+    onTripClick: (TripInfo) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(6.dp),
@@ -298,7 +314,7 @@ private fun DestinationRoutesCard(
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
                                 )
                             }
-                            TripOptionRow(trip = trip, isFirst = index == 0)
+                            TripOptionRow(trip = trip, isFirst = index == 0, onClick = { onTripClick(trip) })
                         }
                     }
                     if (isRefreshing) {
@@ -318,10 +334,11 @@ private fun DestinationRoutesCard(
 private fun TripOptionRow(
     trip: TripInfo,
     isFirst: Boolean,
+    onClick: () -> Unit,
 ) {
     val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {

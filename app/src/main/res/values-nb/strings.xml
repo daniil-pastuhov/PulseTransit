@@ -69,6 +69,23 @@
     <string name="details_route">Stopp for avgangen %1$s</string>
     <string name="details_ride">%1$d min til %2$s</string>
     <string name="details_route_unavailable">Ingen stoppliste for denne avgangen</string>
+    <!-- A route's details, opened by tapping a fastest route. -->
+    <string name="trip_details_title">Til %1$s</string>
+    <string name="trip_details_direct">Direkte</string>
+    <plurals name="trip_details_changes">
+        <item quantity="one">%1$d bytte</item>
+        <item quantity="other">%1$d bytter</item>
+    </plurals>
+    <string name="trip_details_walk_total">%1$d m gange</string>
+    <string name="trip_details_walk">Gå %1$d min</string>
+    <string name="trip_details_to_place">til %1$s</string>
+    <string name="trip_details_wait">Vent %1$d min</string>
+    <plurals name="trip_details_stops">
+        <item quantity="one">%1$d stopp</item>
+        <item quantity="other">%1$d stopp</item>
+    </plurals>
+    <string name="trip_details_show_stops">Vis stopp</string>
+    <string name="trip_details_hide_stops">Skjul stopp</string>
     <string name="refresh">Oppdater</string>
 
     <!-- Fastest Route -->
@@ -87,8 +104,6 @@
     <string name="fastest_route_info">Linje %1$s fra %2$s</string>
     <string name="leg_walk">🚶 %1$d min</string>
     <string name="leg_from">fra %1$s</string>
-    <string name="expand">Vis hele ruten</string>
-    <string name="collapse">Skjul ruten</string>
     <string name="duration_min">%1$d min</string>
 
     <!-- Refresh Intervals -->

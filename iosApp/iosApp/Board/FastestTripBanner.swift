@@ -1,11 +1,11 @@
 import Shared
 import SwiftUI
 
-/// The next fastest journey to one destination set in Settings; tap to show the full route.
+/// The next fastest journey to one destination set in Settings; tap to open its details.
 struct FastestTripBanner: View {
     let trip: TripInfo
     var isRefreshing = false
-    @State private var expanded = false
+    let onTap: () -> Void
 
     var body: some View {
         HStack(spacing: 16) {
@@ -18,20 +18,18 @@ struct FastestTripBanner: View {
                 Text(routeText)
                     .font(.subheadline)
                     .opacity(0.8)
-                    .lineLimit(expanded ? nil : 1)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text(L("duration_min", Int(trip.durationMinutes)))
                 .font(.headline)
-            Image(systemName: expanded ? "chevron.up" : "chevron.down")
-                .accessibilityLabel(L(expanded ? "collapse" : "expand"))
         }
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .background(Palette.primary.opacity(0.18))
         .contentShape(Rectangle())
-        .onTapGesture { withAnimation { expanded.toggle() } }
+        .onTapGesture(perform: onTap)
         .overlay(alignment: .bottom) {
             if isRefreshing { RefreshBar(color: Palette.textPrimary.opacity(0.6)) }
         }

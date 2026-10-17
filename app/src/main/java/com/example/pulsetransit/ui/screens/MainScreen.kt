@@ -6,7 +6,6 @@ import android.content.res.Configuration
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -36,8 +35,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
@@ -96,6 +93,7 @@ import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WeatherInfo
+import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.parseWeatherSymbol
 import com.example.pulsetransit.data.tripArrival
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -104,6 +102,7 @@ import com.example.pulsetransit.ui.components.PlaceholderBlock
 import com.example.pulsetransit.ui.components.PrecipitationBar
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
+import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.components.loadFailureIcon
@@ -162,6 +161,9 @@ fun MainScreen(
         viewModel.startLocationTracking()
         onStopOrDispose { viewModel.stopLocationTracking() }
     }
+
+    // The fastest route whose details are open, with its destination's id.
+    var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
 
     val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
     val screenAlpha = if (uiState.isScreenDimmed) 0.05f else 1f
@@ -262,6 +264,16 @@ fun MainScreen(
                         modifier = Modifier.fillMaxSize().weight(1f),
                     )
                 } else {
+                    // The tapped route, captured at the tap; the details follow its refreshes.
+                    detailsTrip?.let { (destinationId, selected) ->
+                        TripDetailsSheet(
+                            trip = currentTrip(uiState.fastestTrips[destinationId], selected),
+                            showDelays = uiState.showDelays,
+                            showMessages = uiState.showMessages,
+                            loadLegStops = viewModel::tripLegStops,
+                            onDismiss = { detailsTrip = null },
+                        )
+                    }
                     // Fastest route banners (one per destination station set in Settings), each
                     // appearing as soon as its own route arrives. A destination with no route is
                     // left out once it has loaded. They share one background colour, so without a
@@ -297,6 +309,7 @@ fun MainScreen(
                                     } else {
                                         FastestTripBanner(
                                             trip = loaded,
+                                            onClick = { detailsTrip = destination.id to loaded },
                                             isRefreshing = destination.id in uiState.loadingTripDestinationIds,
                                         )
                                     }
@@ -439,6 +452,7 @@ fun MainScreen(
 @Composable
 fun FastestTripBanner(
     trip: TripInfo,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isRefreshing: Boolean = false,
 ) {
@@ -449,18 +463,13 @@ fun FastestTripBanner(
             "--:--"
         }
 
-    var expanded by remember { mutableStateOf(false) }
-    var hasOverflow by remember { mutableStateOf(false) }
-    val canExpand = hasOverflow || expanded
-
     Box(modifier = modifier.fillMaxWidth()) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .animateContentSize()
                     .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable(enabled = canExpand) { expanded = !expanded }
+                    .clickable(onClick = onClick)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -480,11 +489,8 @@ fun FastestTripBanner(
                     text = tripRouteText(trip),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                    maxLines = if (expanded) Int.MAX_VALUE else 1,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    onTextLayout = { result ->
-                        if (!expanded) hasOverflow = result.hasVisualOverflow
-                    },
                 )
             }
             Text(
@@ -492,13 +498,6 @@ fun FastestTripBanner(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
-            if (canExpand) {
-                Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = stringResource(if (expanded) R.string.collapse else R.string.expand),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
         }
         if (isRefreshing) {
             RefreshingIndicator(

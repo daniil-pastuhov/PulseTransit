@@ -1,7 +1,9 @@
 package com.example.pulsetransit.data
 
+import com.example.pulsetransit.data.cache.CacheConverters
 import com.example.pulsetransit.data.cache.CachedDeparture
 import com.example.pulsetransit.data.cache.CachedTrip
+import com.example.pulsetransit.data.cache.CachedTripLeg
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -410,6 +412,70 @@ class EnturRepositoryImplTest {
             assertEquals(end, cached.data?.expectedEndTime)
             assertTrue(cached.isFromCache)
         }
+
+    @Test
+    fun `a trip's legs keep their details live and from the cache`() =
+        runTest {
+            val now = nowMillis()
+            val start = isoOslo(now + 10 * minute)
+            val end = isoOslo(now + 16 * minute)
+            val aimed = isoOslo(now + 9 * minute)
+            val body =
+                """{"data":{"trip":{"tripPatterns":[{"expectedStartTime":"$start","expectedEndTime":"$end",
+                   "duration":360,"legs":[{"mode":"metro","duration":360,"distance":3114.4,
+                   "expectedStartTime":"$start","expectedEndTime":"$end","aimedStartTime":"$aimed",
+                   "realtime":true,"serviceDate":"2026-10-17",
+                   "line":{"publicCode":"5","name":"Sognsvann - Vestli","authority":{"name":"Ruter"}},
+                   "fromPlace":{"name":"Jernbanetorget","quay":{"id":"NSR:Quay:7184","publicCode":"2"}},
+                   "toPlace":{"name":"Majorstuen","quay":{"id":"NSR:Quay:8028"}},
+                   "fromEstimatedCall":{"destinationDisplay":{"frontText":"Ringen via Majorstuen"},"notices":[{"text":"Bytt på Majorstuen"}]},
+                   "serviceJourney":{"id":"RUT:ServiceJourney:5","notices":[{"text":"Bytt på Majorstuen"},{"text":null}]}}]}]}}}"""
+            var online = true
+            val engine =
+                MockEngine {
+                    if (!online) throw IOException("offline")
+                    respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+
+            val live = repo.getFastestTrip(fromIds = listOf(stopId), to = to)
+            online = false
+            val cached = repo.getFastestTrip(fromIds = listOf(stopId), to = to)
+
+            val expected =
+                TripLeg(
+                    mode = "metro",
+                    lineName = "5",
+                    fromName = "Jernbanetorget",
+                    durationMinutes = 6,
+                    toName = "Majorstuen",
+                    expectedStartTime = start,
+                    expectedEndTime = end,
+                    aimedStartTime = aimed,
+                    distanceMeters = 3114,
+                    isRealtime = true,
+                    platform = "2",
+                    destination = "Ringen via Majorstuen",
+                    lineFullName = "Sognsvann - Vestli",
+                    authority = "Ruter",
+                    notices = listOf("Bytt på Majorstuen"),
+                    serviceJourneyId = "RUT:ServiceJourney:5",
+                    serviceDate = "2026-10-17",
+                    fromQuayId = "NSR:Quay:7184",
+                    toQuayId = "NSR:Quay:8028",
+                )
+            assertEquals(listOf(expected), live.data?.legs)
+            assertEquals(listOf(expected), cached.data?.legs)
+            assertTrue(cached.isFromCache)
+        }
+
+    @Test
+    fun `legs cached before their details were kept still decode`() {
+        val legs = CacheConverters().jsonToLegs("""[{"mode":"bus","lineName":"31","fromName":"Oslo S","durationMinutes":12}]""")
+
+        assertEquals(listOf(CachedTripLeg(mode = "bus", lineName = "31", fromName = "Oslo S", durationMinutes = 12)), legs)
+    }
 
     @Test
     fun `no trip found is an answer - not a failure`() =

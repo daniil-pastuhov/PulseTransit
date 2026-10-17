@@ -21,13 +21,13 @@ struct OnSpotView: View {
             GeometryReader { geometry in
                 if geometry.size.width > geometry.size.height {
                     HStack(spacing: 0) {
-                        RoutesSection(state: state, onOpenSettings: onOpenSettings)
+                        RoutesSection(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
                             .frame(width: geometry.size.width * 0.58)
                         NearbyStopSection(state: state, viewModel: viewModel)
                     }
                 } else {
                     VStack(spacing: 0) {
-                        RoutesSection(state: state, onOpenSettings: onOpenSettings)
+                        RoutesSection(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
                             .frame(height: geometry.size.height * 2 / 3)
                         NearbyStopSection(state: state, viewModel: viewModel)
                     }
@@ -90,7 +90,10 @@ private struct LocationStatus: View {
 
 private struct RoutesSection: View {
     let state: StopBoardViewModel.UiState
+    let viewModel: StopBoardViewModel
     let onOpenSettings: () -> Void
+    /// The tapped alternative, whose details are open.
+    @State private var detailsTrip: TripSelection?
 
     var body: some View {
         if state.destinationStations.isEmpty {
@@ -130,11 +133,20 @@ private struct RoutesSection: View {
                                 count: count,
                                 isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
                                 isFailed: state.failedTripDestinationIds.contains(destination.id),
-                                isOnline: state.isOnline
+                                isOnline: state.isOnline,
+                                onTripTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: $0) }
                             )
                         }
                     }
                 }
+            }
+            .sheet(item: $detailsTrip) { selection in
+                TripDetailsView(
+                    trip: TripDetailsKt.currentTrip(trips: state.fastestTrips[selection.destinationId], selected: selection.trip),
+                    showDelays: state.showDelays,
+                    showMessages: state.showMessages,
+                    loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] }
+                )
             }
         }
     }
@@ -148,6 +160,7 @@ private struct DestinationRoutesCard: View {
     let isRefreshing: Bool
     let isFailed: Bool
     let isOnline: Bool
+    let onTripTap: (TripInfo) -> Void
 
     var body: some View {
         Group {
@@ -161,6 +174,8 @@ private struct DestinationRoutesCard: View {
                     ForEach(Array(trips.prefix(count).enumerated()), id: \.offset) { index, trip in
                         if index > 0 { Divider().padding(.horizontal, 16) }
                         TripOptionRow(trip: trip, isFirst: index == 0)
+                            .contentShape(Rectangle())
+                            .onTapGesture { onTripTap(trip) }
                     }
                 }
                 .padding(.vertical, 8)

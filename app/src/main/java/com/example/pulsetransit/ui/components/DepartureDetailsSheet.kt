@@ -64,9 +64,9 @@ import java.util.Locale
 import kotlin.time.Duration.Companion.minutes
 
 /** How long the details stay open untouched: a wall display left showing them would never return to the board. */
-private val AUTO_CLOSE_AFTER = 2.minutes
+internal val AUTO_CLOSE_AFTER = 2.minutes
 
-private const val CLOCK_TICK_MILLIS = 1000L
+internal const val CLOCK_TICK_MILLIS = 1000L
 private const val MINUTES_PER_HOUR = 60L
 
 // Size of the "+1" next-day marker relative to the time it follows, as on the board.
@@ -217,7 +217,7 @@ private fun DetailsHeader(
 }
 
 @Composable
-private fun SectionTitle(
+internal fun SectionTitle(
     text: String,
     subtitle: String? = null,
 ) {
@@ -381,7 +381,7 @@ private fun RouteColumn(
 }
 
 @Composable
-private fun RouteStopRow(
+internal fun RouteStopRow(
     stop: JourneyStop,
     nowMillis: Long,
     isFirst: Boolean,
@@ -429,7 +429,7 @@ private fun RouteStopRow(
 
 /** "in 14 min", or "in 1 h 5 min" from an hour out. */
 @Composable
-private fun inTimeText(minutes: Long): String =
+internal fun inTimeText(minutes: Long): String =
     if (minutes < MINUTES_PER_HOUR) {
         stringResource(R.string.details_in_minutes, minutes.toInt())
     } else {
@@ -437,7 +437,7 @@ private fun inTimeText(minutes: Long): String =
     }
 
 /** "HH:mm", with the board's small raised "+1" when it falls on a later day. */
-private fun clockText(
+internal fun clockText(
     time: String,
     nowMillis: Long,
 ): AnnotatedString {
