@@ -19,6 +19,7 @@ struct SettingsView: View {
             let isBoard = state.appMode == .board
             Form {
                 ModeSection(state: state, viewModel: viewModel)
+                DestinationsSection(state: state, viewModel: viewModel)
                 ThemeSection(state: state, viewModel: viewModel)
                 RefreshSection(state: state, viewModel: viewModel)
                 if isBoard {
@@ -31,7 +32,6 @@ struct SettingsView: View {
                     TripOptionsSection(state: state, viewModel: viewModel)
                 }
                 RouteSearchSection(model: model)
-                DestinationsSection(state: state, viewModel: viewModel)
                 if isBoard {
                     LocationSection(state: state, viewModel: viewModel)
                     AddStopsSection(state: state, viewModel: viewModel)

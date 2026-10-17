@@ -173,6 +173,131 @@ fun SettingsScreen(
                     )
                 }
 
+                // Section: Fastest Route Destinations
+                SettingsCard(title = stringResource(R.string.fastest_route_destination)) {
+                    val destinations = uiState.destinationStations
+                    if (destinations.isNotEmpty()) {
+                        destinations.forEach { destination ->
+                            key(destination.id) {
+                                Row(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    PlaceKindIcon(destination.kind)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(destination.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                        destination.locality?.let {
+                                            Text(
+                                                it,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
+                                    IconButton(onClick = { viewModel.removeDestinationStation(destination.id) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = stringResource(R.string.remove),
+                                            tint = MaterialTheme.colorScheme.error,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        Text(
+                            stringResource(R.string.no_destination_set),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    if (destinations.size >= SettingsRepository.MAX_DESTINATION_STATIONS) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            pluralStringResource(
+                                R.plurals.max_destinations_reached,
+                                SettingsRepository.MAX_DESTINATION_STATIONS,
+                                SettingsRepository.MAX_DESTINATION_STATIONS,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // The field and its results scroll into view together as results arrive,
+                        // so they aren't left below the fold behind the keyboard.
+                        val destinationSearchBringIntoView = remember { BringIntoViewRequester() }
+                        LaunchedEffect(uiState.destinationResults) {
+                            if (uiState.destinationResults.isNotEmpty()) destinationSearchBringIntoView.bringIntoView()
+                        }
+                        Column(modifier = Modifier.bringIntoViewRequester(destinationSearchBringIntoView)) {
+                            OutlinedTextField(
+                                value = uiState.destinationQuery,
+                                onValueChange = { viewModel.onDestinationQueryChanged(it) },
+                                label = { Text(stringResource(R.string.search_destination_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
+                            )
+
+                            if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                                }
+                            } else if (uiState.destinationResults.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(4.dp))
+                                uiState.destinationResults
+                                    .filter { result -> destinations.none { it.id == result.id } }
+                                    .forEach { stop ->
+                                        key(stop.id) {
+                                            Row(
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .padding(vertical = 4.dp)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(MaterialTheme.colorScheme.surface)
+                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+                                                PlaceKindIcon(stop.kind)
+                                                Spacer(modifier = Modifier.width(12.dp))
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                                                    stop.locality?.let {
+                                                        Text(
+                                                            it,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        )
+                                                    }
+                                                }
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Button(
+                                                    onClick = {
+                                                        keyboardController?.hide()
+                                                        viewModel.addDestinationStation(stop)
+                                                    },
+                                                ) {
+                                                    Text(stringResource(R.string.select), fontSize = 12.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                            }
+                        }
+                    }
+                }
+
                 // Section 1: Theme Settings
                 SettingsCard(title = stringResource(R.string.theme_settings)) {
                     Text(
@@ -543,131 +668,6 @@ fun SettingsScreen(
                             )
                         }
                         Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
-                    }
-                }
-
-                // Section: Fastest Route Destinations
-                SettingsCard(title = stringResource(R.string.fastest_route_destination)) {
-                    val destinations = uiState.destinationStations
-                    if (destinations.isNotEmpty()) {
-                        destinations.forEach { destination ->
-                            key(destination.id) {
-                                Row(
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    PlaceKindIcon(destination.kind)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(destination.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                        destination.locality?.let {
-                                            Text(
-                                                it,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            )
-                                        }
-                                    }
-                                    IconButton(onClick = { viewModel.removeDestinationStation(destination.id) }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Delete,
-                                            contentDescription = stringResource(R.string.remove),
-                                            tint = MaterialTheme.colorScheme.error,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        Text(
-                            stringResource(R.string.no_destination_set),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    if (destinations.size >= SettingsRepository.MAX_DESTINATION_STATIONS) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            pluralStringResource(
-                                R.plurals.max_destinations_reached,
-                                SettingsRepository.MAX_DESTINATION_STATIONS,
-                                SettingsRepository.MAX_DESTINATION_STATIONS,
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // The field and its results scroll into view together as results arrive,
-                        // so they aren't left below the fold behind the keyboard.
-                        val destinationSearchBringIntoView = remember { BringIntoViewRequester() }
-                        LaunchedEffect(uiState.destinationResults) {
-                            if (uiState.destinationResults.isNotEmpty()) destinationSearchBringIntoView.bringIntoView()
-                        }
-                        Column(modifier = Modifier.bringIntoViewRequester(destinationSearchBringIntoView)) {
-                            OutlinedTextField(
-                                value = uiState.destinationQuery,
-                                onValueChange = { viewModel.onDestinationQueryChanged(it) },
-                                label = { Text(stringResource(R.string.search_destination_hint)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
-                            )
-
-                            if (uiState.isSearchingDestination && uiState.destinationResults.isEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                                }
-                            } else if (uiState.destinationResults.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(4.dp))
-                                uiState.destinationResults
-                                    .filter { result -> destinations.none { it.id == result.id } }
-                                    .forEach { stop ->
-                                        key(stop.id) {
-                                            Row(
-                                                modifier =
-                                                    Modifier
-                                                        .fillMaxWidth()
-                                                        .padding(vertical = 4.dp)
-                                                        .clip(RoundedCornerShape(8.dp))
-                                                        .background(MaterialTheme.colorScheme.surface)
-                                                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.SpaceBetween,
-                                            ) {
-                                                PlaceKindIcon(stop.kind)
-                                                Spacer(modifier = Modifier.width(12.dp))
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    Text(stop.name, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                                                    stop.locality?.let {
-                                                        Text(
-                                                            it,
-                                                            style = MaterialTheme.typography.bodySmall,
-                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        )
-                                                    }
-                                                }
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Button(
-                                                    onClick = {
-                                                        keyboardController?.hide()
-                                                        viewModel.addDestinationStation(stop)
-                                                    },
-                                                ) {
-                                                    Text(stringResource(R.string.select), fontSize = 12.sp)
-                                                }
-                                            }
-                                        }
-                                    }
-                            }
-                        }
                     }
                 }
 
