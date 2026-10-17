@@ -1,0 +1,5 @@
+• Søk etter et stoppested, en adresse eller et sted fra tavlen og få reiser dit.
+• Trykk på raskeste rute for å se hele reisen: linjer, plattformer, sanntid, gåing og bytter.
+• Nye innstillinger for rutesøk: velg Raskest, Færre bytter eller Mindre gåing, og hvilke transportmidler du vil bruke.
+• Velg gangfart for rutesøk.
+• Listen over stoppesteder i nærheten i «Der du er»-modus er større og lettere å trykke på.

@@ -1,0 +1,5 @@
+• Search for any stop, address or place from the board and get routes there.
+• Tap a fastest route to see every leg: lines, platforms, live times, walks and changes.
+• New route search settings: choose Fastest, Fewer transfers or Less walking, and which transport to use.
+• Set your walking speed for route searches.
+• The nearby stops list in On the spot mode is bigger and easier to tap.
