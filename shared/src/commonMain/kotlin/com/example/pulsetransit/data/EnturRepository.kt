@@ -46,21 +46,26 @@ interface EnturRepository {
         serviceDate: String,
     ): List<JourneyStop>
 
-    /** As [getDepartures], but for the fastest route to a destination from a set of stop places. */
+    /**
+     * As [getDepartures], but for the best route to a destination from a set of stop places, by
+     * [options]. Routes are cached per option set, so changing them never serves an old route.
+     */
     suspend fun getFastestTrip(
         fromIds: List<String>,
         to: StopPlace,
+        options: RouteOptions = RouteOptions(),
     ): Sourced<TripInfo?>
 
     /**
      * As [getDepartures], but for the next [count] route alternatives to a destination from a
-     * coordinate, in Entur's order (the first is the one to take). Empty when there are none.
+     * coordinate, best first by [options] (the first is the one to take). Empty when there are none.
      */
     suspend fun getTripOptions(
         lat: Double,
         lon: Double,
         to: StopPlace,
         count: Int,
+        options: RouteOptions = RouteOptions(),
     ): Sourced<List<TripInfo>>
 
     companion object {

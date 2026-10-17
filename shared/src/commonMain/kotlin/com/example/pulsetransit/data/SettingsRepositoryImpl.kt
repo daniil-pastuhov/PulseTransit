@@ -18,6 +18,7 @@ class SettingsRepositoryImpl(
 ) : SettingsRepository {
     object Keys {
         const val FILTERED_LINES = "filtered_lines_json"
+        const val EXCLUDED_ROUTE_MODES = "route_excluded_modes_json"
 
         fun selectedQuays(stopId: String) = "quays_json_$stopId"
     }
@@ -96,6 +97,29 @@ class SettingsRepositoryImpl(
             "trip_options_count",
             count.coerceIn(SettingsRepository.TRIP_OPTIONS_AUTO, SettingsRepository.MAX_TRIP_OPTIONS),
         )
+    }
+
+    override fun getRoutePreference(): RoutePreference {
+        val stored = prefs.getString("route_preference", RoutePreference.FASTEST.name)
+        return RoutePreference.entries.firstOrNull { it.name == stored } ?: RoutePreference.FASTEST
+    }
+
+    override fun setRoutePreference(preference: RoutePreference) {
+        prefs.putString("route_preference", preference.name)
+    }
+
+    // A name this build does not know (from a newer one) is dropped, and so is a set excluding
+    // everything, which would leave no transit to route by.
+    override fun getExcludedRouteModes(): Set<RouteTransportMode> =
+        getStringSet(Keys.EXCLUDED_ROUTE_MODES)
+            .orEmpty()
+            .mapNotNull { name -> RouteTransportMode.entries.firstOrNull { it.name == name } }
+            .toSet()
+            .takeIf { it.size < RouteTransportMode.entries.size }
+            .orEmpty()
+
+    override fun setExcludedRouteModes(modes: Set<RouteTransportMode>) {
+        putStringSet(Keys.EXCLUDED_ROUTE_MODES, modes.map { it.name }.toSet())
     }
 
     override fun getFavorites(): List<StopPlace> {

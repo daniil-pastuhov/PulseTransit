@@ -9,6 +9,7 @@ import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopDepartures
@@ -304,8 +305,12 @@ class StopBoardViewModel(
         settingsRepository
             .getFilteredLinesFlow()
             .onEach { filteredLines ->
+                // Routes avoid filtered lines too, but they are only asked for again on a change:
+                // the first emission is what loadSettings already fetched them with.
+                val changed = filteredLines != _uiState.value.filteredLines
                 _uiState.update { it.copy(filteredLines = filteredLines) }
                 refreshDepartures()
+                if (changed) refreshFastestTrip()
             }.launchIn(viewModelScope)
 
         settingsRepository
@@ -801,6 +806,12 @@ class StopBoardViewModel(
         val lat = if (onSpot) fix?.latitude else settingsRepository.getSavedLatitude()
         val lon = if (onSpot) fix?.longitude else settingsRepository.getSavedLongitude()
         val count = if (onSpot) tripOptionsToFetch() else 1
+        val options =
+            RouteOptions(
+                preference = settingsRepository.getRoutePreference(),
+                excludedModes = settingsRepository.getExcludedRouteModes(),
+                bannedLines = _uiState.value.filteredLines,
+            )
 
         // On-spot mode has nowhere to route from until the device is found.
         if (destinations.isEmpty() || (onSpot && fix == null)) {
@@ -821,7 +832,7 @@ class StopBoardViewModel(
             viewModelScope.launch {
                 for (destination in destinations) {
                     launch {
-                        val result = fetchTrips(destination, lat, lon, count)
+                        val result = fetchTrips(destination, lat, lon, count, options)
                         val trips = result.data.map { it.copy(destinationName = destination.name) }
                         ensureActive() // see fetchStopDepartures
                         _uiState.update {
@@ -856,13 +867,14 @@ class StopBoardViewModel(
         lat: Double?,
         lon: Double?,
         count: Int,
+        options: RouteOptions,
     ): Sourced<List<TripInfo>> {
         if (lat != null && lon != null) {
-            return enturRepository.getTripOptions(lat = lat, lon = lon, to = destination, count = count)
+            return enturRepository.getTripOptions(lat = lat, lon = lon, to = destination, count = count, options = options)
         }
         val fromIds = _uiState.value.favorites.map { it.id }
         if (fromIds.isEmpty()) return Sourced(emptyList())
-        val trip = enturRepository.getFastestTrip(fromIds = fromIds, to = destination)
+        val trip = enturRepository.getFastestTrip(fromIds = fromIds, to = destination, options = options)
         return Sourced(listOfNotNull(trip.data), trip.fetchedAtMillis, trip.failed)
     }
 

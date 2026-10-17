@@ -2,6 +2,9 @@ package com.example.pulsetransit.ui.viewmodel
 
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.RouteOptions
+import com.example.pulsetransit.data.RoutePreference
+import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WeatherInfo
@@ -278,6 +281,35 @@ class StopBoardViewModelTest : BoardTestBase() {
                     .groups
                     .flatMap { g -> g.departures.map { it.line } }
             assertEquals(listOf("R13"), lines)
+        }
+
+    @Test
+    fun `routes are searched with the route settings and the filtered lines`() =
+        boardTest {
+            settings.destinations = listOf(oslo)
+            settings.filtered = setOf("L1")
+            settings.preference = RoutePreference.FEWER_TRANSFERS
+            settings.excludedModes = setOf(RouteTransportMode.CAR_FERRY)
+            viewModel()
+
+            assertEquals(
+                RouteOptions(RoutePreference.FEWER_TRANSFERS, setOf(RouteTransportMode.CAR_FERRY), setOf("L1")),
+                entur.lastRouteOptions,
+            )
+        }
+
+    @Test
+    fun `filtering out a line searches the routes again without it`() =
+        boardTest {
+            settings.destinations = listOf(oslo)
+            val vm = viewModel()
+            val calls = entur.tripCalls
+
+            vm.filterOutLine("31")
+            runCurrent()
+
+            assertEquals(calls + 1, entur.tripCalls)
+            assertEquals(setOf("31"), entur.lastRouteOptions?.bannedLines)
         }
 
     @Test

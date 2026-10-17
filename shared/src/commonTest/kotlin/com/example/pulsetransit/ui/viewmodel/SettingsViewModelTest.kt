@@ -2,6 +2,7 @@ package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.Quay
+import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationResult
@@ -156,5 +157,19 @@ class SettingsViewModelTest {
                 assertEquals(emptySet(), vm.uiState.value.selectedQuays["S"])
                 assertEquals(null, settings.getSelectedQuays("S"))
             }
+        }
+
+    @Test
+    fun `route modes toggle but the last allowed kind cannot be excluded`() =
+        settingsTest { vm ->
+            vm.toggleRouteMode(RouteTransportMode.EXPRESS_BUS)
+            assertEquals(setOf(RouteTransportMode.EXPRESS_BUS), settings.excludedModes)
+
+            vm.toggleRouteMode(RouteTransportMode.EXPRESS_BUS)
+            assertEquals(emptySet(), vm.uiState.value.excludedRouteModes)
+
+            RouteTransportMode.entries.forEach(vm::toggleRouteMode)
+            assertEquals(RouteTransportMode.entries.size - 1, settings.excludedModes.size)
+            assertEquals(settings.excludedModes, vm.uiState.value.excludedRouteModes)
         }
 }

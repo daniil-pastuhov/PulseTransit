@@ -7,6 +7,9 @@ import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.RouteOptions
+import com.example.pulsetransit.data.RoutePreference
+import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
@@ -78,6 +81,7 @@ class FakeEnturRepository : EnturRepository {
     var tripDelayMillis: (StopPlace) -> Long = { 0L }
     var departureCalls = 0
     var tripCalls = 0
+    var lastRouteOptions: RouteOptions? = null
     val requestedQuays = mutableMapOf<String, Set<String>?>()
     val requestedTimeRanges = mutableMapOf<String, Int>()
     val requestedLimits = mutableMapOf<String, Int>()
@@ -160,8 +164,10 @@ class FakeEnturRepository : EnturRepository {
     override suspend fun getFastestTrip(
         fromIds: List<String>,
         to: StopPlace,
+        options: RouteOptions,
     ): Sourced<TripInfo?> {
         tripCalls++
+        lastRouteOptions = options
         lastFastestTripFromIds = fromIds
         val result = tripTo(to)
         latency(tripDelayMillis(to))
@@ -173,8 +179,10 @@ class FakeEnturRepository : EnturRepository {
         lon: Double,
         to: StopPlace,
         count: Int,
+        options: RouteOptions,
     ): Sourced<List<TripInfo>> {
         tripCalls++
+        lastRouteOptions = options
         lastFastestTripCoords = lat to lon
         lastTripOptionsCount = count
         val result = tripOptionsTo(to, count)
@@ -296,6 +304,21 @@ class FakeSettingsRepository : SettingsRepository {
         set(value) {
             filteredFlow.value = value
         }
+
+    var preference = RoutePreference.FASTEST
+    var excludedModes = setOf<RouteTransportMode>()
+
+    override fun getRoutePreference() = preference
+
+    override fun setRoutePreference(preference: RoutePreference) {
+        this.preference = preference
+    }
+
+    override fun getExcludedRouteModes() = excludedModes
+
+    override fun setExcludedRouteModes(modes: Set<RouteTransportMode>) {
+        excludedModes = modes
+    }
 
     override fun getFavorites() = favoriteStops
 

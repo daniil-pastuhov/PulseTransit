@@ -26,6 +26,16 @@ interface SettingsRepository {
 
     fun setTripOptionsCount(count: Int)
 
+    /** How routes to the destinations are ranked. */
+    fun getRoutePreference(): RoutePreference
+
+    fun setRoutePreference(preference: RoutePreference)
+
+    /** Transit kinds routes to the destinations may not use; empty allows all. */
+    fun getExcludedRouteModes(): Set<RouteTransportMode>
+
+    fun setExcludedRouteModes(modes: Set<RouteTransportMode>)
+
     fun getFavorites(): List<StopPlace>
 
     fun addFavorite(stopPlace: StopPlace)

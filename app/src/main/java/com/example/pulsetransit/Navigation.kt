@@ -9,6 +9,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
+import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -54,6 +55,15 @@ fun MainNavigation() {
                     }
                     SettingsScreen(
                         viewModel = viewModel,
+                        onBack = { backStack.removeLastOrNull() },
+                        onOpenRouteModes = { backStack.add(RouteModes) },
+                    )
+                }
+                entry<RouteModes> {
+                    // Settings re-reads everything when it is shown again, so its summary of these
+                    // picks the change up whether or not this is the same ViewModel instance.
+                    RouteModesScreen(
+                        viewModel = koinViewModel(),
                         onBack = { backStack.removeLastOrNull() },
                     )
                 }

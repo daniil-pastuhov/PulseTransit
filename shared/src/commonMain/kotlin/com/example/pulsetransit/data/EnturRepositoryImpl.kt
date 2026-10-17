@@ -31,6 +31,7 @@ class EnturRepositoryImpl(
 ) : EnturRepository {
     private val clientNameHeader = "ET-Client-Name"
     private val clientNameValue = "personal-pulsetransit"
+    private val lineIdLookup = LineIdLookup(client, clientNameHeader, clientNameValue)
 
     private companion object {
         /** How long departed rows are kept before pruning, purely to bound cache growth. */
@@ -673,17 +674,19 @@ class EnturRepositoryImpl(
         lon: Double,
         to: StopPlace,
         count: Int,
+        options: RouteOptions,
     ): Sourced<List<TripInfo>> {
         val now = clock.now().toEpochMilliseconds()
-        val routeKey = routeKey(lat, lon, to.id)
+        val routeKey = routeKey(lat, lon, to.id) + options.cacheKeySuffix
+        val wanted = count.coerceAtLeast(1)
 
         val queryStr =
             """
-            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: Location!, ${'$'}count: Int!) {
+            query GetTrip(${'$'}lat: Float!, ${'$'}lon: Float!, ${'$'}to: Location!, $TRIP_OPTION_VARIABLES) {
               trip(
                 from: { coordinates: { latitude: ${'$'}lat, longitude: ${'$'}lon } }
                 to: ${'$'}to
-                numTripPatterns: ${'$'}count
+                $TRIP_OPTION_ARGUMENTS
               ) {
                 tripPatterns {
                   ...TripPatternFields
@@ -692,15 +695,14 @@ class EnturRepositoryImpl(
             }
             """.trimIndent() + "\n" + TRIP_PATTERN_FRAGMENT
 
-        val variables =
-            buildJsonObject {
-                put("lat", lat)
-                put("lon", lon)
-                put("to", to.toTripLocation())
-                put("count", count.coerceAtLeast(1))
-            }
-
         return try {
+            val variables =
+                buildJsonObject {
+                    put("lat", lat)
+                    put("lon", lon)
+                    put("to", to.toTripLocation())
+                    putRouteOptions(options, wanted, lineIdLookup.lineIds(options.bannedLines))
+                }
             val response: GraphQLResponse<TripData> =
                 client
                     .post("https://api.entur.io/journey-planner/v3/graphql") {
@@ -714,8 +716,9 @@ class EnturRepositoryImpl(
                     ?.trip
                     ?.tripPatterns
                     .orEmpty()
-                    .take(count.coerceAtLeast(1))
                     .map(::parseTripPattern)
+                    .rankedBy(options.preference)
+                    .take(wanted)
             if (trips.isEmpty()) {
                 return Sourced(emptyList())
             }
@@ -729,7 +732,7 @@ class EnturRepositoryImpl(
             if (cached.isEmpty()) {
                 Sourced.failed(emptyList())
             } else {
-                Sourced.cached(cached.take(count.coerceAtLeast(1)).map { it.toTripInfo() }, cached.minOf { it.fetchedAt })
+                Sourced.cached(cached.take(wanted).map { it.toTripInfo() }, cached.minOf { it.fetchedAt })
             }
         }
     }
@@ -739,12 +742,14 @@ class EnturRepositoryImpl(
     override suspend fun getFastestTrip(
         fromIds: List<String>,
         to: StopPlace,
+        options: RouteOptions,
     ): Sourced<TripInfo?> {
         if (fromIds.isEmpty()) return Sourced(null)
 
         val now = clock.now().toEpochMilliseconds()
-        val routeKey = routeKey(fromIds, to.id)
-        var fastestTrip: TripInfo? = null
+        val routeKey = routeKey(fromIds, to.id) + options.cacheKeySuffix
+        // The best route from each origin that has one.
+        val bestByOrigin = mutableListOf<TripInfo>()
         // Tracked so that "every origin failed" falls back to the cache, while "the API answered
         // but found no trips" is reported honestly as no trips.
         var anyRequestFailed = false
@@ -752,11 +757,11 @@ class EnturRepositoryImpl(
         for (fromId in fromIds) {
             val queryStr =
                 """
-                query GetTrip(${'$'}from: String!, ${'$'}to: Location!) {
+                query GetTrip(${'$'}from: String!, ${'$'}to: Location!, $TRIP_OPTION_VARIABLES) {
                   trip(
                     from: { place: ${'$'}from }
                     to: ${'$'}to
-                    numTripPatterns: 1
+                    $TRIP_OPTION_ARGUMENTS
                   ) {
                     tripPatterns {
                       ...TripPatternFields
@@ -765,13 +770,13 @@ class EnturRepositoryImpl(
                 }
                 """.trimIndent() + "\n" + TRIP_PATTERN_FRAGMENT
 
-            val variables =
-                buildJsonObject {
-                    put("from", fromId)
-                    put("to", to.toTripLocation())
-                }
-
             try {
+                val variables =
+                    buildJsonObject {
+                        put("from", fromId)
+                        put("to", to.toTripLocation())
+                        putRouteOptions(options, wanted = 1, lineIdLookup.lineIds(options.bannedLines))
+                    }
                 val response: GraphQLResponse<TripData> =
                     client
                         .post("https://api.entur.io/journey-planner/v3/graphql") {
@@ -780,22 +785,27 @@ class EnturRepositoryImpl(
                             setBody(GraphQLRequest(queryStr, variables))
                         }.body()
 
-                val pattern =
+                val best =
                     response.data
                         ?.trip
                         ?.tripPatterns
-                        ?.firstOrNull() ?: continue
-                val tripInfo = parseTripPattern(pattern)
-
-                if (fastestTrip == null || tripInfo.expectedStartTime < fastestTrip.expectedStartTime) {
-                    fastestTrip = tripInfo
-                }
+                        .orEmpty()
+                        .map(::parseTripPattern)
+                        .rankedBy(options.preference)
+                        .firstOrNull() ?: continue
+                bestByOrigin += best
             } catch (e: Exception) {
                 e.printStackTrace()
                 anyRequestFailed = true
             }
         }
 
+        val fastestTrip =
+            if (options.preference == RoutePreference.FASTEST) {
+                bestByOrigin.minByOrNull { it.expectedStartTime }
+            } else {
+                bestByOrigin.rankedBy(options.preference).firstOrNull()
+            }
         if (fastestTrip == null) {
             // Only reach for the cache when the network is the reason we have nothing.
             return if (anyRequestFailed) tripFromCache(routeKey, now) else Sourced(null)

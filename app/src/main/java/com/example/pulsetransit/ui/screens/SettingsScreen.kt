@@ -3,6 +3,7 @@ package com.example.pulsetransit.ui.screens
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -35,6 +36,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DirectionsBus
@@ -87,6 +89,8 @@ import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.PlaceKind
 import com.example.pulsetransit.data.Quay
+import com.example.pulsetransit.data.RoutePreference
+import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -100,6 +104,7 @@ import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit,
+    onOpenRouteModes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -412,6 +417,12 @@ fun SettingsScreen(
 
                 // Section: Filtered Lines
                 SettingsCard(title = stringResource(R.string.filtered_lines)) {
+                    Text(
+                        stringResource(R.string.filtered_lines_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     if (uiState.filteredLines.isEmpty()) {
                         Text(
                             text = stringResource(R.string.no_filtered_lines),
@@ -475,6 +486,48 @@ fun SettingsScreen(
                                 )
                             }
                         }
+                    }
+                }
+
+                // Section: Route search
+                SettingsCard(title = stringResource(R.string.route_settings_title)) {
+                    Text(stringResource(R.string.route_preference), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        RoutePreference.entries.forEach { preference ->
+                            FilterChip(
+                                selected = uiState.routePreference == preference,
+                                onClick = { viewModel.updateRoutePreference(preference) },
+                                label = { Text(stringResource(preference.labelId())) },
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val allowedCount = RouteTransportMode.entries.size - uiState.excludedRouteModes.size
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(role = Role.Button, onClick = onOpenRouteModes)
+                                .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.route_modes), style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                if (uiState.excludedRouteModes.isEmpty()) {
+                                    stringResource(R.string.route_modes_all)
+                                } else {
+                                    stringResource(R.string.route_modes_count, allowedCount, RouteTransportMode.entries.size)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                     }
                 }
 
@@ -910,6 +963,13 @@ private fun LuxScaleIndicator(
         }
     }
 }
+
+private fun RoutePreference.labelId(): Int =
+    when (this) {
+        RoutePreference.FASTEST -> R.string.route_pref_fastest
+        RoutePreference.FEWER_TRANSFERS -> R.string.route_pref_fewer_transfers
+        RoutePreference.LESS_WALKING -> R.string.route_pref_less_walking
+    }
 
 @Composable
 fun SettingsCard(

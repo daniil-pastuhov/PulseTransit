@@ -30,6 +30,7 @@ struct SettingsView: View {
                 if !isBoard {
                     TripOptionsSection(state: state, viewModel: viewModel)
                 }
+                RouteSearchSection(model: model)
                 DestinationsSection(state: state, viewModel: viewModel)
                 if isBoard {
                     LocationSection(state: state, viewModel: viewModel)
@@ -223,7 +224,7 @@ private struct FilteredLinesSection: View {
     let viewModel: SettingsViewModel
 
     var body: some View {
-        Section(L("filtered_lines")) {
+        Section(header: Text(L("filtered_lines")), footer: Text(L("filtered_lines_hint"))) {
             if state.filteredLines.isEmpty {
                 Text(L("no_filtered_lines")).font(.footnote).foregroundColor(.secondary)
             } else {
@@ -237,6 +238,35 @@ private struct FilteredLinesSection: View {
                         .buttonStyle(.borderless)
                         .accessibilityLabel(L("remove"))
                     }
+                }
+            }
+        }
+    }
+}
+
+private struct RouteSearchSection: View {
+    @ObservedObject var model: SettingsModel
+
+    var body: some View {
+        let state = model.state
+        let allowed = RouteModesView.kindCount - state.excludedRouteModes.count
+        Section(L("route_settings_title")) {
+            OptionPicker(
+                title: L("route_preference"),
+                options: [
+                    (RoutePreference.fastest, L("route_pref_fastest")),
+                    (.fewerTransfers, L("route_pref_fewer_transfers")),
+                    (.lessWalking, L("route_pref_less_walking")),
+                ],
+                selection: state.routePreference,
+                onSelect: { model.viewModel.updateRoutePreference(preference: $0) }
+            )
+            NavigationLink(destination: RouteModesView(model: model)) {
+                HStack {
+                    Text(L("route_modes"))
+                    Spacer()
+                    Text(state.excludedRouteModes.isEmpty ? L("route_modes_all") : L("route_modes_count", allowed, RouteModesView.kindCount))
+                        .foregroundColor(.secondary)
                 }
             }
         }

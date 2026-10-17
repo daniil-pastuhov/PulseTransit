@@ -75,4 +75,26 @@ class SettingsRepositoryImplTest {
         repo.setTripOptionsCount(99)
         assertEquals(SettingsRepository.MAX_TRIP_OPTIONS, repo.getTripOptionsCount())
     }
+
+    @Test
+    fun `route options round-trip and default to Entur's own choice`() {
+        assertEquals(RoutePreference.FASTEST, repo.getRoutePreference())
+        assertEquals(emptySet(), repo.getExcludedRouteModes())
+
+        repo.setRoutePreference(RoutePreference.LESS_WALKING)
+        repo.setExcludedRouteModes(setOf(RouteTransportMode.EXPRESS_TRAIN, RouteTransportMode.PLANE))
+
+        val reread = SettingsRepositoryImpl(store)
+        assertEquals(RoutePreference.LESS_WALKING, reread.getRoutePreference())
+        assertEquals(setOf(RouteTransportMode.EXPRESS_TRAIN, RouteTransportMode.PLANE), reread.getExcludedRouteModes())
+    }
+
+    @Test
+    fun `excluded route modes never exclude every kind or keep unknown names`() {
+        store.putString(SettingsRepositoryImpl.Keys.EXCLUDED_ROUTE_MODES, """["EXPRESS_BUS","HOVERCRAFT"]""")
+        assertEquals(setOf(RouteTransportMode.EXPRESS_BUS), repo.getExcludedRouteModes())
+
+        repo.setExcludedRouteModes(RouteTransportMode.entries.toSet())
+        assertEquals(emptySet(), repo.getExcludedRouteModes())
+    }
 }

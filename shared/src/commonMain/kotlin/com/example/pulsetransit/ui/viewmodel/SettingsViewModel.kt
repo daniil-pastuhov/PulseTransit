@@ -6,6 +6,8 @@ import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.RoutePreference
+import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
@@ -58,6 +60,8 @@ class SettingsViewModel(
         val appMode: AppMode = AppMode.BOARD,
         /** Route alternatives per destination in on-spot mode; [SettingsRepository.TRIP_OPTIONS_AUTO] fits the screen. */
         val tripOptionsCount: Int = SettingsRepository.TRIP_OPTIONS_AUTO,
+        val routePreference: RoutePreference = RoutePreference.FASTEST,
+        val excludedRouteModes: Set<RouteTransportMode> = emptySet(),
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -118,6 +122,8 @@ class SettingsViewModel(
             it.copy(
                 appMode = settingsRepository.getAppMode() ?: AppMode.BOARD,
                 tripOptionsCount = settingsRepository.getTripOptionsCount(),
+                routePreference = settingsRepository.getRoutePreference(),
+                excludedRouteModes = settingsRepository.getExcludedRouteModes(),
                 themeMode = settingsRepository.getThemeMode(),
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
@@ -210,6 +216,23 @@ class SettingsViewModel(
     fun updateTripOptionsCount(count: Int) {
         settingsRepository.setTripOptionsCount(count)
         _uiState.update { it.copy(tripOptionsCount = settingsRepository.getTripOptionsCount()) }
+    }
+
+    fun updateRoutePreference(preference: RoutePreference) {
+        settingsRepository.setRoutePreference(preference)
+        _uiState.update { it.copy(routePreference = preference) }
+    }
+
+    /**
+     * Allows or excludes [mode] for routes. The last allowed kind cannot be excluded: with no
+     * transit at all there would be no route to show.
+     */
+    fun toggleRouteMode(mode: RouteTransportMode) {
+        val current = _uiState.value.excludedRouteModes
+        val next = if (mode in current) current - mode else current + mode
+        if (next.size >= RouteTransportMode.entries.size) return
+        settingsRepository.setExcludedRouteModes(next)
+        _uiState.update { it.copy(excludedRouteModes = next) }
     }
 
     fun updateShowDelays(show: Boolean) {
