@@ -261,6 +261,16 @@ private struct RouteSearchSection: View {
                 selection: state.routePreference,
                 onSelect: { model.viewModel.updateRoutePreference(preference: $0) }
             )
+            OptionPicker(
+                title: L("walking_speed"),
+                options: [
+                    (WalkingSpeed.slow, L("walking_speed_slow")),
+                    (.normal, L("walking_speed_normal")),
+                    (.fast, L("walking_speed_fast")),
+                ],
+                selection: state.walkingSpeed,
+                onSelect: { model.viewModel.updateWalkingSpeed(speed: $0) }
+            )
             NavigationLink(destination: RouteModesView(model: model)) {
                 HStack {
                     Text(L("route_modes"))

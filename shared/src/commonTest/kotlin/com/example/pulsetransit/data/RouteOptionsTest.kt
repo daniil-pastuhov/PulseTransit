@@ -124,5 +124,7 @@ class RouteOptionsTest {
         assertEquals(a.cacheKeySuffix, b.cacheKeySuffix)
         assertTrue(a.cacheKeySuffix != a.copy(preference = RoutePreference.LESS_WALKING).cacheKeySuffix)
         assertTrue(a.cacheKeySuffix != a.copy(bannedLines = setOf("31")).cacheKeySuffix)
+        assertTrue(a.cacheKeySuffix != a.copy(walkingSpeed = WalkingSpeed.FAST).cacheKeySuffix)
+        assertTrue(RouteOptions(walkingSpeed = WalkingSpeed.SLOW).cacheKeySuffix.isNotEmpty())
     }
 }

@@ -11,6 +11,7 @@ import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.LocationResult
@@ -62,6 +63,7 @@ class SettingsViewModel(
         val tripOptionsCount: Int = SettingsRepository.TRIP_OPTIONS_AUTO,
         val routePreference: RoutePreference = RoutePreference.FASTEST,
         val excludedRouteModes: Set<RouteTransportMode> = emptySet(),
+        val walkingSpeed: WalkingSpeed = WalkingSpeed.NORMAL,
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -124,6 +126,7 @@ class SettingsViewModel(
                 tripOptionsCount = settingsRepository.getTripOptionsCount(),
                 routePreference = settingsRepository.getRoutePreference(),
                 excludedRouteModes = settingsRepository.getExcludedRouteModes(),
+                walkingSpeed = settingsRepository.getWalkingSpeed(),
                 themeMode = settingsRepository.getThemeMode(),
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
@@ -221,6 +224,11 @@ class SettingsViewModel(
     fun updateRoutePreference(preference: RoutePreference) {
         settingsRepository.setRoutePreference(preference)
         _uiState.update { it.copy(routePreference = preference) }
+    }
+
+    fun updateWalkingSpeed(speed: WalkingSpeed) {
+        settingsRepository.setWalkingSpeed(speed)
+        _uiState.update { it.copy(walkingSpeed = speed) }
     }
 
     /**

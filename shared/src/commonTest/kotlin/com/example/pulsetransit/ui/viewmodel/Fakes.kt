@@ -15,6 +15,7 @@ import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.platform.ClockFormatter
@@ -307,6 +308,13 @@ class FakeSettingsRepository : SettingsRepository {
 
     var preference = RoutePreference.FASTEST
     var excludedModes = setOf<RouteTransportMode>()
+    var walking = WalkingSpeed.NORMAL
+
+    override fun getWalkingSpeed() = walking
+
+    override fun setWalkingSpeed(speed: WalkingSpeed) {
+        walking = speed
+    }
 
     override fun getRoutePreference() = preference
 

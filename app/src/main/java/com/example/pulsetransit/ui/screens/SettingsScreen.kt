@@ -94,6 +94,7 @@ import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -501,6 +502,20 @@ fun SettingsScreen(
                                 selected = uiState.routePreference == preference,
                                 onClick = { viewModel.updateRoutePreference(preference) },
                                 label = { Text(stringResource(preference.labelId())) },
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(stringResource(R.string.walking_speed), style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        WalkingSpeed.entries.forEach { speed ->
+                            FilterChip(
+                                selected = uiState.walkingSpeed == speed,
+                                onClick = { viewModel.updateWalkingSpeed(speed) },
+                                label = { Text(stringResource(speed.labelId())) },
                             )
                         }
                     }
@@ -963,6 +978,13 @@ private fun LuxScaleIndicator(
         }
     }
 }
+
+private fun WalkingSpeed.labelId(): Int =
+    when (this) {
+        WalkingSpeed.SLOW -> R.string.walking_speed_slow
+        WalkingSpeed.NORMAL -> R.string.walking_speed_normal
+        WalkingSpeed.FAST -> R.string.walking_speed_fast
+    }
 
 private fun RoutePreference.labelId(): Int =
     when (this) {

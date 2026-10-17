@@ -31,6 +31,10 @@ interface SettingsRepository {
 
     fun setRoutePreference(preference: RoutePreference)
 
+    fun getWalkingSpeed(): WalkingSpeed
+
+    fun setWalkingSpeed(speed: WalkingSpeed)
+
     /** Transit kinds routes to the destinations may not use; empty allows all. */
     fun getExcludedRouteModes(): Set<RouteTransportMode>
 

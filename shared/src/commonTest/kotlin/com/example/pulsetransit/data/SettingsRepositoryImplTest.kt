@@ -79,13 +79,16 @@ class SettingsRepositoryImplTest {
     @Test
     fun `route options round-trip and default to Entur's own choice`() {
         assertEquals(RoutePreference.FASTEST, repo.getRoutePreference())
+        assertEquals(WalkingSpeed.NORMAL, repo.getWalkingSpeed())
         assertEquals(emptySet(), repo.getExcludedRouteModes())
 
         repo.setRoutePreference(RoutePreference.LESS_WALKING)
+        repo.setWalkingSpeed(WalkingSpeed.FAST)
         repo.setExcludedRouteModes(setOf(RouteTransportMode.EXPRESS_TRAIN, RouteTransportMode.PLANE))
 
         val reread = SettingsRepositoryImpl(store)
         assertEquals(RoutePreference.LESS_WALKING, reread.getRoutePreference())
+        assertEquals(WalkingSpeed.FAST, reread.getWalkingSpeed())
         assertEquals(setOf(RouteTransportMode.EXPRESS_TRAIN, RouteTransportMode.PLANE), reread.getExcludedRouteModes())
     }
 

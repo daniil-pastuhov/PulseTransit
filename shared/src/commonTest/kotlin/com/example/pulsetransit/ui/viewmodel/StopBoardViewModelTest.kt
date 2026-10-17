@@ -7,6 +7,7 @@ import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.nowMillis
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -290,10 +291,11 @@ class StopBoardViewModelTest : BoardTestBase() {
             settings.filtered = setOf("L1")
             settings.preference = RoutePreference.FEWER_TRANSFERS
             settings.excludedModes = setOf(RouteTransportMode.CAR_FERRY)
+            settings.walking = WalkingSpeed.SLOW
             viewModel()
 
             assertEquals(
-                RouteOptions(RoutePreference.FEWER_TRANSFERS, setOf(RouteTransportMode.CAR_FERRY), setOf("L1")),
+                RouteOptions(RoutePreference.FEWER_TRANSFERS, setOf(RouteTransportMode.CAR_FERRY), setOf("L1"), WalkingSpeed.SLOW),
                 entur.lastRouteOptions,
             )
         }

@@ -140,6 +140,19 @@ enum class RouteTransportMode(
     CABLE_CAR(RouteModeGroup.OTHER, listOf(EnturModeSelector("cableway"), EnturModeSelector("funicular"), EnturModeSelector("lift"))),
 }
 
+/**
+ * How fast the user walks to, from and between stops. [NORMAL] leaves it to Entur, about 1.3 m/s
+ * (4.8 km/h); walks on the map come out slower than the set speed, for crossings and corners.
+ */
+enum class WalkingSpeed(
+    /** Entur's `walkSpeed`, or null for its default. */
+    val metersPerSecond: Double?,
+) {
+    SLOW(1.0),
+    NORMAL(null),
+    FAST(1.7),
+}
+
 /** How routes to the destinations are searched for. The default asks Entur exactly as before options existed. */
 data class RouteOptions(
     val preference: RoutePreference = RoutePreference.FASTEST,
@@ -147,6 +160,7 @@ data class RouteOptions(
     val excludedModes: Set<RouteTransportMode> = emptySet(),
     /** Public codes of lines routes may not use: the board's filtered-out lines. */
     val bannedLines: Set<String> = emptySet(),
+    val walkingSpeed: WalkingSpeed = WalkingSpeed.NORMAL,
 ) {
     /**
      * What Entur should leave out for [excludedModes], in [RouteTransportMode] order. A group with
@@ -180,7 +194,7 @@ data class RouteOptions(
             if (this == RouteOptions()) return ""
             val modes = excludedModes.map { it.name }.sorted().joinToString(",")
             val lines = bannedLines.sorted().joinToString(",")
-            return "|${preference.name}|-$modes|-$lines"
+            return "|${preference.name}|-$modes|-$lines|${walkingSpeed.name}"
         }
 
     companion object {

@@ -811,6 +811,7 @@ class StopBoardViewModel(
                 preference = settingsRepository.getRoutePreference(),
                 excludedModes = settingsRepository.getExcludedRouteModes(),
                 bannedLines = _uiState.value.filteredLines,
+                walkingSpeed = settingsRepository.getWalkingSpeed(),
             )
 
         // On-spot mode has nowhere to route from until the device is found.

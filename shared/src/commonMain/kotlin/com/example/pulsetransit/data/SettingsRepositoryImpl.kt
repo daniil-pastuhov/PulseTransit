@@ -108,6 +108,15 @@ class SettingsRepositoryImpl(
         prefs.putString("route_preference", preference.name)
     }
 
+    override fun getWalkingSpeed(): WalkingSpeed {
+        val stored = prefs.getString("walking_speed", WalkingSpeed.NORMAL.name)
+        return WalkingSpeed.entries.firstOrNull { it.name == stored } ?: WalkingSpeed.NORMAL
+    }
+
+    override fun setWalkingSpeed(speed: WalkingSpeed) {
+        prefs.putString("walking_speed", speed.name)
+    }
+
     // A name this build does not know (from a newer one) is dropped, and so is a set excluding
     // everything, which would leave no transit to route by.
     override fun getExcludedRouteModes(): Set<RouteTransportMode> =

@@ -248,4 +248,8 @@
     <string name="route_mode_cable_car">Cable car and funicular</string>
     <string name="route_modes_all">All</string>
     <string name="route_modes_count">%1$d of %2$d</string>
+    <string name="walking_speed">Walking speed</string>
+    <string name="walking_speed_slow">Slow</string>
+    <string name="walking_speed_normal">Normal</string>
+    <string name="walking_speed_fast">Fast</string>
 </resources>

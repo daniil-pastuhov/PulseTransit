@@ -23,9 +23,10 @@ import kotlinx.serialization.json.putJsonArray
  * of the request counts as not given, so Entur applies its own default for it.
  */
 internal const val TRIP_OPTION_VARIABLES =
-    "\$count: Int!, \$transferPenalty: Int, \$walkReluctance: Float, \$filters: [TripFilterInput!]"
+    "\$count: Int!, \$transferPenalty: Int, \$walkReluctance: Float, \$walkSpeed: Float, \$filters: [TripFilterInput!]"
 internal const val TRIP_OPTION_ARGUMENTS =
-    "numTripPatterns: \$count transferPenalty: \$transferPenalty walkReluctance: \$walkReluctance filters: \$filters"
+    "numTripPatterns: \$count transferPenalty: \$transferPenalty walkReluctance: \$walkReluctance " +
+        "walkSpeed: \$walkSpeed filters: \$filters"
 
 /**
  * Fills the [TRIP_OPTION_VARIABLES] for [options], asking for [wanted] routes, or more when the
@@ -43,6 +44,7 @@ internal fun JsonObjectBuilder.putRouteOptions(
         RoutePreference.FEWER_TRANSFERS -> put("transferPenalty", RouteOptions.FEWER_TRANSFERS_PENALTY)
         RoutePreference.LESS_WALKING -> put("walkReluctance", RouteOptions.LESS_WALKING_RELUCTANCE)
     }
+    options.walkingSpeed.metersPerSecond?.let { put("walkSpeed", it) }
     // One trip filter excluding the kinds and lines: anything matching a `not` selector is left out.
     // Unlike `modes`, it matches sub-modes per trip, and needs no access modes to keep walking.
     val excludedModes = options.excludedEnturModes

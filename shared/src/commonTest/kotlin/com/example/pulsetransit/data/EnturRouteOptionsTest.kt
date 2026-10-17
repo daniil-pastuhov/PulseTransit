@@ -182,6 +182,20 @@ class EnturRouteOptionsTest {
             assertEquals(RouteOptions.LESS_WALKING_RELUCTANCE, trip["walkReluctance"]!!.jsonPrimitive.content.toDouble())
             assertFalse("transferPenalty" in trip)
             assertFalse("filters" in trip, "nothing excluded, so no filter")
+            assertFalse("walkSpeed" in trip, "a normal pace is left to Entur")
+        }
+
+    @Test
+    fun `a walking speed other than normal is sent in metres per second`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val repo = EnturRepositoryImpl(client(routeOptionsEngine(bodies)), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+
+            repo.getFastestTrip(fromIds = listOf(stopId), to = to, options = RouteOptions(walkingSpeed = WalkingSpeed.SLOW))
+            repo.getFastestTrip(fromIds = listOf(stopId), to = to, options = RouteOptions(walkingSpeed = WalkingSpeed.FAST))
+
+            assertEquals(listOf(1.0, 1.7), bodies.map { variables(it)["walkSpeed"]!!.jsonPrimitive.content.toDouble() })
         }
 
     @Test
