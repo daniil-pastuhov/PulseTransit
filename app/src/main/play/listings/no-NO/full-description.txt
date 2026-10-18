@@ -4,7 +4,16 @@ AVGANGER I SANNTID
 • Sanntidsavganger for all kollektivtrafikk i Norge, fra Entur
 • Forsinkelser, innstillinger og driftsmeldinger
 • Velg plattformene og retningene du bryr deg om, og skjul linjer du aldri tar
+
+REISER
 • Raskeste rute til stedene du reiser oftest til, inkludert gangtid
+• Søk etter et stoppested, en adresse eller et sted og få reiser dit
+• Trykk på en reise for å se hele reisen: linjer, plattformer, sanntid, gåing og bytter
+• Velg raskest, færre bytter eller mindre gåing, hvilke transportmidler du vil bruke, og din gangfart
+
+DER DU ER
+• Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested
+• Dra for å fordele skjermen mellom reiser og avganger, eller brett bort en av dem. Den blir slik du forlot den
 
 LAGET FOR VEGGEN
 • Alltid på-modus som holder skjermen våken

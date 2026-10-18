@@ -4,7 +4,16 @@ LIVE DEPARTURES
 • Real-time departures for all public transport in Norway, from Entur
 • Delays, cancellations and service messages
 • Pick the platforms and directions you care about, and hide lines you never take
+
+ROUTES
 • Fastest route to the places you travel to most, including walking time
+• Search for any stop, address or place and get routes there
+• Tap a route to see every leg: lines, platforms, live times, walks and changes
+• Prefer the fastest trip, fewer transfers or less walking, pick which transport to use, and set your walking speed
+
+ON THE SPOT
+• Follows where you are: routes to your destinations from right here, and departures from the nearest stop
+• Drag to share the screen between routes and departures, or fold either one away. It stays the way you left it
 
 MADE FOR THE WALL
 • Always-on mode that keeps the screen awake
