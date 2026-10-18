@@ -99,6 +99,12 @@ class SettingsRepositoryImpl(
         )
     }
 
+    override fun getOnSpotSplit(): Float = OnSpotSplit.sanitize(prefs.getFloat("on_spot_split", OnSpotSplit.DEFAULT))
+
+    override fun setOnSpotSplit(split: Float) {
+        prefs.putFloat("on_spot_split", OnSpotSplit.sanitize(split))
+    }
+
     override fun getRoutePreference(): RoutePreference {
         val stored = prefs.getString("route_preference", RoutePreference.FASTEST.name)
         return RoutePreference.entries.firstOrNull { it.name == stored } ?: RoutePreference.FASTEST

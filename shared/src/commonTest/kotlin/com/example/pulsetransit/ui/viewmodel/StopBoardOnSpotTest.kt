@@ -2,6 +2,7 @@ package com.example.pulsetransit.ui.viewmodel
 
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
+import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
@@ -240,6 +241,20 @@ class StopBoardOnSpotTest : BoardTestBase() {
 
             assertEquals(0, entur.tripCalls)
             assertNull(entur.lastFastestTripFromIds, "never falls back to favourites in on-spot mode")
+        }
+
+    @Test
+    fun `the dragged split is saved and read back on the next launch`() =
+        boardTest {
+            onSpot()
+            settings.split = 0.3f
+            val vm = locatedBoard()
+            assertEquals(0.3f, vm.uiState.value.onSpotSplit)
+
+            vm.setOnSpotSplit(OnSpotSplit.STOP_COLLAPSED)
+
+            assertEquals(OnSpotSplit.STOP_COLLAPSED, vm.uiState.value.onSpotSplit)
+            assertEquals(OnSpotSplit.STOP_COLLAPSED, settings.split)
         }
 
     @Test

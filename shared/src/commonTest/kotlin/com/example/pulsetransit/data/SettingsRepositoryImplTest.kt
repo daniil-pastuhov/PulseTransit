@@ -77,6 +77,20 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
+    fun `the on-spot split survives a relaunch and stays within range`() {
+        assertEquals(OnSpotSplit.DEFAULT, repo.getOnSpotSplit())
+
+        repo.setOnSpotSplit(OnSpotSplit.ROUTES_COLLAPSED)
+        assertEquals(OnSpotSplit.ROUTES_COLLAPSED, SettingsRepositoryImpl(store).getOnSpotSplit())
+
+        repo.setOnSpotSplit(0.4f)
+        assertEquals(0.4f, SettingsRepositoryImpl(store).getOnSpotSplit())
+
+        repo.setOnSpotSplit(7f)
+        assertEquals(OnSpotSplit.STOP_COLLAPSED, repo.getOnSpotSplit())
+    }
+
+    @Test
     fun `route options round-trip and default to Entur's own choice`() {
         assertEquals(RoutePreference.FASTEST, repo.getRoutePreference())
         assertEquals(WalkingSpeed.NORMAL, repo.getWalkingSpeed())

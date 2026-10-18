@@ -26,6 +26,11 @@ interface SettingsRepository {
 
     fun setTripOptionsCount(count: Int)
 
+    /** The on-spot board's split between routes and the nearby stop; see [OnSpotSplit]. */
+    fun getOnSpotSplit(): Float
+
+    fun setOnSpotSplit(split: Float)
+
     /** How routes to the destinations are ranked. */
     fun getRoutePreference(): RoutePreference
 

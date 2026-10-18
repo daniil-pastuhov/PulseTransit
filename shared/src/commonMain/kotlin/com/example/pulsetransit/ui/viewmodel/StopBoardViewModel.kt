@@ -9,6 +9,7 @@ import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
@@ -133,6 +134,8 @@ class StopBoardViewModel(
         val fastestTrips: Map<String, List<TripInfo>> = emptyMap(),
         /** The on-spot alternatives setting: [SettingsRepository.TRIP_OPTIONS_AUTO] or a fixed count. */
         val tripOptionsCount: Int = SettingsRepository.TRIP_OPTIONS_AUTO,
+        /** On-spot mode only: the routes' share of the board, as the user dragged it; see [OnSpotSplit]. */
+        val onSpotSplit: Float = OnSpotSplit.DEFAULT,
         /** On-spot mode only: finding the device. */
         val location: OnSpotLocation = OnSpotLocation.Idle,
         /** On-spot mode only: stops near the device, nearest first. */
@@ -385,6 +388,7 @@ class StopBoardViewModel(
         val cameraWake = settingsRepository.isCameraMotionWakeEnabled()
         val filtered = settingsRepository.getFilteredLines()
         val tripOptions = settingsRepository.getTripOptionsCount()
+        val split = settingsRepository.getOnSpotSplit()
 
         _uiState.update {
             // A temporary destination saved in Settings meanwhile is now just a saved one.
@@ -412,6 +416,7 @@ class StopBoardViewModel(
                 cameraMotionWake = cameraWake && !onSpot,
                 filteredLines = filtered,
                 tripOptionsCount = tripOptions,
+                onSpotSplit = split,
             )
         }
 
@@ -945,6 +950,12 @@ class StopBoardViewModel(
 
     fun filterOutLine(line: String) {
         settingsRepository.addFilteredLine(line)
+    }
+
+    /** Keeps the on-spot board's split where the user left it, across launches; see [OnSpotSplit]. */
+    fun setOnSpotSplit(split: Float) {
+        settingsRepository.setOnSpotSplit(split)
+        _uiState.update { it.copy(onSpotSplit = settingsRepository.getOnSpotSplit()) }
     }
 
     /**

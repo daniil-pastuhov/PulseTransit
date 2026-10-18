@@ -7,6 +7,7 @@ import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
@@ -236,6 +237,14 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun setTripOptionsCount(count: Int) {
         tripOptions = count
+    }
+
+    var split = OnSpotSplit.DEFAULT
+
+    override fun getOnSpotSplit() = split
+
+    override fun setOnSpotSplit(split: Float) {
+        this.split = split
     }
 
     var favoriteStops = listOf<StopPlace>()

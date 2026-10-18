@@ -218,6 +218,10 @@
     <string name="save_destination">Lagre reisemål</string>
     <string name="dismiss_route">Lukk reisen</string>
     <string name="route_to">Til %1$s</string>
+    <string name="on_spot_routes">Reiser</string>
+    <string name="on_spot_resize">Dra for å endre størrelse</string>
+    <string name="on_spot_show_routes">Vis reiser</string>
+    <string name="on_spot_show_departures">Vis avganger</string>
     <string name="route_arrival">ank. %1$s</string>
     <string name="trip_options_title">Reisealternativer</string>
     <string name="trip_options_hint">Hvor mange avganger som vises per reisemål. Auto viser så mange som får plass.</string>

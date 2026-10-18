@@ -10,7 +10,12 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,11 +28,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Directions
+import androidx.compose.material.icons.filled.DirectionsBus
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.AssistChip
@@ -48,20 +61,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.pulsetransit.R
+import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.autoTripOptionCount
@@ -76,11 +96,21 @@ import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
 import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
+import kotlinx.coroutines.launch
 
 // Heights the auto route count is worked out from: one alternative's row, and a destination
 // card's title and padding. Both grow with the font scale.
 private const val TRIP_ROW_HEIGHT_DP = 64f
 private const val DESTINATION_HEADER_HEIGHT_DP = 72f
+
+// The routes/stop split: the bar a folded section keeps, the size below which a dropped section
+// folds to it, and the grip between the two.
+private val SPLIT_BAR_SIZE = 56.dp
+private val SPLIT_MIN_SECTION_SIZE = 120.dp
+
+// Route rows need more width than height.
+private val SPLIT_MIN_SECTION_WIDTH = 240.dp
+private val SPLIT_HANDLE_SIZE = 20.dp
 
 private const val METRES_PER_KILOMETRE = 1000
 private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -140,15 +170,167 @@ private fun LocatedContent(
     onNavigateToSettings: () -> Unit,
     modifier: Modifier,
 ) {
-    if (isLandscape) {
-        Row(modifier = modifier.padding(6.dp)) {
-            RoutesSection(uiState, viewModel, onNavigateToSettings, Modifier.weight(1.4f).fillMaxHeight())
-            NearbyStopSection(uiState, viewModel, Modifier.weight(1f).fillMaxHeight())
+    BoxWithConstraints(modifier = modifier.padding(6.dp)) {
+        // Sizes along the split's axis, in dp, as OnSpotSplit takes them.
+        val total = ((if (isLandscape) maxWidth else maxHeight) - SPLIT_HANDLE_SIZE).value
+        val bar = SPLIT_BAR_SIZE.value
+        val min = OnSpotSplit.minSectionSize(total, (if (isLandscape) SPLIT_MIN_SECTION_WIDTH else SPLIT_MIN_SECTION_SIZE).value)
+        val target = OnSpotSplit.routesSize(uiState.onSpotSplit, total, bar, min)
+        // A new size (rotation, a window resize) jumps there; a new split animates to it.
+        val routesSize = remember(total) { Animatable(target) }
+        LaunchedEffect(target) { routesSize.animateTo(target) }
+
+        val scope = rememberCoroutineScope()
+        val density = LocalDensity.current
+        val layoutDirection = LocalLayoutDirection.current
+        val dragState =
+            rememberDraggableState { deltaPx ->
+                val delta = with(density) { deltaPx.toDp().value }
+                scope.launch { routesSize.snapTo(OnSpotSplit.dragRoutesSize(routesSize.value, delta, total, bar)) }
+            }
+        var isDragging by remember { mutableStateOf(false) }
+
+        // A folded bar opens when dragged, but the section turns back into its content on the way,
+        // so the drag sits on a wrapper that stays and is kept enabled until the drag ends.
+        fun drag(enabled: Boolean = true) =
+            Modifier.draggable(
+                state = dragState,
+                orientation = if (isLandscape) Orientation.Horizontal else Orientation.Vertical,
+                enabled = enabled || isDragging,
+                // In a right-to-left row the routes are on the right, so dragging right shrinks them.
+                reverseDirection = isLandscape && layoutDirection == LayoutDirection.Rtl,
+                onDragStarted = { isDragging = true },
+                onDragStopped = {
+                    isDragging = false
+                    val split = OnSpotSplit.settle(routesSize.value, total, min)
+                    viewModel.setOnSpotSplit(split)
+                    routesSize.animateTo(OnSpotSplit.routesSize(split, total, bar, min))
+                },
+            )
+        val onExpand = { viewModel.setOnSpotSplit(OnSpotSplit.DEFAULT) }
+
+        // A section dragged below its minimum shows the bar it will fold to.
+        val routesFolded = routesSize.value < min
+        val stopFolded = total - routesSize.value < min
+        val routes: @Composable (Modifier) -> Unit = { sectionModifier ->
+            Box(modifier = sectionModifier.then(drag(enabled = routesFolded))) {
+                if (routesFolded) {
+                    FoldedSection(
+                        label = stringResource(R.string.on_spot_routes),
+                        icon = Icons.Default.Directions,
+                        expandLabel = stringResource(R.string.on_spot_show_routes),
+                        edge = if (isLandscape) FoldedEdge.START else FoldedEdge.TOP,
+                        onExpand = onExpand,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    RoutesSection(uiState, viewModel, onNavigateToSettings, Modifier.fillMaxSize())
+                }
+            }
         }
-    } else {
-        Column(modifier = modifier.padding(6.dp)) {
-            RoutesSection(uiState, viewModel, onNavigateToSettings, Modifier.weight(2f).fillMaxWidth())
-            NearbyStopSection(uiState, viewModel, Modifier.weight(1f).fillMaxWidth())
+        val stop: @Composable (Modifier) -> Unit = { sectionModifier ->
+            Box(modifier = sectionModifier.then(drag(enabled = stopFolded))) {
+                if (stopFolded) {
+                    FoldedSection(
+                        label = uiState.favorites.firstOrNull()?.name ?: stringResource(R.string.details_departures),
+                        icon = Icons.Default.DirectionsBus,
+                        expandLabel = stringResource(R.string.on_spot_show_departures),
+                        edge = if (isLandscape) FoldedEdge.END else FoldedEdge.BOTTOM,
+                        onExpand = onExpand,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    NearbyStopSection(uiState, viewModel, Modifier.fillMaxSize())
+                }
+            }
+        }
+        if (isLandscape) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                routes(Modifier.width(routesSize.value.dp).fillMaxHeight())
+                SplitHandle(isVertical = true, modifier = Modifier.width(SPLIT_HANDLE_SIZE).fillMaxHeight().then(drag()))
+                stop(Modifier.weight(1f).fillMaxHeight())
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize()) {
+                routes(Modifier.height(routesSize.value.dp).fillMaxWidth())
+                SplitHandle(isVertical = false, modifier = Modifier.height(SPLIT_HANDLE_SIZE).fillMaxWidth().then(drag()))
+                stop(Modifier.weight(1f).fillMaxWidth())
+            }
+        }
+    }
+}
+
+/** The grip between the routes and the stop, dragged to share the board between them. */
+@Composable
+private fun SplitHandle(
+    isVertical: Boolean,
+    modifier: Modifier,
+) {
+    val description = stringResource(R.string.on_spot_resize)
+    Box(modifier = modifier.semantics { contentDescription = description }, contentAlignment = Alignment.Center) {
+        Box(
+            modifier =
+                Modifier
+                    .size(width = if (isVertical) 4.dp else 32.dp, height = if (isVertical) 32.dp else 4.dp)
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(2.dp)),
+        )
+    }
+}
+
+/** The board edge a folded section sits at, which its arrow points away from. */
+private enum class FoldedEdge { TOP, BOTTOM, START, END }
+
+/**
+ * A section folded to a bar at its [edge], like a bottom sheet: tapped, it opens to the default
+ * split; dragged, it opens as far as it is pulled. Side bars, in landscape, are too narrow for the label.
+ */
+@Composable
+private fun FoldedSection(
+    label: String,
+    icon: ImageVector,
+    expandLabel: String,
+    edge: FoldedEdge,
+    onExpand: () -> Unit,
+    modifier: Modifier,
+) {
+    val arrow =
+        when (edge) {
+            FoldedEdge.TOP -> Icons.Default.KeyboardArrowDown
+            FoldedEdge.BOTTOM -> Icons.Default.KeyboardArrowUp
+            FoldedEdge.START -> Icons.AutoMirrored.Filled.KeyboardArrowRight
+            FoldedEdge.END -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
+        }
+    Card(
+        modifier =
+            modifier
+                .padding(6.dp)
+                .clickable(onClickLabel = expandLabel, onClick = onExpand),
+    ) {
+        if (edge == FoldedEdge.START || edge == FoldedEdge.END) {
+            Column(
+                modifier = Modifier.fillMaxSize().semantics(mergeDescendants = true) { contentDescription = label },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically),
+            ) {
+                Icon(icon, contentDescription = null)
+                Icon(arrow, contentDescription = null)
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(icon, contentDescription = null)
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(arrow, contentDescription = null)
+            }
         }
     }
 }
