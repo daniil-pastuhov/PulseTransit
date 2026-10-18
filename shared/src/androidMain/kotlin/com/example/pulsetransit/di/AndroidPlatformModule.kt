@@ -4,11 +4,13 @@ import com.example.pulsetransit.data.cache.CacheDatabase
 import com.example.pulsetransit.data.cache.buildCacheDatabase
 import com.example.pulsetransit.data.cache.cacheDatabaseBuilder
 import com.example.pulsetransit.data.createAppSettings
+import com.example.pulsetransit.platform.AppUpdateChecker
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
 import com.example.pulsetransit.platform.ConnectivityMonitorImpl
 import com.example.pulsetransit.platform.FusedLocationProvider
 import com.example.pulsetransit.platform.LocationProvider
+import com.example.pulsetransit.platform.PlayAppUpdateChecker
 import com.example.pulsetransit.platform.SystemClockFormatter
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.CameraMotionDetectorImpl
@@ -29,6 +31,7 @@ val androidPlatformModule =
         single<ClockFormatter> { SystemClockFormatter() }
         single<LocationProvider> { FusedLocationProvider(context = androidContext()) }
         single<ConnectivityMonitor> { ConnectivityMonitorImpl(context = androidContext()) }
+        single<AppUpdateChecker> { PlayAppUpdateChecker(context = androidContext()) }
         single<SystemSensorManager> { SystemSensorManagerImpl(context = androidContext()) }
         single<CameraMotionDetector> {
             CameraMotionDetectorImpl(context = androidContext(), settingsRepository = get())

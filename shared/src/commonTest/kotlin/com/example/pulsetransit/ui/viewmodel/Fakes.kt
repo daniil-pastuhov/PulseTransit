@@ -497,6 +497,14 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun getAlwaysOnEnabledFlow(): Flow<Boolean> = alwaysOnFlow
 
+    var dismissedUpdate: String? = null
+
+    override fun getDismissedUpdateVersion() = dismissedUpdate
+
+    override fun setDismissedUpdateVersion(version: String) {
+        dismissedUpdate = version
+    }
+
     override fun isShowCancelledLines() = showCancelled
 
     override fun setShowCancelledLines(show: Boolean) {

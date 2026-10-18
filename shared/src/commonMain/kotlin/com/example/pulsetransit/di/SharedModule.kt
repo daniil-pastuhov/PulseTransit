@@ -8,6 +8,7 @@ import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.WeatherRepositoryImpl
 import com.example.pulsetransit.data.cache.CacheDatabase
 import com.example.pulsetransit.data.createHttpClient
+import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
@@ -20,7 +21,8 @@ import org.koin.dsl.module
  * - `HttpClientEngineFactory<*>` (OkHttp on Android, Darwin on iOS)
  * - `Settings`, the key-value store behind [SettingsRepository]
  * - [CacheDatabase]
- * - `ClockFormatter`, `LocationProvider`, `SystemSensorManager` and `CameraMotionDetector`
+ * - `ClockFormatter`, `LocationProvider`, `SystemSensorManager`, `CameraMotionDetector` and
+ *   `AppUpdateChecker`
  */
 val sharedModule =
     module {
@@ -48,6 +50,9 @@ val sharedModule =
             )
         }
         viewModel { ModeSelectionViewModel(settingsRepository = get()) }
+        viewModel {
+            AppUpdateViewModel(checker = get(), settingsRepository = get(), connectivityMonitor = get())
+        }
         viewModel {
             SettingsViewModel(
                 enturRepository = get(),

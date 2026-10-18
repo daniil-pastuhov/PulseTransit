@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.androidx.core.ktx)
             implementation(libs.play.services.location)
+            api(libs.play.app.update.ktx)
             implementation(libs.androidx.camera.core)
             implementation(libs.androidx.camera.camera2)
             implementation(libs.androidx.camera.lifecycle)

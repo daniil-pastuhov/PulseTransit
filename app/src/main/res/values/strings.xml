@@ -261,4 +261,7 @@
     <string name="walking_speed_slow">Slow</string>
     <string name="walking_speed_normal">Normal</string>
     <string name="walking_speed_fast">Fast</string>
+    <string name="update_available">A new version of PulseTransit is available</string>
+    <string name="update_app">Update</string>
+    <string name="dismiss_update">Not now</string>
 </resources>

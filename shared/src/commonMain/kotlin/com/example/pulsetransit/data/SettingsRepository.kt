@@ -163,4 +163,9 @@ interface SettingsRepository {
     fun removeFilteredLine(line: String)
 
     fun getFilteredLinesFlow(): Flow<Set<String>>
+
+    /** The store version whose "new version" notice the user closed, so it isn't shown again. */
+    fun getDismissedUpdateVersion(): String?
+
+    fun setDismissedUpdateVersion(version: String)
 }

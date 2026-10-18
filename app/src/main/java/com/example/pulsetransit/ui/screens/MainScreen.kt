@@ -52,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,15 +107,19 @@ import com.example.pulsetransit.ui.components.RouteSearchSheet
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
+import com.example.pulsetransit.ui.components.UpdateBanner
 import com.example.pulsetransit.ui.components.WeatherIcon
 import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.components.loadFailureIcon
 import com.example.pulsetransit.ui.components.loadFailureReason
 import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
+import com.example.pulsetransit.ui.components.startPlayUpdate
 import com.example.pulsetransit.ui.components.temperatureColor
 import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.pixelshift.pixelShift
+import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -124,10 +129,12 @@ import kotlin.math.roundToInt
 @Composable
 fun MainScreen(
     viewModel: StopBoardViewModel,
+    updateViewModel: AppUpdateViewModel,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val updateState by updateViewModel.uiState.collectAsState()
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val context = LocalContext.current
@@ -158,6 +165,11 @@ fun MainScreen(
         }
         onStopOrDispose { viewModel.stopCameraMotion() }
     }
+
+    // Play's update screen reports back here. Its result needs no handling: a declined or failed
+    // update just leaves the notice up, and a finished one restarts the app.
+    val updateLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) {}
+    val scope = rememberCoroutineScope()
 
     // On-spot mode follows the device only while the board is showing, like the camera.
     LifecycleStartEffect(Unit) {
@@ -264,6 +276,13 @@ fun MainScreen(
                             )
                         }
                     }
+                }
+
+                if (updateState.update != null) {
+                    UpdateBanner(
+                        onUpdate = { scope.launch { startPlayUpdate(context, updateLauncher) } },
+                        onDismiss = { updateViewModel.dismiss() },
+                    )
                 }
 
                 if (uiState.mode == AppMode.ON_SPOT) {

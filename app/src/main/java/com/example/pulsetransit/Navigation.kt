@@ -11,6 +11,7 @@ import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
 import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
+import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
@@ -43,8 +44,10 @@ fun MainNavigation() {
                         viewModel.loadSettings()
                         viewModel.startAutoRefresh()
                     }
+                    val updateViewModel: AppUpdateViewModel = koinViewModel()
                     MainScreen(
                         viewModel = viewModel,
+                        updateViewModel = updateViewModel,
                         onNavigateToSettings = { backStack.add(Settings) },
                     )
                 }

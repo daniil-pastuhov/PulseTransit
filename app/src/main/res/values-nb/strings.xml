@@ -260,4 +260,7 @@
     <string name="walking_speed_slow">Rolig</string>
     <string name="walking_speed_normal">Normal</string>
     <string name="walking_speed_fast">Rask</string>
+    <string name="update_available">En ny versjon av PulseTransit er tilgjengelig</string>
+    <string name="update_app">Oppdater</string>
+    <string name="dismiss_update">Ikke nå</string>
 </resources>

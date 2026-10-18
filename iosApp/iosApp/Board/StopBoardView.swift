@@ -5,6 +5,7 @@ import SwiftUI
 /// The departure board: the iOS counterpart of Android's MainScreen.
 struct StopBoardView: View {
     @StateObject private var model = StopBoardModel()
+    @StateObject private var updateModel = AppUpdateModel()
     @Environment(\.scenePhase) private var scenePhase
     // A launch argument (-PTOpenSettings YES) opens Settings straight away, so the screen can be
     // reached in a simulator without tapping; debug builds only.
@@ -37,6 +38,9 @@ struct StopBoardView: View {
                 // Its own anchor: two sheets on one view do not both present on iOS 15.
                 .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
                     RouteSearchView(state: model.state, viewModel: viewModel)
+                }
+                if let update = updateModel.state.update {
+                    UpdateBanner(update: update, onDismiss: { updateModel.viewModel.dismiss() })
                 }
                 if state.mode == .onSpot {
                     OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })

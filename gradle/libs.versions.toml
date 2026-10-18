@@ -19,6 +19,7 @@ ktor = "3.6.0"
 koin = "4.2.2"
 kotlinxSerialization = "1.11.0"
 playServicesLocation = "21.4.0"
+playAppUpdate = "2.1.0"
 androidxCamera = "1.6.2"
 androidxComposeMaterial = "1.7.8"
 detekt = "1.23.8"
@@ -94,6 +95,9 @@ desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 
 # Play Services Location
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
+
+# Play In-App Updates
+play-app-update-ktx = { module = "com.google.android.play:app-update-ktx", version.ref = "playAppUpdate" }
 
 # Firebase (crash reporting). Versions come from the BOM, so they are omitted here.
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }

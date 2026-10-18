@@ -783,6 +783,23 @@
         }
       }
     },
+    "dismiss_update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nå"
+          }
+        }
+      }
+    },
     "distance_kilometers": {
       "extractionState": "manual",
       "localizations": {
@@ -3493,6 +3510,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "min"
+          }
+        }
+      }
+    },
+    "update_app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdater"
+          }
+        }
+      }
+    },
+    "update_available": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new version of PulseTransit is available"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En ny versjon av PulseTransit er tilgjengelig"
           }
         }
       }

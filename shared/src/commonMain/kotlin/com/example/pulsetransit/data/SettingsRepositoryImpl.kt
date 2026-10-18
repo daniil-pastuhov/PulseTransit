@@ -338,6 +338,12 @@ class SettingsRepositoryImpl(
         _fullScreenMode.value = enabled
     }
 
+    override fun getDismissedUpdateVersion(): String? = prefs.getStringOrNull("dismissed_update_version")
+
+    override fun setDismissedUpdateVersion(version: String) {
+        prefs.putString("dismissed_update_version", version)
+    }
+
     override fun isAlwaysOnEnabled(): Boolean = prefs.getBoolean("always_on_enabled", false)
 
     override fun setAlwaysOnEnabled(enabled: Boolean) {

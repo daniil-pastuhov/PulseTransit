@@ -39,6 +39,7 @@ final class ScreenModel<ViewModel: AnyObject, State>: ObservableObject {
 typealias StopBoardModel = ScreenModel<StopBoardViewModel, StopBoardViewModel.UiState>
 typealias SettingsModel = ScreenModel<SettingsViewModel, SettingsViewModel.UiState>
 typealias ModeSelectionModel = ScreenModel<ModeSelectionViewModel, ModeSelectionViewModel.UiState>
+typealias AppUpdateModel = ScreenModel<AppUpdateViewModel, AppUpdateViewModel.UiState>
 
 extension ScreenModel where ViewModel == StopBoardViewModel, State == StopBoardViewModel.UiState {
     convenience init() {
@@ -55,5 +56,11 @@ extension ScreenModel where ViewModel == SettingsViewModel, State == SettingsVie
 extension ScreenModel where ViewModel == ModeSelectionViewModel, State == ModeSelectionViewModel.UiState {
     convenience init() {
         self.init(create: { PulseTransitIos.shared.modeSelectionViewModel(owner: $0) }, stateFlow: { $0.uiState })
+    }
+}
+
+extension ScreenModel where ViewModel == AppUpdateViewModel, State == AppUpdateViewModel.UiState {
+    convenience init() {
+        self.init(create: { PulseTransitIos.shared.appUpdateViewModel(owner: $0) }, stateFlow: { $0.uiState })
     }
 }

@@ -18,6 +18,7 @@ import com.example.pulsetransit.platform.LocationSource
 import com.example.pulsetransit.platform.LocationSourceProvider
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
+import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
@@ -63,6 +64,8 @@ object PulseTransitIos : KoinComponent {
     fun settingsViewModel(owner: ViewModelOwner): SettingsViewModel = owner.viewModel { get<SettingsViewModel>() }
 
     fun modeSelectionViewModel(owner: ViewModelOwner): ModeSelectionViewModel = owner.viewModel { get<ModeSelectionViewModel>() }
+
+    fun appUpdateViewModel(owner: ViewModelOwner): AppUpdateViewModel = owner.viewModel { get<AppUpdateViewModel>() }
 }
 
 /**
