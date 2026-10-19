@@ -1,0 +1,11 @@
+# Actions in ci.yml are pinned to commit SHAs, because the release jobs can read the signing and
+# store secrets. Dependabot keeps those pins, and the version comments next to them, current.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
