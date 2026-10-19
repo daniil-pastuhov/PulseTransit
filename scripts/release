@@ -97,8 +97,11 @@ def current_version():
 def ask(prompt, choices):
     while True:
         answer = input(prompt).strip()
-        if answer in choices:
-            return choices[answer]
+        # A capital in the prompt marks the default ("[A]ccept"), so typing it must work too; only
+        # m/M (minor/major) differ by case, and the exact match wins there.
+        for key in (answer, answer.lower()):
+            if key in choices:
+                return choices[key]
         print(f"Please answer one of: {', '.join(k or '<enter>' for k in choices)}")
 
 
