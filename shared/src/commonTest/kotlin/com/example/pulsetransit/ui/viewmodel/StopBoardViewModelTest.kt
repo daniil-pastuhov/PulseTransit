@@ -508,7 +508,10 @@ class StopBoardViewModelTest : BoardTestBase() {
             runCurrent()
 
             assertFalse(vm.uiState.value.showWeather)
-            assertTrue(vm.uiState.value.weather.isEmpty())
+            assertTrue(
+                vm.uiState.value.weather
+                    .isEmpty(),
+            )
             assertEquals(1, weather.calls, "MET must not be asked for a forecast nobody sees")
         }
 
@@ -523,7 +526,10 @@ class StopBoardViewModelTest : BoardTestBase() {
             vm.loadSettings()
             advanceTimeBy(2_000)
 
-            assertTrue(vm.uiState.value.weather.isEmpty())
+            assertTrue(
+                vm.uiState.value.weather
+                    .isEmpty(),
+            )
         }
 
     @Test

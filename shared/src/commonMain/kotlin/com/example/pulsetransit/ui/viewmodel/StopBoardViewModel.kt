@@ -424,15 +424,21 @@ class StopBoardViewModel(
             )
         }
 
+        applyWeatherSetting(showWeather, weatherTurnedOn)
+        setupSensors()
+    }
+
+    private fun applyWeatherSetting(
+        showWeather: Boolean,
+        turnedOn: Boolean,
+    ) {
         if (!showWeather) {
             lastWeatherFix = null
             lastWeatherUpdateTime = 0
-        } else if (weatherTurnedOn && refreshWeather()) {
+        } else if (turnedOn && refreshWeather()) {
             // Back on: show the forecast now rather than on the next refresh tick.
             lastWeatherUpdateTime = clock.now().toEpochMilliseconds()
         }
-
-        setupSensors()
     }
 
     /**
