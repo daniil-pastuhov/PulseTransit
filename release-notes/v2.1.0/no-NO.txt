@@ -1,0 +1,4 @@
+• Tavla viser nå et varsel når en ny versjon av appen er tilgjengelig. Oppdater med en gang eller skjul den versjonen.
+• Ny innstilling for å slå av værmeldingen. Når den er av, henter appen ikke lenger vær.
+• I På stedet-modus kan du dra skillelinjen for å endre størrelsen på ruter og nærmeste holdeplass, eller felle sammen den ene. Oppsettet lagres.
+• Ryddigere topplinje: det ekstra lastehjulet er borte.
