@@ -1,0 +1,4 @@
+• The board now shows a notice when a new app version is available. Update right away or hide that version.
+• New setting to turn off the weather forecast. When it is off, the app stops fetching weather.
+• In On the spot mode, drag the divider to resize routes and the nearby stop, or fold one away. Your layout is saved.
+• Cleaner header: the extra loading spinner is gone.
