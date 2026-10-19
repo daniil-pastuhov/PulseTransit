@@ -202,8 +202,6 @@ class StopBoardViewModel(
         val canSaveTemporaryDestination: Boolean
             get() = temporaryDestination != null && destinationStations.size < SettingsRepository.MAX_DESTINATION_STATIONS
 
-        val isLoading: Boolean get() = loadingStopIds.isNotEmpty() || loadingTripDestinationIds.isNotEmpty()
-
         /** True while any part of the transit board is missing or stale because a fetch failed. */
         val hasLoadFailure: Boolean
             get() = failedStopIds.isNotEmpty() || failedTripDestinationIds.isNotEmpty() || staleSinceMillis != null

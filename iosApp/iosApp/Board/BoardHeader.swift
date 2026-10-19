@@ -21,9 +21,6 @@ struct BoardHeader: View {
             WeatherStrip(weather: state.weather)
                 .frame(maxWidth: .infinity)
             HStack(spacing: 8) {
-                if state.isLoading {
-                    ProgressView()
-                }
                 Button(action: onSearchRoute) {
                     Image(systemName: "magnifyingglass")
                 }
