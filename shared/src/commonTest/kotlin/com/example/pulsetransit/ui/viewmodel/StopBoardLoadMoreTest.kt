@@ -149,9 +149,12 @@ class StopBoardLoadMoreTest : BoardTestBase() {
             vm.loadMoreDepartures(oslo.id)
             vm.loadMoreDepartures(oslo.id) // still loading the first one
             runCurrent()
-            // Growing one board is not a board refresh: no refresh bar, no header spinner.
+            // Growing one board is not a board refresh: no refresh bar.
             assertEquals(setOf(oslo.id), vm.uiState.value.loadingMoreStopIds)
-            assertTrue(!vm.uiState.value.isLoading)
+            assertTrue(
+                vm.uiState.value.loadingStopIds
+                    .isEmpty(),
+            )
             advanceTimeBy(1_001.milliseconds)
             assertEquals(calls + 1, entur.departureCalls)
             assertEquals(30, entur.requestedLimits[oslo.id])

@@ -18,12 +18,13 @@ struct BoardHeader: View {
                 .onTapGesture(perform: onCycleDateStyle)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityHint(L("change_date_style"))
-            WeatherStrip(weather: state.weather)
-                .frame(maxWidth: .infinity)
+            if state.showWeather {
+                WeatherStrip(weather: state.weather)
+                    .frame(maxWidth: .infinity)
+            } else {
+                Spacer()
+            }
             HStack(spacing: 8) {
-                if state.isLoading {
-                    ProgressView()
-                }
                 Button(action: onSearchRoute) {
                     Image(systemName: "magnifyingglass")
                 }

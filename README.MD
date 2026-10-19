@@ -47,23 +47,25 @@ The iOS app is in progress: the board, settings and location work; camera motion
 ## Firebase setup
 
 Crash reporting uses [Firebase Crashlytics](https://firebase.google.com/docs/crashlytics), which needs a
-`google-services.json` describing the Firebase project to report into. It is not in the repository yet, so
-until it is added every build fails with:
+config describing the Firebase project to report into: `app/google-services.json` for Android and
+`iosApp/iosApp/GoogleService-Info.plist` for iOS. Both are committed, because CI needs them to build. They
+hold no secret — the API keys in them ship inside every APK and IPA anyway, and Google
+[documents them as safe to check in](https://firebase.google.com/docs/projects/learn-more#config-files-objects).
+The keys are restricted in Google Cloud to this app's package and bundle id, so they cannot be used from
+anywhere else.
 
-```
-Execution failed for task ':app:processDebugGoogleServices'.
-> File google-services.json is missing.
-```
+**In a fork**, point the app at your own Firebase project instead of sending crashes into this one:
 
-To produce it:
+1. Change `applicationId` in `app/build.gradle.kts` and `PRODUCT_BUNDLE_IDENTIFIER` in
+   `iosApp/Configuration/Config.xcconfig` to ids of your own.
+2. Create a project in the [Firebase console](https://console.firebase.google.com/) and add an **Android**
+   app with exactly that `applicationId` (Firebase rejects the config at build time otherwise) and an
+   **iOS** app with that bundle id.
+3. Download the generated files over `app/google-services.json` and `iosApp/iosApp/GoogleService-Info.plist`.
 
-1. Create a project in the [Firebase console](https://console.firebase.google.com/) (or open an existing one).
-2. Add an **Android** app to it. The package name must be exactly `com.example.pulsetransit`, matching
-   `applicationId` in `app/build.gradle.kts` — Firebase rejects the config at build time otherwise.
-3. Download the generated `google-services.json` and put it at `app/google-services.json`.
-4. Commit it. It holds no secret: the API key in it is restricted to this app, and Google
-   [documents it as safe to check in](https://firebase.google.com/docs/projects/learn-more#config-files-objects).
-   CI needs it in the repository to build.
+Without `google-services.json` every Android build fails with
+`Execution failed for task ':app:processDebugGoogleServices'. > File google-services.json is missing.`
+The iOS app builds without its plist and simply skips Crashlytics.
 
 Crash collection is **disabled in debug builds** and enabled in release, so day-to-day development does not
 report into the dashboard. That switch is the `crashlyticsCollectionEnabled` manifest placeholder set per
@@ -174,3 +176,23 @@ data, so regenerate them when the UI changes:
 5. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
    editable App Store version.
 
+
+## Forking
+
+The code is MIT-licensed (see [LICENSE](LICENSE)), so you are welcome to build on it. A few things belong
+to this app rather than to the code, and a fork should replace them:
+
+- **API identification.** Entur [requires every client to identify itself](https://developer.entur.org/pages-intro-authentication)
+  with the `ET-Client-Name` header, and MET Norway's [terms of service](https://api.met.no/doc/TermsOfService)
+  require a `User-Agent` naming the app and a way to contact its author. Set your own in
+  `EnturRepositoryImpl` (`clientNameValue`) and `WeatherRepositoryImpl` (`USER_AGENT`), so that your
+  traffic is not attributed to PulseTransit and a misbehaving fork cannot get this app blocked.
+- **Firebase**: see [Firebase setup](#firebase-setup).
+- **App ids, name and icon.** Publishing a copy under the PulseTransit name or icon, or with this app's
+  `applicationId`/bundle id, is not covered by the license. Use your own if you ship to a store.
+- **Store metadata** under `app/src/main/play/` and `iosApp/fastlane/` (descriptions, contact email,
+  screenshots) describes this app.
+
+## License
+
+[MIT](LICENSE) © 2026 Daniil Pastuhov

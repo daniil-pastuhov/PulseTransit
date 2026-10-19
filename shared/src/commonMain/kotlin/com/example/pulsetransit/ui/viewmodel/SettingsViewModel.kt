@@ -83,6 +83,7 @@ class SettingsViewModel(
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
+        val showWeather: Boolean = true,
         val autoThemeDarkLux: Float = 10f,
         val autoThemeLightLux: Float = 40f,
         val currentLux: Float? = null,
@@ -138,6 +139,7 @@ class SettingsViewModel(
                 showDelays = settingsRepository.isShowDelays(),
                 showMessages = settingsRepository.isShowMessages(),
                 showCancelledLines = settingsRepository.isShowCancelledLines(),
+                showWeather = settingsRepository.isShowWeather(),
                 autoThemeDarkLux = settingsRepository.getAutoThemeDarkLux(),
                 autoThemeLightLux = settingsRepository.getAutoThemeLightLux(),
                 cameraMotionWake = settingsRepository.isCameraMotionWakeEnabled(),
@@ -266,6 +268,11 @@ class SettingsViewModel(
     fun updateCameraSensitivity(sensitivity: CameraSensitivity) {
         settingsRepository.setCameraSensitivity(sensitivity)
         _uiState.update { it.copy(cameraSensitivity = sensitivity) }
+    }
+
+    fun updateShowWeather(show: Boolean) {
+        settingsRepository.setShowWeather(show)
+        _uiState.update { it.copy(showWeather = show) }
     }
 
     fun updateDynamicRefresh(enabled: Boolean) {

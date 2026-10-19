@@ -303,6 +303,10 @@ class SettingsRepositoryImpl(
         prefs.putString("camera_sensitivity", sensitivity.name)
     }
 
+    override fun isShowWeather(): Boolean = prefs.getBoolean("show_weather", true)
+
+    override fun setShowWeather(show: Boolean) = prefs.putBoolean("show_weather", show)
+
     override fun isDynamicRefreshEnabled(): Boolean = prefs.getBoolean("dynamic_refresh", true)
 
     override fun setDynamicRefreshEnabled(enabled: Boolean) = prefs.putBoolean("dynamic_refresh", enabled)

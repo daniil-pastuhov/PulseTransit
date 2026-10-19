@@ -39,7 +39,6 @@ class StopBoardLoadingTest : BoardTestBase() {
                     .map { it.stopId },
             )
             assertEquals(setOf(second.id), vm.uiState.value.loadingStopIds)
-            assertTrue(vm.uiState.value.isLoading)
 
             advanceTimeBy(1_000.milliseconds)
             assertEquals(

@@ -535,6 +535,10 @@ fun SettingsScreen(
                         Checkbox(checked = uiState.showCancelledLines, onCheckedChange = { viewModel.updateShowCancelledLines(it) })
                         Text(stringResource(R.string.show_cancelled))
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = uiState.showWeather, onCheckedChange = { viewModel.updateShowWeather(it) })
+                        Text(stringResource(R.string.show_weather))
+                    }
                 }
 
                 // Section: Filtered Lines
