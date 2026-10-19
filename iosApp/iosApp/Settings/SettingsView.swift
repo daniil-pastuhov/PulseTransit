@@ -215,6 +215,7 @@ private struct TransportSection: View {
             Toggle(L("show_delays"), isOn: binding(state.showDelays) { viewModel.updateShowDelays(show: $0) })
             Toggle(L("show_messages"), isOn: binding(state.showMessages) { viewModel.updateShowMessages(show: $0) })
             Toggle(L("show_cancelled"), isOn: binding(state.showCancelledLines) { viewModel.updateShowCancelledLines(show: $0) })
+            Toggle(L("show_weather"), isOn: binding(state.showWeather) { viewModel.updateShowWeather(show: $0) })
         }
     }
 }

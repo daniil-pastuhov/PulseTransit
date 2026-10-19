@@ -206,11 +206,15 @@ class FakeWeatherRepository : WeatherRepository {
     var weather: Sourced<List<WeatherInfo>> = Sourced(emptyList())
     var calls = 0
 
+    /** How long a fetch takes, so a test can change settings while one is in flight. */
+    var delayMillis = 0L
+
     override suspend fun getWeather(
         lat: Double,
         lon: Double,
     ): Sourced<List<WeatherInfo>> {
         calls++
+        if (delayMillis > 0) delay(delayMillis)
         return weather
     }
 }
@@ -255,6 +259,7 @@ class FakeSettingsRepository : SettingsRepository {
     var latitude: Double? = 59.9149
     var longitude: Double? = 10.7322
     var dynamicRefresh = false
+    var weatherShown = true
     var destinations = listOf<StopPlace>()
     var selectedQuays = mapOf<String, Set<String>>()
     var sensitivity = CameraSensitivity.MEDIUM
@@ -465,6 +470,12 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun setCameraSensitivity(sensitivity: CameraSensitivity) {
         this.sensitivity = sensitivity
+    }
+
+    override fun isShowWeather() = weatherShown
+
+    override fun setShowWeather(show: Boolean) {
+        weatherShown = show
     }
 
     override fun isDynamicRefreshEnabled() = dynamicRefresh

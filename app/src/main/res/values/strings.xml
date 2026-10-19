@@ -17,6 +17,7 @@
     <string name="show_delays">Show delay information</string>
     <string name="show_messages">Show informational messages</string>
     <string name="show_cancelled">Show canceled departures</string>
+    <string name="show_weather">Show weather forecast</string>
     <string name="filter_out_line">Filter out line %1$s</string>
     <string name="filtered_lines">Filtered Out Lines</string>
     <string name="no_filtered_lines">To filter out a line, tap its departure on the main screen and select the filter option.</string>

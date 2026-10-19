@@ -124,6 +124,8 @@ class StopBoardViewModel(
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
         val showCancelledLines: Boolean = false,
+        /** Whether the header shows the forecast (and the footer credits MET for it). */
+        val showWeather: Boolean = true,
         val autoThemeDarkLux: Float = 10f,
         val autoThemeLightLux: Float = 40f,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
@@ -377,6 +379,8 @@ class StopBoardViewModel(
         val showDelays = settingsRepository.isShowDelays()
         val showMessages = settingsRepository.isShowMessages()
         val showCancelledLines = settingsRepository.isShowCancelledLines()
+        val showWeather = settingsRepository.isShowWeather()
+        val weatherTurnedOn = showWeather && !_uiState.value.showWeather
         val destinations = settingsRepository.getDestinationStations()
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
@@ -403,6 +407,8 @@ class StopBoardViewModel(
                 showDelays = showDelays,
                 showMessages = showMessages,
                 showCancelledLines = showCancelledLines,
+                showWeather = showWeather,
+                weather = if (showWeather) it.weather else emptyList(),
                 destinationStations = destinations,
                 temporaryDestination = temporary,
                 fastestTrips = if (destinations.isEmpty() && temporary == null) emptyMap() else it.fastestTrips,
@@ -416,6 +422,14 @@ class StopBoardViewModel(
                 tripOptionsCount = tripOptions,
                 onSpotSplit = split,
             )
+        }
+
+        if (!showWeather) {
+            lastWeatherFix = null
+            lastWeatherUpdateTime = 0
+        } else if (weatherTurnedOn && refreshWeather()) {
+            // Back on: show the forecast now rather than on the next refresh tick.
+            lastWeatherUpdateTime = clock.now().toEpochMilliseconds()
         }
 
         setupSensors()
@@ -913,9 +927,10 @@ class StopBoardViewModel(
 
     /**
      * Starts a weather fetch for the saved location, or the device's in on-spot mode; false when
-     * there is no location yet.
+     * there is no location yet or weather is turned off.
      */
     private fun refreshWeather(): Boolean {
+        if (!_uiState.value.showWeather) return false
         val lat = if (isOnSpot) follower.latestFix?.latitude else settingsRepository.getSavedLatitude()
         val lon = if (isOnSpot) follower.latestFix?.longitude else settingsRepository.getSavedLongitude()
         if (lat == null || lon == null) return false
@@ -926,7 +941,8 @@ class StopBoardViewModel(
             // one can only show fewer hours — never wrong ones. It does not raise the offline
             // banner, which tracks the transit board.
             val weather = weatherRepository.getWeather(lat, lon)
-            _uiState.update { it.copy(weather = weather.data) }
+            // Turned off while the request was in flight: keep the header empty.
+            _uiState.update { if (it.showWeather) it.copy(weather = weather.data) else it }
         }
         return true
     }

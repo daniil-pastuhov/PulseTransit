@@ -337,7 +337,9 @@ private struct BoardFooter: View {
                 .foregroundColor(Palette.textPrimary.opacity(0.3))
             HStack(spacing: 8) {
                 Text(L("attribution_entur"))
-                Text(L("attribution_met"))
+                if state.showWeather {
+                    Text(L("attribution_met"))
+                }
             }
             .font(.system(size: 9))
             .foregroundColor(Palette.textPrimary.opacity(0.2))

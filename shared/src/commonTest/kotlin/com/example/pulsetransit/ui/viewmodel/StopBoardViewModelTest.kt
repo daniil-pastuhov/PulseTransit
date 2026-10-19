@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
@@ -492,6 +493,51 @@ class StopBoardViewModelTest : BoardTestBase() {
             runCurrent()
 
             assertEquals(1, weather.calls, "must not wait out the 30-minute weather cadence")
+        }
+
+    @Test
+    fun `weather turned off is not requested and is cleared`() =
+        boardTest {
+            weather.weather = Sourced.live(listOf(WeatherInfo("2026-07-15T14:00:00Z", 21.0, "clearsky_day", 0.0)))
+            val vm = viewModel()
+            assertEquals(1, weather.calls)
+
+            settings.weatherShown = false
+            vm.loadSettings()
+            vm.refreshData()
+            runCurrent()
+
+            assertFalse(vm.uiState.value.showWeather)
+            assertTrue(vm.uiState.value.weather.isEmpty())
+            assertEquals(1, weather.calls, "MET must not be asked for a forecast nobody sees")
+        }
+
+    @Test
+    fun `a forecast arriving after weather is turned off is dropped`() =
+        boardTest {
+            weather.weather = Sourced.live(listOf(WeatherInfo("2026-07-15T14:00:00Z", 21.0, "clearsky_day", 0.0)))
+            weather.delayMillis = 1_000
+            val vm = viewModel()
+
+            settings.weatherShown = false
+            vm.loadSettings()
+            advanceTimeBy(2_000)
+
+            assertTrue(vm.uiState.value.weather.isEmpty())
+        }
+
+    @Test
+    fun `weather turned back on is fetched right away`() =
+        boardTest {
+            settings.weatherShown = false
+            val vm = viewModel()
+            assertEquals(0, weather.calls)
+
+            settings.weatherShown = true
+            vm.loadSettings()
+            runCurrent()
+
+            assertEquals(1, weather.calls, "must not wait for the next refresh tick")
         }
 
     // --- Screen dimming --------------------------------------------------------------------

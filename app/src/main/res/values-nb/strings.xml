@@ -17,6 +17,7 @@
     <string name="show_delays">Vis forsinkelser</string>
     <string name="show_messages">Vis informasjonsmeldinger</string>
     <string name="show_cancelled">Vis kansellerte avganger</string>
+    <string name="show_weather">Vis værmelding</string>
     <string name="filter_out_line">Filtrer bort linje %1$s</string>
     <string name="filtered_lines">Filtrerte linjer</string>
     <string name="no_filtered_lines">For å filtrere bort en linje, trykk på en avgang på hovedskjermen og velg filtreringsvalget.</string>

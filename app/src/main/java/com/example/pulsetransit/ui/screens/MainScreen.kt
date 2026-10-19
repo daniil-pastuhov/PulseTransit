@@ -212,36 +212,38 @@ fun MainScreen(
                     // Left: Digital Clock + date; tapping cycles the date style.
                     HeaderClock(uiState = uiState, onClick = { viewModel.cycleDateStyle() })
 
-                    // Middle: Weather
-                    BoxWithConstraints(
-                        modifier =
-                            Modifier
-                                .weight(1f)
-                                .padding(horizontal = 16.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        // Fit only as many columns as the width allows: a forced minimum
-                        // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
-                        // grow with the system font scale, so the column budget does too.
-                        val itemWidth = 56.dp * LocalDensity.current.fontScale
-                        val maxItems = (maxWidth / itemWidth).toInt().coerceIn(1, 8)
-                        val totalAvailable = uiState.weather.size
-                        val step = if (totalAvailable > maxItems) totalAvailable / maxItems else 1
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceEvenly,
+                    // Middle: Weather, unless turned off in Settings
+                    if (uiState.showWeather) {
+                        BoxWithConstraints(
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 16.dp),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            uiState.weather
-                                .filterIndexed { index, _ -> index % step == 0 }
-                                .take(maxItems)
-                                .forEach { w ->
-                                    // Equal-width columns: a long condition label ("Partly
-                                    // cloudy") must wrap inside its column rather than stretch
-                                    // it and squeeze the neighbours.
-                                    WeatherItem(w, modifier = Modifier.weight(1f))
-                                }
+                            // Fit only as many columns as the width allows: a forced minimum
+                            // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
+                            // grow with the system font scale, so the column budget does too.
+                            val itemWidth = 56.dp * LocalDensity.current.fontScale
+                            val maxItems = (maxWidth / itemWidth).toInt().coerceIn(1, 8)
+                            val totalAvailable = uiState.weather.size
+                            val step = if (totalAvailable > maxItems) totalAvailable / maxItems else 1
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                            ) {
+                                uiState.weather
+                                    .filterIndexed { index, _ -> index % step == 0 }
+                                    .take(maxItems)
+                                    .forEach { w ->
+                                        // Equal-width columns: a long condition label ("Partly
+                                        // cloudy") must wrap inside its column rather than stretch
+                                        // it and squeeze the neighbours.
+                                        WeatherItem(w, modifier = Modifier.weight(1f))
+                                    }
+                            }
                         }
                     }
 
@@ -462,14 +464,16 @@ fun MainScreen(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                                 ),
                         )
-                        Text(
-                            text = stringResource(R.string.attribution_met),
-                            style =
-                                MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                                ),
-                        )
+                        if (uiState.showWeather) {
+                            Text(
+                                text = stringResource(R.string.attribution_met),
+                                style =
+                                    MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 8.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                    ),
+                            )
+                        }
                     }
                 }
             }

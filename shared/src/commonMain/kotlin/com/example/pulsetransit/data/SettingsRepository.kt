@@ -111,6 +111,11 @@ interface SettingsRepository {
 
     fun getShowMessagesFlow(): Flow<Boolean>
 
+    /** Whether the board shows the MET forecast; off, it is not fetched at all. */
+    fun isShowWeather(): Boolean
+
+    fun setShowWeather(show: Boolean)
+
     fun getSelectedQuays(stopId: String): Set<String>?
 
     fun setSelectedQuays(
