@@ -1,5 +1,7 @@
 # Actions in ci.yml are pinned to commit SHAs, because the release jobs can read the signing and
 # store secrets. Dependabot keeps those pins, and the version comments next to them, current.
+#
+# Minor and patch updates come grouped, one PR per group; a major version gets a PR of its own.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -8,4 +10,35 @@ updates:
       interval: monthly
     groups:
       actions:
+        patterns: ["*"]
+
+  # gradle/libs.versions.toml and the Gradle wrapper.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # The Kotlin plugins share one version, and SKIE and KSP only support particular Kotlin
+      # releases, so they move together, majors included; CI shows whether a combination builds.
+      kotlin:
+        patterns:
+          # Not "org.jetbrains.kotlin*": that also matches the kotlinx libraries.
+          - "org.jetbrains.kotlin:*"
+          - "org.jetbrains.kotlin.*"
+          - "co.touchlab.skie*"
+          - "com.google.devtools.ksp*"
+      androidx:
+        patterns: ["androidx.*"]
+        update-types: [minor, patch]
+      libraries:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # fastlane, for the iOS release lanes.
+  - package-ecosystem: bundler
+    directory: /iosApp
+    schedule:
+      interval: monthly
+    groups:
+      fastlane:
         patterns: ["*"]
