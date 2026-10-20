@@ -66,6 +66,36 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
+    fun `destination schedules round-trip and null clears one`() {
+        val schedule = DestinationSchedule(DestinationSchedule.WEEKDAYS, startMinute = 8 * 60, endMinute = 9 * 60)
+        assertEquals(emptyMap(), repo.getDestinationSchedules(), "an install from before schedules has none")
+
+        repo.setDestinationSchedule("NSR:StopPlace:1", schedule)
+        assertEquals(mapOf("NSR:StopPlace:1" to schedule), SettingsRepositoryImpl(store).getDestinationSchedules())
+
+        repo.setDestinationSchedule("NSR:StopPlace:1", null)
+        assertEquals(emptyMap(), repo.getDestinationSchedules())
+    }
+
+    @Test
+    fun `removing a destination forgets its schedule`() {
+        val oslo = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
+        repo.addDestinationStation(oslo)
+        repo.setDestinationSchedule(oslo.id, DestinationSchedule(DestinationSchedule.WEEKEND))
+
+        repo.removeDestinationStation(oslo.id)
+
+        assertEquals(emptyMap(), repo.getDestinationSchedules())
+    }
+
+    @Test
+    fun `a corrupt schedule store reads as no schedules`() {
+        store.putString(SettingsRepositoryImpl.Keys.DESTINATION_SCHEDULES, """{"a":{"startMinute":9999}}""")
+
+        assertEquals(emptyMap(), repo.getDestinationSchedules())
+    }
+
+    @Test
     fun `route alternatives default to auto and stay within range`() {
         assertEquals(SettingsRepository.TRIP_OPTIONS_AUTO, repo.getTripOptionsCount())
 

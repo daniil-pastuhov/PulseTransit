@@ -19,6 +19,7 @@ class SettingsRepositoryImpl(
     object Keys {
         const val FILTERED_LINES = "filtered_lines_json"
         const val EXCLUDED_ROUTE_MODES = "route_excluded_modes_json"
+        const val DESTINATION_SCHEDULES = "destination_schedules_json"
 
         fun selectedQuays(stopId: String) = "quays_json_$stopId"
     }
@@ -333,6 +334,25 @@ class SettingsRepositoryImpl(
     override fun removeDestinationStation(stopId: String) {
         val current = getDestinationStations().filter { it.id != stopId }
         prefs.putString("destination_stations", json.encodeToString(current))
+        setDestinationSchedule(stopId, null)
+    }
+
+    override fun getDestinationSchedules(): Map<String, DestinationSchedule> {
+        val jsonStr = prefs.getStringOrNull(Keys.DESTINATION_SCHEDULES) ?: return emptyMap()
+        return try {
+            json.decodeFromString<Map<String, DestinationSchedule>>(jsonStr)
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
+    override fun setDestinationSchedule(
+        destinationId: String,
+        schedule: DestinationSchedule?,
+    ) {
+        val current = getDestinationSchedules()
+        val updated = if (schedule == null) current - destinationId else current + (destinationId to schedule)
+        if (updated != current) prefs.putString(Keys.DESTINATION_SCHEDULES, json.encodeToString(updated))
     }
 
     override fun isFullScreenMode(): Boolean = prefs.getBoolean("full_screen_mode", false)

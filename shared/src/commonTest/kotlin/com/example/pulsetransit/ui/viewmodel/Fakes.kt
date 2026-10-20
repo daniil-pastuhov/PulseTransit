@@ -5,6 +5,7 @@ import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
+import com.example.pulsetransit.data.DestinationSchedule
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.OnSpotSplit
@@ -261,6 +262,7 @@ class FakeSettingsRepository : SettingsRepository {
     var dynamicRefresh = false
     var weatherShown = true
     var destinations = listOf<StopPlace>()
+    var schedules = mapOf<String, DestinationSchedule>()
     var selectedQuays = mapOf<String, Set<String>>()
     var sensitivity = CameraSensitivity.MEDIUM
 
@@ -491,6 +493,15 @@ class FakeSettingsRepository : SettingsRepository {
     }
 
     override fun removeDestinationStation(stopId: String) {}
+
+    override fun getDestinationSchedules() = schedules
+
+    override fun setDestinationSchedule(
+        destinationId: String,
+        schedule: DestinationSchedule?,
+    ) {
+        schedules = if (schedule == null) schedules - destinationId else schedules + (destinationId to schedule)
+    }
 
     override fun isFullScreenMode() = fullScreen
 

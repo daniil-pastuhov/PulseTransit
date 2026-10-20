@@ -40,6 +40,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -93,7 +94,9 @@ import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
+import com.example.pulsetransit.ui.components.scheduleSummary
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -172,13 +175,31 @@ fun SettingsScreen(
                 // Section: Fastest Route Destinations
                 SettingsCard(title = stringResource(R.string.fastest_route_destination)) {
                     val destinations = uiState.destinationStations
+                    var editingSchedule by remember { mutableStateOf<StopPlace?>(null) }
+                    editingSchedule?.let { destination ->
+                        DestinationScheduleEditor(
+                            destination = destination,
+                            schedule = uiState.destinationSchedules[destination.id],
+                            onSave = { schedule ->
+                                viewModel.setDestinationSchedule(destination.id, schedule)
+                                editingSchedule = null
+                            },
+                            onDismiss = { editingSchedule = null },
+                        )
+                    }
                     if (destinations.isNotEmpty()) {
                         destinations.forEach { destination ->
                             key(destination.id) {
+                                val schedule = uiState.destinationSchedules[destination.id]
+                                val editLabel = stringResource(R.string.schedule_edit, destination.name)
+                                val scheduleColor =
+                                    if (schedule != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 Row(
                                     modifier =
                                         Modifier
                                             .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable(onClickLabel = editLabel) { editingSchedule = destination }
                                             .padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -192,6 +213,20 @@ fun SettingsScreen(
                                                 it,
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Schedule,
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp),
+                                                tint = scheduleColor,
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                scheduleSummary(schedule),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = scheduleColor,
                                             )
                                         }
                                     }

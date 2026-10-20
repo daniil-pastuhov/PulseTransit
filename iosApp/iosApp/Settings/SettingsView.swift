@@ -289,6 +289,7 @@ private struct RouteSearchSection: View {
 private struct DestinationsSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
+    @State private var editing: StopPlace?
 
     var body: some View {
         let max = Int(SettingsRepositoryCompanion.shared.MAX_DESTINATION_STATIONS)
@@ -297,10 +298,23 @@ private struct DestinationsSection: View {
                 Text(L("no_destination_set")).foregroundColor(.secondary)
             }
             ForEach(state.destinationStations, id: \.id) { destination in
+                let schedule = state.destinationSchedules[destination.id]
                 HStack {
-                    PlaceKindIcon(kind: destination.kind)
-                    Text(destination.name)
-                    Spacer()
+                    Button { editing = destination } label: {
+                        HStack {
+                            PlaceKindIcon(kind: destination.kind)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(destination.name).foregroundColor(.primary)
+                                Label(scheduleSummary(schedule), systemImage: "clock")
+                                    .font(.caption)
+                                    .foregroundColor(schedule == nil ? .secondary : .accentColor)
+                            }
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityHint(L("schedule_edit", destination.name))
                     Button(role: .destructive) { viewModel.removeDestinationStation(stopId: destination.id) } label: {
                         Image(systemName: "xmark.circle.fill")
                     }
@@ -325,6 +339,15 @@ private struct DestinationsSection: View {
                             .buttonStyle(.bordered)
                     }
                 }
+            }
+        }
+        .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
+            if let destination = editing {
+                DestinationScheduleView(
+                    destination: destination,
+                    schedule: state.destinationSchedules[destination.id],
+                    onSave: { viewModel.setDestinationSchedule(destinationId: destination.id, schedule: $0) }
+                )
             }
         }
     }

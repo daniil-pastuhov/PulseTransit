@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.TimeZone
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.time.Clock
@@ -70,8 +71,23 @@ abstract class BoardTestBase {
             }
         }
 
-    protected fun TestScope.viewModel(clock: Clock = Clock.System): StopBoardViewModel {
-        val vm = StopBoardViewModel(entur, weather, settings, sensors, camera, clockFormatter, connectivity, location, clock)
+    protected fun TestScope.viewModel(
+        clock: Clock = Clock.System,
+        timeZone: TimeZone = TimeZone.currentSystemDefault(),
+    ): StopBoardViewModel {
+        val vm =
+            StopBoardViewModel(
+                entur,
+                weather,
+                settings,
+                sensors,
+                camera,
+                clockFormatter,
+                connectivity,
+                location,
+                clock,
+                timeZone = { timeZone },
+            )
         created += vm
         runCurrent() // let init's loadSettings / first refresh / sensor wiring run
         return vm
