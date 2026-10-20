@@ -1,0 +1,3 @@
+• Saved destinations can now have a schedule: pick the days and hours when the route should show, like weekday mornings for your trip to work
+• Outside its schedule a route stays hidden, and it shows up again on the board as soon as its time window opens
+• Detect location and on-spot mode now also work on devices without Google Play Services

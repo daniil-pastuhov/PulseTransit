@@ -1,0 +1,3 @@
+• Lagrede reisemål kan nå få en tidsplan: velg dagene og klokkeslettene ruten skal vises, for eksempel hverdagsmorgener for turen til jobb
+• Utenfor tidsplanen er ruten skjult, og den dukker opp på tavlen igjen så snart tidsvinduet starter
+• Finn posisjon og på stedet-modus fungerer nå også på enheter uten Google Play-tjenester
