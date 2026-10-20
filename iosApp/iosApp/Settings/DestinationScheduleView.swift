@@ -42,8 +42,8 @@ struct DestinationScheduleView: View {
                             presetButton("schedule_weekdays", DestinationSchedule.companion.WEEKDAYS)
                             presetButton("schedule_weekend", DestinationSchedule.companion.WEEKEND)
                         }
-                        // Adaptive columns: one row of seven on a wide screen, two rows on a small phone.
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 6)], spacing: 6) {
+                        // One row of seven equal cells, so the week reads as a week at any width.
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
                             ForEach(Array(1...7), id: \.self) { (day: Int) in
                                 dayToggle(Int32(day))
                             }
@@ -98,6 +98,8 @@ struct DestinationScheduleView: View {
         } label: {
             Text(shortDayName(day))
                 .font(.subheadline.weight(selected ? .semibold : .regular))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: 36)
                 .background(RoundedRectangle(cornerRadius: 8).fill(selected ? Color.accentColor : Color.secondary.opacity(0.15)))
                 .foregroundColor(selected ? .white : .primary)

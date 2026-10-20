@@ -305,9 +305,14 @@ private struct DestinationsSection: View {
                             PlaceKindIcon(kind: destination.kind)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(destination.name).foregroundColor(.primary)
-                                Label(scheduleSummary(schedule), systemImage: "clock")
-                                    .font(.caption)
-                                    .foregroundColor(schedule == nil ? .secondary : .accentColor)
+                                // An HStack rather than a Label: inside a Form, a Label's icon gets a
+                                // fixed-width column that pushes the text away from it.
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock").accessibilityHidden(true)
+                                    Text(scheduleSummary(schedule))
+                                }
+                                .font(.caption)
+                                .foregroundColor(schedule == nil ? .secondary : .accentColor)
                             }
                             Spacer()
                         }
