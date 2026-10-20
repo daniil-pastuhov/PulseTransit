@@ -141,7 +141,17 @@ interface SettingsRepository {
 
     fun addDestinationStation(stopPlace: StopPlace)
 
+    /** Also forgets the destination's schedule. */
     fun removeDestinationStation(stopId: String)
+
+    /** Schedules by destination id; a destination without one is always shown. */
+    fun getDestinationSchedules(): Map<String, DestinationSchedule>
+
+    /** Sets when [destinationId]'s route is shown; null shows it always. */
+    fun setDestinationSchedule(
+        destinationId: String,
+        schedule: DestinationSchedule?,
+    )
 
     fun isFullScreenMode(): Boolean
 

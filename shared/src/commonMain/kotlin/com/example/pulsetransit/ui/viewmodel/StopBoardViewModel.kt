@@ -7,6 +7,7 @@ import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
+import com.example.pulsetransit.data.DestinationSchedule
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.OnSpotSplit
@@ -60,6 +61,8 @@ class StopBoardViewModel(
     private val connectivityMonitor: ConnectivityMonitor,
     private val locationProvider: LocationProvider,
     private val clock: Clock = Clock.System,
+    // Read on each use, so a board follows the device into another time zone.
+    private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) : ViewModel() {
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
@@ -147,7 +150,12 @@ class StopBoardViewModel(
         /** On-spot mode only: the user picked [selectedStopId], so it no longer follows the nearest. */
         val isStopPinned: Boolean = false,
         val isSearchingNearby: Boolean = false,
+        /** Every saved destination, including those outside their schedule right now. */
         val destinationStations: List<StopPlace> = emptyList(),
+        /** When each saved destination is shown, by id; one without a schedule always is. */
+        val destinationSchedules: Map<String, DestinationSchedule> = emptyMap(),
+        /** The saved destinations inside their schedule, rechecked on each clock tick. */
+        val activeDestinationIds: Set<String> = emptySet(),
         /**
          * A place picked from the board's route search, routed to like a saved destination until
          * it is dismissed or saved. Kept in memory only; never one of [destinationStations].
@@ -197,12 +205,22 @@ class StopBoardViewModel(
         /** Whether the device has a working connection; explains failures, never gates requests. */
         val isOnline: Boolean = true,
     ) {
-        /** Every destination routes are shown for: the temporary one first, then the saved ones. */
-        val routeDestinations: List<StopPlace> get() = listOfNotNull(temporaryDestination) + destinationStations
+        /**
+         * Every destination routes are shown for: the temporary one first, then the saved ones
+         * inside their schedule. A temporary destination has no schedule.
+         */
+        val routeDestinations: List<StopPlace>
+            get() = listOfNotNull(temporaryDestination) + destinationStations.filter { it.id in activeDestinationIds }
 
-        /** Whether [temporaryDestination] fits among the saved destinations. */
+        /**
+         * Whether [temporaryDestination] fits among the saved destinations. It may already be one
+         * that is outside its schedule, shown because the user searched for it.
+         */
         val canSaveTemporaryDestination: Boolean
-            get() = temporaryDestination != null && destinationStations.size < SettingsRepository.MAX_DESTINATION_STATIONS
+            get() =
+                temporaryDestination != null &&
+                    destinationStations.none { it.id == temporaryDestination.id } &&
+                    destinationStations.size < SettingsRepository.MAX_DESTINATION_STATIONS
 
         /** True while any part of the transit board is missing or stale because a fetch failed. */
         val hasLoadFailure: Boolean
@@ -382,6 +400,8 @@ class StopBoardViewModel(
         val showWeather = settingsRepository.isShowWeather()
         val weatherTurnedOn = showWeather && !_uiState.value.showWeather
         val destinations = settingsRepository.getDestinationStations()
+        val schedules = settingsRepository.getDestinationSchedules()
+        val activeIds = activeDestinationIds(destinations, schedules)
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
         val autoDim = settingsRepository.getAutoDimSeconds()
@@ -393,8 +413,9 @@ class StopBoardViewModel(
         val split = settingsRepository.getOnSpotSplit()
 
         _uiState.update {
-            // A temporary destination saved in Settings meanwhile is now just a saved one.
-            val temporary = it.temporaryDestination?.takeIf { temp -> destinations.none { d -> d.id == temp.id } }
+            // A temporary destination saved in Settings meanwhile is now just a saved one, unless
+            // its schedule hides it, in which case it stays up until dismissed.
+            val temporary = it.temporaryDestination?.takeIf { temp -> temp.id !in activeIds }
             it.copy(
                 favorites = favs,
                 themeMode = theme,
@@ -410,8 +431,10 @@ class StopBoardViewModel(
                 showWeather = showWeather,
                 weather = if (showWeather) it.weather else emptyList(),
                 destinationStations = destinations,
+                destinationSchedules = schedules,
+                activeDestinationIds = activeIds,
                 temporaryDestination = temporary,
-                fastestTrips = if (destinations.isEmpty() && temporary == null) emptyMap() else it.fastestTrips,
+                fastestTrips = if (activeIds.isEmpty() && temporary == null) emptyMap() else it.fastestTrips,
                 isFullScreenMode = isFullScreen && !onSpot,
                 isAlwaysOnEnabled = alwaysOn && !onSpot,
                 autoDimSeconds = autoDim,
@@ -594,9 +617,40 @@ class StopBoardViewModel(
                             },
                     )
                 }
+                updateActiveDestinations()
                 delay(1000.milliseconds)
             }
         }
+    }
+
+    /** The saved destinations inside their schedule at [clock]'s current time. */
+    private fun activeDestinationIds(
+        destinations: List<StopPlace>,
+        schedules: Map<String, DestinationSchedule>,
+    ): Set<String> {
+        val now = clock.now().toLocalDateTime(timeZone())
+        return destinations.filter { schedules[it.id]?.isActive(now) ?: true }.map { it.id }.toSet()
+    }
+
+    /**
+     * Shows or hides routes as their schedules open and close. A route that just came into its
+     * window is fetched now rather than on the next refresh, which may be stretched for the night.
+     */
+    private fun updateActiveDestinations() {
+        val state = _uiState.value
+        val activeIds = activeDestinationIds(state.destinationStations, state.destinationSchedules)
+        if (activeIds == state.activeDestinationIds) return
+        _uiState.update {
+            // A saved destination shown as temporary while outside its window is now just a saved one.
+            val temporary = it.temporaryDestination?.takeIf { temp -> temp.id !in activeIds }
+            it.copy(
+                activeDestinationIds = activeIds,
+                temporaryDestination = temporary,
+                // Dropped here too, since the refresh below returns early once nothing is left to route to.
+                fastestTrips = it.fastestTrips.filterKeys { id -> id in activeIds || id == temporary?.id },
+            )
+        }
+        refreshFastestTrip()
     }
 
     fun startAutoRefresh() {
@@ -621,7 +675,7 @@ class StopBoardViewModel(
         // Someone holding the phone is reading it, whatever the hour.
         if (isOnSpot || !settingsRepository.isDynamicRefreshEnabled()) return base
 
-        val hour = clock.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour
+        val hour = clock.now().toLocalDateTime(timeZone()).hour
 
         var multiplier = 1.0
 
@@ -1009,12 +1063,13 @@ class StopBoardViewModel(
 
     /**
      * Routes to [place] alongside the saved destinations until [dismissTemporaryDestination],
-     * replacing any earlier temporary one. A place already saved is shown by its own banner.
+     * replacing any earlier temporary one. A saved place inside its schedule is shown by its own
+     * banner; one outside it is shown as temporary, since the user asked for it.
      */
     fun showTemporaryDestination(place: StopPlace) {
         clearRouteSearch()
         val state = _uiState.value
-        if (state.destinationStations.any { it.id == place.id }) return
+        if (place.id in state.activeDestinationIds) return
         val previous = state.temporaryDestination
         if (previous?.id == place.id) return
         if (previous != null) dropTrips(previous.id)
@@ -1034,8 +1089,13 @@ class StopBoardViewModel(
         val temporary = state.temporaryDestination ?: return
         if (!state.canSaveTemporaryDestination) return
         settingsRepository.addDestinationStation(temporary)
+        val destinations = settingsRepository.getDestinationStations()
         _uiState.update {
-            it.copy(destinationStations = settingsRepository.getDestinationStations(), temporaryDestination = null)
+            it.copy(
+                destinationStations = destinations,
+                activeDestinationIds = activeDestinationIds(destinations, it.destinationSchedules),
+                temporaryDestination = null,
+            )
         }
     }
 

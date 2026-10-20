@@ -96,6 +96,22 @@
         <item quantity="one">Maksimalt %1$d destinasjon nådd. Fjern den for å legge til en ny.</item>
         <item quantity="other">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</item>
     </plurals>
+    <!-- Destination schedule -->
+    <string name="schedule_title">Når ruten vises</string>
+    <string name="schedule_hint">Ruten vises og oppdateres bare i dette tidsrommet.</string>
+    <string name="schedule_always">Alltid</string>
+    <string name="schedule_every_day">Hver dag</string>
+    <string name="schedule_weekdays">Hverdager</string>
+    <string name="schedule_weekend">Helg</string>
+    <string name="schedule_from">Fra</string>
+    <string name="schedule_to">Til</string>
+    <string name="schedule_no_days">Velg minst én dag</string>
+    <string name="schedule_summary">%1$s · %2$s–%3$s</string>
+    <string name="schedule_summary_next_day">%1$s · %2$s–%3$s neste dag</string>
+    <string name="schedule_summary_all_day">%1$s · hele dagen</string>
+    <string name="schedule_edit">Endre når %1$s vises</string>
+    <string name="save">Lagre</string>
+    <string name="cancel">Avbryt</string>
     <string name="select">Velg</string>
     <string name="loading_departures">Henter avganger…</string>
     <string name="loading_fastest_route">Finner raskeste rute til %1$s…</string>

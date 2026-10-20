@@ -100,10 +100,14 @@ class StopBoardRouteSearchTest : BoardTestBase() {
 
             vm.saveTemporaryDestination()
             runCurrent()
+            // Past the next clock tick, which rechecks which saved destinations are shown.
+            advanceTimeBy(1_001)
+            runCurrent()
 
             val state = vm.uiState.value
             assertEquals(listOf(oslo, bergen), settings.destinations)
             assertEquals(listOf(oslo, bergen), state.destinationStations)
+            assertEquals(listOf(oslo, bergen), state.routeDestinations)
             assertNull(state.temporaryDestination)
             assertTrue(bergen.id in state.fastestTrips)
             assertEquals(calls, entur.tripCalls)

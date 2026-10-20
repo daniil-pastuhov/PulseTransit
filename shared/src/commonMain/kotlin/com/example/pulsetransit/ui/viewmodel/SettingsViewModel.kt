@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
+import com.example.pulsetransit.data.DestinationSchedule
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
@@ -94,6 +95,8 @@ class SettingsViewModel(
         val isAlwaysOnEnabled: Boolean = false,
         val filteredLines: Set<String> = emptySet(),
         val destinationStations: List<StopPlace> = emptyList(),
+        /** When each destination is shown, by id; one without a schedule always is. */
+        val destinationSchedules: Map<String, DestinationSchedule> = emptyMap(),
         val destinationQuery: String = "",
         val destinationResults: List<StopPlace> = emptyList(),
         val isSearchingDestination: Boolean = false,
@@ -148,6 +151,7 @@ class SettingsViewModel(
                 isFullScreenMode = settingsRepository.isFullScreenMode(),
                 isAlwaysOnEnabled = settingsRepository.isAlwaysOnEnabled(),
                 destinationStations = settingsRepository.getDestinationStations(),
+                destinationSchedules = settingsRepository.getDestinationSchedules(),
                 filteredLines = settingsRepository.getFilteredLines(),
             )
         }
@@ -471,8 +475,20 @@ class SettingsViewModel(
     fun removeDestinationStation(stopId: String) {
         settingsRepository.removeDestinationStation(stopId)
         _uiState.update {
-            it.copy(destinationStations = settingsRepository.getDestinationStations())
+            it.copy(
+                destinationStations = settingsRepository.getDestinationStations(),
+                destinationSchedules = settingsRepository.getDestinationSchedules(),
+            )
         }
+    }
+
+    /** Sets when [destinationId]'s route is shown; null shows it always. */
+    fun setDestinationSchedule(
+        destinationId: String,
+        schedule: DestinationSchedule?,
+    ) {
+        settingsRepository.setDestinationSchedule(destinationId, schedule)
+        _uiState.update { it.copy(destinationSchedules = settingsRepository.getDestinationSchedules()) }
     }
 
     fun onDestinationQueryChanged(newQuery: String) {
