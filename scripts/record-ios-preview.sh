@@ -20,22 +20,26 @@ RAW=$(mktemp -t pt-preview).mov
 xcrun simctl terminate "$SIM" "$BUNDLE" 2>/dev/null || true
 xcrun simctl spawn "$SIM" defaults write "$BUNDLE" theme_mode -string LIGHT
 xcrun simctl spawn "$SIM" defaults write "$BUNDLE" date_display_style -string BESIDE
+# The tour starts in On the spot mode, here at Oslo S, and switches to the wall board.
+xcrun simctl privacy "$SIM" grant location "$BUNDLE"
+xcrun simctl location "$SIM" set 59.9111,10.7528
 xcrun simctl status_bar "$SIM" override --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 2>/dev/null || true
 
 xcrun simctl io "$SIM" recordVideo --codec h264 --force "$RAW" 2>/dev/null &
 RECORDER=$!
 sleep 2
 xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" -PTDemo YES >/dev/null
-sleep 33 # the tour lasts about 29 seconds after launch
+sleep 33 # the tour lasts about 30 seconds after launch
 kill -INT $RECORDER
 wait $RECORDER 2>/dev/null || true
 xcrun simctl status_bar "$SIM" clear 2>/dev/null || true
 
-# Skip the launch, keep 29 s (previews must be 15-30 s), fit Apple's size, 30 fps, and add the
+# Skip the launch, keep 29 s (previews must be 15-30 s; the simulator writes no frames while
+# the screen is still, so the last one is held to fill it), fit Apple's size, 30 fps, and add the
 # silent stereo AAC track App Store Connect expects.
 W=${SIZE%x*} H=${SIZE#*x}
 ffmpeg -loglevel error -y -ss 3 -t 29 -i "$RAW" -f lavfi -t 29 -i anullsrc=channel_layout=stereo:sample_rate=44100 \
-  -vf "scale=$W:$H:force_original_aspect_ratio=decrease,pad=$W:$H:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,format=yuv420p" \
-  -c:v libx264 -profile:v high -level 4.0 -preset slow -crf 18 -c:a aac -b:a 128k -shortest -movflags +faststart "$OUT"
+  -vf "tpad=stop_mode=clone:stop_duration=30,scale=$W:$H:force_original_aspect_ratio=decrease,pad=$W:$H:(ow-iw)/2:(oh-ih)/2:color=black,fps=30,format=yuv420p" \
+  -c:v libx264 -profile:v high -level 4.0 -preset slow -crf 18 -c:a aac -b:a 128k -t 29 -movflags +faststart "$OUT"
 rm -f "$RAW"
 echo "Wrote $OUT"

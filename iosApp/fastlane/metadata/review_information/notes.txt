@@ -2,22 +2,27 @@
 Attached, recorded on an iPhone 13 Pro Max. It starts at the Home Screen, launches the app on a fresh install and shows the typical flow: adding stops, a fastest-route destination, location and camera permissions, the live board, line filtering, themes and the automatic dim/wake. The app has no accounts, login, user-generated content, in-app purchases or paid features.
 
 2. PURPOSE AND AUDIENCE
-PulseTransit turns an iPhone or iPad, typically a spare device mounted by the front door or in a kitchen or office, into an always-on live departure board for public transport in Norway. It is for commuters and households who want to see at a glance when their next bus, tram, metro, train or ferry leaves, without opening a journey planner every time. It shows real-time departures with delays, cancellations and service messages, the fastest route to frequent destinations, and local weather. For wall use it can keep the screen on, wake when someone walks by (front camera, frames analysed on device only, never stored or sent), dim when nobody is around, switch day/night theme, shift pixels against OLED burn-in, refresh less often at night, and keep showing the last data when offline.
+PulseTransit shows live public transport departures and routes in Norway, for commuters who want to see at a glance when their next bus, tram, metro, train or ferry leaves without opening a journey planner every time. It has two modes. "On the spot" follows the device: routes to saved destinations from the current location, and departures from the nearest stop. "Wall board" turns an iPhone or iPad, typically a spare one by the front door or in a kitchen or office, into an always-on board for chosen stops. Both show real-time departures with delays, cancellations and service messages, the fastest route to saved destinations (optionally on a schedule), route search and local weather. For wall use it can keep the screen on, wake when someone walks by (front camera, frames analysed on device only, never stored or sent), dim when nobody is around, switch day/night theme, shift pixels against OLED burn-in, refresh less often at night, and keep showing the last data when offline.
 
 3. HOW TO USE IT
 No login, credentials or sample files are needed.
-- Launch the app and tap "Open Settings to Add Stops".
+- On first launch the app asks "How will you use PulseTransit?". Choose "On the spot" to follow the device, or "Wall board" for a wall display. It can be changed later under "Mode" in Settings, which shows only the current mode's sections.
+On the spot:
+- Allow location when asked. The screen shows routes to the saved destinations (add one with "Add destination") and departures from the nearest stop; drag the grip between them to resize either part.
+Wall board:
+- Tap "Open Settings to Add Stops".
 - Under "Add Stop Places", search for a Norwegian stop (e.g. "Jernbanetorget") and tap Add. Close Settings with Back: the board shows its live departures.
-- Optional: under "Fastest Route Destinations", add a place (e.g. "Oslo lufthavn") to see the quickest trip there.
+- Optional: under "Fastest Route Destinations", add a place (e.g. "Oslo lufthavn") to see the quickest trip there. Tap a saved destination to choose when its route is shown.
 - Optional: "Detect Location Automatically" (or manual coordinates) enables weather and nearby stops.
-- Optional, for wall use: under "Power & Refresh", turn on "Wake screen by front camera motion" and "Always on display", and set the auto-dim delay. Theme and pixel shift are at the top of Settings.
-- Tap a departure on the board to filter out its line.
-Location and camera are requested only when the user turns those features on; the app works fully without them.
+- Optional, for wall use: under "Power & Refresh", turn on "Wake screen by front camera motion" and "Always on display", and set the auto-dim delay. Theme and pixel shift have their own sections.
+- Tap a departure to see its details and upcoming departures; "Filter out line" there hides that line. Tap a route to see its legs.
+Location and camera are requested only when the user turns those features on (location also when "On the spot" is chosen); the wall board works fully without them.
 
 4. EXTERNAL SERVICES
 - Entur (entur.org), Norway's national public transport data provider: Journey Planner API (departures, trips) and Geocoder API (stop search). Public open data under NLOD, no API key.
 - MET Norway (api.met.no): Locationforecast for weather, used per MET's terms; open data under CC BY 4.0 / NLOD.
 - Firebase Crashlytics (Google): crash reports only.
+- Apple's App Store lookup API (itunes.apple.com): checks for a newer version to show an update notice.
 No authentication, payment, advertising, analytics or AI services.
 
 5. REGIONAL DIFFERENCES

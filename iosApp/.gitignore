@@ -4,3 +4,5 @@ DerivedData/
 build/
 fastlane/report.xml
 fastlane/README.md
+# Rendered by scripts/render-ios-store-header.swift and uploaded by hand; too large to keep in git
+fastlane/creative_assets/

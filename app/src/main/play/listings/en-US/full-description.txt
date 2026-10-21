@@ -1,4 +1,4 @@
-PulseTransit turns an Android phone or tablet into a live departure board for the bus, tram, metro, train and ferry stops you use every day. Mount an old device by the front door and see at a glance when the next departure leaves.
+PulseTransit shows live departures and the fastest way to where you're going, for all public transport in Norway. Take it with you and it follows where you are, or mount a spare phone or tablet by the front door as an always-on departure board.
 
 LIVE DEPARTURES
 • Real-time departures for all public transport in Norway, from Entur
@@ -7,15 +7,17 @@ LIVE DEPARTURES
 
 ROUTES
 • Fastest route to the places you travel to most, including walking time
+• Choose the days and hours each route shows, like weekday mornings for your trip to work
 • Search for any stop, address or place and get routes there
 • Tap a route to see every leg: lines, platforms, live times, walks and changes
 • Prefer the fastest trip, fewer transfers or less walking, pick which transport to use, and set your walking speed
 
 ON THE SPOT
 • Follows where you are: routes to your destinations from right here, and departures from the nearest stop
+• Pick another stop nearby, or let it follow the nearest one
 • Drag to share the screen between routes and departures, or fold either one away. It stays the way you left it
 
-MADE FOR THE WALL
+WALL BOARD
 • Always-on mode that keeps the screen awake
 • Wakes up when someone walks past, using the front camera. Frames are analysed on the device and never stored or sent anywhere
 • Dims and switches between day and night theme from the light sensor
@@ -24,6 +26,6 @@ MADE FOR THE WALL
 • Keeps showing the last known departures and weather when the connection drops
 
 WEATHER
-• Current weather and forecast for your location, from MET Norway
+• Current weather and forecast for your location, from MET Norway. Can be turned off
 
 Departure data from Entur. Weather data from MET Norway (yr.no).

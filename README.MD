@@ -152,9 +152,10 @@ attachment. A version still in review blocks the submission of the next one.
 
 The App Store listing (name, subtitle, description, keywords, promotional text, URLs, categories,
 copyright) lives in `iosApp/fastlane/metadata`, in English (UK, the app's primary language) and
-Norwegian, adapted from the Play listing. `bundle exec fastlane metadata` (from `iosApp/`, with the
-`ASC_*` variables set) pushes it. Until the app's first App Store release, fastlane ends that lane
-with a "No data" error (fastlane#20538) after the texts have been saved. Builds are numbered
+Norwegian, adapted from the Play listing. `scripts/update-ios-store-text.rb` (with the `ASC_*`
+variables set) pushes the texts and App Review notes to the editable version field by field, which
+leaves the App Review attachment in place. `bundle exec fastlane metadata` (from `iosApp/`) pushes
+everything, URLs and categories too, but deletes that attachment. Builds are numbered
 like Android's `versionCode`: the CI run number plus `BUILD_NUMBER_BASE`.
 
 Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project's iOS app), and the
@@ -168,13 +169,17 @@ data, so regenerate them when the UI changes:
 
 1. Build the Debug app for a simulator and boot an iPhone 17 Pro Max and an iPad Pro 13-inch.
 2. `scripts/capture-ios-screenshots.sh <udid> <PulseTransit.app> <raw-dir> <en-GB|no> <iphone|ipad>`
-   seeds a set of Oslo stops and captures the board (light and dark) and Settings.
+   seeds a set of Oslo stops and captures On the spot, the board (light and dark) and Settings.
 3. `swift scripts/frame-ios-screenshots.swift <raw-dir> iosApp/fastlane/screenshots` adds the
    captions (in the script) on the icon's gradient.
 4. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the
-   scripted tour (`-PTDemo YES`) as a 29-second preview.
+   scripted tour (`-PTDemo YES`), from On the spot to the wall board, as a 29-second preview.
 5. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
    editable App Store version.
+6. `swift scripts/render-ios-store-header.swift <raw-dir> iosApp/fastlane/creative_assets` renders
+   the "Header and Search Results" image (one universal 16:9 PNG per locale, iOS 27 and later).
+   It is git-ignored for its size, and uploaded by hand on the version's Header and Search
+   Results tab, with "Use header asset in search results" ticked.
 
 
 ## Forking

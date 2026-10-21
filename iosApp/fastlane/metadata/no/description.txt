@@ -1,4 +1,4 @@
-PulseTransit gjør en iPhone eller iPad om til en avgangstavle i sanntid for buss-, trikk-, T-bane-, tog- og fergeholdeplassene du bruker hver dag. Heng opp en gammel enhet ved ytterdøra og se med ett blikk når neste avgang går.
+PulseTransit viser avganger i sanntid og raskeste vei dit du skal, for all kollektivtrafikk i Norge. Ta den med deg, så følger den der du er, eller heng opp en ledig iPhone eller iPad ved ytterdøra som en avgangstavle som alltid er på.
 
 AVGANGER I SANNTID
 • Sanntidsavganger for all kollektivtrafikk i Norge, fra Entur
@@ -7,15 +7,17 @@ AVGANGER I SANNTID
 
 REISER
 • Raskeste rute til stedene du reiser oftest til, inkludert gangtid
+• Velg dagene og klokkeslettene hver rute skal vises, for eksempel hverdagsmorgener for turen til jobb
 • Søk etter et stoppested, en adresse eller et sted og få reiser dit
 • Trykk på en reise for å se hele reisen: linjer, plattformer, sanntid, gåing og bytter
 • Velg raskest, færre bytter eller mindre gåing, hvilke transportmidler du vil bruke, og din gangfart
 
 DER DU ER
 • Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested
+• Velg et annet stoppested i nærheten, eller la den følge det nærmeste
 • Dra for å fordele skjermen mellom reiser og avganger, eller brett bort en av dem. Den blir slik du forlot den
 
-LAGET FOR VEGGEN
+VEGGTAVLE
 • Alltid på-modus som holder skjermen våken
 • Vekker skjermen når noen går forbi, ved hjelp av frontkameraet. Bildene analyseres på enheten og blir aldri lagret eller sendt noe sted
 • Demper skjermen når ingen er i nærheten, og kan bytte mellom dag- og nattema etter lyset i rommet
@@ -24,6 +26,6 @@ LAGET FOR VEGGEN
 • Viser siste kjente avganger og vær når forbindelsen faller ut
 
 VÆR
-• Nåværende vær og varsel for der du er, fra Meteorologisk institutt
+• Nåværende vær og varsel for der du er, fra Meteorologisk institutt. Kan slås av
 
 Avgangsdata fra Entur. Værdata fra Meteorologisk institutt (yr.no).

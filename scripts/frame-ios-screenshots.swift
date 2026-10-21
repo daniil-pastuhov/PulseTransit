@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 
 /// Captions per screenshot scene and App Store locale.
 let captions: [String: [String: String]] = [
+    "0_on_spot": ["en-GB": "Routes and departures from where you are", "no": "Reiser og avganger der du er"],
     "1_board_light": ["en-GB": "Live departures for your stops", "no": "Sanntidsavganger for holdeplassene dine"],
     "2_board_dark": ["en-GB": "Made for the wall, day and night", "no": "Laget for veggen, dag og natt"],
     "3_settings": ["en-GB": "Pick your stops, lines and directions", "no": "Velg holdeplasser, linjer og retninger"],
