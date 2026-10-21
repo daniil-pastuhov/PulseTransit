@@ -57,10 +57,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -77,7 +78,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -115,6 +115,7 @@ import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
 import com.example.pulsetransit.ui.components.startPlayUpdate
 import com.example.pulsetransit.ui.components.temperatureColor
 import com.example.pulsetransit.ui.components.weatherLabel
+import com.example.pulsetransit.ui.layout.BoardLayout
 import com.example.pulsetransit.ui.pixelshift.pixelShift
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
@@ -388,7 +389,6 @@ fun MainScreen(
                             showDelays = uiState.showDelays,
                             showMessages = uiState.showMessages,
                             loadingStopIds = uiState.loadingStopIds,
-                            isLandscape = isLandscape,
                             onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
                             onFilterOut = { line -> viewModel.filterOutLine(line) },
                             extendedStopIds = uiState.extendedStopIds,
@@ -400,6 +400,7 @@ fun MainScreen(
                             loadingMoreStopIds = uiState.loadingMoreStopIds,
                             onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
                             loadJourney = viewModel::journeyStopsAhead,
+                            onRowCapacity = viewModel::setPanelRowCapacity,
                             modifier =
                                 Modifier
                                     .fillMaxSize()
@@ -414,8 +415,9 @@ fun MainScreen(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.navigationBars)
-                            .padding(top = 2.dp, bottom = 4.dp),
+                            .windowInsetsPadding(
+                                if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.navigationBars,
+                            ).padding(top = 2.dp, bottom = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     uiState.staleAgeMinutes?.let { ageMinutes ->
@@ -708,7 +710,6 @@ fun ReorderableFavoriteList(
     showDelays: Boolean,
     showMessages: Boolean,
     loadingStopIds: Set<String>,
-    isLandscape: Boolean,
     onReorder: (Int, Int) -> Unit,
     onFilterOut: (String) -> Unit,
     extendedStopIds: Set<String>,
@@ -721,195 +722,138 @@ fun ReorderableFavoriteList(
     onLoadMore: (String) -> Unit,
     loadJourney: suspend (Departure, String) -> List<JourneyStop>,
     modifier: Modifier = Modifier,
+    onRowCapacity: (stopId: String, rows: Int) -> Unit = { _, _ -> },
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
-    var itemSize by remember { mutableStateOf(IntSize.Zero) }
 
-    Box(modifier = modifier) {
+    BoxWithConstraints(modifier = modifier) {
         val itemCount = favorites.size
+        val columnSizes = BoardLayout.columnSizes(itemCount, BoardLayout.columns(itemCount, maxWidth.value, maxHeight.value))
+        val grid = PanelGrid(columnSizes, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
 
+        // The slot the dragged panel is over: the one whose centre is nearest its own.
         val currentTargetIndex =
-            draggingIndex?.let { startIdx ->
-                if (isLandscape && itemSize.width > 0) {
-                    (startIdx + (dragOffset.x / itemSize.width).roundToInt()).coerceIn(0, itemCount - 1)
-                } else if (!isLandscape && itemSize.height > 0) {
-                    (startIdx + (dragOffset.y / itemSize.height).roundToInt()).coerceIn(0, itemCount - 1)
-                } else {
-                    startIdx
-                }
+            draggingIndex?.let { start ->
+                val center = grid.center(start) + dragOffset
+                (0 until itemCount).minBy { (grid.center(it) - center).getDistanceSquared() }
             }
 
-        if (isLandscape) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .onSizeChanged { size ->
-                            itemSize = IntSize(width = size.width / maxOf(1, itemCount), height = size.height)
-                        },
-            ) {
-                favorites.forEachIndexed { index, stop ->
-                    key(stop.id) {
-                        val isDragging = draggingIndex == index
+        Row(modifier = Modifier.fillMaxSize()) {
+            columnSizes.forEachIndexed { column, size ->
+                val first = columnSizes.take(column).sum()
+                // zIndex orders siblings only, so the dragged panel's column is raised too, or the
+                // panel would pass under the columns after it.
+                val holdsDragged = draggingIndex?.let { it in first until first + size } == true
+                Column(modifier = Modifier.fillMaxHeight().weight(1f).zIndex(if (holdsDragged) 1f else 0f)) {
+                    favorites.subList(first, first + size).forEachIndexed { inColumn, stop ->
+                        val index = first + inColumn
+                        key(stop.id) {
+                            val isDragging = draggingIndex == index
 
-                        val visualOffset =
-                            remember(index, draggingIndex, currentTargetIndex) {
-                                if (draggingIndex == null || currentTargetIndex == null || isDragging) {
-                                    Offset.Zero
-                                } else {
-                                    val start = draggingIndex!!
-                                    if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
-                                        val direction = if (start < currentTargetIndex) -1f else 1f
-                                        Offset(x = direction * itemSize.width.toFloat(), y = 0f)
+                            // Panels between the dragged one and its target move one slot towards
+                            // where it came from, making room for it.
+                            val visualOffset =
+                                remember(index, draggingIndex, currentTargetIndex, grid) {
+                                    val start = draggingIndex
+                                    if (start == null || currentTargetIndex == null || isDragging) {
+                                        Offset.Zero
+                                    } else if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
+                                        val direction = if (start < currentTargetIndex) -1 else 1
+                                        grid.topLeft(index + direction) - grid.topLeft(index)
                                     } else {
                                         Offset.Zero
                                     }
                                 }
-                            }
 
-                        val animatedOffset by animateOffsetAsState(
-                            targetValue = if (isDragging) dragOffset else visualOffset,
-                            animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
-                            label = "itemOffset",
-                        )
-
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .fillMaxHeight()
-                                    .zIndex(if (isDragging) 1f else 0f)
-                                    .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
-                                    .pointerInput(Unit) {
-                                        detectDragGesturesAfterLongPress(
-                                            onDragStart = { draggingIndex = index },
-                                            onDragEnd = {
-                                                currentTargetIndex?.let { target ->
-                                                    if (target != index) onReorder(index, target)
-                                                }
-                                                draggingIndex = null
-                                                dragOffset = Offset.Zero
-                                            },
-                                            onDragCancel = {
-                                                draggingIndex = null
-                                                dragOffset = Offset.Zero
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragOffset += dragAmount
-                                            },
-                                        )
-                                    },
-                        ) {
-                            StopBoardPanel(
-                                stopPlace = stop,
-                                departureGroups = departures.find { it.stopId == stop.id }?.groups,
-                                showDelays = showDelays,
-                                showMessages = showMessages,
-                                isLoading = stop.id in loadingStopIds,
-                                isExtended = stop.id in extendedStopIds,
-                                isFailed = stop.id in failedStopIds,
-                                isOnline = isOnline,
-                                onFilterOut = onFilterOut,
-                                onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
-                                onRetry = onRetry,
-                                canLoadMore = stop.id in canLoadMoreStopIds,
-                                isLoadingMore = stop.id in loadingMoreStopIds,
-                                onLoadMore = { onLoadMore(stop.id) },
-                                loadJourney = { departure -> loadJourney(departure, stop.id) },
-                                modifier = Modifier.fillMaxSize(),
+                            val animatedOffset by animateOffsetAsState(
+                                targetValue = if (isDragging) dragOffset else visualOffset,
+                                animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
+                                label = "itemOffset",
                             )
-                        }
-                    }
-                }
-            }
-        } else {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .onSizeChanged { size ->
-                            itemSize = IntSize(width = size.width, height = size.height / maxOf(1, itemCount))
-                        },
-            ) {
-                favorites.forEachIndexed { index, stop ->
-                    key(stop.id) {
-                        val isDragging = draggingIndex == index
 
-                        val visualOffset =
-                            remember(index, draggingIndex, currentTargetIndex) {
-                                if (draggingIndex == null || currentTargetIndex == null || isDragging) {
-                                    Offset.Zero
-                                } else {
-                                    val start = draggingIndex!!
-                                    if (index in (minOf(start, currentTargetIndex)..maxOf(start, currentTargetIndex))) {
-                                        val direction = if (start < currentTargetIndex) -1f else 1f
-                                        Offset(x = 0f, y = direction * itemSize.height.toFloat())
-                                    } else {
-                                        Offset.Zero
-                                    }
-                                }
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth()
+                                        .zIndex(if (isDragging) 1f else 0f)
+                                        .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
+                                        .pointerInput(Unit) {
+                                            detectDragGesturesAfterLongPress(
+                                                onDragStart = { draggingIndex = index },
+                                                onDragEnd = {
+                                                    currentTargetIndex?.let { target ->
+                                                        if (target != index) onReorder(index, target)
+                                                    }
+                                                    draggingIndex = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDragCancel = {
+                                                    draggingIndex = null
+                                                    dragOffset = Offset.Zero
+                                                },
+                                                onDrag = { change, dragAmount ->
+                                                    change.consume()
+                                                    dragOffset += dragAmount
+                                                },
+                                            )
+                                        },
+                            ) {
+                                StopBoardPanel(
+                                    stopPlace = stop,
+                                    departureGroups = departures.find { it.stopId == stop.id }?.groups,
+                                    showDelays = showDelays,
+                                    showMessages = showMessages,
+                                    isLoading = stop.id in loadingStopIds,
+                                    isExtended = stop.id in extendedStopIds,
+                                    isFailed = stop.id in failedStopIds,
+                                    isOnline = isOnline,
+                                    onFilterOut = onFilterOut,
+                                    onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
+                                    onRetry = onRetry,
+                                    canLoadMore = stop.id in canLoadMoreStopIds,
+                                    isLoadingMore = stop.id in loadingMoreStopIds,
+                                    onLoadMore = { onLoadMore(stop.id) },
+                                    loadJourney = { departure -> loadJourney(departure, stop.id) },
+                                    onRowCapacity = { rows -> onRowCapacity(stop.id, rows) },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
                             }
-
-                        val animatedOffset by animateOffsetAsState(
-                            targetValue = if (isDragging) dragOffset else visualOffset,
-                            animationSpec = spring(stiffness = if (isDragging) 2500f else 400f),
-                            label = "itemOffset",
-                        )
-
-                        Box(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .fillMaxWidth()
-                                    .zIndex(if (isDragging) 1f else 0f)
-                                    .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
-                                    .pointerInput(Unit) {
-                                        detectDragGesturesAfterLongPress(
-                                            onDragStart = { draggingIndex = index },
-                                            onDragEnd = {
-                                                currentTargetIndex?.let { target ->
-                                                    if (target != index) onReorder(index, target)
-                                                }
-                                                draggingIndex = null
-                                                dragOffset = Offset.Zero
-                                            },
-                                            onDragCancel = {
-                                                draggingIndex = null
-                                                dragOffset = Offset.Zero
-                                            },
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragOffset += dragAmount
-                                            },
-                                        )
-                                    },
-                        ) {
-                            StopBoardPanel(
-                                stopPlace = stop,
-                                departureGroups = departures.find { it.stopId == stop.id }?.groups,
-                                showDelays = showDelays,
-                                showMessages = showMessages,
-                                isLoading = stop.id in loadingStopIds,
-                                isExtended = stop.id in extendedStopIds,
-                                isFailed = stop.id in failedStopIds,
-                                isOnline = isOnline,
-                                onFilterOut = onFilterOut,
-                                onSearchFurtherAhead = { onSearchFurtherAhead(stop.id) },
-                                onRetry = onRetry,
-                                canLoadMore = stop.id in canLoadMoreStopIds,
-                                isLoadingMore = stop.id in loadingMoreStopIds,
-                                onLoadMore = { onLoadMore(stop.id) },
-                                loadJourney = { departure -> loadJourney(departure, stop.id) },
-                                modifier = Modifier.fillMaxSize(),
-                            )
                         }
                     }
                 }
             }
         }
     }
+}
+
+/**
+ * Where each panel sits, in px, when [columnSizes] stack them column by column over a [width] by
+ * [height] space, each column's panels sharing its height. Used to follow a drag across the board.
+ */
+private data class PanelGrid(
+    val columnSizes: List<Int>,
+    val width: Float,
+    val height: Float,
+) {
+    private val columnWidth = width / columnSizes.size.coerceAtLeast(1)
+
+    private fun rect(index: Int): Rect {
+        var first = 0
+        columnSizes.forEachIndexed { column, size ->
+            if (index < first + size) {
+                val panelHeight = height / size
+                return Rect(Offset(column * columnWidth, (index - first) * panelHeight), Size(columnWidth, panelHeight))
+            }
+            first += size
+        }
+        return Rect.Zero
+    }
+
+    fun topLeft(index: Int): Offset = rect(index).topLeft
+
+    fun center(index: Int): Offset = rect(index).center
 }
 
 @Composable

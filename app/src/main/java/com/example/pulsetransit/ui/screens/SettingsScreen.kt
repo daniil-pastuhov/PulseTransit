@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
@@ -98,6 +99,9 @@ import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
 import com.example.pulsetransit.ui.components.scheduleSummary
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
+
+/** The single-column layout's widest, so a tablet's form rows do not stretch across the screen. */
+private val SINGLE_COLUMN_MAX_WIDTH = 640.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -868,18 +872,24 @@ fun SettingsScreen(
             }
 
             if (isCompact || !isBoard) {
-                // Phone, or on-spot mode with no stop sections: single scrollable column
+                // Phone, or on-spot mode with no stop sections: single scrollable column. On a
+                // tablet it keeps a readable width, centred, while the whole screen still scrolls it.
                 Column(
                     modifier =
                         Modifier
                             .fillMaxSize()
                             .padding(innerPadding)
-                            .padding(16.dp)
-                            .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                            .verticalScroll(rememberScrollState())
+                            .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    configSections()
-                    if (isBoard) stopsSections()
+                    Column(
+                        modifier = Modifier.widthIn(max = SINGLE_COLUMN_MAX_WIDTH),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) {
+                        configSections()
+                        if (isBoard) stopsSections()
+                    }
                 }
             } else {
                 // Tablet / wide: two columns side by side

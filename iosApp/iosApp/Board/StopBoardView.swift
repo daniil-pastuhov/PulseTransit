@@ -164,10 +164,20 @@ struct StopBoardView: View {
         if state.favorites.isEmpty {
             EmptyBoard(onOpenSettings: { showSettings = true })
         } else {
-            // Side by side when the space is wider than tall. Read from the layout rather than
-            // the screen, so an iPad rotation (regular size class both ways) re-lays it out.
+            // Columns by the shared rules for the space the panels have. Read from the layout
+            // rather than the screen, so an iPad rotation (regular size class both ways) re-lays it out.
             GeometryReader { geometry in
-                StopPanels(state: state, viewModel: viewModel, isLandscape: geometry.size.width > geometry.size.height)
+                let count = Int32(state.favorites.count)
+                let columns = BoardLayout.shared.columns(
+                    stopCount: count,
+                    widthDp: Float(geometry.size.width),
+                    heightDp: Float(geometry.size.height)
+                )
+                StopPanels(
+                    state: state,
+                    viewModel: viewModel,
+                    columnSizes: BoardLayout.shared.columnSizes(stopCount: count, columns: columns).map(\.intValue)
+                )
             }
             .padding(6)
         }
@@ -252,52 +262,65 @@ private struct EmptyBoard: View {
     }
 }
 
-/// One panel per favourite, sharing the space equally: stacked in portrait, side by side in
-/// landscape. A long press drags a panel to reorder the favourites, as on Android.
+/// One panel per favourite, in columns of `columnSizes` panels each, filled in order and sharing
+/// the space equally. A long press drags a panel to reorder the favourites, as on Android.
 private struct StopPanels: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
-    let isLandscape: Bool
+    let columnSizes: [Int]
     // Which panel a drag started from. Set afresh by every drag and only read when a drop lands
     // on another panel. A cancelled drag leaves it set until the next one; the only effect is that
     // a text drop from another app onto a panel would then reorder, which is harmless.
     @State private var dragging: String?
 
     var body: some View {
-        let layout = isLandscape ? AnyLayoutBox.horizontal : .vertical
-        layout.stack {
-            ForEach(Array(state.favorites.enumerated()), id: \.element.id) { index, stop in
-                StopPanel(
-                    stop: stop,
-                    groups: state.departures.first { $0.stopId == stop.id }?.groups,
-                    showDelays: state.showDelays,
-                    showMessages: state.showMessages,
-                    isLoading: state.loadingStopIds.contains(stop.id),
-                    isExtended: state.extendedStopIds.contains(stop.id),
-                    isFailed: state.failedStopIds.contains(stop.id),
-                    isOnline: state.isOnline,
-                    canLoadMore: state.canLoadMoreStopIds.contains(stop.id),
-                    isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
-                    onFilterOut: { viewModel.filterOutLine(line: $0) },
-                    onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
-                    onRetry: { viewModel.refreshData() },
-                    onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
-                    loadJourney: { departure in
-                        (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
+        let favorites = Array(state.favorites.enumerated())
+        let columns = columnSizes.indices.map { column -> [(offset: Int, element: StopPlace)] in
+            let first = columnSizes[..<column].reduce(0, +)
+            return Array(favorites[first ..< min(first + columnSizes[column], favorites.count)])
+        }
+        HStack(spacing: 0) {
+            ForEach(columns, id: \.first?.element.id) { column in
+                VStack(spacing: 0) {
+                    ForEach(column, id: \.element.id) { index, stop in
+                        panel(index: index, stop: stop)
                     }
-                )
-                .onDrag {
-                    dragging = stop.id
-                    return NSItemProvider(object: stop.id as NSString)
                 }
-                .onDrop(of: [.text], delegate: PanelDropDelegate(
-                    targetIndex: index,
-                    favorites: state.favorites,
-                    dragging: $dragging,
-                    onMove: { from, to in viewModel.reorderFavorites(fromIndex: Int32(from), toIndex: Int32(to)) }
-                ))
             }
         }
+    }
+
+    private func panel(index: Int, stop: StopPlace) -> some View {
+        StopPanel(
+            stop: stop,
+            groups: state.departures.first { $0.stopId == stop.id }?.groups,
+            showDelays: state.showDelays,
+            showMessages: state.showMessages,
+            isLoading: state.loadingStopIds.contains(stop.id),
+            isExtended: state.extendedStopIds.contains(stop.id),
+            isFailed: state.failedStopIds.contains(stop.id),
+            isOnline: state.isOnline,
+            canLoadMore: state.canLoadMoreStopIds.contains(stop.id),
+            isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
+            onFilterOut: { viewModel.filterOutLine(line: $0) },
+            onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
+            onRetry: { viewModel.refreshData() },
+            onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
+            loadJourney: { departure in
+                (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
+            },
+            onRowCapacity: { viewModel.setPanelRowCapacity(stopId: stop.id, rows: Int32($0)) }
+        )
+        .onDrag {
+            dragging = stop.id
+            return NSItemProvider(object: stop.id as NSString)
+        }
+        .onDrop(of: [.text], delegate: PanelDropDelegate(
+            targetIndex: index,
+            favorites: state.favorites,
+            dragging: $dragging,
+            onMove: { from, to in viewModel.reorderFavorites(fromIndex: Int32(from), toIndex: Int32(to)) }
+        ))
     }
 }
 
@@ -318,19 +341,6 @@ private struct PanelDropDelegate: DropDelegate {
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         DropProposal(operation: .move)
-    }
-}
-
-/// HStack or VStack chosen at runtime; `AnyLayout` needs iOS 16.
-private enum AnyLayoutBox {
-    case horizontal, vertical
-
-    @ViewBuilder
-    func stack<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        switch self {
-        case .horizontal: HStack(spacing: 0, content: content)
-        case .vertical: VStack(spacing: 0, content: content)
-        }
     }
 }
 

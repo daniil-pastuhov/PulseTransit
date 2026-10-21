@@ -250,6 +250,13 @@ class StopBoardViewModel(
      */
     private var departureLimits: Map<String, Int> = emptyMap()
 
+    /**
+     * Each stop's page, where its panel has room for more rows than [DEPARTURE_PAGE_SIZE], so a
+     * tablet's tall panels fill instead of ending halfway down; absent means [DEPARTURE_PAGE_SIZE].
+     * Per stop, since panels differ in height. Set by [setPanelRowCapacity].
+     */
+    private var pageSizes: Map<String, Int> = emptyMap()
+
     /** When each stop last asked for another page, by [clock]. */
     private var loadMoreAtMillis: Map<String, Long> = emptyMap()
 
@@ -734,6 +741,7 @@ class StopBoardViewModel(
         rawDepartures = rawDepartures.filterKeys { it in favIds }
         stopFetchedAt = stopFetchedAt.filterKeys { it in favIds }
         departureLimits = departureLimits.filterKeys { it in favIds }
+        pageSizes = pageSizes.filterKeys { it in favIds }
         loadMoreAtMillis = loadMoreAtMillis.filterKeys { it in favIds }
         saturatedStopIds = saturatedStopIds.intersect(favIds)
         exhaustedStopIds = exhaustedStopIds.intersect(favIds)
@@ -755,6 +763,12 @@ class StopBoardViewModel(
             }
     }
 
+    /**
+     * How many departures [stopId] asks for: its panel's page, or its grown limit when that is
+     * bigger. A limit grown while the panel was shorter never holds a taller panel back.
+     */
+    private fun limitOf(stopId: String): Int = maxOf(departureLimits[stopId] ?: 0, pageSizes[stopId] ?: DEPARTURE_PAGE_SIZE)
+
     /** Drops every stop's grown limit once [LOAD_MORE_EXPIRY_MILLIS] have passed since its last load-more. */
     private fun expireGrownLimits() {
         val now = clock.now().toEpochMilliseconds()
@@ -775,7 +789,7 @@ class StopBoardViewModel(
             } else {
                 EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS
             }
-        val limit = departureLimits[stopId] ?: DEPARTURE_PAGE_SIZE
+        val limit = limitOf(stopId)
         val result =
             enturRepository.getDepartures(
                 stopId,
@@ -834,6 +848,23 @@ class StopBoardViewModel(
         }
     }
 
+    /**
+     * Tells the board how many rows [stopId]'s panel shows without scrolling, so the stop asks for
+     * enough departures to fill it. Some departures fold into rows above them or are filtered out,
+     * so it asks for half as many again. A bigger page refetches at once; a smaller one waits for
+     * the next refresh, as nothing on screen is missing.
+     */
+    fun setPanelRowCapacity(
+        stopId: String,
+        rows: Int,
+    ) {
+        val size = (rows + rows / 2).coerceIn(DEPARTURE_PAGE_SIZE, MAX_DEPARTURES)
+        val current = pageSizes[stopId] ?: DEPARTURE_PAGE_SIZE
+        if (size == current) return
+        pageSizes = pageSizes + (stopId to size)
+        if (size > current && _uiState.value.favorites.any { it.id == stopId }) refreshDepartures()
+    }
+
     fun searchFurtherAhead(stopId: String) {
         _uiState.update { it.copy(extendedStopIds = it.extendedStopIds + stopId) }
         refreshDepartures()
@@ -876,7 +907,7 @@ class StopBoardViewModel(
         val state = _uiState.value
         val stop = state.favorites.firstOrNull { it.id == stopId } ?: return
         if (stopId !in state.canLoadMoreStopIds || stopId in state.loadingStopIds || stopId in state.loadingMoreStopIds) return
-        val limit = departureLimits[stopId] ?: DEPARTURE_PAGE_SIZE
+        val limit = limitOf(stopId)
         departureLimits = departureLimits + (stopId to minOf(limit + DEPARTURE_PAGE_SIZE, MAX_DEPARTURES))
         loadMoreAtMillis = loadMoreAtMillis + (stopId to clock.now().toEpochMilliseconds())
         val groupCount = rawDepartures[stopId]?.let { groupDepartures(it, state.showCancelledLines).size } ?: 0

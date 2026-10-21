@@ -28,6 +28,8 @@ struct StopPanel: View {
     let loadJourney: (Departure) async -> [JourneyStop]
     /// Replaces the stop's name and locality, as on-spot mode does with its stop picker.
     var header: AnyView?
+    /// Told how many rows the list shows without scrolling, so the stop asks for enough to fill it.
+    var onRowCapacity: (Int) -> Void = { _ in }
 
     /// Whether the end-of-list sentinel is on screen; scrolling while it is asks for a page.
     @State private var isAtEnd = false
@@ -68,6 +70,11 @@ struct StopPanel: View {
                 }
             }
             .frame(maxHeight: .infinity, alignment: .top)
+            .background(GeometryReader { geometry in
+                Color.clear
+                    .onAppear { onRowCapacity(Int(BoardLayout.shared.rowCapacity(listHeightDp: Float(geometry.size.height)))) }
+                    .onChange(of: geometry.size.height) { onRowCapacity(Int(BoardLayout.shared.rowCapacity(listHeightDp: Float($0)))) }
+            })
         }
         .animation(.easeInOut(duration: 0.3), value: groups == nil)
         .foregroundColor(Palette.textPrimary)
@@ -104,39 +111,46 @@ struct StopPanel: View {
         // Only the user's scrolling asks for a page, as on Android. A list that fits the card
         // never does: a single line folds every page into the same row, so it would keep fitting
         // and keep asking. Nor may a board left at its end on the wall grow on every refresh.
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                // Identified by content, so a refresh that shifts the list gives a changed group
-                // fresh row state. Entur can return identical-looking journeys, so the index
-                // is part of the id to keep it unique, as on Android.
-                ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
-                    DepartureGroupRow(
-                        group: row.group,
-                        showDelays: showDelays,
-                        showMessages: showMessages,
-                        onTap: { detailsGroup = row.group }
-                    )
+        GeometryReader { geometry in
+            // A wide panel gives each row columns for the platform and the clock time instead of
+            // leaving the space between destination and countdown empty.
+            let isWide = BoardLayout.shared.isWideRow(panelWidthDp: Float(geometry.size.width))
+            let showPlatform = isWide && BoardLayout.shared.showsPlatform(groups: groups)
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    // Identified by content, so a refresh that shifts the list gives a changed group
+                    // fresh row state. Entur can return identical-looking journeys, so the index
+                    // is part of the id to keep it unique, as on Android.
+                    ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
+                        DepartureGroupRow(
+                            group: row.group,
+                            showDelays: showDelays,
+                            showMessages: showMessages,
+                            layout: isWide ? .wide(showPlatform: showPlatform) : .narrow,
+                            onTap: { detailsGroup = row.group }
+                        )
+                    }
+                    if isLoadingMore {
+                        ProgressView()
+                            .padding(.vertical, 8)
+                    }
+                    // Marks the end of the list. Always present, never toggled by refreshes or
+                    // loading state; being on screen is not enough to load, the user must scroll.
+                    Color.clear
+                        .frame(height: 1)
+                        .onAppear { isAtEnd = true }
+                        .onDisappear { isAtEnd = false }
                 }
-                if isLoadingMore {
-                    ProgressView()
-                        .padding(.vertical, 8)
-                }
-                // Marks the end of the list. Always present, never toggled by refreshes or
-                // loading state; being on screen is not enough to load, the user must scroll.
-                Color.clear
-                    .frame(height: 1)
-                    .onAppear { isAtEnd = true }
-                    .onDisappear { isAtEnd = false }
+                .background(GeometryReader { content in
+                    Color.clear.preference(key: ScrollOffsetKey.self, value: content.frame(in: .named(Self.scrollSpace)).minY)
+                })
             }
-            .background(GeometryReader { content in
-                Color.clear.preference(key: ScrollOffsetKey.self, value: content.frame(in: .named(Self.scrollSpace)).minY)
-            })
-        }
-        .coordinateSpace(name: Self.scrollSpace)
-        // The content only moves under the user's finger (or its momentum): a refresh changes rows,
-        // not where the list starts. So a move with the end in sight is a scroll to the end.
-        .onPreferenceChange(ScrollOffsetKey.self) { _ in
-            if isAtEnd && canLoadMore && !isLoading && !isLoadingMore { onLoadMore() }
+            .coordinateSpace(name: Self.scrollSpace)
+            // The content only moves under the user's finger (or its momentum): a refresh changes rows,
+            // not where the list starts. So a move with the end in sight is a scroll to the end.
+            .onPreferenceChange(ScrollOffsetKey.self) { _ in
+                if isAtEnd && canLoadMore && !isLoading && !isLoadingMore { onLoadMore() }
+            }
         }
     }
 
@@ -193,12 +207,33 @@ private struct LoadingPlaceholder: View {
     }
 }
 
+/// How a row lays out: later times on a line below, or, in a wide panel, all on one line with
+/// columns for the platform and the clock time beside the countdown.
+private enum RowLayout {
+    case narrow
+    case wide(showPlatform: Bool)
+}
+
+/// A wide row's fixed columns, so each lines up from row to row.
+private enum WideRow {
+    static let platformWidth: CGFloat = 52
+    static let clockWidth: CGFloat = 56
+    static let delayWidth: CGFloat = 28
+    static let primaryTimeWidth: CGFloat = 64
+}
+
 /// Consecutive departures of one line to one destination: the next one large, later ones beside.
 private struct DepartureGroupRow: View {
     let group: DepartureGroup
     let showDelays: Bool
     let showMessages: Bool
+    var layout: RowLayout = .narrow
     let onTap: () -> Void
+
+    private var isWide: Bool {
+        if case .wide = layout { return true }
+        return false
+    }
 
     var body: some View {
         let departures = group.departures
@@ -222,8 +257,43 @@ private struct DepartureGroupRow: View {
                         .foregroundColor(first.isCancelled ? Palette.textSecondary.opacity(0.6) : Palette.textPrimary)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    if !first.isCancelled && showDelays && first.delayMinutes > 0 {
-                        Text("+\(first.delayMinutes)")
+                    if case let .wide(showPlatform) = layout {
+                        // The later times at their natural width: most rows have none, since only
+                        // consecutive departures of a line share a row.
+                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                            let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
+                            if !secondary.isEmpty || hidden > 0 {
+                                secondaryText(secondary, hidden: hidden)
+                                    .font(.body.weight(.medium))
+                                    .lineLimit(1)
+                                    .fixedSize()
+                            }
+                        }
+                        if showPlatform {
+                            PlatformChip(platform: first.platform)
+                        }
+                        // The clock time beside the countdown; empty when the countdown already
+                        // is one, or reads "cancelled".
+                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                            let times = DepartureTimes(departures: visible, now: timeline.date)
+                            let clock = DepartureTimes.clock(for: first.expectedTime)
+                            Text(first.isCancelled || clock == times.primary ? "" : clock)
+                                .font(.body.weight(.medium))
+                                .monospacedDigit()
+                                .foregroundColor(Palette.textSecondary)
+                                .frame(width: WideRow.clockWidth, alignment: .trailing)
+                        }
+                    }
+                    let delay = !first.isCancelled && showDelays && first.delayMinutes > 0 ? "+\(first.delayMinutes)" : nil
+                    if isWide {
+                        // A column of its own width, empty without a delay, so a delayed row's
+                        // clock and platform stay in line with the others.
+                        Text(delay ?? "")
+                            .font(.caption.bold())
+                            .foregroundColor(Palette.error)
+                            .frame(width: WideRow.delayWidth, alignment: .leading)
+                    } else if let delay {
+                        Text(delay)
                             .font(.caption.bold())
                             .foregroundColor(Palette.error)
                     }
@@ -235,11 +305,13 @@ private struct DepartureGroupRow: View {
                             .font(.title3.weight(.heavy))
                             .monospacedDigit()
                             .foregroundColor(first.isCancelled ? Palette.error : (times.primaryIsNow ? Palette.primary : Palette.textPrimary))
+                            // Right-aligned in a column of its own, so "Now" and "12m" end in line.
+                            .frame(minWidth: isWide ? WideRow.primaryTimeWidth : nil, alignment: .trailing)
                     }
                 }
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
                     let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
-                    if !secondary.isEmpty || hidden > 0 {
+                    if !isWide && (!secondary.isEmpty || hidden > 0) {
                         secondaryText(secondary, hidden: hidden)
                             .font(.body.weight(.medium))
                             .lineLimit(2) // a backstop: the capped times wrap at most once
@@ -264,6 +336,27 @@ private struct DepartureGroupRow: View {
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
         }
+    }
+}
+
+/// The quay's public code in an outlined box; empty but the same width when the departure has none.
+private struct PlatformChip: View {
+    let platform: String?
+
+    var body: some View {
+        ZStack {
+            if let platform {
+                Text(platform)
+                    .font(.subheadline.bold())
+                    .foregroundColor(Palette.textSecondary)
+                    .lineLimit(1)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Palette.textSecondary.opacity(0.4)))
+                    .accessibilityLabel(L("platform_label", platform))
+            }
+        }
+        .frame(width: WideRow.platformWidth)
     }
 }
 
@@ -296,6 +389,14 @@ private struct DepartureTimes {
         primaryIsNow = primary == L("now")
         secondary = Array(texts.dropFirst())
     }
+
+    /// The departure's "HH:mm", or empty when its timestamp cannot be read.
+    static func clock(for expectedTime: String) -> String {
+        guard let date = isoFormatter.date(from: expectedTime) else { return "" }
+        return clockFormatter.string(from: date)
+    }
+
+    private static let isoFormatter = ISO8601DateFormatter()
 
     private static func text(for expectedTime: String, nowMillis: Int64) -> String {
         switch onEnum(of: DepartureCountdownKt.departureCountdown(expectedTime: expectedTime, nowMillis: nowMillis)) {

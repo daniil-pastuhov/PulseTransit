@@ -5,9 +5,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -41,8 +44,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -68,6 +76,7 @@ import com.example.pulsetransit.theme.ColorFerry
 import com.example.pulsetransit.theme.ColorMetro
 import com.example.pulsetransit.theme.ColorTrain
 import com.example.pulsetransit.theme.ColorTram
+import com.example.pulsetransit.ui.layout.BoardLayout
 import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -91,6 +100,12 @@ private const val MILLIS_PER_DAY = 86_400_000.0
 
 // Size of the "+1" next-day marker relative to the time it follows.
 private const val DAY_OFFSET_FONT_SCALE = 0.6f
+
+// Wide rows' fixed columns, so each lines up from row to row.
+private val PLATFORM_CHIP_WIDTH = 52.dp
+private val WIDE_PRIMARY_TIME_WIDTH = 64.dp
+private val WIDE_CLOCK_WIDTH = 56.dp
+private val WIDE_DELAY_WIDTH = 28.dp
 
 /** Rows from the end of the list at which the next page is requested, so it arrives before the end. */
 private const val LOAD_MORE_THRESHOLD = 3
@@ -123,6 +138,7 @@ fun StopBoardPanel(
     onRetry: () -> Unit = {},
     onLoadMore: () -> Unit = {},
     loadJourney: suspend (Departure) -> List<JourneyStop> = { emptyList() },
+    onRowCapacity: (Int) -> Unit = {},
     header: (@Composable RowScope.() -> Unit)? = null,
 ) {
     // The tapped row, captured at the tap. The details follow refreshes through departuresLike,
@@ -203,9 +219,15 @@ fun StopBoardPanel(
 
             // Departures list. Fades from the blurred placeholder into focus once the stop has
             // loaded; keyed on loaded-ness only, so later refreshes swap the rows in place.
+            val density = LocalDensity.current
             AnimatedContent(
                 targetState = departureGroups,
-                modifier = Modifier.weight(1f),
+                // How many rows fit, so the stop asks for enough departures to fill its panel.
+                modifier =
+                    Modifier
+                        .weight(
+                            1f,
+                        ).onSizeChanged { onRowCapacity(BoardLayout.rowCapacity(with(density) { it.height.toDp().value })) },
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
                 label = "departures",
                 contentKey = { it == null },
@@ -271,33 +293,46 @@ fun StopBoardPanel(
                         }.first { it }
                         onLoadMore()
                     }
-                    LazyColumn(
-                        state = listState,
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        itemsIndexed(
-                            items = groups,
-                            // Entur can return several service journeys that are identical in line,
-                            // destination, time and quay (replacement buses, for one), and when two
-                            // land non-consecutively they form two groups with the same identity.
-                            // The index keeps the key unique, which Compose requires.
-                            key = { index, group ->
-                                val first = group.departures.first()
-                                "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
-                            },
-                        ) { _, group ->
-                            DepartureRow(group, showDelays, showMessages, onClick = { detailsGroup = group })
-                        }
-                        if (isLoadingMore) {
-                            item(key = "load_more") {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    // A wide panel gives each row columns for the platform and the later times
+                    // instead of leaving the space between destination and time empty.
+                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                        val isWide = BoardLayout.isWideRow(maxWidth.value)
+                        val showPlatform = isWide && BoardLayout.showsPlatform(groups)
+                        LazyColumn(
+                            state = listState,
+                            modifier =
+                                Modifier
+                                    .fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            itemsIndexed(
+                                items = groups,
+                                // Entur can return several service journeys that are identical in line,
+                                // destination, time and quay (replacement buses, for one), and when two
+                                // land non-consecutively they form two groups with the same identity.
+                                // The index keeps the key unique, which Compose requires.
+                                key = { index, group ->
+                                    val first = group.departures.first()
+                                    "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
+                                },
+                            ) { _, group ->
+                                DepartureRow(
+                                    group = group,
+                                    showDelays = showDelays,
+                                    showMessages = showMessages,
+                                    isWide = isWide,
+                                    showPlatform = showPlatform,
+                                    onClick = { detailsGroup = group },
+                                )
+                            }
+                            if (isLoadingMore) {
+                                item(key = "load_more") {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    }
                                 }
                             }
                         }
@@ -349,6 +384,8 @@ fun DepartureRow(
     showDelays: Boolean,
     showMessages: Boolean,
     onClick: () -> Unit,
+    isWide: Boolean = false,
+    showPlatform: Boolean = false,
 ) {
     val departures = group.departures
     val firstDeparture = departures.first()
@@ -427,16 +464,58 @@ fun DepartureRow(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Delay indicator
-            if ((!firstDeparture.isCancelled) && showDelays && (firstDeparture.delayMinutes > 0)) {
+            // A wide row keeps the later times on its one line, at their natural width: most
+            // rows have none, since only consecutive departures of a line share a row.
+            if (isWide && (formattedTimes.size > 1 || hiddenCount > 0)) {
                 Text(
-                    text = "+${firstDeparture.delayMinutes}",
+                    text = laterTimesText(formattedTimes.drop(1), hiddenCount),
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+
+            if (showPlatform) {
+                PlatformChip(platform = firstDeparture.platform)
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // The departure's clock time beside the countdown, in a column of its own. Left
+            // empty when the countdown already is a clock time, or is "cancelled".
+            if (isWide) {
+                val clock = formatClock(firstDeparture.expectedTime)
+                Text(
+                    text = if (firstDeparture.isCancelled || clock == formattedTimes.first().text) "" else clock,
+                    style =
+                        MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                        ),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.width(WIDE_CLOCK_WIDTH),
+                    maxLines = 1,
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // Delay indicator. A wide row keeps a column of its own width for it, empty without a
+            // delay, so a delayed row's clock and platform stay in line with the others.
+            val hasDelay = (!firstDeparture.isCancelled) && showDelays && (firstDeparture.delayMinutes > 0)
+            if (hasDelay || isWide) {
+                Text(
+                    text = if (hasDelay) "+${firstDeparture.delayMinutes}" else "",
                     style =
                         MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.error,
                         ),
-                    modifier = Modifier.padding(end = 4.dp),
+                    modifier = if (isWide) Modifier.width(WIDE_DELAY_WIDTH) else Modifier.padding(end = 4.dp),
+                    maxLines = 1,
                 )
             }
 
@@ -456,27 +535,16 @@ fun DepartureRow(
                                 else -> MaterialTheme.colorScheme.onSurface
                             },
                     ),
-                modifier = Modifier.padding(end = 4.dp),
+                // Right-aligned in a column of its own width, so "Now" and "12m" end in line.
+                textAlign = TextAlign.End,
+                modifier = Modifier.widthIn(min = if (isWide) WIDE_PRIMARY_TIME_WIDTH else 0.dp).padding(end = 4.dp),
             )
         }
 
         // Secondary Departure Times, then a muted count of the ones left out
-        if (formattedTimes.size > 1 || hiddenCount > 0) {
-            val secondaryTimes = formattedTimes.drop(1)
-            val hiddenText = stringResource(R.string.more_departures_hidden, hiddenCount)
-            val hiddenColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+        if (!isWide && (formattedTimes.size > 1 || hiddenCount > 0)) {
             Text(
-                text =
-                    buildAnnotatedString {
-                        secondaryTimes.forEachIndexed { index, time ->
-                            if (index > 0) append("    ")
-                            append(time)
-                        }
-                        if (hiddenCount > 0) {
-                            if (secondaryTimes.isNotEmpty()) append("    ")
-                            withStyle(SpanStyle(color = hiddenColor, fontSize = 0.85.em)) { append(hiddenText) }
-                        }
-                    },
+                text = laterTimesText(formattedTimes.drop(1), hiddenCount),
                 style =
                     MaterialTheme.typography.bodyLarge.copy(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -514,6 +582,56 @@ fun DepartureRow(
                     )
                 }
             }
+        }
+    }
+}
+
+/** The times after the next, then a muted count of the ones left out. */
+@Composable
+private fun laterTimesText(
+    laterTimes: List<AnnotatedString>,
+    hiddenCount: Int,
+): AnnotatedString {
+    val hiddenText = stringResource(R.string.more_departures_hidden, hiddenCount)
+    val hiddenColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    return buildAnnotatedString {
+        laterTimes.forEachIndexed { index, time ->
+            if (index > 0) append("    ")
+            append(time)
+        }
+        if (hiddenCount > 0) {
+            if (laterTimes.isNotEmpty()) append("    ")
+            withStyle(SpanStyle(color = hiddenColor, fontSize = 0.85.em)) { append(hiddenText) }
+        }
+    }
+}
+
+/** The quay's public code in an outlined box; empty but the same width when the departure has none. */
+@Composable
+private fun PlatformChip(platform: String?) {
+    val label = platform?.let { stringResource(R.string.platform_label, it) }
+    Box(
+        modifier =
+            Modifier
+                .width(PLATFORM_CHIP_WIDTH)
+                .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (platform != null) {
+            Text(
+                text = platform,
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                modifier =
+                    Modifier
+                        .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                        .clearAndSetSemantics {},
+                maxLines = 1,
+            )
         }
     }
 }
@@ -575,6 +693,16 @@ private fun formatClockTime(
         }
     }
 }
+
+/** [expectedTimeStr]'s "HH:mm" in the device's time zone, or empty when it cannot be read. */
+private fun formatClock(expectedTimeStr: String): String =
+    try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
+        val formatted = expectedTimeStr.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
+        sdf.parse(formatted)?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(it) }.orEmpty()
+    } catch (_: Exception) {
+        ""
+    }
 
 private fun formatDepartureTime(
     expectedTimeStr: String,
