@@ -54,6 +54,76 @@ class StopBoardLoadMoreTest : BoardTestBase() {
         }
 
     @Test
+    fun `a panel with room for more rows than a page asks for enough to fill it`() =
+        boardTest {
+            settings.favoriteStops = listOf(oslo)
+            val page = fullPages(available = 100)
+            entur.departures = { stopId -> page(entur.requestedLimits.getValue(stopId)) }
+            val vm = viewModel()
+            assertEquals(15, entur.requestedLimits[oslo.id])
+
+            vm.setPanelRowCapacity(oslo.id, 24)
+            runCurrent()
+            assertEquals(36, entur.requestedLimits[oslo.id])
+
+            // Load more grows from the bigger page.
+            vm.loadMoreDepartures(oslo.id)
+            runCurrent()
+            assertEquals(51, entur.requestedLimits[oslo.id])
+        }
+
+    @Test
+    fun `a short panel does not shrink a taller one's page`() =
+        boardTest {
+            val bergen = oslo.copy(id = "NSR:StopPlace:548")
+            settings.favoriteStops = listOf(oslo, bergen)
+            val page = fullPages(available = 100)
+            entur.departures = { stopId -> page(entur.requestedLimits.getValue(stopId)) }
+            val vm = viewModel()
+
+            // The first stop's full-height panel beside two half-height ones, reporting in any order.
+            vm.setPanelRowCapacity(oslo.id, 24)
+            vm.setPanelRowCapacity(bergen.id, 12)
+            runCurrent()
+
+            assertEquals(36, entur.requestedLimits[oslo.id])
+            assertEquals(18, entur.requestedLimits[bergen.id])
+        }
+
+    @Test
+    fun `a panel that grows after loading more still fills`() =
+        boardTest {
+            settings.favoriteStops = listOf(oslo)
+            val page = fullPages(available = 100)
+            entur.departures = { stopId -> page(entur.requestedLimits.getValue(stopId)) }
+            val vm = viewModel()
+            vm.loadMoreDepartures(oslo.id)
+            runCurrent()
+            assertEquals(30, entur.requestedLimits[oslo.id])
+
+            vm.setPanelRowCapacity(oslo.id, 24)
+            runCurrent()
+
+            assertEquals(36, entur.requestedLimits[oslo.id])
+        }
+
+    @Test
+    fun `a panel shorter than a page keeps one page and refetches nothing`() =
+        boardTest {
+            settings.favoriteStops = listOf(oslo)
+            val page = fullPages(available = 100)
+            entur.departures = { stopId -> page(entur.requestedLimits.getValue(stopId)) }
+            val vm = viewModel()
+            val calls = entur.departureCalls
+
+            vm.setPanelRowCapacity(oslo.id, 6)
+            runCurrent()
+
+            assertEquals(calls, entur.departureCalls)
+            assertEquals(15, entur.requestedLimits[oslo.id])
+        }
+
+    @Test
     fun `load more stops at the cap`() =
         boardTest {
             settings.favoriteStops = listOf(oslo)
