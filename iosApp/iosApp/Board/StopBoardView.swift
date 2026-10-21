@@ -176,24 +176,39 @@ struct StopBoardView: View {
 
 #if DEBUG
 extension StopBoardView {
-    /// The App Store preview tour: date styles, Settings, then the wall-display dim and wake.
+    /// The App Store preview tour: On the spot mode, Settings switching to the wall board, a
+    /// route's details, then the dim and wake.
     @MainActor
     private func runDemo() async {
         let viewModel = model.viewModel
         func wait(_ seconds: Double) async { try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
-        await wait(5)
-        viewModel.cycleDateStyle()
-        await wait(3)
-        viewModel.cycleDateStyle()
-        await wait(3)
-        viewModel.cycleDateStyle()
-        await wait(3)
+        // What the mode switch in Settings saves. Set here rather than seeded by the recording
+        // script, since the app's own write from the previous take would shadow a seeded value.
+        func setMode(_ mode: AppMode) { UserDefaults.standard.set(mode.name, forKey: "app_mode") }
+        setMode(.onSpot)
+        viewModel.loadSettings()
+        await wait(8)
         showSettings = true
-        await wait(5)
+        await wait(2)
+        setMode(.board)
+        await wait(1)
         showSettings = false
-        await wait(3)
+        viewModel.loadSettings()
+        // The state reaches Swift asynchronously, and the board's fastest route from the network.
+        for _ in 0..<12 {
+            if model.state.mode == .board && !model.state.fastestTrips.isEmpty { break }
+            await wait(0.5)
+        }
+        await wait(2)
+        if let destination = model.state.routeDestinations.first,
+           let trip = model.state.fastestTrips[destination.id]?.first {
+            detailsTrip = TripSelection(destinationId: destination.id, trip: trip)
+            await wait(5)
+            detailsTrip = nil
+            await wait(2)
+        }
         viewModel.dimScreen()
-        await wait(4)
+        await wait(3)
         viewModel.wakeScreen()
     }
 }

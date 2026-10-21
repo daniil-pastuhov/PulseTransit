@@ -1,1 +1,1 @@
-Live departure board for your stops in Norway, built for an always-on display.
+Live departures and fastest routes in Norway, on the go or on the wall.

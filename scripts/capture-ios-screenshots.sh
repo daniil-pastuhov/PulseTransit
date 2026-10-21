@@ -5,7 +5,8 @@
 #   scripts/capture-ios-screenshots.sh <simulator-udid> <app-path> <out-dir> <locale> <device-name>
 #
 # <locale> is an App Store locale (en-GB, no). The app must be a Debug build (it reads the
-# -PTOpenSettings launch argument). Scenes: board in light theme, board in dark theme, Settings.
+# -PTOpenSettings launch argument). Scenes: On the spot at Oslo S, board in light theme, board in dark
+# theme, Settings.
 set -euo pipefail
 
 SIM=$1 APP=$2 OUT=$3 LOCALE=$4 DEVICE=$5
@@ -18,6 +19,9 @@ esac
 mkdir -p "$OUT/$LOCALE"
 
 xcrun simctl install "$SIM" "$APP"
+# On the spot follows the device: give it Oslo S.
+xcrun simctl privacy "$SIM" grant location "$BUNDLE"
+xcrun simctl location "$SIM" set 59.9111,10.7528
 # A tidy status bar; the clock is left real so it matches the board's own clock.
 xcrun simctl status_bar "$SIM" override --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 \
   --dataNetwork wifi 2>/dev/null || true
@@ -36,15 +40,18 @@ seed() {
   $write date_display_style -string "$2"
 }
 
-shot() { # name, extra launch args...
-  local name=$1; shift
-  xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" "$@" >/dev/null
+shot() { # name, mode, extra launch args...
+  # The mode is a launch argument, which overrides the stored one: a value seeded with defaults
+  # write is shadowed by the one the app saved itself (e.g. by a recorded preview's tour).
+  local name=$1 mode=$2; shift 2
+  xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" -app_mode "$mode" "$@" >/dev/null
   sleep 12 # departures, weather and the fastest route arrive from the network
   xcrun simctl io "$SIM" screenshot "$OUT/$LOCALE/${DEVICE}_$name.png" >/dev/null 2>&1
   echo "captured $OUT/$LOCALE/${DEVICE}_$name.png"
 }
 
-seed LIGHT BESIDE && shot 1_board_light
-seed DARK LONG && shot 2_board_dark
-seed LIGHT BESIDE && shot 3_settings -PTOpenSettings YES
+seed LIGHT BESIDE && shot 0_on_spot ON_SPOT
+seed LIGHT BESIDE && shot 1_board_light BOARD
+seed DARK LONG && shot 2_board_dark BOARD
+seed LIGHT BESIDE && shot 3_settings BOARD -PTOpenSettings YES
 xcrun simctl status_bar "$SIM" clear 2>/dev/null || true
