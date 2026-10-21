@@ -781,6 +781,21 @@ fun SettingsScreen(
                         singleLine = true,
                     )
 
+                    // Search stays open when full, since its results can still remove a stop.
+                    val canAddFavorite = uiState.favorites.size < SettingsRepository.MAX_FAVORITE_STOPS
+                    if (!canAddFavorite) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            pluralStringResource(
+                                Res.plurals.max_favorite_stops_reached,
+                                SettingsRepository.MAX_FAVORITE_STOPS,
+                                SettingsRepository.MAX_FAVORITE_STOPS,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(12.dp))
 
                     val showNearby = uiState.query.isBlank()
@@ -820,6 +835,7 @@ fun SettingsScreen(
                                         StopSearchResultRow(
                                             stop = stop,
                                             isFav = uiState.favorites.any { it.id == stop.id },
+                                            canAdd = canAddFavorite,
                                             onAdd = { viewModel.addFavorite(stop) },
                                             onRemove = { viewModel.removeFavorite(stop.id) },
                                         )
@@ -1053,6 +1069,7 @@ fun StopSearchResultRow(
     isFav: Boolean,
     onAdd: () -> Unit,
     onRemove: () -> Unit,
+    canAdd: Boolean = true,
 ) {
     Row(
         modifier =
@@ -1080,7 +1097,7 @@ fun StopSearchResultRow(
                 Text(stringResource(Res.string.remove), fontSize = 12.sp)
             }
         } else {
-            Button(onClick = onAdd) {
+            Button(onClick = onAdd, enabled = canAdd) {
                 Text(stringResource(Res.string.add), fontSize = 12.sp)
             }
         }

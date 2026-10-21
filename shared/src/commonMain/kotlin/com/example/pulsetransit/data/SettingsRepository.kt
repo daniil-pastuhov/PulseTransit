@@ -6,6 +6,9 @@ interface SettingsRepository {
     companion object {
         const val MAX_DESTINATION_STATIONS = 5
 
+        /** More than this and a board takes turns showing them, which gets hard to follow. */
+        const val MAX_FAVORITE_STOPS = 6
+
         /** [getTripOptionsCount] value meaning "as many as fit the screen". */
         const val TRIP_OPTIONS_AUTO = 0
         const val MAX_TRIP_OPTIONS = 5

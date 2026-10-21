@@ -88,6 +88,17 @@
     <string name="trip_details_hide_stops">Hide stops</string>
     <string name="refresh">Refresh</string>
 
+    <plurals name="max_favorite_stops_reached">
+        <item quantity="one">Maximum of %1$d stop place reached. Remove it to add another.</item>
+        <item quantity="other">Maximum of %1$d stop places reached. Remove one to add another.</item>
+    </plurals>
+    <string name="more_actions">More actions</string>
+    <string name="drag_to_reorder">Drag to reorder</string>
+    <!-- Board pages, when the stops take turns -->
+    <string name="board_page_stops">Stops %1$d–%2$d of %3$d</string>
+    <string name="board_page_stop">Stop %1$d of %2$d</string>
+    <string name="board_page_description">Page %1$d of %2$d. The next page shows in %3$d seconds.</string>
+    <string name="board_page_paused">Page %1$d of %2$d. Paused.</string>
     <!-- Fastest Route -->
     <string name="fastest_route_destination">Fastest Route Destinations</string>
     <string name="no_destination_set">No destinations set</string>

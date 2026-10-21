@@ -88,6 +88,17 @@
     <string name="trip_details_hide_stops">Skjul stopp</string>
     <string name="refresh">Oppdater</string>
 
+    <plurals name="max_favorite_stops_reached">
+        <item quantity="one">Maksimalt %1$d stoppested nådd. Fjern det for å legge til et nytt.</item>
+        <item quantity="other">Maksimalt %1$d stoppesteder nådd. Fjern ett for å legge til et nytt.</item>
+    </plurals>
+    <string name="more_actions">Flere handlinger</string>
+    <string name="drag_to_reorder">Dra for å endre rekkefølgen</string>
+    <!-- Board pages, when the stops take turns -->
+    <string name="board_page_stops">Stopp %1$d–%2$d av %3$d</string>
+    <string name="board_page_stop">Stopp %1$d av %2$d</string>
+    <string name="board_page_description">Side %1$d av %2$d. Neste side vises om %3$d sekunder.</string>
+    <string name="board_page_paused">Side %1$d av %2$d. På pause.</string>
     <!-- Fastest Route -->
     <string name="fastest_route_destination">Reisemål for raskeste rute</string>
     <string name="no_destination_set">Ingen destinasjoner valgt</string>

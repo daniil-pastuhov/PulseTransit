@@ -239,6 +239,74 @@
         }
       }
     },
+    "board_page_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %1$lld of %2$lld. The next page shows in %3$lld seconds."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side %1$lld av %2$lld. Neste side vises om %3$lld sekunder."
+          }
+        }
+      }
+    },
+    "board_page_paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Page %1$lld of %2$lld. Paused."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Side %1$lld av %2$lld. På pause."
+          }
+        }
+      }
+    },
+    "board_page_stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stop %1$lld of %2$lld"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp %1$lld av %2$lld"
+          }
+        }
+      }
+    },
+    "board_page_stops": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops %1$lld–%2$lld of %3$lld"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp %1$lld–%2$lld av %3$lld"
+          }
+        }
+      }
+    },
     "burn_in_high": {
       "extractionState": "manual",
       "localizations": {
@@ -830,6 +898,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$lld m"
+          }
+        }
+      }
+    },
+    "drag_to_reorder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag to reorder"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra for å endre rekkefølgen"
           }
         }
       }
@@ -1589,6 +1674,47 @@
         }
       }
     },
+    "max_favorite_stops_reached": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Maximum of %1$lld stop place reached. Remove it to add another."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Maximum of %1$lld stop places reached. Remove one to add another."
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Maksimalt %1$lld stoppested nådd. Fjern det for å legge til et nytt."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Maksimalt %1$lld stoppesteder nådd. Fjern ett for å legge til et nytt."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "mode_board": {
       "extractionState": "manual",
       "localizations": {
@@ -1687,6 +1813,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested."
+          }
+        }
+      }
+    },
+    "more_actions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More actions"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flere handlinger"
           }
         }
       }

@@ -24,6 +24,18 @@ object BoardLayout {
      */
     const val WIDE_ROW_MIN_WIDTH_DP = 440f
 
+    /**
+     * Below this width a fastest-route banner stacks its title under the departure time and
+     * duration, rather than squeezing the title into the gap between them.
+     */
+    const val COMPACT_BANNER_MAX_WIDTH_DP = 360f
+
+    /** Height of the row under the panels that shows which page of stops is up, when there are pages. */
+    const val PAGE_INDICATOR_HEIGHT_DP = 24f
+
+    /** How long each page of stops stays up before the board turns to the next. */
+    const val PAGE_INTERVAL_MS = 15_000L
+
     /** About how tall a departure row is with the gap below it, for [rowCapacity]. */
     const val ROW_HEIGHT_DP = 52f
 
@@ -63,6 +75,44 @@ object BoardLayout {
         val extra = stopCount % columns
         return List(columns) { column -> if (column >= columns - extra) base + 1 else base }
     }
+
+    /**
+     * How many panels fit a space of this size without either dropping below
+     * [MIN_PANEL_WIDTH_DP] by [MIN_PANEL_HEIGHT_DP]. Always at least one, so a window too small
+     * for even one panel still shows a stop at a time.
+     */
+    fun capacity(
+        widthDp: Float,
+        heightDp: Float,
+    ): Int {
+        val columns = floor(widthDp / MIN_PANEL_WIDTH_DP).toInt().coerceAtLeast(1)
+        val rows = floor(heightDp / MIN_PANEL_HEIGHT_DP).toInt().coerceAtLeast(1)
+        return columns * rows
+    }
+
+    /**
+     * How many stops each page of the board shows, in favourites order, for a space of this size.
+     * One page when they all fit [capacity]. Otherwise the board takes turns showing them, and the
+     * page indicator takes [PAGE_INDICATOR_HEIGHT_DP] of the height; the stops then split as evenly
+     * as they can, earlier pages holding one more, so no page is left with a lone stop that a fuller
+     * one could have shared. Each page is laid out by [columns] for its own count.
+     */
+    fun pageSizes(
+        stopCount: Int,
+        widthDp: Float,
+        heightDp: Float,
+    ): List<Int> {
+        if (stopCount <= 0) return emptyList()
+        if (stopCount <= capacity(widthDp, heightDp)) return listOf(stopCount)
+        val perPage = capacity(widthDp, heightDp - PAGE_INDICATOR_HEIGHT_DP)
+        val pages = ceilDiv(stopCount, perPage)
+        val base = stopCount / pages
+        val extra = stopCount % pages
+        return List(pages) { page -> if (page < extra) base + 1 else base }
+    }
+
+    /** Whether a fastest-route banner this wide stacks its title, by [COMPACT_BANNER_MAX_WIDTH_DP]. */
+    fun isCompactBanner(widthDp: Float): Boolean = widthDp < COMPACT_BANNER_MAX_WIDTH_DP
 
     /** How many departure rows a list this tall shows without scrolling. */
     fun rowCapacity(listHeightDp: Float): Int = floor(listHeightDp / ROW_HEIGHT_DP).toInt().coerceAtLeast(0)

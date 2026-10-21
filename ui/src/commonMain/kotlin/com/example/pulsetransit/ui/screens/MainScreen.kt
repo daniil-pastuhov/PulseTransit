@@ -1,14 +1,18 @@
 package com.example.pulsetransit.ui.screens
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateOffsetAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -27,46 +31,62 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -161,80 +181,75 @@ fun MainScreen(
                         .graphicsLayer(alpha = screenAlpha),
             ) {
                 // Header Bar
-                Row(
+                BoxWithConstraints(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .background(MaterialTheme.colorScheme.surface)
                             .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.statusBars)
                             .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    // Left: Digital Clock + date; tapping cycles the date style.
-                    HeaderClock(uiState = uiState, onClick = { viewModel.cycleDateStyle() })
+                    // The buttons keep their room: the clock gets what they leave, stepping its date
+                    // down to fit, and only where even the time would not fit do they fold into a menu.
+                    val collapseActions = maxWidth < HEADER_ACTIONS_WIDTH + HEADER_MIN_CLOCK_WIDTH
+                    val clockMaxWidth = (maxWidth - if (collapseActions) HEADER_ACTION_SIZE else HEADER_ACTIONS_WIDTH).coerceAtLeast(0.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        // Left: Digital Clock + date; tapping cycles the date style.
+                        HeaderClock(
+                            uiState = uiState,
+                            onClick = { viewModel.cycleDateStyle() },
+                            modifier = Modifier.widthIn(max = clockMaxWidth),
+                        )
 
-                    // Middle: Weather, unless turned off in Settings
-                    if (uiState.showWeather) {
-                        BoxWithConstraints(
-                            modifier =
-                                Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 16.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            // Fit only as many columns as the width allows: a forced minimum
-                            // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
-                            // grow with the system font scale, so the column budget does too.
-                            val itemWidth = 56.dp * LocalDensity.current.fontScale
-                            val maxItems = (maxWidth / itemWidth).toInt().coerceIn(1, 8)
-                            val totalAvailable = uiState.weather.size
-                            val step = if (totalAvailable > maxItems) totalAvailable / maxItems else 1
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceEvenly,
+                        // Middle: Weather, unless turned off in Settings
+                        if (uiState.showWeather) {
+                            BoxWithConstraints(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .padding(horizontal = 16.dp),
+                                contentAlignment = Alignment.Center,
                             ) {
-                                uiState.weather
-                                    .filterIndexed { index, _ -> index % step == 0 }
-                                    .take(maxItems)
-                                    .forEach { w ->
-                                        // Equal-width columns: a long condition label ("Partly
-                                        // cloudy") must wrap inside its column rather than stretch
-                                        // it and squeeze the neighbours.
-                                        WeatherItem(w, modifier = Modifier.weight(1f))
+                                // Fit only as many columns as the width allows: a forced minimum
+                                // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
+                                // grow with the system font scale, so the column budget does too.
+                                // With no room for one, the forecast is left out.
+                                val itemWidth = 56.dp * LocalDensity.current.fontScale
+                                val maxItems = (maxWidth / itemWidth).toInt().coerceAtMost(8)
+                                val totalAvailable = uiState.weather.size
+                                val step = if (totalAvailable > maxItems) totalAvailable / maxItems.coerceAtLeast(1) else 1
+
+                                if (maxItems > 0) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                    ) {
+                                        uiState.weather
+                                            .filterIndexed { index, _ -> index % step == 0 }
+                                            .take(maxItems)
+                                            .forEach { w ->
+                                                // Equal-width columns: a long condition label ("Partly
+                                                // cloudy") must wrap inside its column rather than stretch
+                                                // it and squeeze the neighbours.
+                                                WeatherItem(w, modifier = Modifier.weight(1f))
+                                            }
                                     }
+                                }
                             }
                         }
-                    }
 
-                    // Right: Control Buttons
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        IconButton(onClick = { showRouteSearch = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Search,
-                                contentDescription = stringResource(Res.string.search_route),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        IconButton(onClick = { viewModel.refreshData() }) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(Res.string.refresh),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        IconButton(onClick = onNavigateToSettings) {
-                            Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = stringResource(Res.string.settings_title),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                        // Right: Control Buttons
+                        HeaderActions(
+                            collapsed = collapseActions,
+                            onSearchRoute = { showRouteSearch = true },
+                            onRefresh = { viewModel.refreshData() },
+                            onOpenSettings = onNavigateToSettings,
+                        )
                     }
                 }
 
@@ -362,6 +377,7 @@ fun MainScreen(
                             onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
                             loadJourney = viewModel::journeyStopsAhead,
                             onRowCapacity = viewModel::setPanelRowCapacity,
+                            rotationPaused = uiState.isScreenDimmed,
                             modifier =
                                 Modifier
                                     .fillMaxSize()
@@ -487,41 +503,70 @@ fun FastestTripBanner(
             "--:--"
         }
 
-    Box(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clickable(onClick = onClick)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = departureTime,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = fastestTripTitle(trip),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    text = tripRouteText(trip),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    val timeText: @Composable () -> Unit = {
+        Text(
+            text = departureTime,
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            color = onContainer,
+            maxLines = 1,
+        )
+    }
+    val durationText: @Composable () -> Unit = {
+        Text(
+            text = stringResource(Res.string.duration_min, trip.durationMinutes),
+            style = MaterialTheme.typography.titleMedium,
+            color = onContainer,
+            maxLines = 1,
+        )
+    }
+    val titleAndRoute: @Composable () -> Unit = {
+        Text(
+            text = fastestTripTitle(trip),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = onContainer,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = tripRouteText(trip),
+            style = MaterialTheme.typography.bodyMedium,
+            color = onContainer.copy(alpha = 0.8f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        val contentModifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .clickable(onClick = onClick)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        if (BoardLayout.isCompactBanner(maxWidth.value)) {
+            // Too narrow for the title between the time and the duration: it goes under them.
+            Column(modifier = contentModifier) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    timeText()
+                    durationText()
+                }
+                titleAndRoute()
             }
-            Text(
-                text = stringResource(Res.string.duration_min, trip.durationMinutes),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
+        } else {
+            Row(
+                modifier = contentModifier,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                timeText()
+                Column(modifier = Modifier.weight(1f)) { titleAndRoute() }
+                durationText()
+            }
         }
         if (isRefreshing) {
             RefreshingIndicator(
@@ -664,6 +709,14 @@ fun FastestTripPlaceholder(
     }
 }
 
+/**
+ * The favourite stops' panels, as many at once as [BoardLayout.pageSizes] lets fit. When they do
+ * not all fit, the board takes turns: a pager turns to the next page every
+ * [BoardLayout.PAGE_INTERVAL_MS], and [BoardPageIndicator] below says which stops are up, how many
+ * there are and when the next page comes. The turning holds while [rotationPaused] (the dimmed
+ * screen), while a panel is dragged and while a departure's details are open, since turning the
+ * page would close them; a swipe to another page starts its full interval again.
+ */
 @Composable
 fun ReorderableFavoriteList(
     favorites: List<StopPlace>,
@@ -683,13 +736,176 @@ fun ReorderableFavoriteList(
     onLoadMore: (String) -> Unit,
     loadJourney: suspend (Departure, String) -> List<JourneyStop>,
     modifier: Modifier = Modifier,
+    rotationPaused: Boolean = false,
     onRowCapacity: (stopId: String, rows: Int) -> Unit = { _, _ -> },
+) {
+    var isDragging by remember { mutableStateOf(false) }
+    var openDetailsStopIds by remember { mutableStateOf(emptySet<String>()) }
+
+    @Composable
+    fun grid(
+        first: Int,
+        count: Int,
+        gridModifier: Modifier,
+    ) = StopPanelGrid(
+        stops = favorites.subList(first, first + count),
+        departures = departures,
+        showDelays = showDelays,
+        showMessages = showMessages,
+        loadingStopIds = loadingStopIds,
+        onReorder = { from, to -> onReorder(first + from, first + to) },
+        onDraggingChange = { isDragging = it },
+        onDetailsOpenChange = { stopId, open ->
+            openDetailsStopIds = if (open) openDetailsStopIds + stopId else openDetailsStopIds - stopId
+        },
+        onFilterOut = onFilterOut,
+        extendedStopIds = extendedStopIds,
+        failedStopIds = failedStopIds,
+        isOnline = isOnline,
+        onSearchFurtherAhead = onSearchFurtherAhead,
+        onRetry = onRetry,
+        canLoadMoreStopIds = canLoadMoreStopIds,
+        loadingMoreStopIds = loadingMoreStopIds,
+        onLoadMore = onLoadMore,
+        loadJourney = loadJourney,
+        onRowCapacity = onRowCapacity,
+        modifier = gridModifier,
+    )
+
+    BoxWithConstraints(modifier = modifier) {
+        val pageSizes = BoardLayout.pageSizes(favorites.size, maxWidth.value, maxHeight.value)
+        if (pageSizes.size <= 1) {
+            grid(first = 0, count = favorites.size, gridModifier = Modifier.fillMaxSize())
+            return@BoxWithConstraints
+        }
+        val pageStarts = pageSizes.runningFold(0) { start, size -> start + size }
+        val pagerState = rememberPagerState { pageSizes.size }
+        val paused = rotationPaused || isDragging || openDetailsStopIds.isNotEmpty()
+        // How far the current page is through its interval, read only when the indicator draws.
+        val progress = remember { Animatable(0f) }
+        LaunchedEffect(pagerState.settledPage, pageSizes.size, paused) {
+            progress.snapTo(0f)
+            if (paused) return@LaunchedEffect
+            progress.animateTo(1f, tween(BoardLayout.PAGE_INTERVAL_MS.toInt(), easing = LinearEasing))
+            pagerState.animateScrollToPage((pagerState.settledPage + 1) % pageSizes.size)
+        }
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                // A panel dragged to reorder moves within its page; the pager must not take the drag.
+                userScrollEnabled = !isDragging,
+                key = { page -> favorites.getOrNull(pageStarts[page])?.id ?: page },
+            ) { page ->
+                grid(first = pageStarts[page], count = pageSizes[page], gridModifier = Modifier.fillMaxSize())
+            }
+            val page = pagerState.currentPage.coerceIn(pageSizes.indices)
+            BoardPageIndicator(
+                page = page,
+                pageCount = pageSizes.size,
+                firstStop = pageStarts[page] + 1,
+                lastStop = pageStarts[page] + pageSizes[page],
+                stopCount = favorites.size,
+                paused = paused,
+                progress = { progress.value },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(BoardLayout.PAGE_INDICATOR_HEIGHT_DP.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Which stops the page shows ("Stops 3–4 of 6") beside a segment per page. The current page's
+ * segment fills over its interval, so it reads as the board turning by itself and when it will.
+ */
+@Composable
+private fun BoardPageIndicator(
+    page: Int,
+    pageCount: Int,
+    firstStop: Int,
+    lastStop: Int,
+    stopCount: Int,
+    paused: Boolean,
+    progress: () -> Float,
+    modifier: Modifier = Modifier,
+) {
+    val description =
+        if (paused) {
+            stringResource(Res.string.board_page_paused, page + 1, pageCount)
+        } else {
+            stringResource(Res.string.board_page_description, page + 1, pageCount, (BoardLayout.PAGE_INTERVAL_MS / 1000).toInt())
+        }
+    val track = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+    val fill = MaterialTheme.colorScheme.primary
+    Row(
+        modifier = modifier.clearAndSetSemantics { contentDescription = description },
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text =
+                if (firstStop == lastStop) {
+                    stringResource(Res.string.board_page_stop, firstStop, stopCount)
+                } else {
+                    stringResource(Res.string.board_page_stops, firstStop, lastStop, stopCount)
+                },
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            maxLines = 1,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            repeat(pageCount) { index ->
+                Box(
+                    modifier =
+                        Modifier
+                            .size(width = 20.dp, height = 4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(track)
+                            .drawBehind {
+                                if (index == page) drawRect(fill, size = size.copy(width = size.width * progress()))
+                            },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * [stops] laid out by [BoardLayout.columns] over the space they have, a long press dragging a panel
+ * to reorder them. [onReorder] takes indices into [stops].
+ */
+@Composable
+private fun StopPanelGrid(
+    stops: List<StopPlace>,
+    departures: List<StopDepartures>,
+    showDelays: Boolean,
+    showMessages: Boolean,
+    loadingStopIds: Set<String>,
+    onReorder: (Int, Int) -> Unit,
+    onDraggingChange: (Boolean) -> Unit,
+    onDetailsOpenChange: (stopId: String, open: Boolean) -> Unit,
+    onFilterOut: (String) -> Unit,
+    extendedStopIds: Set<String>,
+    failedStopIds: Set<String>,
+    isOnline: Boolean,
+    onSearchFurtherAhead: (String) -> Unit,
+    onRetry: () -> Unit,
+    canLoadMoreStopIds: Set<String>,
+    loadingMoreStopIds: Set<String>,
+    onLoadMore: (String) -> Unit,
+    loadJourney: suspend (Departure, String) -> List<JourneyStop>,
+    onRowCapacity: (stopId: String, rows: Int) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var draggingIndex by remember { mutableStateOf<Int?>(null) }
     var dragOffset by remember { mutableStateOf(Offset.Zero) }
 
     BoxWithConstraints(modifier = modifier) {
-        val itemCount = favorites.size
+        val itemCount = stops.size
         val columnSizes = BoardLayout.columnSizes(itemCount, BoardLayout.columns(itemCount, maxWidth.value, maxHeight.value))
         val grid = PanelGrid(columnSizes, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
 
@@ -707,7 +923,7 @@ fun ReorderableFavoriteList(
                 // panel would pass under the columns after it.
                 val holdsDragged = draggingIndex?.let { it in first until first + size } == true
                 Column(modifier = Modifier.fillMaxHeight().weight(1f).zIndex(if (holdsDragged) 1f else 0f)) {
-                    favorites.subList(first, first + size).forEachIndexed { inColumn, stop ->
+                    stops.subList(first, first + size).forEachIndexed { inColumn, stop ->
                         val index = first + inColumn
                         key(stop.id) {
                             val isDragging = draggingIndex == index
@@ -733,6 +949,39 @@ fun ReorderableFavoriteList(
                                 label = "itemOffset",
                             )
 
+                            // The gesture below outlives this composition (pointerInput(Unit) is
+                            // never restarted), so it reads these through State: captured plainly,
+                            // the drop would always see the null target of the first composition
+                            // and never reorder, and a moved panel would drag from its old slot.
+                            val latestIndex by rememberUpdatedState(index)
+                            val latestTarget by rememberUpdatedState(currentTargetIndex)
+
+                            // A panel paged out of view cannot have its details open any more.
+                            DisposableEffect(stop.id) { onDispose { onDetailsOpenChange(stop.id, false) } }
+
+                            val onDragStart = { _: Offset ->
+                                draggingIndex = latestIndex
+                                onDraggingChange(true)
+                            }
+                            val onDragEnd = {
+                                val from = draggingIndex
+                                latestTarget?.let { target ->
+                                    if (from != null && target != from) onReorder(from, target)
+                                }
+                                draggingIndex = null
+                                dragOffset = Offset.Zero
+                                onDraggingChange(false)
+                            }
+                            val onDragCancel = {
+                                draggingIndex = null
+                                dragOffset = Offset.Zero
+                                onDraggingChange(false)
+                            }
+                            val onDrag = { change: PointerInputChange, dragAmount: Offset ->
+                                change.consume()
+                                dragOffset += dragAmount
+                            }
+
                             Box(
                                 modifier =
                                     Modifier
@@ -740,25 +989,9 @@ fun ReorderableFavoriteList(
                                         .fillMaxWidth()
                                         .zIndex(if (isDragging) 1f else 0f)
                                         .offset { IntOffset(animatedOffset.x.roundToInt(), animatedOffset.y.roundToInt()) }
+                                        // Anywhere on the panel after a long press, so a tap still opens a row.
                                         .pointerInput(Unit) {
-                                            detectDragGesturesAfterLongPress(
-                                                onDragStart = { draggingIndex = index },
-                                                onDragEnd = {
-                                                    currentTargetIndex?.let { target ->
-                                                        if (target != index) onReorder(index, target)
-                                                    }
-                                                    draggingIndex = null
-                                                    dragOffset = Offset.Zero
-                                                },
-                                                onDragCancel = {
-                                                    draggingIndex = null
-                                                    dragOffset = Offset.Zero
-                                                },
-                                                onDrag = { change, dragAmount ->
-                                                    change.consume()
-                                                    dragOffset += dragAmount
-                                                },
-                                            )
+                                            detectDragGesturesAfterLongPress(onDragStart, onDragEnd, onDragCancel, onDrag)
                                         },
                             ) {
                                 StopBoardPanel(
@@ -778,6 +1011,16 @@ fun ReorderableFavoriteList(
                                     onLoadMore = { onLoadMore(stop.id) },
                                     loadJourney = { departure -> loadJourney(departure, stop.id) },
                                     onRowCapacity = { rows -> onRowCapacity(stop.id, rows) },
+                                    onDetailsOpenChange = { open -> onDetailsOpenChange(stop.id, open) },
+                                    // The handle shows the panels can be moved, and drags at once.
+                                    dragHandle =
+                                        if (itemCount > 1) {
+                                            Modifier.pointerInput(Unit) {
+                                                detectDragGestures(onDragStart, onDragEnd, onDragCancel, onDrag)
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     modifier = Modifier.fillMaxSize(),
                                 )
                             }
@@ -897,6 +1140,65 @@ fun WeatherItem(
     }
 }
 
+// The header's three buttons, at their touch-target size and spacing, and the least the clock needs
+// beside them before they fold into one menu button.
+private val HEADER_ACTION_SIZE = 48.dp
+private val HEADER_ACTIONS_WIDTH = HEADER_ACTION_SIZE * 3 + 8.dp * 2
+private val HEADER_MIN_CLOCK_WIDTH = 72.dp
+
+/**
+ * Search, refresh and Settings, side by side; [collapsed], behind one menu button, for a header
+ * too narrow to give them their room and still show the time.
+ */
+@Composable
+private fun HeaderActions(
+    collapsed: Boolean,
+    onSearchRoute: () -> Unit,
+    onRefresh: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    val tint = MaterialTheme.colorScheme.onSurface
+    if (collapsed) {
+        var expanded by remember { mutableStateOf(false) }
+        Box {
+            IconButton(onClick = { expanded = true }) {
+                Icon(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(Res.string.more_actions), tint = tint)
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                listOf(
+                    Triple(Icons.Default.Search, Res.string.search_route, onSearchRoute),
+                    Triple(Icons.Default.Refresh, Res.string.refresh, onRefresh),
+                    Triple(Icons.Default.Settings, Res.string.settings_title, onOpenSettings),
+                ).forEach { (icon, label, action) ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(label)) },
+                        leadingIcon = { Icon(imageVector = icon, contentDescription = null) },
+                        onClick = {
+                            expanded = false
+                            action()
+                        },
+                    )
+                }
+            }
+        }
+        return
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IconButton(onClick = onSearchRoute) {
+            Icon(imageVector = Icons.Default.Search, contentDescription = stringResource(Res.string.search_route), tint = tint)
+        }
+        IconButton(onClick = onRefresh) {
+            Icon(imageVector = Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh), tint = tint)
+        }
+        IconButton(onClick = onOpenSettings) {
+            Icon(imageVector = Icons.Default.Settings, contentDescription = stringResource(Res.string.settings_title), tint = tint)
+        }
+    }
+}
+
 /**
  * The header clock with the date drawn in the user's chosen [DateDisplayStyle]. Every visible style
  * gives the day of month the emphasis; weekday and month are secondary context.
@@ -905,6 +1207,7 @@ fun WeatherItem(
 private fun HeaderClock(
     uiState: StopBoardViewModel.UiState,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val timeStyle =
         MaterialTheme.typography.headlineLarge.copy(
@@ -917,18 +1220,36 @@ private fun HeaderClock(
     // The date strings arrive with the first clock tick; until then show the time alone.
     val style = if (uiState.currentDayOfMonth.isEmpty()) DateDisplayStyle.HIDDEN else uiState.dateStyle
     val clickModifier =
-        Modifier
+        modifier
             .clip(RoundedCornerShape(8.dp))
             .clickable(onClickLabel = stringResource(Res.string.change_date_style), onClick = onClick)
 
+    // The chosen style where it fits; in a narrower header the time alone, then a smaller time,
+    // so the date gives way rather than pushing the buttons out of the header.
+    FirstThatFits(
+        clickModifier,
+        { HeaderClockContent(uiState, style, timeStyle, dayStyle, secondary) },
+        { HeaderClockContent(uiState, DateDisplayStyle.HIDDEN, timeStyle, dayStyle, secondary) },
+        { HeaderClockContent(uiState, DateDisplayStyle.HIDDEN, timeStyle.copy(fontSize = 22.sp), dayStyle, secondary) },
+    )
+}
+
+/** The header clock drawn in one [DateDisplayStyle]. */
+@Composable
+private fun HeaderClockContent(
+    uiState: StopBoardViewModel.UiState,
+    style: DateDisplayStyle,
+    timeStyle: TextStyle,
+    dayStyle: TextStyle,
+    secondary: Color,
+) {
     when (style) {
         DateDisplayStyle.HIDDEN -> {
-            Text(text = uiState.currentTime, modifier = clickModifier, style = timeStyle)
+            Text(text = uiState.currentTime, style = timeStyle, maxLines = 1)
         }
 
         DateDisplayStyle.BESIDE -> {
             Row(
-                modifier = clickModifier,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
@@ -946,7 +1267,7 @@ private fun HeaderClock(
         }
 
         DateDisplayStyle.STACKED -> {
-            Column(modifier = clickModifier) {
+            Column {
                 Text(text = uiState.currentTime, style = timeStyle)
                 Text(
                     text =
@@ -971,7 +1292,6 @@ private fun HeaderClock(
 
         DateDisplayStyle.TILE -> {
             Row(
-                modifier = clickModifier,
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
@@ -1005,7 +1325,6 @@ private fun HeaderClock(
 
         DateDisplayStyle.LONG -> {
             Row(
-                modifier = clickModifier,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Text(text = uiState.currentTime, modifier = Modifier.alignByBaseline(), style = timeStyle)
@@ -1028,5 +1347,32 @@ private fun HeaderClock(
                 )
             }
         }
+    }
+}
+
+/**
+ * The first of [contents] that fits the width offered at its natural size, or the last one, held to
+ * that width, when none does. Each is measured before it is chosen, so keep them few and cheap.
+ */
+@Composable
+private fun FirstThatFits(
+    modifier: Modifier,
+    vararg contents: @Composable () -> Unit,
+) {
+    SubcomposeLayout(modifier) { constraints ->
+        val natural = constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity)
+        var chosen: List<Placeable>? = null
+        for ((index, content) in contents.withIndex()) {
+            val placeables = subcompose(index, content).map { it.measure(natural) }
+            if ((placeables.maxOfOrNull { it.width } ?: 0) <= constraints.maxWidth) {
+                chosen = placeables
+                break
+            }
+        }
+        val placeables =
+            chosen ?: subcompose(contents.size, contents.last()).map { it.measure(constraints.copy(minWidth = 0)) }
+        val width = (placeables.maxOfOrNull { it.width } ?: 0).coerceIn(constraints.minWidth, constraints.maxWidth)
+        val height = (placeables.maxOfOrNull { it.height } ?: 0).coerceIn(constraints.minHeight, constraints.maxHeight)
+        layout(width, height) { placeables.forEach { it.placeRelative(0, 0) } }
     }
 }

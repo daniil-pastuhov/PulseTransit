@@ -8,11 +8,18 @@ struct BoardHeader: View {
     let onSearchRoute: () -> Void
     let onOpenSettings: () -> Void
 
+    /// The header's width, for whether its buttons fold into one menu.
+    @State private var width: CGFloat = .infinity
+
+    /// Below this the time cannot sit beside all three buttons, so they fold into a menu.
+    private static let collapseActionsBelowWidth: CGFloat = 250
+
     var body: some View {
+        let collapseActions = width < Self.collapseActionsBelowWidth
         HStack(spacing: 12) {
+            // The buttons keep their room and the clock gets what they leave, stepping its date
+            // down to fit; the weather strip takes what is left after both.
             HeaderClock(state: state)
-                // The clock keeps its natural size; the weather strip takes what is left.
-                .fixedSize()
                 .layoutPriority(1)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onCycleDateStyle)
@@ -22,17 +29,36 @@ struct BoardHeader: View {
                 WeatherStrip(weather: state.weather)
                     .frame(maxWidth: .infinity)
             } else {
-                Spacer()
+                Spacer(minLength: 0)
             }
-            HStack(spacing: 8) {
-                BoardActionButtons(onRefresh: onRefresh, onSearchRoute: onSearchRoute, onOpenSettings: onOpenSettings)
+            Group {
+                if collapseActions {
+                    Menu {
+                        Button(action: onSearchRoute) { Label(L("search_route"), systemImage: "magnifyingglass") }
+                        Button(action: onRefresh) { Label(L("refresh"), systemImage: "arrow.clockwise") }
+                        Button(action: onOpenSettings) { Label(L("settings_title"), systemImage: "gearshape.fill") }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
+                    .accessibilityLabel(L("more_actions"))
+                } else {
+                    HStack(spacing: 8) {
+                        BoardActionButtons(onRefresh: onRefresh, onSearchRoute: onSearchRoute, onOpenSettings: onOpenSettings)
+                    }
+                }
             }
             .font(.title2)
             .foregroundColor(Palette.textPrimary)
             .fixedSize()
+            .layoutPriority(2)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .background(GeometryReader { geometry in
+            Color.clear
+                .onAppear { width = geometry.size.width }
+                .onChange(of: geometry.size.width) { width = $0 }
+        })
         .background(Palette.surface.ignoresSafeArea(edges: .top))
     }
 }
@@ -177,9 +203,9 @@ enum BarHeader {
 private struct HeaderClock: View {
     let state: StopBoardViewModel.UiState
 
-    private var timeText: some View {
+    private func timeText(_ size: CGFloat) -> some View {
         Text(state.currentTime)
-            .font(.system(size: 34, weight: .bold))
+            .font(.system(size: size, weight: .bold))
             .foregroundColor(Palette.primary)
             .monospacedDigit()
     }
@@ -193,12 +219,27 @@ private struct HeaderClock: View {
     var body: some View {
         // The date strings arrive with the first clock tick; until then show the time alone.
         let style = state.currentDayOfMonth.isEmpty ? DateDisplayStyle.hidden : state.dateStyle
+        if #available(iOS 16, *) {
+            // The chosen style where it fits, then the time alone, then a smaller time, so the date
+            // gives way rather than pushing the buttons out of the header.
+            ViewThatFits(in: .horizontal) {
+                clock(style: style).fixedSize()
+                clock(style: .hidden).fixedSize()
+                clock(style: .hidden, timeSize: 22).fixedSize()
+            }
+        } else {
+            clock(style: style).fixedSize()
+        }
+    }
+
+    @ViewBuilder
+    private func clock(style: DateDisplayStyle, timeSize: CGFloat = 34) -> some View {
         switch style {
         case .hidden:
-            timeText
+            timeText(timeSize)
         case .beside:
             HStack(spacing: 6) {
-                timeText
+                timeText(timeSize)
                 dayText(size: 34).padding(.leading, 10)
                 VStack(alignment: .leading) {
                     Text(state.currentWeekday)
@@ -209,7 +250,7 @@ private struct HeaderClock: View {
             }
         case .stacked:
             VStack(alignment: .leading, spacing: 0) {
-                timeText
+                timeText(timeSize)
                 (Text(state.currentWeekday + " ")
                     + Text(state.currentDayOfMonth).font(.system(size: 18, weight: .bold)).foregroundColor(Palette.textPrimary)
                     + Text(" " + state.currentMonth))
@@ -218,7 +259,7 @@ private struct HeaderClock: View {
             }
         case .tile:
             HStack(spacing: 16) {
-                timeText
+                timeText(timeSize)
                 VStack(spacing: 0) {
                     Text(state.currentMonth.uppercased())
                         .font(.caption2.bold())
@@ -233,7 +274,7 @@ private struct HeaderClock: View {
             }
         case .long:
             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                timeText
+                timeText(timeSize)
                 Text(state.currentWeekdayLong)
                     .font(.headline)
                     .foregroundColor(Palette.textSecondary)
