@@ -1,0 +1,4 @@
+• Tavler med flere stopp enn det er plass til viser dem nå side for side og bytter hvert 15. sekund
+• Du kan nå endre rekkefølgen på stopp ved å dra dem, og hvert stopp har et håndtak i toppen som kan dras med en gang
+• Bedre plass i smale vinduer: knappene samles i en meny når det er trangt, og avgangstider brytes ikke lenger
+• Favorittstopp er nå begrenset til 6. Har du flere fra før, beholder du dem
