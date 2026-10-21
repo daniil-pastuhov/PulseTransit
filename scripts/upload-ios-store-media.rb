@@ -5,8 +5,8 @@
 #
 #   ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_P8="$(cat AuthKey.p8)" scripts/upload-ios-store-media.rb
 #
-# Files are named <device>_<n>_<scene>.jpg and <device>_preview.mp4, device being iphone (6.9")
-# or ipad (13"), in one folder per App Store locale.
+# Files are named <device>_<n>_<scene>.jpg and <device>_preview.mp4, device being iphone (6.9"),
+# ipad (13") or duo (iPhone Duo, screenshots only), in one folder per App Store locale.
 require "base64"
 require "digest"
 require "json"
@@ -15,7 +15,9 @@ require "openssl"
 
 ROOT = File.expand_path("..", __dir__)
 APP_ID = "6819282127"
-SCREENSHOT_TYPES = { "iphone" => "APP_IPHONE_67", "ipad" => "APP_IPAD_PRO_3GEN_129" }.freeze
+# APP_IPHONE_DUO is not in Apple's API reference yet, but works: one set of up to 10 screenshots,
+# taking both the inner and the outer display's sizes.
+SCREENSHOT_TYPES = { "iphone" => "APP_IPHONE_67", "ipad" => "APP_IPAD_PRO_3GEN_129", "duo" => "APP_IPHONE_DUO" }.freeze
 PREVIEW_TYPES = { "iphone" => "IPHONE_67", "ipad" => "IPAD_PRO_3GEN_129" }.freeze
 
 def token

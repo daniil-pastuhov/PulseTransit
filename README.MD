@@ -177,10 +177,9 @@ regenerate them when the UI changes:
 4. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the
    scripted tour (`-PTDemo YES`), from On the spot to the wall board, as a 29-second preview.
 5. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
-   editable App Store version. It skips the iPhone Duo set, which the App Store Connect API has no
-   documented display type for yet: upload those by hand. They are optional until April 2027,
-   when apps built with the iOS 27.1 SDK must include them; until then they earn the "optimized
-   for iPhone Duo" badge.
+   editable App Store version, the iPhone Duo set included. Duo screenshots are optional until
+   April 2027, when apps built with the iOS 27.1 SDK must include them; until then they earn the
+   "optimized for iPhone Duo" badge.
 6. `swift scripts/render-ios-store-header.swift <raw-dir> iosApp/fastlane/creative_assets` renders
    the "Header and Search Results" image (one universal 16:9 PNG per locale, iOS 27 and later).
    It is git-ignored for its size, and uploaded by hand on the version's Header and Search
