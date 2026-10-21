@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Generates the iOS string catalog from the Android string resources.
+"""Generates the iOS string catalog from the shared Compose string resources.
 
-app/src/main/res/values*/strings.xml stay the single source of truth for both apps: edit those,
+ui/src/commonMain/composeResources/values*/strings.xml (Android-format XML, used by the Android and
+desktop apps through Compose Multiplatform resources) stay the single source of truth: edit those,
 then run this script and commit the regenerated iosApp/iosApp/Localizable.xcstrings. Keys are the
 Android resource names; Swift looks them up with L("key", args...).
 
@@ -16,7 +17,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-RES = ROOT / "app/src/main/res"
+RES = ROOT / "ui/src/commonMain/composeResources"
 OUTPUT = ROOT / "iosApp/iosApp/Localizable.xcstrings"
 # Android resource qualifier -> Apple language code. English is the development language.
 LANGUAGES = {"values": "en", "values-nb": "nb"}

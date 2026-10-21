@@ -12,6 +12,10 @@ ktlint_function_naming_ignore_when_annotated_with = Composable
 # public counterpart for this rule to find.
 ktlint_standard_backing-property-naming = disabled
 
+# Compose resources are generated as one extension property per string (Res.string.<name>), each
+# needing its own import; the generated package is imported whole instead.
+ij_kotlin_packages_to_use_import_on_demand = com.example.pulsetransit.ui.resources.*
+
 # Generated code (Room's KSP output) is registered with the KMP source sets, so ktlint sees it.
 # It is not ours to format.
 [**/build/generated/**]

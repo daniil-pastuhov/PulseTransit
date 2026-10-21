@@ -115,20 +115,20 @@ private struct ThemeSection: View {
                 Text(L("auto_theme_thresholds")).font(.subheadline.bold())
                 OptionPicker(
                     title: L("auto_theme_dark"),
-                    options: [Float(10), 30, 50, 100].map { ($0, L("lux_value", Double($0))) },
+                    options: [Float(10), 30, 50, 100].map { ($0, L("lux_value", Int($0))) },
                     selection: state.autoThemeDarkLux,
                     onSelect: { viewModel.updateAutoThemeDarkLux(lux: $0) }
                 )
                 OptionPicker(
                     title: L("auto_theme_light"),
-                    options: [Float(100), 150, 200, 250].map { ($0, L("lux_value", Double($0))) },
+                    options: [Float(100), 150, 200, 250].map { ($0, L("lux_value", Int($0))) },
                     selection: state.autoThemeLightLux,
                     onSelect: { viewModel.updateAutoThemeLightLux(lux: $0) }
                 )
                 if let lux = state.currentLux {
                     // iOS has no public ambient light sensor, so this is an estimate; showing it lets
                     // the user pick thresholds that suit their room.
-                    Text(L("current_lux", Double(lux.floatValue)))
+                    Text(L("current_lux", Int(lux.floatValue.rounded())))
                         .font(.footnote)
                         .foregroundColor(.secondary)
                 }

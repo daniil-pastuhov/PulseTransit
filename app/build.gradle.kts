@@ -161,6 +161,8 @@ detekt {
 dependencies {
     // Data, cache, settings and ViewModels, shared with the iOS app.
     implementation(project(":shared"))
+    // The board's Compose UI and strings, shared with the desktop (Compose Hot Reload) app.
+    implementation(project(":ui"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)

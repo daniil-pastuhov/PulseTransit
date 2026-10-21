@@ -8,13 +8,23 @@ PulseTransit — an Android app (Kotlin, Jetpack Compose), with an iOS app (Swif
 
 ## Commands
 
-Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Two modules:
+Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Modules:
 
 - `:shared` — Kotlin Multiplatform library (Android + `iosArm64`/`iosSimulatorArm64`, framework
-  `Shared`): models, repositories, the Room cache, settings, both ViewModels and Koin's
-  `sharedModule`. `commonMain` holds everything platform-neutral; `androidMain`/`iosMain` hold the
-  platform implementations and each platform's Koin module.
-- `:app` — the Android app: Compose UI, theme, navigation, `MainActivity`. It depends on `:shared`.
+  `Shared`, + a `jvm("desktop")` target): models, repositories, the Room cache, settings, both
+  ViewModels and Koin's `sharedModule`. `commonMain` holds everything platform-neutral;
+  `androidMain`/`iosMain`/`desktopMain` hold the platform implementations and each platform's Koin
+  module (`desktopPlatformModule`: IP location, network-interface connectivity, no sensors).
+- `:ui` — Compose Multiplatform (Android + desktop JVM): all the screens (`MainScreen`,
+  `OnSpotContent`, `StopBoardPanel`, sheets, theme, mode selection, Settings) and **all strings**, as
+  Compose resources (`Res.string.x`, generated in `com.example.pulsetransit.ui.resources`, imported
+  whole). Only JVM targets, so `commonMain` may use `java.*`. What has no common API (permissions,
+  system bars, Play updates) is `expect`/`actual` in `ui/platform/PlatformEffects.kt`.
+- `:app` — the Android app: `MainActivity`, `Application`, Navigation 3. Depends on `:ui`.
+- `:desktopApp` — runs the board on the desktop for Compose Hot Reload: `./gradlew :desktopApp:hotRun --auto`
+  (edits to `:ui` and `:shared` reload live; resize the window to try phone/tablet widths). Seeds
+  Oslo S + Jernbanetorget on first run; settings persist in Java preferences. Location is by IP
+  address (`IpLocationProvider`, approximate only; `-Dpulsetransit.location=lat,lon` pins one).
 - `iosApp/` — the iOS app (SwiftUI, iOS 15+), an Xcode project, not a Gradle module. Its
   "Compile Kotlin Framework" build phase runs `scripts/build-shared-framework.sh`, which builds
   `Shared` with `:shared:embedAndSignAppleFrameworkForXcode`.
@@ -30,6 +40,8 @@ placeholder set per build type — a debug build reporting nothing is expected, 
 ./gradlew :shared:testAndroidHostTest    # unit tests (commonTest) on the JVM
 ./gradlew :shared:iosSimulatorArm64Test   # the same tests on the iOS simulator (macOS + Xcode)
 ./gradlew :shared:allTests                # both of the above
+./gradlew :shared:desktopTest   # desktop-only tests (desktopTest: IpLocationProvider)
+./gradlew :desktopApp:hotRun --auto       # the board on the desktop under Compose Hot Reload
 ./gradlew :shared:testAndroidHostTest --tests "*WeatherRepositoryImplTest*"  # single test class
 ./gradlew connectedDebugAndroidTest :shared:connectedAndroidDeviceTest  # instrumented tests (needs device/emulator)
 ./gradlew lintDebug :shared:lint          # Android lint
@@ -103,7 +115,9 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
 - Each screen gets its ViewModel through a `ViewModelOwner`, and **must call `owner.clear()` when the
   screen goes away** (`ScreenModel` in `iosApp/iosApp/Support/ScreenModel.swift` does it in `deinit`). Only that cancels `viewModelScope`; without it
   the board's clock and refresh loops keep running for the life of the app.
-- **Strings:** the Android `values*/strings.xml` files are the source of truth for both apps. After
+- **Strings:** `ui/src/commonMain/composeResources/values*/strings.xml` (Android-format XML) are the
+  source of truth for all apps. Formats must be positional `%1$s`/`%1$d` (Compose resources format
+  nothing else). Only `app_name` stays in `app/src/main/res` for the manifest. After
   editing them, run `scripts/sync-ios-strings.py` and commit the regenerated
   `iosApp/iosApp/Localizable.xcstrings` (CI fails if it is out of date). Swift looks strings up by the
   Android resource name: `L("last_updated", time)`. Info.plist texts live in `InfoPlist.xcstrings`.
@@ -129,4 +143,4 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
 
 - Auto-refresh loop with a dynamic interval: base interval multiplied ×5 during 00–05h and ×2 while the screen is dimmed (`calculateNextRefreshInterval`). Weather refreshes on its own 30-minute cadence inside the same loop.
 - Screen wake/dim driven by sensors: ambient light via `ui/sensors/SystemSensorManager` (which also drives the `AUTO` theme mode), camera-based motion detection via `ui/sensors/CameraMotionDetector` (CameraX on Android, AVFoundation in `iosApp/.../Platform/FrontCamera.swift`). Each platform only samples the camera's luminance; the motion decision and its thresholds are the shared `MotionFrameDiff`, so a `CameraSensitivity` level means the same on both. iOS has no public ambient light sensor: `EstimatedLightSource` derives lux from the camera's exposure while it runs, else from screen brightness, so `AUTO` on iOS is best-effort. `motionEvents()` is cold — the camera is open exactly while it is collected — and `MainScreen` drives it through `startCameraMotion()`/`stopCameraMotion()` from a `LifecycleStartEffect`. Both follow the same interface + `*Impl` convention as the repositories — the interfaces exist so `StopBoardViewModel` can be built on the JVM, since both implementations need a `Context`. The interfaces are in `commonMain`; register the `*Impl` in `androidPlatformModule` and depend on the interface.
-- OLED burn-in protection via `ui/pixelshift/PixelShift.kt` (in `:app`), configured by `BurnInProtectionLevel`. The offsets and timing come from the UI-free `PixelShiftSchedule`, so another platform can shift by the same rules.
+- OLED burn-in protection via `ui/pixelshift/PixelShift.kt` (in `:ui`), configured by `BurnInProtectionLevel`. The offsets and timing come from the UI-free `PixelShiftSchedule`, so another platform can shift by the same rules.

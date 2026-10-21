@@ -1,0 +1,282 @@
+<resources>
+    <string name="settings_title">Innstillinger</string>
+    <string name="back">Tilbake</string>
+    <string name="theme_settings">Tema</string>
+    <string name="day_night_mode">Dag/natt-modus</string>
+    <string name="refresh_interval">Oppdateringsintervall</string>
+    <string name="auto_update_schedule">Automatisk oppdateringsplan</string>
+    <string name="oled_screen_care">OLED-skjermbeskyttelse</string>
+    <string name="pixel_shift_level">Pikselforskyvning (hindrer innbrenning)</string>
+    <string name="power_refresh">Strøm og oppdatering</string>
+    <string name="wake_camera">Vekk skjerm med bevegelse (frontkamera)</string>
+    <string name="dynamic_refresh">Dynamisk oppdatering (tregere om natten/når tom)</string>
+    <string name="full_screen_mode">Fullskjermmodus (skjuler systemlinjer)</string>
+    <string name="always_on_display">Alltid på (forhindrer at skjermen slår seg av)</string>
+    <string name="transport_info">Transportinformasjon</string>
+    <string name="show_delays">Vis forsinkelser</string>
+    <string name="show_messages">Vis informasjonsmeldinger</string>
+    <string name="show_cancelled">Vis kansellerte avganger</string>
+    <string name="show_weather">Vis værmelding</string>
+    <string name="filter_out_line">Filtrer bort linje %1$s</string>
+    <string name="filtered_lines">Filtrerte linjer</string>
+    <string name="no_filtered_lines">For å filtrere bort en linje, trykk på en avgang på hovedskjermen og velg filtreringsvalget.</string>
+    <string name="location_config">Posisjonsinnstillinger</string>
+    <string name="current_coords">Nåværende koordinater</string>
+    <string name="latitude_val">Breddegrad: %1$s</string>
+    <string name="longitude_val">Lengdegrad: %1$s</string>
+    <string name="not_set">Ikke satt</string>
+    <string name="detect_location">Hent posisjon automatisk</string>
+    <string name="enter_manual">Skriv inn koordinater manuelt:</string>
+    <string name="latitude_label">Breddegrad</string>
+    <string name="longitude_label">Lengdegrad</string>
+    <string name="save_coords">Lagre koordinater</string>
+    <string name="add_stop_places">Legg til stoppesteder</string>
+    <string name="search_hint">Søk på navn…</string>
+    <string name="search_destination_hint">Holdeplass, adresse eller sted…</string>
+    <string name="nearby_stops">Stoppesteder i nærheten</string>
+    <string name="search_results">Søkeresultater</string>
+    <string name="no_stops_found">Ingen stoppesteder funnet</string>
+    <string name="remove">Fjern</string>
+    <string name="add">Legg til</string>
+    <string name="favorite_stops">Favoritter (%1$d)</string>
+    <string name="no_favorites">Ingen favoritter lagt til ennå</string>
+    <string name="directions_quays">Retninger / plattformer:</string>
+    <string name="showing_all_directions">Viser alle retninger</string>
+    <string name="platform_label">Plattform %1$s</string>
+    <string name="direction_id">Retning %1$s</string>
+    <string name="delete">Slett</string>
+    <string name="last_updated">Sist oppdatert: %1$s</string>
+    <string name="no_stops_configured">Ingen stoppesteder er konfigurert.</string>
+    <string name="open_settings_to_add">Åpne innstillinger for å legge til stopp</string>
+    <string name="no_departures">Ingen kommende avganger</string>
+    <plurals name="no_departures_extended">
+        <item quantity="one">Ingen avganger det neste %1$d døgnet</item>
+        <item quantity="other">Ingen avganger de neste %1$d dagene</item>
+    </plurals>
+    <string name="search_further_ahead">Søk lenger frem</string>
+    <string name="now">Nå</string>
+    <string name="cancelled">Kansellert</string>
+    <string name="unit_minute">min</string>
+    <!-- Shown after a row's times when more departures of the same line are not listed. -->
+    <string name="more_departures_hidden">+%1$d til</string>
+    <!-- A departure's details, opened by tapping its row. -->
+    <string name="details_every">Ca. hvert %1$d. min</string>
+    <string name="details_platform">Plattform %1$s</string>
+    <string name="details_live">Sanntid</string>
+    <string name="details_in_minutes">om %1$d min</string>
+    <string name="details_in_hours">om %1$d t %2$d min</string>
+    <string name="details_departures">Avganger</string>
+    <string name="details_route">Stopp for avgangen %1$s</string>
+    <string name="details_ride">%1$d min til %2$s</string>
+    <string name="details_route_unavailable">Ingen stoppliste for denne avgangen</string>
+    <!-- A route's details, opened by tapping a fastest route. -->
+    <string name="trip_details_title">Til %1$s</string>
+    <string name="trip_details_direct">Direkte</string>
+    <plurals name="trip_details_changes">
+        <item quantity="one">%1$d bytte</item>
+        <item quantity="other">%1$d bytter</item>
+    </plurals>
+    <string name="trip_details_walk_total">%1$d m gange</string>
+    <string name="trip_details_walk">Gå %1$d min</string>
+    <string name="trip_details_to_place">til %1$s</string>
+    <string name="trip_details_wait">Vent %1$d min</string>
+    <plurals name="trip_details_stops">
+        <item quantity="one">%1$d stopp</item>
+        <item quantity="other">%1$d stopp</item>
+    </plurals>
+    <string name="trip_details_show_stops">Vis stopp</string>
+    <string name="trip_details_hide_stops">Skjul stopp</string>
+    <string name="refresh">Oppdater</string>
+
+    <!-- Fastest Route -->
+    <string name="fastest_route_destination">Reisemål for raskeste rute</string>
+    <string name="no_destination_set">Ingen destinasjoner valgt</string>
+    <plurals name="max_destinations_reached">
+        <item quantity="one">Maksimalt %1$d destinasjon nådd. Fjern den for å legge til en ny.</item>
+        <item quantity="other">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</item>
+    </plurals>
+    <!-- Destination schedule -->
+    <string name="schedule_title">Når ruten vises</string>
+    <string name="schedule_hint">Ruten vises og oppdateres bare i dette tidsrommet.</string>
+    <string name="schedule_always">Alltid</string>
+    <string name="schedule_every_day">Hver dag</string>
+    <string name="schedule_weekdays">Hverdager</string>
+    <string name="schedule_weekend">Helg</string>
+    <string name="schedule_from">Fra</string>
+    <string name="schedule_to">Til</string>
+    <string name="schedule_no_days">Velg minst én dag</string>
+    <string name="schedule_summary">%1$s · %2$s–%3$s</string>
+    <string name="schedule_summary_next_day">%1$s · %2$s–%3$s neste dag</string>
+    <string name="schedule_summary_all_day">%1$s · hele dagen</string>
+    <string name="schedule_edit">Endre når %1$s vises</string>
+    <string name="save">Lagre</string>
+    <string name="cancel">Avbryt</string>
+    <string name="select">Velg</string>
+    <string name="loading_departures">Henter avganger…</string>
+    <string name="loading_fastest_route">Finner raskeste rute til %1$s…</string>
+    <string name="fastest_route_to">Raskest til %1$s</string>
+    <!-- %2$s er ankomsttiden, f.eks. "Raskest til Majorstuen 18:31" -->
+    <string name="fastest_route_to_arriving">Raskest til %1$s %2$s</string>
+    <string name="fastest_route_info">Linje %1$s fra %2$s</string>
+    <string name="leg_walk">🚶 %1$d min</string>
+    <string name="leg_from">fra %1$s</string>
+    <string name="duration_min">%1$d min</string>
+
+    <!-- Refresh Intervals -->
+    <string name="refresh_none">Ingen</string>
+    <string name="refresh_30s">30 sek</string>
+    <string name="refresh_1m">1 min</string>
+    <string name="refresh_2m">2 min</string>
+    <string name="refresh_5m">5 min</string>
+
+    <!-- Theme Modes -->
+    <string name="theme_system">System</string>
+    <string name="theme_light">Lys</string>
+    <string name="theme_dark">Mørk</string>
+    <string name="theme_auto">Auto</string>
+
+    <string name="auto_theme_thresholds">Lysnivå for automatisk tema (lux)</string>
+    <string name="auto_theme_dark">Mørkt under:</string>
+    <string name="auto_theme_light">Lyst over:</string>
+    <string name="lux_value">%1$d lux</string>
+    <string name="current_lux">Nå: %1$d lux</string>
+
+    <!-- Burn In Levels -->
+    <string name="burn_in_off">Av</string>
+    <string name="burn_in_low">Lav</string>
+    <string name="burn_in_medium">Middels</string>
+    <string name="burn_in_high">Høy</string>
+
+    <!-- Location Status -->
+    <string name="loc_not_requested">Ikke forespurt</string>
+    <string name="loc_requesting_gps">Forespør GPS (nøyaktig)…</string>
+    <string name="loc_requesting_network">GPS feilet. Forespør nettverk (omtrentlig)…</string>
+    <string name="loc_failed">Kunne ikke hente posisjon.</string>
+    <string name="loc_denied">Posisjonstilgang avslått.</string>
+    <string name="loc_error">Feil ved henting av posisjon: %1$s</string>
+    <string name="loc_success">Suksess via %1$s</string>
+    <string name="gps_source">GPS</string>
+    <string name="network_source">Nettverk</string>
+    <string name="loc_manual">Satt manuelt</string>
+    <string name="loc_invalid_format">Ugyldig format for manuelle koordinater.</string>
+
+    <!-- Auto-dim Delay -->
+    <string name="auto_dim_delay">Tid før autodimming</string>
+    <string name="auto_dim_hint">Tid før skjermen dimmes etter bevegelse</string>
+    <string name="dim_15s">15 sek</string>
+    <string name="dim_30s">30 sek</string>
+    <string name="dim_1m">1 min</string>
+    <string name="dim_2m">2 min</string>
+    <string name="dim_never">Aldri</string>
+
+    <!-- Front camera sensitivity -->
+    <string name="camera_sensitivity">Kamerafølsomhet</string>
+    <string name="camera_sensitivity_hint">Hvor mye bevegelse som skal til for å vekke skjermen</string>
+    <string name="sensitivity_low">Lav</string>
+    <string name="sensitivity_medium">Middels</string>
+    <string name="sensitivity_high">Høy</string>
+
+    <!-- Offline / cached data -->
+    <string name="error_no_internet">Ingen internettforbindelse</string>
+    <string name="error_entur_unreachable">Får ikke kontakt med Entur</string>
+    <string name="error_retrying_automatically">Prøver igjen automatisk</string>
+    <string name="retry">Prøv igjen</string>
+    <string name="fastest_route_unavailable">Raskeste rute til %1$s er utilgjengelig</string>
+    <string name="offline_no_internet_stale_data">Ingen internett — dataene er %1$d min gamle</string>
+    <string name="offline_stale_data">Frakoblet — dataene er %1$d min gamle</string>
+
+    <!-- Weather conditions (MET symbol codes) -->
+    <string name="weather_clear">Klarvær</string>
+    <string name="weather_fair">Lettskyet</string>
+    <string name="weather_partly_cloudy">Delvis skyet</string>
+    <string name="weather_cloudy">Skyet</string>
+    <string name="weather_fog">Tåke</string>
+    <string name="weather_light_rain">Lett regn</string>
+    <string name="weather_rain">Regn</string>
+    <string name="weather_heavy_rain">Kraftig regn</string>
+    <string name="weather_light_sleet">Lett sludd</string>
+    <string name="weather_sleet">Sludd</string>
+    <string name="weather_heavy_sleet">Kraftig sludd</string>
+    <string name="weather_light_snow">Lett snø</string>
+    <string name="weather_snow">Snø</string>
+    <string name="weather_heavy_snow">Kraftig snø</string>
+    <string name="weather_and_thunder">%1$s og torden</string>
+    <string name="weather_unknown">Ukjent</string>
+    <string name="weather_precipitation">%1$s mm nedbør</string>
+
+    <!-- Attribution -->
+    <string name="attribution_entur">Data fra Entur</string>
+    <string name="attribution_met">Værdata fra MET Norway</string>
+    <string name="change_date_style">Endre datovisning</string>
+    <!-- Modes -->
+    <string name="mode_choose_title">Hvordan vil du bruke PulseTransit?</string>
+    <string name="mode_choose_hint">Du kan endre dette senere i Innstillinger.</string>
+    <string name="mode_on_spot">Der du er</string>
+    <string name="mode_on_spot_description">Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested.</string>
+    <string name="mode_board">Veggtavle</string>
+    <string name="mode_board_description">En skjerm som alltid står på for stoppestedene du velger, med innbrenningsvern og dimming.</string>
+    <string name="settings_mode">Modus</string>
+    <!-- On the spot -->
+    <string name="locating_precise">Finner posisjonen din…</string>
+    <string name="locating_approximate">Finner omtrentlig posisjon…</string>
+    <string name="location_unavailable">Fant ikke posisjonen din.</string>
+    <string name="location_denied">Posisjonstilgang trengs for å vise reiser og stoppesteder der du er.</string>
+    <string name="location_allow">Gi posisjonstilgang</string>
+    <string name="distance_meters">%1$d m</string>
+    <string name="distance_kilometers">%1$s km</string>
+    <string name="back_to_nearest">Tilbake til nærmeste</string>
+    <string name="choose_stop">Velg stoppested</string>
+    <string name="no_stops_nearby">Ingen stoppesteder innen 1 km.</string>
+    <string name="routes_add_destination">Legg til et reisemål for å se reiser herfra.</string>
+    <string name="add_destination">Legg til reisemål</string>
+    <string name="search_route">Finn en reise</string>
+    <string name="search_route_no_results">Fant ingen steder</string>
+    <string name="save_destination">Lagre reisemål</string>
+    <string name="dismiss_route">Lukk reisen</string>
+    <string name="route_to">Til %1$s</string>
+    <string name="on_spot_routes">Reiser</string>
+    <string name="on_spot_resize">Dra for å endre størrelse</string>
+    <string name="on_spot_show_routes">Vis reiser</string>
+    <string name="on_spot_show_departures">Vis avganger</string>
+    <string name="route_arrival">ank. %1$s</string>
+    <string name="trip_options_title">Reisealternativer</string>
+    <string name="trip_options_hint">Hvor mange avganger som vises per reisemål. Auto viser så mange som får plass.</string>
+    <string name="trip_options_auto">Auto</string>
+    <string name="route_settings_title">Rutesøk</string>
+    <string name="route_preference">Foretrekk</string>
+    <string name="route_pref_fastest">Raskest</string>
+    <string name="route_pref_fewer_transfers">Færre bytter</string>
+    <string name="route_pref_less_walking">Mindre gåing</string>
+    <string name="route_modes">Reis med</string>
+    <string name="route_modes_hint">Rutene bruker bare de valgte transportmidlene.</string>
+    <string name="route_mode_tram">Trikk</string>
+    <string name="route_mode_metro">T-bane</string>
+    <string name="route_mode_plane">Fly</string>
+    <string name="filtered_lines_hint">Skjules fra avgangene og unngås i rutesøk.</string>
+    <string name="route_group_bus">Buss</string>
+    <string name="route_group_train">Tog</string>
+    <string name="route_group_boat">Båt</string>
+    <string name="route_group_other">Annet</string>
+    <string name="route_mode_local_bus">Lokalbuss</string>
+    <string name="route_mode_express_bus">Ekspressbuss</string>
+    <string name="route_mode_airport_bus">Flybuss</string>
+    <string name="route_mode_rail_replacement_bus">Buss for tog</string>
+    <string name="route_mode_local_train">Lokaltog</string>
+    <string name="route_mode_regional_train">Regiontog</string>
+    <string name="route_mode_long_distance_train">Fjerntog og nattog</string>
+    <string name="route_mode_express_train">Flytoget</string>
+    <string name="route_mode_car_ferry">Bilferje</string>
+    <string name="route_mode_passenger_ferry">Passasjerbåt</string>
+    <string name="route_mode_express_boat">Hurtigbåt</string>
+    <string name="route_mode_on_demand">Bestillingstransport</string>
+    <string name="route_mode_cable_car">Taubane og kabelbane</string>
+    <string name="route_modes_all">Alle</string>
+    <string name="route_modes_count">%1$d av %2$d</string>
+    <string name="walking_speed">Gangfart</string>
+    <string name="walking_speed_slow">Rolig</string>
+    <string name="walking_speed_normal">Normal</string>
+    <string name="walking_speed_fast">Rask</string>
+    <string name="update_available">En ny versjon av PulseTransit er tilgjengelig</string>
+    <string name="update_app">Oppdater</string>
+    <string name="dismiss_update">Ikke nå</string>
+</resources>

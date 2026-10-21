@@ -30,4 +30,4 @@ plugins {
 }
 
 rootProject.name = "PulseTransit"
-include(":shared", ":app")
+include(":shared", ":ui", ":app", ":desktopApp")

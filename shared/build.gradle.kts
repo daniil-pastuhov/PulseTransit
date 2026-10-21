@@ -42,6 +42,9 @@ kotlin {
         }
     }
 
+    // The desktop app (`:desktopApp`), which runs the board for Compose Hot Reload.
+    jvm("desktop")
+
     // Consumed by the iOS app as a static framework named `Shared`.
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
@@ -80,6 +83,11 @@ kotlin {
             implementation(libs.crashkios.crashlytics)
             implementation(libs.sqlite.bundled)
         }
+        getByName("desktopMain").dependencies {
+            implementation(libs.ktor.client.okhttp)
+            implementation(libs.sqlite.bundled)
+            implementation(libs.kotlinx.coroutines.swing)
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
@@ -105,7 +113,7 @@ kotlin {
 
 dependencies {
     // Room's generated code, per target that has a database.
-    listOf("kspAndroid", "kspIosArm64", "kspIosSimulatorArm64").forEach { add(it, libs.room.compiler) }
+    listOf("kspAndroid", "kspDesktop", "kspIosArm64", "kspIosSimulatorArm64").forEach { add(it, libs.room.compiler) }
     "coreLibraryDesugaring"(libs.desugar.jdk.libs)
 }
 
@@ -133,6 +141,7 @@ detekt {
         "src/commonMain/kotlin",
         "src/androidMain/kotlin",
         "src/iosMain/kotlin",
+        "src/desktopMain/kotlin",
         "src/commonTest/kotlin",
         "src/androidDeviceTest/kotlin",
         "src/iosTest/kotlin",

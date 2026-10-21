@@ -87,6 +87,8 @@ jobs:
               - '.github/**'
             android:
               - 'app/**'
+              - 'ui/**'
+              - 'desktopApp/**'
               - 'config/**'
               - 'scripts/sync-ios-strings.py'
               - 'scripts/stage-release-notes.sh'
@@ -97,6 +99,8 @@ jobs:
               - 'app/src/main/AndroidManifest.xml'
               - 'app/src/androidTest/**'
               - 'app/*.gradle.kts'
+              - 'ui/src/**'
+              - 'ui/*.gradle.kts'
             ios:
               - 'iosApp/**'
               - 'scripts/build-shared-framework.sh'
@@ -128,14 +132,14 @@ jobs:
       # --continue reports every tool's findings, not just the first one's.
       - name: Run Ktlint, Detekt and Lint
         id: static-analysis
-        run: ./gradlew ktlintCheck detekt lintDebug :shared:lint --continue --stacktrace
+        run: ./gradlew ktlintCheck detekt lintDebug :shared:lint :ui:lint :desktopApp:compileKotlin --continue --stacktrace
 
       # Runs even when static analysis failed, so one run reports both.
       - name: Run Unit Tests
         if: ${{ !cancelled() }}
         # The unit tests live in :shared's commonTest; this runs them on the JVM. The iOS run of the
         # same tests is in ios-build.
-        run: ./gradlew :shared:testAndroidHostTest testDebugUnitTest --stacktrace
+        run: ./gradlew :shared:testAndroidHostTest :shared:desktopTest testDebugUnitTest --stacktrace
 
       - name: Upload Static Analysis Reports
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
