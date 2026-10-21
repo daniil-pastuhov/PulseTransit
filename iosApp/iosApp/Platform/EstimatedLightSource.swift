@@ -31,6 +31,13 @@ final class EstimatedLightSource: NSObject, LightSource {
         if let lux = FrontCamera.shared.estimatedLux { return lux }
         // Brightness 0…1 mapped onto roughly 5…2000 lux on a log scale, so the default thresholds
         // (dark below 10, light above 100) fall where auto-brightness dims and brightens.
-        return 5 * pow(10, Double(UIScreen.main.brightness) * 2.6)
+        return 5 * pow(10, Double(activeScreen()?.brightness ?? 0.5) * 2.6)
+    }
+
+    /// The display the app is on now, rather than `UIScreen.main`: on iPhone Duo folding moves the
+    /// app between the outer and inner displays, and each has its own brightness.
+    private static func activeScreen() -> UIScreen? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return (scenes.first { $0.activationState == .foregroundActive } ?? scenes.first)?.screen
     }
 }

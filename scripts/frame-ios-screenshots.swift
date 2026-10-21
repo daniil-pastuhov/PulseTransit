@@ -71,8 +71,9 @@ func framed(_ shot: CGImage, caption: String) -> CGImage {
     let scale = min((w - 2 * margin) / w, (h - captionHeight - margin) / h)
     let shotSize = CGSize(width: w * scale, height: h * scale)
     let shotRect = CGRect(x: (w - shotSize.width) / 2, y: margin * 0.6, width: shotSize.width, height: shotSize.height)
+    // Sized by the shorter side, so a two-line caption still fits the band on a landscape shot.
     drawCaption(caption, in: CGRect(x: margin, y: h - captionHeight, width: w - 2 * margin, height: captionHeight * 0.9),
-                fontSize: w * 0.062, context: context)
+                fontSize: min(w, h) * 0.062, context: context)
 
     let corner = shotSize.width * 0.06
     let rounded = CGPath(roundedRect: shotRect, cornerWidth: corner, cornerHeight: corner, transform: nil)

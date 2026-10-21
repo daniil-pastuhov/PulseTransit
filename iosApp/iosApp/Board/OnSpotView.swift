@@ -362,7 +362,7 @@ private struct DestinationRoutesCard: View {
                 }
                 .padding(.vertical, 8)
                 .foregroundColor(Palette.textPrimary)
-                .background(Palette.primary.opacity(0.18))
+                .background(Palette.primary.opacity(0.18), ignoresSafeAreaEdges: .horizontal)
                 .overlay(alignment: .bottom) {
                     if isRefreshing { RefreshBar(color: Palette.textPrimary.opacity(0.6)) }
                 }

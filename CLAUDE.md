@@ -105,6 +105,13 @@ MVVM with Koin for DI. Wiring is split in two: `sharedModule` (`shared/src/commo
 picked up without editing `project.pbxproj`; versions and the bundle id live in
 `iosApp/Configuration/Config.xcconfig`. The deployment target is iOS 15, so no `@Observable` and no
 `NavigationStack`: screen models are `ObservableObject`s, and newer APIs go behind `#available`.
+iPhone Duo needs the iOS 27.1 SDK (CI pins Xcode 27.1). There the system puts bars in a column
+beside the content (folded, or unfolded in landscape) or in the status bar's row (unfolded in
+portrait), and `VerticalBarHost` (`Board/DisplayModifiers.swift`) moves the board's header into
+them as toolbar items: the buttons, then the date and weather (`BarHeader`), one item each and only
+what fits, since the bar centres an item taller than its slot and collapses when it overflows.
+Lay out from the space a view has, never `UIScreen.main`, the device idiom or orientation:
+folding resizes the app mid-session. (Size classes and the idiom only choose which bar to use.)
 The Swift side reaches Kotlin through SKIE, which turns a `StateFlow` into an `AsyncSequence` and
 sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
 - `PulseTransitIos.start(...)` (`shared/src/iosMain/.../di/PulseTransitIos.kt`) starts Koin, once at

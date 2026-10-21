@@ -302,14 +302,16 @@ jobs:
     name: "iOS: Build and Test"
     needs: changes
     if: needs.changes.outputs.ios == 'true'
-    runs-on: macos-latest
+    # Xcode 27.1 at least: only an app built with the iOS 27.1 SDK fills iPhone Duo's inner display
+    # (older SDKs get black borders), and from April 2027 such an app must ship Duo screenshots.
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          xcode-version: latest-stable
+          xcode-version: '27.1'
 
       - name: set up JDK 21
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
@@ -354,7 +356,8 @@ jobs:
   ios-testflight:
     name: "iOS: Upload to TestFlight"
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/v')
-    runs-on: macos-latest
+    # The same Xcode as ios-build, so the uploaded build is the one that fills iPhone Duo.
+    runs-on: xcode-27
     # Includes waiting for App Store Connect to process the build.
     timeout-minutes: 60
     environment: Release
@@ -368,7 +371,7 @@ jobs:
 
       - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          xcode-version: latest-stable
+          xcode-version: '27.1'
 
       - name: set up JDK 21
         uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
