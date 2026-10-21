@@ -69,23 +69,6 @@
         }
       }
     },
-    "app_name": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PulseTransit"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "PulseTransit"
-          }
-        }
-      }
-    },
     "attribution_entur": {
       "extractionState": "manual",
       "localizations": {
@@ -449,13 +432,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current: %1$.0f lux"
+            "value": "Current: %1$lld lux"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nå: %1$.0f lux"
+            "value": "Nå: %1$lld lux"
           }
         }
       }
@@ -1554,13 +1537,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$.0f lux"
+            "value": "%1$lld lux"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$.0f lux"
+            "value": "%1$lld lux"
           }
         }
       }

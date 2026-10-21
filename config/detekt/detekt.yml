@@ -123,6 +123,10 @@ naming:
       - '**/data/**'
 
 style:
+  WildcardImport:
+    # Compose resources are generated as one extension property per string; their package is
+    # imported whole (see .editorconfig).
+    excludeImports: ['com.example.pulsetransit.ui.resources.*']
   MagicNumber:
     # dp/sp sizes, canvas coordinates and colour components are clearer as
     # literals in place than as named constants far from where they are drawn.
