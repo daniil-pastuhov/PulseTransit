@@ -27,6 +27,6 @@ struct UpdateBanner: View {
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Palette.primary.opacity(0.12))
+        .background(Palette.primary.opacity(0.12), ignoresSafeAreaEdges: .horizontal)
     }
 }

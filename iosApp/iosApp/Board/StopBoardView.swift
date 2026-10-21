@@ -7,6 +7,7 @@ struct StopBoardView: View {
     @StateObject private var model = StopBoardModel()
     @StateObject private var updateModel = AppUpdateModel()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     // A launch argument (-PTOpenSettings YES) opens Settings straight away, so the screen can be
     // reached in a simulator without tapping; debug builds only.
     #if DEBUG
@@ -17,6 +18,8 @@ struct StopBoardView: View {
     /// The fastest route whose details are open.
     @State private var detailsTrip: TripSelection?
     @State private var showRouteSearch = false
+    /// The board's size, for how much of the header fits in iPhone Duo's bar.
+    @State private var boardSize = CGSize.zero
 
     var body: some View {
         let state = model.state
@@ -24,40 +27,28 @@ struct StopBoardView: View {
         // Dimmed means unattended: dark, nearly transparent, and any tap wakes it.
         let scheme: ColorScheme? = state.isScreenDimmed ? .dark : state.activeTheme.colorScheme
 
-        ZStack {
-            (state.isScreenDimmed ? Color.black : Palette.background).ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                BoardHeader(
-                    state: state,
-                    onCycleDateStyle: { viewModel.cycleDateStyle() },
-                    onRefresh: { viewModel.refreshData() },
-                    onSearchRoute: { showRouteSearch = true },
-                    onOpenSettings: { showSettings = true }
-                )
-                // Its own anchor: two sheets on one view do not both present on iOS 15.
-                .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
-                    RouteSearchView(state: model.state, viewModel: viewModel)
-                }
-                if let update = updateModel.state.update {
-                    UpdateBanner(update: update, onDismiss: { updateModel.viewModel.dismiss() })
-                }
-                if state.mode == .onSpot {
-                    OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })
-                } else {
-                    boardBody(state: state, viewModel: viewModel)
-                }
-                BoardFooter(state: state)
-            }
-            .opacity(state.isScreenDimmed ? 0.05 : 1)
-            .pixelShift(state.burnInLevel)
-
-            if state.isScreenDimmed {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .ignoresSafeArea()
-                    .onTapGesture { viewModel.wakeScreen() }
-            }
+        VerticalBarHost(
+            isFullScreen: state.isFullScreenMode,
+            allowsBar: !state.isScreenDimmed,
+            layoutID: [Int(boardSize.width), Int(boardSize.height), verticalSizeClass == .compact ? 1 : 0]
+        ) { placement in
+            board(state: state, viewModel: viewModel, showsHeader: placement == .none)
+        } actions: {
+            BoardActionButtons(
+                onRefresh: { viewModel.refreshData() },
+                onSearchRoute: { showRouteSearch = true },
+                onOpenSettings: { showSettings = true },
+                shift: state.burnInLevel
+            )
+        } info: { placement in
+            BarHeader.items(
+                placement: placement,
+                state: state,
+                displaySize: boardSize,
+                // Landscape on a phone, where iOS hides the status bar and its clock.
+                showsClock: verticalSizeClass == .compact,
+                onCycleDateStyle: { viewModel.cycleDateStyle() }
+            )
         }
         .preferredColorScheme(scheme)
         .statusBarHidden(state.isFullScreenMode)
@@ -100,6 +91,61 @@ struct StopBoardView: View {
         }) {
             SettingsView(themeMode: state.themeMode)
                 .pageSizedSheet()
+        }
+    }
+
+    /// The board itself; `showsHeader` is false while the header sits in iPhone Duo's bar.
+    @ViewBuilder
+    private func board(state: StopBoardViewModel.UiState, viewModel: StopBoardViewModel, showsHeader: Bool) -> some View {
+        ZStack {
+            (state.isScreenDimmed ? Color.black : Palette.background).ignoresSafeArea()
+                .background(GeometryReader { geometry in
+                    Color.clear
+                        .onAppear { boardSize = geometry.size }
+                        .onChange(of: geometry.size) { boardSize = $0 }
+                })
+
+            VStack(spacing: 0) {
+                // In iPhone Duo's side bar, the header's clock, weather and buttons are there instead.
+                if showsHeader {
+                    BoardHeader(
+                        state: state,
+                        onCycleDateStyle: { viewModel.cycleDateStyle() },
+                        onRefresh: { viewModel.refreshData() },
+                        onSearchRoute: { showRouteSearch = true },
+                        onOpenSettings: { showSettings = true }
+                    )
+                }
+                if let update = updateModel.state.update {
+                    UpdateBanner(update: update, onDismiss: { updateModel.viewModel.dismiss() })
+                }
+                if state.mode == .onSpot {
+                    OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })
+                } else {
+                    boardBody(state: state, viewModel: viewModel)
+                }
+                BoardFooter(state: state)
+            }
+            // With the header in iPhone Duo's top row, that row keeps the header's colour.
+            .background(alignment: .top) {
+                if !showsHeader {
+                    Palette.surface.frame(height: 0).ignoresSafeArea(edges: .top)
+                }
+            }
+            // Its own anchor: two sheets on one view do not both present on iOS 15. Not on the
+            // header, which is not there while it is in the side bar.
+            .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
+                RouteSearchView(state: model.state, viewModel: viewModel)
+            }
+            .opacity(state.isScreenDimmed ? 0.05 : 1)
+            .pixelShift(state.burnInLevel)
+
+            if state.isScreenDimmed {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture { viewModel.wakeScreen() }
+            }
         }
     }
 

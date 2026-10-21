@@ -10,10 +10,8 @@ struct WeatherStrip: View {
             // Fit only as many columns as the width allows, sampling evenly when there are more
             // hours than columns, like the Android header.
             let maxItems = max(1, min(8, Int(geometry.size.width / 56)))
-            let step = weather.count > maxItems ? weather.count / maxItems : 1
-            let shown = weather.enumerated().filter { $0.offset % step == 0 }.prefix(maxItems).map(\.element)
             HStack(alignment: .top, spacing: 0) {
-                ForEach(shown, id: \.time) { hour in
+                ForEach(sampledHours(weather, maxItems: maxItems), id: \.time) { hour in
                     WeatherItem(weather: hour)
                         .frame(maxWidth: .infinity)
                 }
@@ -24,40 +22,74 @@ struct WeatherStrip: View {
     }
 }
 
+/// The hourly forecast for iPhone Duo's bar, `count` hours sampled like the header's, one view
+/// each: stacked for the side column, or `compact` (the icon beside the temperature) for the top
+/// row, which is a bar's height. The condition is left out, too long for either; the icon still
+/// gives it to VoiceOver.
+enum WeatherColumn {
+    static func hours(_ weather: [WeatherInfo], count: Int, compact: Bool) -> [some View] {
+        sampledHours(weather, maxItems: count).map { WeatherItem(weather: $0, showsCondition: false, isCompact: compact).fixedSize() }
+    }
+}
+
+/// At most `maxItems` hours, sampled evenly when there are more.
+private func sampledHours(_ weather: [WeatherInfo], maxItems: Int) -> [WeatherInfo] {
+    let step = weather.count > maxItems ? weather.count / maxItems : 1
+    return weather.enumerated().filter { $0.offset % step == 0 }.prefix(maxItems).map(\.element)
+}
+
 private struct WeatherItem: View {
     let weather: WeatherInfo
+    var showsCondition = true
+    var isCompact = false
 
     var body: some View {
         let symbol = WeatherSymbolKt.parseWeatherSymbol(symbolCode: weather.symbolCode)
         let label = weatherLabel(symbol)
-        VStack(spacing: 2) {
-            Text(hourText)
-                .font(.caption2)
-                .foregroundColor(Palette.textPrimary.opacity(0.8))
-                .lineLimit(1)
-            // Palette rather than multicolor: multicolor clouds are white and vanish on a light
-            // header. Clouds follow the theme, like Android's icon; sun, rain and snow keep colour.
-            let colors = symbol.sfSymbolColors
-            Image(systemName: symbol.sfSymbolName)
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(colors.primary, colors.secondary)
-                .font(.system(size: 22))
-                .frame(height: 26)
-                .accessibilityLabel(label)
-            HStack(spacing: 3) {
-                Text("\(Int(weather.temperature.rounded()))°")
-                    .font(.body.bold())
-                    .foregroundColor(Palette.temperature(weather.temperature))
+        // Palette rather than multicolor: multicolor clouds are white and vanish on a light
+        // header. Clouds follow the theme, like Android's icon; sun, rain and snow keep colour.
+        let colors = symbol.sfSymbolColors
+        let icon = Image(systemName: symbol.sfSymbolName)
+            .symbolRenderingMode(.palette)
+            .foregroundStyle(colors.primary, colors.secondary)
+            .accessibilityLabel(label)
+        let temperature = Text("\(Int(weather.temperature.rounded()))°")
+            .foregroundColor(Palette.temperature(weather.temperature))
+            .lineLimit(1)
+        if isCompact {
+            VStack(spacing: 0) {
+                Text(hourText)
+                    .font(.system(size: 9))
+                    .foregroundColor(Palette.textPrimary.opacity(0.8))
                     .lineLimit(1)
-                PrecipitationBar(millimetres: weather.precipitation)
-                    .frame(width: 4, height: 16)
-                    .accessibilityLabel(L("weather_precipitation", String(weather.precipitation)))
+                HStack(spacing: 3) {
+                    icon.font(.system(size: 15))
+                    temperature.font(.subheadline.bold())
+                }
             }
-            Text(label)
-                .font(.system(size: 9))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .foregroundColor(Palette.textPrimary.opacity(0.6))
+        } else {
+            VStack(spacing: 2) {
+                Text(hourText)
+                    .font(.caption2)
+                    .foregroundColor(Palette.textPrimary.opacity(0.8))
+                    .lineLimit(1)
+                icon
+                    .font(.system(size: 22))
+                    .frame(height: 26)
+                HStack(spacing: 3) {
+                    temperature.font(.body.bold())
+                    PrecipitationBar(millimetres: weather.precipitation)
+                        .frame(width: 4, height: 16)
+                        .accessibilityLabel(L("weather_precipitation", String(weather.precipitation)))
+                }
+                if showsCondition {
+                    Text(label)
+                        .font(.system(size: 9))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .foregroundColor(Palette.textPrimary.opacity(0.6))
+                }
+            }
         }
     }
 

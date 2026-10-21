@@ -27,7 +27,9 @@ struct FastestTripBanner: View {
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Palette.primary.opacity(0.18))
+        // Edge to edge sideways, under iPhone Duo's side bar too, but not up into the status bar's
+        // row when the banner is the board's top (the header being in iPhone Duo's bar).
+        .background(Palette.primary.opacity(0.18), ignoresSafeAreaEdges: .horizontal)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
         .overlay(alignment: .bottom) {
@@ -90,7 +92,7 @@ struct FastestTripPlaceholder: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .background(Palette.primary.opacity(0.18))
+        .background(Palette.primary.opacity(0.18), ignoresSafeAreaEdges: .horizontal)
         .modifier(PlaceholderPulse(pulse: $pulse))
     }
 }
