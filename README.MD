@@ -170,8 +170,12 @@ regenerate them when the UI changes:
 
 1. Build the Debug app for a simulator and boot an iPhone 17 Pro Max and an iPad Pro 13-inch (and
    an iPhone Duo, unfolded in portrait in Device Hub; `<device-name>` is then `duo`).
-2. `scripts/capture-ios-screenshots.sh <udid> <PulseTransit.app> <raw-dir> <en-GB|no> <iphone|ipad>`
+2. `scripts/capture-ios-screenshots.sh <udid> <PulseTransit.app> <raw-dir> <en-GB|no> <iphone|ipad|duo>`
    seeds a set of Oslo stops and captures On the spot, the board (light and dark) and Settings.
+   For more iPhone Duo poses, fold or rotate it in Device Hub (simctl cannot) and run again with
+   the pose's name as a sixth argument, e.g. `SCREEN=1 SCENES="board_light board_dark" … duo outer`
+   for the folded outer display. The pose goes into the file names, so all poses share one set,
+   of at most 10 screenshots.
 3. `swift scripts/frame-ios-screenshots.swift <raw-dir> iosApp/fastlane/screenshots` adds the
    captions (in the script) on the icon's gradient.
 4. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the

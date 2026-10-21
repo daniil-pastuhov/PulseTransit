@@ -5,8 +5,9 @@
 #
 #   ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_P8="$(cat AuthKey.p8)" scripts/upload-ios-store-media.rb
 #
-# Files are named <device>_<n>_<scene>.jpg and <device>_preview.mp4, device being iphone (6.9"),
-# ipad (13") or duo (iPhone Duo, screenshots only), in one folder per App Store locale.
+# Files are named <device>_<n>_<scene>.jpg (with a -<pose> suffix for another iPhone Duo pose) and
+# <device>_preview.mp4, device being iphone (6.9"), ipad (13") or duo (iPhone Duo, screenshots
+# only), in one folder per App Store locale. They go up in name order.
 require "base64"
 require "digest"
 require "json"
@@ -76,6 +77,13 @@ def fresh_set(localization_id, sets_path, set_type, type_attribute, type_value, 
   end
   api(:post, "/v1/#{set_type}", { data: { type: set_type, attributes: { type_attribute => type_value },
     relationships: { appStoreVersionLocalization: { data: { type: "appStoreVersionLocalizations", id: localization_id } } } } })["data"]["id"]
+end
+
+# Checked before anything is replaced, so an oversized set leaves the version's media as it was.
+SCREENSHOT_TYPES.each_key do |device|
+  Dir[File.join(ROOT, "iosApp/fastlane/screenshots", "*", "#{device}_*.{jpg,png}")].group_by { |f| File.dirname(f) }.each do |dir, files|
+    abort "#{File.basename(dir)}: #{files.size} #{device} screenshots, App Store Connect takes at most 10" if files.size > 10
+  end
 end
 
 version = api(:get, "/v1/apps/#{APP_ID}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"].first
