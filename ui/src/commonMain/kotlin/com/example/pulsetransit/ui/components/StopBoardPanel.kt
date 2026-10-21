@@ -25,10 +25,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -119,6 +122,9 @@ private const val LOAD_MORE_THRESHOLD = 3
  * [isLoadingMore] is that page in flight, shown as a spinner at the end of the list only. Tapping a
  * row opens its line's details, which list every loaded departure the row leaves out.
  * [header] replaces the stop's name and locality, as on-spot mode does with its stop picker.
+ * [onDetailsOpenChange] reports when those details open and close, so a board taking turns
+ * through its stops can hold the page they were opened from. [dragHandle], where the panel can be
+ * moved, shows a grip in the header with that modifier, which does the dragging.
  */
 @Composable
 fun StopBoardPanel(
@@ -139,11 +145,15 @@ fun StopBoardPanel(
     onLoadMore: () -> Unit = {},
     loadJourney: suspend (Departure) -> List<JourneyStop> = { emptyList() },
     onRowCapacity: (Int) -> Unit = {},
+    onDetailsOpenChange: (Boolean) -> Unit = {},
+    dragHandle: Modifier? = null,
     header: (@Composable RowScope.() -> Unit)? = null,
 ) {
     // The tapped row, captured at the tap. The details follow refreshes through departuresLike,
     // which gathers the line's current departures and falls back to these once they have all gone.
     var detailsGroup by remember { mutableStateOf<DepartureGroup?>(null) }
+    val detailsOpen = detailsGroup != null
+    LaunchedEffect(detailsOpen) { onDetailsOpenChange(detailsOpen) }
     detailsGroup?.let { group ->
         DepartureDetailsSheet(
             stopName = stopPlace.name,
@@ -205,6 +215,18 @@ fun StopBoardPanel(
                             )
                         }
                     }
+                }
+                dragHandle?.let { handle ->
+                    Icon(
+                        imageVector = Icons.Default.DragIndicator,
+                        contentDescription = stringResource(Res.string.drag_to_reorder),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier =
+                            Modifier
+                                .padding(start = 8.dp)
+                                .size(24.dp)
+                                .then(handle),
+                    )
                 }
             }
 
@@ -538,6 +560,9 @@ fun DepartureRow(
                 // Right-aligned in a column of its own width, so "Now" and "12m" end in line.
                 textAlign = TextAlign.End,
                 modifier = Modifier.widthIn(min = if (isWide) WIDE_PRIMARY_TIME_WIDTH else 0.dp).padding(end = 4.dp),
+                // Never broken over lines: in a very narrow panel "Now" wrapped to "No" over "w".
+                maxLines = 1,
+                softWrap = false,
             )
         }
 

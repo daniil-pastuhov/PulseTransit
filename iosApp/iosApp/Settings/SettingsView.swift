@@ -411,9 +411,15 @@ private struct AddStopsSection: View {
         let showNearby = state.query.trimmingCharacters(in: .whitespaces).isEmpty
         let stops = showNearby ? state.nearbyStops : state.searchResults
         let isLoading = showNearby ? state.isSearchingNearby : state.isSearching
+        let max = Int(SettingsRepositoryCompanion.shared.MAX_FAVORITE_STOPS)
+        let canAdd = state.favorites.count < max
         Section(L("add_stop_places")) {
             TextField(L("search_hint"), text: binding(state.query) { viewModel.onQueryChanged(newQuery: $0) })
                 .disableAutocorrection(true)
+            // Search stays open when full, since its results can still remove a stop.
+            if !canAdd {
+                Text(L("max_favorite_stops_reached", max)).font(.footnote).foregroundColor(.secondary)
+            }
             if isLoading && stops.isEmpty {
                 ProgressView()
             } else if !stops.isEmpty {
@@ -429,6 +435,7 @@ private struct AddStopsSection: View {
                         } else {
                             Button(L("add")) { viewModel.addFavorite(stopPlace: stop) }
                                 .buttonStyle(.borderedProminent)
+                                .disabled(!canAdd)
                         }
                     }
                 }

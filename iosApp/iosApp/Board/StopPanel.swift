@@ -30,6 +30,12 @@ struct StopPanel: View {
     var header: AnyView?
     /// Told how many rows the list shows without scrolling, so the stop asks for enough to fill it.
     var onRowCapacity: (Int) -> Void = { _ in }
+    /// Told when a departure's details open and close, so a board taking turns through its stops
+    /// can hold the page they were opened from.
+    var onDetailsOpenChange: (Bool) -> Void = { _ in }
+    /// Shows a grip in the header, where the panel can be dragged to reorder (with a long press,
+    /// as iOS lifts anything it drags).
+    var showsDragHandle = false
 
     /// Whether the end-of-list sentinel is on screen; scrolling while it is asks for a page.
     @State private var isAtEnd = false
@@ -42,14 +48,23 @@ struct StopPanel: View {
             if let header {
                 header
             } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(stop.name)
-                        .font(.title3.bold())
-                        .lineLimit(1)
-                    if let locality = stop.locality {
-                        Text(locality)
-                            .font(.subheadline)
-                            .foregroundColor(Palette.textSecondary)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(stop.name)
+                            .font(.title3.bold())
+                            .lineLimit(1)
+                        if let locality = stop.locality {
+                            Text(locality)
+                                .font(.subheadline)
+                                .foregroundColor(Palette.textSecondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    if showsDragHandle {
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundColor(Palette.textSecondary.opacity(0.6))
+                            .padding(.top, 4)
+                            .accessibilityLabel(L("drag_to_reorder"))
                     }
                 }
             }
@@ -82,6 +97,7 @@ struct StopPanel: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface).shadow(color: .black.opacity(0.08), radius: 2, y: 1))
         .padding(6)
+        .onChange(of: detailsGroup != nil) { onDetailsOpenChange($0) }
         .sheet(isPresented: Binding(get: { detailsGroup != nil }, set: { if !$0 { detailsGroup = nil } })) {
             if let group = detailsGroup {
                 DepartureDetailsView(

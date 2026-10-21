@@ -7,23 +7,61 @@ struct FastestTripBanner: View {
     var isRefreshing = false
     let onTap: () -> Void
 
-    var body: some View {
-        HStack(spacing: 16) {
-            Text(departureTime)
-                .font(.title2.bold())
-                .monospacedDigit()
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline)
-                Text(routeText)
-                    .font(.subheadline)
-                    .opacity(0.8)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Text(L("duration_min", Int(trip.durationMinutes)))
+    /// The banner's width, for whether it stacks its title (`BoardLayout.isCompactBanner`).
+    @State private var width: CGFloat = .infinity
+
+    private var timeText: some View {
+        Text(departureTime)
+            .font(.title2.bold())
+            .monospacedDigit()
+            .lineLimit(1)
+    }
+
+    private var durationText: some View {
+        Text(L("duration_min", Int(trip.durationMinutes)))
+            .font(.headline)
+            .lineLimit(1)
+    }
+
+    private var titleAndRoute: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
                 .font(.headline)
+                .lineLimit(2)
+            Text(routeText)
+                .font(.subheadline)
+                .opacity(0.8)
+                .lineLimit(1)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    var body: some View {
+        Group {
+            if BoardLayout.shared.isCompactBanner(widthDp: Float(width)) {
+                // Too narrow for the title between the time and the duration: it goes under them.
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        timeText
+                        Spacer()
+                        durationText
+                    }
+                    titleAndRoute
+                }
+            } else {
+                HStack(spacing: 16) {
+                    timeText
+                    titleAndRoute
+                    durationText
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(GeometryReader { geometry in
+            Color.clear
+                .onAppear { width = geometry.size.width }
+                .onChange(of: geometry.size.width) { width = $0 }
+        })
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)

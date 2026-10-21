@@ -1,6 +1,7 @@
 package com.example.pulsetransit.data
 
 import com.russhwolf.settings.MapSettings
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -63,6 +64,23 @@ class SettingsRepositoryImplTest {
         repo.addDestinationStation(StopPlace(id = "NSR:StopPlace:1", name = "Oslo S"))
 
         assertEquals(AppMode.BOARD, SettingsRepositoryImpl(store).getAppMode())
+    }
+
+    @Test
+    fun `favorite stops stop at the maximum`() {
+        repeat(SettingsRepository.MAX_FAVORITE_STOPS + 1) { repo.addFavorite(StopPlace(id = "NSR:StopPlace:$it", name = "Stop $it")) }
+
+        assertEquals(SettingsRepository.MAX_FAVORITE_STOPS, repo.getFavorites().size)
+    }
+
+    @Test
+    fun `stops saved before the maximum are kept`() {
+        val stops = List(SettingsRepository.MAX_FAVORITE_STOPS + 2) { StopPlace(id = "NSR:StopPlace:$it", name = "Stop $it") }
+        store.putString("favorites", Json.encodeToString(stops))
+
+        repo.addFavorite(StopPlace(id = "NSR:StopPlace:new", name = "New"))
+
+        assertEquals(stops, repo.getFavorites())
     }
 
     @Test

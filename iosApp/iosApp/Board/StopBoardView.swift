@@ -210,20 +210,20 @@ struct StopBoardView: View {
         if state.favorites.isEmpty {
             EmptyBoard(onOpenSettings: { showSettings = true })
         } else {
-            // Columns by the shared rules for the space the panels have. Read from the layout
-            // rather than the screen, so an iPad rotation (regular size class both ways) re-lays it out.
+            // Pages by the shared rules for the space the panels have: one when every stop fits,
+            // else the board takes turns. Read from the layout rather than the screen, so an iPad
+            // rotation (regular size class both ways) re-lays it out.
             GeometryReader { geometry in
-                let count = Int32(state.favorites.count)
-                let columns = BoardLayout.shared.columns(
-                    stopCount: count,
+                let pageSizes = BoardLayout.shared.pageSizes(
+                    stopCount: Int32(state.favorites.count),
                     widthDp: Float(geometry.size.width),
                     heightDp: Float(geometry.size.height)
-                )
-                StopPanels(
-                    state: state,
-                    viewModel: viewModel,
-                    columnSizes: BoardLayout.shared.columnSizes(stopCount: count, columns: columns).map(\.intValue)
-                )
+                ).map(\.intValue)
+                if pageSizes.count > 1 {
+                    PagedStopPanels(state: state, viewModel: viewModel, pageSizes: pageSizes, paused: state.isScreenDimmed)
+                } else {
+                    StopPanels(state: state, viewModel: viewModel, firstIndex: 0, count: state.favorites.count)
+                }
             }
             .padding(6)
         }
@@ -308,28 +308,161 @@ private struct EmptyBoard: View {
     }
 }
 
-/// One panel per favourite, in columns of `columnSizes` panels each, filled in order and sharing
-/// the space equally. A long press drags a panel to reorder the favourites, as on Android.
+/// The favourite stops' panels a page at a time, for a board where they do not all fit. The page
+/// turns every `PAGE_INTERVAL_MS`, and `BoardPageIndicator` below says which stops are up, how many
+/// there are and when the next page comes, as on Android. Turning holds while `paused` (the dimmed
+/// screen) and while a departure's details are open, since turning would close them; a swipe to
+/// another page, or a drag to reorder, starts the full interval again.
+private struct PagedStopPanels: View {
+    let state: StopBoardViewModel.UiState
+    let viewModel: StopBoardViewModel
+    let pageSizes: [Int]
+    let paused: Bool
+    @State private var page = 0
+    @State private var progress: CGFloat = 0
+    @State private var openDetails = Set<String>()
+    /// Bumped by a drag, to start the current page's interval again.
+    @State private var restarts = 0
+
+    private struct Turn: Hashable {
+        let page: Int
+        let pageCount: Int
+        let paused: Bool
+        let restarts: Int
+    }
+
+    var body: some View {
+        let starts = pageSizes.reduce(into: [0]) { $0.append($0[$0.count - 1] + $1) }
+        let current = min(page, pageSizes.count - 1)
+        let isPaused = paused || !openDetails.isEmpty
+        VStack(spacing: 0) {
+            TabView(selection: $page) {
+                ForEach(pageSizes.indices, id: \.self) { index in
+                    StopPanels(
+                        state: state,
+                        viewModel: viewModel,
+                        firstIndex: starts[index],
+                        count: pageSizes[index],
+                        onDetailsOpenChange: { stopId, open in
+                            if open { openDetails.insert(stopId) } else { openDetails.remove(stopId) }
+                        },
+                        onDragStart: { restarts += 1 }
+                    )
+                    .tag(index)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            BoardPageIndicator(
+                page: current,
+                pageCount: pageSizes.count,
+                firstStop: starts[current] + 1,
+                lastStop: starts[current] + pageSizes[current],
+                stopCount: state.favorites.count,
+                paused: isPaused,
+                progress: progress
+            )
+            .frame(height: CGFloat(BoardLayout.shared.PAGE_INDICATOR_HEIGHT_DP))
+        }
+        .onChange(of: pageSizes.count) { count in page = min(page, count - 1) }
+        .task(id: Turn(page: current, pageCount: pageSizes.count, paused: isPaused, restarts: restarts)) {
+            var reset = Transaction()
+            reset.disablesAnimations = true
+            withTransaction(reset) { progress = 0 }
+            guard !isPaused else { return }
+            // A frame at zero first, so the fill animates from the start rather than from where it was.
+            try? await Task.sleep(nanoseconds: 50_000_000)
+            guard !Task.isCancelled else { return }
+            let interval = Double(BoardLayout.shared.PAGE_INTERVAL_MS) / 1000
+            withAnimation(.linear(duration: interval)) { progress = 1 }
+            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            withAnimation { page = (current + 1) % pageSizes.count }
+        }
+    }
+}
+
+/// Which stops the page shows ("Stops 3–4 of 6") beside a segment per page; the current page's
+/// segment fills over its interval, so the board reads as turning by itself, and when it will.
+private struct BoardPageIndicator: View {
+    let page: Int
+    let pageCount: Int
+    let firstStop: Int
+    let lastStop: Int
+    let stopCount: Int
+    let paused: Bool
+    let progress: CGFloat
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(firstStop == lastStop ? L("board_page_stop", firstStop, stopCount) : L("board_page_stops", firstStop, lastStop, stopCount))
+                .font(.caption2)
+                .foregroundColor(Palette.textSecondary)
+                .lineLimit(1)
+            HStack(spacing: 4) {
+                ForEach(0 ..< pageCount, id: \.self) { index in
+                    Capsule()
+                        .fill(Palette.textPrimary.opacity(0.15))
+                        .overlay(alignment: .leading) {
+                            if index == page {
+                                GeometryReader { geometry in
+                                    Capsule()
+                                        .fill(Palette.primary)
+                                        .frame(width: geometry.size.width * progress)
+                                }
+                            }
+                        }
+                        .frame(width: 20, height: 4)
+                        .clipShape(Capsule())
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            paused
+                ? L("board_page_paused", page + 1, pageCount)
+                : L("board_page_description", page + 1, pageCount, Int(BoardLayout.shared.PAGE_INTERVAL_MS / 1000))
+        )
+    }
+}
+
+/// `count` favourites from `firstIndex`, in columns by the shared rules for the space they have,
+/// filled in order and sharing it equally. A long press drags a panel to reorder the favourites,
+/// as on Android, within the page it is on.
 private struct StopPanels: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
-    let columnSizes: [Int]
+    let firstIndex: Int
+    let count: Int
+    var onDetailsOpenChange: (String, Bool) -> Void = { _, _ in }
+    var onDragStart: () -> Void = {}
     // Which panel a drag started from. Set afresh by every drag and only read when a drop lands
     // on another panel. A cancelled drag leaves it set until the next one; the only effect is that
     // a text drop from another app onto a panel would then reorder, which is harmless.
     @State private var dragging: String?
 
     var body: some View {
-        let favorites = Array(state.favorites.enumerated())
-        let columns = columnSizes.indices.map { column -> [(offset: Int, element: StopPlace)] in
-            let first = columnSizes[..<column].reduce(0, +)
-            return Array(favorites[first ..< min(first + columnSizes[column], favorites.count)])
-        }
-        HStack(spacing: 0) {
-            ForEach(columns, id: \.first?.element.id) { column in
-                VStack(spacing: 0) {
-                    ForEach(column, id: \.element.id) { index, stop in
-                        panel(index: index, stop: stop)
+        GeometryReader { geometry in
+            let columnSizes = BoardLayout.shared.columnSizes(
+                stopCount: Int32(count),
+                columns: BoardLayout.shared.columns(
+                    stopCount: Int32(count),
+                    widthDp: Float(geometry.size.width),
+                    heightDp: Float(geometry.size.height)
+                )
+            ).map(\.intValue)
+            let end = min(firstIndex + count, state.favorites.count)
+            let favorites = Array(state.favorites.enumerated())[firstIndex ..< end].map { $0 }
+            let columns = columnSizes.indices.map { column -> [(offset: Int, element: StopPlace)] in
+                let first = columnSizes[..<column].reduce(0, +)
+                return Array(favorites[min(first, favorites.count) ..< min(first + columnSizes[column], favorites.count)])
+            }
+            HStack(spacing: 0) {
+                ForEach(columns, id: \.first?.element.id) { column in
+                    VStack(spacing: 0) {
+                        ForEach(column, id: \.element.id) { index, stop in
+                            panel(index: index, stop: stop)
+                        }
                     }
                 }
             }
@@ -355,10 +488,15 @@ private struct StopPanels: View {
             loadJourney: { departure in
                 (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
             },
-            onRowCapacity: { viewModel.setPanelRowCapacity(stopId: stop.id, rows: Int32($0)) }
+            onRowCapacity: { viewModel.setPanelRowCapacity(stopId: stop.id, rows: Int32($0)) },
+            onDetailsOpenChange: { onDetailsOpenChange(stop.id, $0) },
+            showsDragHandle: count > 1
         )
+        // A panel paged out of view cannot have its details open any more.
+        .onDisappear { onDetailsOpenChange(stop.id, false) }
         .onDrag {
             dragging = stop.id
+            onDragStart()
             return NSItemProvider(object: stop.id as NSString)
         }
         .onDrop(of: [.text], delegate: PanelDropDelegate(

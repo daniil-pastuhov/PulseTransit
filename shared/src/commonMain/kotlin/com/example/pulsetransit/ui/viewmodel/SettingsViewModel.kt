@@ -415,7 +415,7 @@ class SettingsViewModel(
         settingsRepository.addFavorite(stopPlace)
         val currentFavs = settingsRepository.getFavorites()
         _uiState.update { it.copy(favorites = currentFavs) }
-        fetchQuaysForStop(stopPlace.id)
+        if (currentFavs.any { it.id == stopPlace.id }) fetchQuaysForStop(stopPlace.id)
     }
 
     fun removeFavorite(stopId: String) {

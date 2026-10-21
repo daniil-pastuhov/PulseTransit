@@ -149,7 +149,8 @@ class SettingsRepositoryImpl(
 
     override fun addFavorite(stopPlace: StopPlace) {
         val current = getFavorites().toMutableList()
-        if (current.none { it.id == stopPlace.id }) {
+        // An install from before the limit keeps the stops it has, but cannot add more.
+        if (current.none { it.id == stopPlace.id } && current.size < SettingsRepository.MAX_FAVORITE_STOPS) {
             current.add(stopPlace)
             prefs.putString("favorites", json.encodeToString(current))
         }

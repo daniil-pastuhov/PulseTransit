@@ -62,6 +62,48 @@ class BoardLayoutTest {
     }
 
     @Test
+    fun `capacity counts the panels that fit at their minimum size`() {
+        assertEquals(3, BoardLayout.capacity(400f, 600f))
+        assertEquals(2, BoardLayout.capacity(800f, 300f))
+        assertEquals(15, BoardLayout.capacity(1020f, 1150f))
+    }
+
+    @Test
+    fun `a window too small for one panel still shows one`() {
+        assertEquals(1, BoardLayout.capacity(180f, 150f))
+    }
+
+    @Test
+    fun `stops that fit share one page`() {
+        assertEquals(listOf(3), BoardLayout.pageSizes(3, 400f, 600f))
+        assertEquals(listOf(6), BoardLayout.pageSizes(6, 1020f, 1150f))
+        assertEquals(emptyList(), BoardLayout.pageSizes(0, 400f, 600f))
+    }
+
+    @Test
+    fun `stops that do not fit split evenly over pages`() {
+        // A phone in landscape fits two: six stops take three turns.
+        assertEquals(listOf(2, 2, 2), BoardLayout.pageSizes(6, 800f, 300f))
+        // Three fit a phone in portrait, two once the indicator takes its row: four is two and two, not three and one.
+        assertEquals(listOf(2, 2), BoardLayout.pageSizes(4, 400f, 600f))
+        assertEquals(listOf(3, 2), BoardLayout.pageSizes(5, 400f, 820f))
+    }
+
+    @Test
+    fun `a page never holds more than fits beside the indicator`() {
+        val sizes = BoardLayout.pageSizes(6, 400f, 610f)
+        val perPage = BoardLayout.capacity(400f, 610f - BoardLayout.PAGE_INDICATOR_HEIGHT_DP)
+        assertEquals(6, sizes.sum())
+        assertTrue(sizes.all { it <= perPage })
+    }
+
+    @Test
+    fun `a narrow banner stacks its title`() {
+        assertTrue(BoardLayout.isCompactBanner(359f))
+        assertFalse(BoardLayout.isCompactBanner(360f))
+    }
+
+    @Test
     fun `wide rows start at the breakpoint`() {
         assertFalse(BoardLayout.isWideRow(439f))
         assertTrue(BoardLayout.isWideRow(440f))
