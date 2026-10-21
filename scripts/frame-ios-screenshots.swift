@@ -96,9 +96,10 @@ let outDir = URL(fileURLWithPath: CommandLine.arguments[2])
 for locale in ["en-GB", "no"] {
     let files = (try? FileManager.default.contentsOfDirectory(at: rawDir.appendingPathComponent(locale), includingPropertiesForKeys: nil)) ?? []
     for file in files.filter({ $0.pathExtension == "png" }).sorted(by: { $0.path < $1.path }) {
-        // "iphone_1_board_light.png" -> device "iphone", scene "1_board_light"
+        // "iphone_1_board_light.png" -> device "iphone", scene "1_board_light"; a pose after the
+        // scene ("duo_1_board_light-outer") shares the scene's caption.
         let name = file.deletingPathExtension().lastPathComponent
-        let scene = String(name.drop { $0 != "_" }.dropFirst())
+        let scene = String(name.drop { $0 != "_" }.dropFirst().prefix { $0 != "-" })
         guard let caption = captions[scene]?[locale] else { continue }
         let out = outDir.appendingPathComponent(locale).appendingPathComponent(name + ".jpg")
         save(framed(load(file), caption: caption), to: out)
