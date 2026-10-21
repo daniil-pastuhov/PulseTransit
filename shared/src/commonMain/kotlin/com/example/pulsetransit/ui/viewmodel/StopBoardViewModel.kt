@@ -2,6 +2,7 @@ package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.data.ARRIVED_RADIUS_METERS
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.DateDisplayStyle
@@ -22,6 +23,7 @@ import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.distanceMeters
+import com.example.pulsetransit.data.isArrivedFrom
 import com.example.pulsetransit.data.legStops
 import com.example.pulsetransit.data.stopsAhead
 import com.example.pulsetransit.platform.ClockFormatter
@@ -133,8 +135,9 @@ class StopBoardViewModel(
         val autoThemeLightLux: Float = 40f,
         val activeTheme: ThemeMode = ThemeMode.SYSTEM,
         /**
-         * Route alternatives per destination station id, best first; a destination with no route
-         * is absent. Board mode asks for one, on-spot mode for up to [tripOptionsCount].
+         * Route alternatives per destination station id, best first; a destination with no route,
+         * or that the origin is already at (see `isArrivedFrom`), is absent. Board mode
+         * asks for one, on-spot mode for up to [tripOptionsCount].
          */
         val fastestTrips: Map<String, List<TripInfo>> = emptyMap(),
         /** The on-spot alternatives setting: [SettingsRepository.TRIP_OPTIONS_AUTO] or a fixed count. */
@@ -901,30 +904,34 @@ class StopBoardViewModel(
     /**
      * Fetches each destination's routes concurrently, publishing each as it arrives: one from the
      * saved location (or the favourites) in board mode, several from the device in on-spot mode.
+     * A destination the origin is already at is not asked for, and its banner is dropped like one
+     * with no route; it comes back once the origin moves away.
      */
     private fun refreshFastestTrip() {
         tripsJob?.cancel()
-        val destinations = _uiState.value.routeDestinations
         val onSpot = isOnSpot
         val fix = follower.latestFix
         val lat = if (onSpot) fix?.latitude else settingsRepository.getSavedLatitude()
         val lon = if (onSpot) fix?.longitude else settingsRepository.getSavedLongitude()
+        val destinations = _uiState.value.routeDestinations.filterNot { isArrivedAt(it, onSpot, lat, lon) }
         val count = if (onSpot) tripOptionsToFetch() else 1
-        val options =
-            RouteOptions(
-                preference = settingsRepository.getRoutePreference(),
-                excludedModes = settingsRepository.getExcludedRouteModes(),
-                bannedLines = _uiState.value.filteredLines,
-                walkingSpeed = settingsRepository.getWalkingSpeed(),
-            )
+        val options = routeOptions()
 
+        val destinationIds = destinations.map { it.id }.toSet()
         // On-spot mode has nowhere to route from until the device is found.
         if (destinations.isEmpty() || (onSpot && fix == null)) {
-            _uiState.update { it.copy(loadingTripDestinationIds = emptySet(), failedTripDestinationIds = emptySet()) }
+            _uiState.update {
+                it.copy(
+                    // Drops the routes of destinations just arrived at. Without a fix none counts
+                    // as arrived, so this keeps the last routes up until the device is found.
+                    fastestTrips = it.fastestTrips.filterKeys { id -> id in destinationIds },
+                    loadingTripDestinationIds = emptySet(),
+                    failedTripDestinationIds = emptySet(),
+                )
+            }
             return
         }
 
-        val destinationIds = destinations.map { it.id }.toSet()
         _uiState.update {
             it.copy(
                 fastestTrips = it.fastestTrips.filterKeys { id -> id in destinationIds },
@@ -962,6 +969,37 @@ class StopBoardViewModel(
                     }
                 }
             }
+    }
+
+    /** How routes are planned, as set in Settings, avoiding the lines filtered off the board. */
+    private fun routeOptions() =
+        RouteOptions(
+            preference = settingsRepository.getRoutePreference(),
+            excludedModes = settingsRepository.getExcludedRouteModes(),
+            bannedLines = _uiState.value.filteredLines,
+            walkingSpeed = settingsRepository.getWalkingSpeed(),
+        )
+
+    /**
+     * Whether the trip's origin is already within [ARRIVED_RADIUS_METERS] of [destination]: the
+     * device's fix in on-spot mode; in board mode the saved location, or without one any favourite
+     * stop, since those are then the origins. A temporary destination never is, since the user
+     * just asked for a route there.
+     */
+    private fun isArrivedAt(
+        destination: StopPlace,
+        onSpot: Boolean,
+        lat: Double?,
+        lon: Double?,
+    ): Boolean {
+        if (destination.id == _uiState.value.temporaryDestination?.id) return false
+        if (lat != null && lon != null) return destination.isArrivedFrom(lat, lon)
+        if (onSpot) return false
+        return _uiState.value.favorites.any { stop ->
+            val stopLat = stop.latitude
+            val stopLon = stop.longitude
+            stop.id == destination.id || (stopLat != null && stopLon != null && destination.isArrivedFrom(stopLat, stopLon))
+        }
     }
 
     /** The most alternatives the screen may show: the set count, or the maximum when it fits them itself. */
