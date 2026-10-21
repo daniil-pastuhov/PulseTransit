@@ -1,0 +1,5 @@
+• Tablets now use their full width: stops sit side by side in columns, in portrait too
+• Wide stop panels also show the platform, the departure time and any delay next to the countdown
+• Each stop now loads enough departures to fill its panel
+• Settings no longer stretch across the whole screen on tablets
+• The "Fastest to" banner is hidden when you're already at that destination

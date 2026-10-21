@@ -1,0 +1,5 @@
+• Nettbrett bruker nå hele bredden: holdeplassene står side om side i kolonner, også i stående format
+• Brede holdeplasspaneler viser også plattform, avgangstid og eventuell forsinkelse ved siden av nedtellingen
+• Hver holdeplass henter nå nok avganger til å fylle panelet sitt
+• Innstillinger strekker seg ikke lenger over hele skjermen på nettbrett
+• «Raskest til»-banneret skjules når du allerede er ved det reisemålet
