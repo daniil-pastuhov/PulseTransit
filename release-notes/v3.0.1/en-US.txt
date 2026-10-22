@@ -1,0 +1,4 @@
+• Boards with more stops than fit now take turns, showing one page at a time and switching every 15 seconds
+• Dragging stops to reorder them now works, and each stop has a grip in its header so you can drag it right away
+• Better fit in narrow windows: buttons fold into a menu when space is tight, and departure times no longer wrap
+• Favorite stops are now limited to 6. If you already have more, you keep them

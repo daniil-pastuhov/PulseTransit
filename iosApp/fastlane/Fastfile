@@ -45,11 +45,26 @@ platform :ios do
       "-authenticationKeyID #{ENV.fetch('ASC_KEY_ID')} -authenticationKeyIssuerID #{ENV.fetch('ASC_ISSUER_ID')}"
   end
 
+  # The archive is signed with an Apple Development certificate, and a fresh CI runner has none, so
+  # every run creates one through the API key whose private key is gone with the runner. Once the
+  # team's certificate limit is reached signing fails, so the leftovers of earlier runs are revoked
+  # first. Certificates last a year; those under a day old are kept, as another run may be using one.
+  def revoke_stale_ci_certificates
+    cutoff = Time.now + 364 * 24 * 3600
+    Spaceship::ConnectAPI::Certificate.all(filter: { certificateType: "DEVELOPMENT" })
+      .select { |cert| cert.display_name == "Created via API" && Time.parse(cert.expiration_date) < cutoff }
+      .each do |cert|
+        UI.message("Revoking #{cert.name} (#{cert.id}), left by an earlier CI run")
+        cert.delete!
+      end
+  end
+
   desc "Build a signed release and upload it to TestFlight for internal testers"
   lane :beta do |options|
     version = options.fetch(:version)
     build_number = options.fetch(:build_number)
     key = api_key
+    revoke_stale_ci_certificates
     derived_data = File.join(ROOT, "iosApp/build/DerivedData")
 
     build_app(
