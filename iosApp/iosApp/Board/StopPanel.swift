@@ -223,8 +223,8 @@ private struct LoadingPlaceholder: View {
     }
 }
 
-/// How a row lays out: later times on a line below, or, in a wide panel, all on one line with
-/// columns for the platform and the clock time beside the countdown.
+/// How a row lays out: later times on a line below either way, and in a wide panel columns for
+/// the platform and the clock time beside the countdown.
 private enum RowLayout {
     case narrow
     case wide(showPlatform: Bool)
@@ -274,17 +274,6 @@ private struct DepartureGroupRow: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     if case let .wide(showPlatform) = layout {
-                        // The later times at their natural width: most rows have none, since only
-                        // consecutive departures of a line share a row.
-                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                            let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
-                            if !secondary.isEmpty || hidden > 0 {
-                                secondaryText(secondary, hidden: hidden)
-                                    .font(.body.weight(.medium))
-                                    .lineLimit(1)
-                                    .fixedSize()
-                            }
-                        }
                         if showPlatform {
                             PlatformChip(platform: first.platform)
                         }
@@ -325,9 +314,11 @@ private struct DepartureGroupRow: View {
                             .frame(minWidth: isWide ? WideRow.primaryTimeWidth : nil, alignment: .trailing)
                     }
                 }
+                // On a line of their own in a wide row too: beside the destination they squeezed
+                // it to "Fil…" in a tablet's half-width panel.
                 TimelineView(.periodic(from: .now, by: 1)) { timeline in
                     let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
-                    if !isWide && (!secondary.isEmpty || hidden > 0) {
+                    if !secondary.isEmpty || hidden > 0 {
                         secondaryText(secondary, hidden: hidden)
                             .font(.body.weight(.medium))
                             .lineLimit(2) // a backstop: the capped times wrap at most once

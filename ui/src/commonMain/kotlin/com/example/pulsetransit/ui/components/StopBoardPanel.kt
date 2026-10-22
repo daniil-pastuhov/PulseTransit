@@ -315,7 +315,7 @@ fun StopBoardPanel(
                         }.first { it }
                         onLoadMore()
                     }
-                    // A wide panel gives each row columns for the platform and the later times
+                    // A wide panel gives each row columns for the platform and the clock time
                     // instead of leaving the space between destination and time empty.
                     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                         val isWide = BoardLayout.isWideRow(maxWidth.value)
@@ -486,22 +486,6 @@ fun DepartureRow(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // A wide row keeps the later times on its one line, at their natural width: most
-            // rows have none, since only consecutive departures of a line share a row.
-            if (isWide && (formattedTimes.size > 1 || hiddenCount > 0)) {
-                Text(
-                    text = laterTimesText(formattedTimes.drop(1), hiddenCount),
-                    style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-            }
-
             if (showPlatform) {
                 PlatformChip(platform = firstDeparture.platform)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -566,8 +550,10 @@ fun DepartureRow(
             )
         }
 
-        // Secondary Departure Times, then a muted count of the ones left out
-        if (!isWide && (formattedTimes.size > 1 || hiddenCount > 0)) {
+        // Secondary Departure Times, then a muted count of the ones left out. On a line of their
+        // own in a wide row too: beside the destination they squeezed it to "Fil…" in a tablet's
+        // half-width panel.
+        if (formattedTimes.size > 1 || hiddenCount > 0) {
             Text(
                 text = laterTimesText(formattedTimes.drop(1), hiddenCount),
                 style =
