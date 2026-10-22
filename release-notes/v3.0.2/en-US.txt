@@ -1,0 +1,1 @@
+• On tablets and split screens, long destination names are no longer cut short: later departure times move to a line of their own
