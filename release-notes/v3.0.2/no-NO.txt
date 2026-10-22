@@ -1,0 +1,1 @@
+• På nettbrett og delt skjerm blir lange destinasjonsnavn ikke lenger kuttet: senere avgangstider flyttes til en egen linje
