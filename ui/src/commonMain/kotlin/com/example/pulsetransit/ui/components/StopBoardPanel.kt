@@ -492,11 +492,12 @@ fun DepartureRow(
             }
 
             // The departure's clock time beside the countdown, in a column of its own. Left
-            // empty when the countdown already is a clock time, or is "cancelled".
+            // empty when the countdown already is a clock time (perhaps with a "+1" after it),
+            // or is "cancelled".
             if (isWide) {
                 val clock = formatClock(firstDeparture.expectedTime)
                 Text(
-                    text = if (firstDeparture.isCancelled || clock == formattedTimes.first().text) "" else clock,
+                    text = if (firstDeparture.isCancelled || formattedTimes.first().text.startsWith(clock)) "" else clock,
                     style =
                         MaterialTheme.typography.bodyLarge.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
