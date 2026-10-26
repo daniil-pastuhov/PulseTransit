@@ -1,0 +1,1 @@
+• On wide screens, departures that leave tomorrow no longer show their time twice. The time now appears only once, in the countdown.

@@ -1,0 +1,1 @@
+• På brede skjermer vises ikke lenger tiden to ganger for avganger som går i morgen. Tiden står nå bare én gang, i nedtellingen.
