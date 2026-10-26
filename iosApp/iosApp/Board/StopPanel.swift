@@ -278,11 +278,11 @@ private struct DepartureGroupRow: View {
                             PlatformChip(platform: first.platform)
                         }
                         // The clock time beside the countdown; empty when the countdown already
-                        // is one, or reads "cancelled".
+                        // is one (perhaps with a "⁺1" after it), or reads "cancelled".
                         TimelineView(.periodic(from: .now, by: 1)) { timeline in
                             let times = DepartureTimes(departures: visible, now: timeline.date)
                             let clock = DepartureTimes.clock(for: first.expectedTime)
-                            Text(first.isCancelled || clock == times.primary ? "" : clock)
+                            Text(first.isCancelled || times.primary.hasPrefix(clock) ? "" : clock)
                                 .font(.body.weight(.medium))
                                 .monospacedDigit()
                                 .foregroundColor(Palette.textSecondary)
