@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PulseTransit</string>
+    <!-- Hjemskjerm-widgeter, slik widgetvelgeren viser dem. -->
+    <string name="widget_departures_label">Avganger</string>
+    <string name="widget_departures_description">Neste avganger fra en favorittholdeplass</string>
+    <string name="widget_route_label">Raskeste reise</string>
+    <string name="widget_route_description">Når du må gå til en lagret destinasjon</string>
+    <string name="widget_glance_label">Kort oversikt</string>
+    <string name="widget_glance_description">Klokke, vær og neste avgang</string>
 </resources>

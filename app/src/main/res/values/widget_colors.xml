@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Colours of the widgets' XML parts (the live clock and the picker previews), which Glance's
+     theme cannot reach: the app's palette here, Material You's system colours from Android 12. -->
+<resources>
+    <color name="widget_background">#FFFFFFFF</color>
+    <color name="widget_text">#FF1E2132</color>
+    <color name="widget_text_secondary">#FF6B7280</color>
+    <color name="widget_accent">#FF1A73E8</color>
+</resources>

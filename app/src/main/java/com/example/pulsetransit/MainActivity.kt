@@ -18,6 +18,7 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.journey.JourneyOpenRequests
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.platform.JourneyLauncher
+import com.example.pulsetransit.widget.WidgetRefresh
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -79,6 +80,12 @@ class MainActivity : ComponentActivity() {
         // Picks a saved journey up again after its service was stopped (a reboot, or Android
         // refusing to restart it in the background). Started from here, it may read the location.
         if (journeyStore.active.value != null) journeyLauncher.start()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Favourites, destinations or filters may have changed while the app was open.
+        WidgetRefresh.refreshNow(this)
     }
 
     /** "Show journey" from a journey notification opens the followed journey's details. */

@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">PulseTransit</string>
+    <!-- Home-screen widgets, as the widget picker lists them. The manifest and the widget
+         provider XML can only point at Android resources; everything the widgets show is in
+         ui/src/commonMain/composeResources. -->
+    <string name="widget_departures_label">Departures</string>
+    <string name="widget_departures_description">Next departures from a favorite stop</string>
+    <string name="widget_route_label">Fastest route</string>
+    <string name="widget_route_description">When to leave for a saved destination</string>
+    <string name="widget_glance_label">At a glance</string>
+    <string name="widget_glance_description">Clock, weather and the next departure</string>
 </resources>

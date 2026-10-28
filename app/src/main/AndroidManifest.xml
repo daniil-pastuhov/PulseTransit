@@ -69,6 +69,55 @@
         <receiver
             android:name=".journey.JourneyActionReceiver"
             android:exported="false" />
+
+        <!-- Home-screen widgets (Glance). Their labels and descriptions are the only widget strings
+             in app/src/main/res, since the manifest and provider XML cannot read Compose resources. -->
+        <receiver
+            android:name=".widget.DeparturesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_departures_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_departures_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.RouteWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_route_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_route_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.GlanceWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_glance_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_glance_info" />
+        </receiver>
+
+        <!-- Exported: the launcher opens it to set a widget's stop or destination. -->
+        <activity
+            android:name=".widget.WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

@@ -648,7 +648,8 @@ private fun PlatformChip(platform: String?) {
     }
 }
 
-internal fun getTransportEmoji(mode: String?): String =
+/** A transport mode's emoji; also used by the Android widgets. */
+fun getTransportEmoji(mode: String?): String =
     when (mode?.lowercase()) {
         "bus" -> "🚌"
         "tram" -> "🚃"
@@ -658,7 +659,8 @@ internal fun getTransportEmoji(mode: String?): String =
         else -> "🚌" // fallback
     }
 
-internal fun getTransportColor(mode: String?): Color =
+/** A line badge's colour by Entur transport mode; also used by the Android widgets. */
+fun getTransportColor(mode: String?): Color =
     when (mode?.lowercase()) {
         "bus" -> ColorBus
         "tram" -> ColorTram
