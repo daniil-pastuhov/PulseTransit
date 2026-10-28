@@ -11,9 +11,9 @@ import com.example.pulsetransit.data.parseIsoToMillis
  * What a followed journey says and when. Pure: every answer comes from the saved journey, whose
  * stops carry the latest live times, so a delay moves every alert after it.
  *
- * - Each ride: "leaves in 1 minute" a minute before it does, and "next stop is yours" as it leaves
+ * - Each ride: "leaves at 14:32" a minute before it does, and "next stop is yours" as it leaves
  *   the stop before the one to get off at.
- * - Between rides: where to change and how long there is.
+ * - Between rides: where to change and when the next ride leaves.
  * - A walk to the first ride, and the walk to the destination, which offers directions.
  * - Arrival.
  */
@@ -25,8 +25,6 @@ object JourneyAlertPlanner {
 
     /** Alerts this late are dropped rather than shown, e.g. after the app was stopped for a while. */
     const val STALE_AFTER_MILLIS = 10 * 60_000L
-
-    private const val MILLIS_PER_MINUTE = 60_000L
 
     /** Boarding, getting off, and at least one stop between them. */
     private const val MIN_STOPS_WITH_ONE_BETWEEN = 3
@@ -128,6 +126,7 @@ object JourneyAlertPlanner {
                     destination = leg.destination,
                     stopName = leg.fromName,
                     platform = leg.platform,
+                    departsAtMillis = time.startMillis,
                 ),
                 time.startMillis - DEPARTING_SOON_MILLIS,
             )
@@ -138,9 +137,8 @@ object JourneyAlertPlanner {
         val nextRide = rides.firstOrNull { it > index }
         val transfer =
             nextRide?.let { times[it] }?.let { nextTime ->
-                val minutes = ((nextTime.startMillis - time.endMillis) / MILLIS_PER_MINUTE).toInt().coerceAtLeast(0)
                 val next = trip.legs[nextRide]
-                ScheduledAlert(JourneyAlert.Transfer(index, next.lineName.orEmpty(), next.platform, minutes), time.endMillis)
+                ScheduledAlert(JourneyAlert.Transfer(index, next.lineName.orEmpty(), next.platform, nextTime.startMillis), time.endMillis)
             }
         return listOfNotNull(departing, nextStop, transfer)
     }

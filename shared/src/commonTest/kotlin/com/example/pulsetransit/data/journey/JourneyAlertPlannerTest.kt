@@ -37,11 +37,11 @@ class JourneyAlertPlannerTest {
         val alerts = JourneyAlertPlanner.schedule(journey(legStops = liveStops())).associateBy { it.alert.id }
 
         assertEquals(
-            JourneyAlert.DepartingSoon(1, "5", "Vestli", "Jernbanetorget", "2"),
+            JourneyAlert.DepartingSoon(1, "5", "Vestli", "Jernbanetorget", "2", departsAtMillis = at(6)),
             alerts.getValue("depart-1").alert,
         )
         assertEquals(JourneyAlert.NextStopIsYours(1, "Majorstuen"), alerts.getValue("next-stop-1").alert)
-        assertEquals(JourneyAlert.Transfer(1, "20", "B", minutes = 4), alerts.getValue("transfer-1").alert)
+        assertEquals(JourneyAlert.Transfer(1, "20", "B", departsAtMillis = at(18)), alerts.getValue("transfer-1").alert)
         assertEquals(JourneyAlert.Arrived("Home"), alerts.getValue("arrived").alert)
     }
 
@@ -85,11 +85,11 @@ class JourneyAlertPlannerTest {
         // Leaving for a late metro later, rather than waiting on the platform.
         assertEquals(at(2), schedule["walk-0"])
         assertEquals(at(17), schedule["transfer-1"])
-        // The bus is on time, so the change is shorter.
-        assertEquals(
-            JourneyAlert.Transfer(1, "20", "B", minutes = 1),
-            JourneyAlertPlanner.schedule(journey(legStops = liveStops(metroDelay = 3))).first { it.alert.id == "transfer-1" }.alert,
-        )
+        // The bus is on time, so the change is shorter but its departure stays put.
+        val alerts = JourneyAlertPlanner.schedule(journey(legStops = liveStops(metroDelay = 3))).associateBy { it.alert.id }
+        assertEquals(JourneyAlert.Transfer(1, "20", "B", departsAtMillis = at(18)), alerts.getValue("transfer-1").alert)
+        // The late metro's alert names the time it now leaves.
+        assertEquals(at(9), (alerts.getValue("depart-1").alert as JourneyAlert.DepartingSoon).departsAtMillis)
     }
 
     @Test

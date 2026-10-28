@@ -190,7 +190,7 @@ class AndroidJourneyNotifier(
     private suspend fun alertText(alert: JourneyAlert): Pair<String, String?> =
         when (alert) {
             is JourneyAlert.DepartingSoon ->
-                getString(Res.string.journey_alert_departing, alert.lineName) to
+                getString(Res.string.journey_alert_departing, alert.lineName, clockTime(alert.departsAtMillis)) to
                     listOfNotNull(
                         alert.stopName?.let { getString(Res.string.journey_alert_from, it) },
                         alert.platform?.let { getString(Res.string.journey_alert_platform, it) },
@@ -201,7 +201,7 @@ class AndroidJourneyNotifier(
             is JourneyAlert.Transfer ->
                 getString(Res.string.journey_alert_transfer, alert.lineName) to
                     listOfNotNull(
-                        getPluralString(Res.plurals.journey_alert_transfer_minutes, alert.minutes, alert.minutes),
+                        getString(Res.string.journey_alert_leaves_at, clockTime(alert.departsAtMillis)),
                         alert.platform?.let { getString(Res.string.journey_alert_platform, it) },
                     ).joinToString(" · ")
             is JourneyAlert.WalkTo ->
@@ -210,6 +210,12 @@ class AndroidJourneyNotifier(
                 getString(Res.string.journey_alert_missed) to getString(Res.string.journey_alert_missed_detail)
             is JourneyAlert.Arrived -> getString(Res.string.journey_alert_arrived, alert.destinationName) to null
         }
+
+    /**
+     * A departure as a clock time: an alert is posted once and may be read minutes later, when
+     * "in 9 minutes" would no longer be true.
+     */
+    private fun clockTime(epochMillis: Long) = clockFormatter.clockText(epochMillis).time
 
     private fun showJourneyIntent(): PendingIntent =
         PendingIntent.getActivity(

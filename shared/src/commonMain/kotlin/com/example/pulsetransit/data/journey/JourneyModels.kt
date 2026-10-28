@@ -44,13 +44,17 @@ data class TrackedJourney(
 sealed interface JourneyAlert {
     val id: String
 
-    /** The vehicle of leg [legIndex] leaves in a minute. */
+    /**
+     * The vehicle of leg [legIndex] leaves in a minute, at [departsAtMillis]. Shown as that clock
+     * time, not as "in 1 minute": a notification is not updated once posted, and may be read later.
+     */
     data class DepartingSoon(
         val legIndex: Int,
         val lineName: String,
         val destination: String?,
         val stopName: String?,
         val platform: String?,
+        val departsAtMillis: Long,
     ) : JourneyAlert {
         override val id get() = "depart-$legIndex"
     }
@@ -63,12 +67,15 @@ sealed interface JourneyAlert {
         override val id get() = "next-stop-$legIndex"
     }
 
-    /** Leg [legIndex] has arrived; change to [lineName], which leaves in [minutes]. */
+    /**
+     * Leg [legIndex] has arrived; change to [lineName], which leaves at [departsAtMillis]. A clock
+     * time rather than minutes from now, which would go stale in a notification that stays up.
+     */
     data class Transfer(
         val legIndex: Int,
         val lineName: String,
         val platform: String?,
-        val minutes: Int,
+        val departsAtMillis: Long,
     ) : JourneyAlert {
         override val id get() = "transfer-$legIndex"
     }

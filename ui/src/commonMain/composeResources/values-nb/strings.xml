@@ -303,17 +303,14 @@
     <string name="journey_mode_location">Merk også om jeg går glipp av avgangen</string>
     <string name="journey_mode_location_detail">Bruker posisjonen din under reisen, også med skjermen av.</string>
     <string name="journey_rationale_cancel">Ikke nå</string>
-    <string name="journey_alert_departing">%1$s går om 1 minutt</string>
+    <string name="journey_alert_departing">%1$s går kl. %2$s</string>
     <string name="journey_alert_from">Fra %1$s</string>
     <string name="journey_alert_platform">Plattform %1$s</string>
     <string name="journey_alert_towards">Mot %1$s</string>
     <string name="journey_alert_next_stop">Neste stopp, %1$s, er ditt</string>
     <string name="journey_alert_next_stop_detail">Gjør deg klar til å gå av.</string>
     <string name="journey_alert_transfer">Bytt til %1$s</string>
-    <plurals name="journey_alert_transfer_minutes">
-        <item quantity="one">Går om %1$d minutt</item>
-        <item quantity="other">Går om %1$d minutter</item>
-    </plurals>
+    <string name="journey_alert_leaves_at">Går kl. %1$s</string>
     <string name="journey_alert_walk">Gå til %1$s</string>
     <string name="journey_alert_walk_detail">%1$d min til fots</string>
     <string name="journey_alert_missed">Ser ut som du gikk glipp av reisen?</string>
