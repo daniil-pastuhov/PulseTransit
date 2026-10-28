@@ -337,4 +337,23 @@
     <string name="journey_progress_muted">Alerts skipped</string>
     <string name="journey_channel_alerts">Journey alerts</string>
     <string name="journey_channel_progress">Journey in progress</string>
+    <!-- Home-screen widgets. Their names in the widget picker are Android resources in :app. -->
+    <string name="widget_no_stops">Add a favorite stop in PulseTransit</string>
+    <string name="widget_no_destinations">Add a destination in PulseTransit</string>
+    <string name="widget_no_origin">Set your location or add a stop to plan routes</string>
+    <string name="widget_at_destination">You are already at %1$s</string>
+    <string name="widget_no_route">No route found</string>
+    <string name="widget_unreachable">Could not reach Entur</string>
+    <string name="widget_updated">Updated %1$s</string>
+    <string name="widget_offline_since">Offline · data from %1$s</string>
+    <string name="widget_leave_at">Leave %1$s</string>
+    <string name="widget_board_at">Departs %1$s</string>
+    <string name="widget_board_at_platform">Departs %1$s · platform %2$s</string>
+    <string name="widget_arrive_at">Arrives %1$s</string>
+    <string name="widget_duration">%1$d min</string>
+    <string name="widget_walk_only">Walk all the way</string>
+    <string name="widget_realtime">Realtime</string>
+    <string name="widget_choose_stop">Stop to show</string>
+    <string name="widget_choose_destination">Destination to show</string>
+    <string name="widget_choose_none">Nothing saved yet. Add some in PulseTransit, then come back.</string>
 </resources>

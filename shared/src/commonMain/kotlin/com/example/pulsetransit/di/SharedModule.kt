@@ -12,6 +12,7 @@ import com.example.pulsetransit.data.journey.JourneyOpenRequests
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTracker
+import com.example.pulsetransit.data.widget.BoardWidgetSource
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
@@ -48,6 +49,7 @@ val sharedModule =
             EnturRepositoryImpl(client = get(), departureCache = get(), tripCache = get())
         }
         single<WeatherRepository> { WeatherRepositoryImpl(client = get(), cache = get()) }
+        single { BoardWidgetSource(enturRepository = get(), weatherRepository = get(), settingsRepository = get()) }
         single<JourneyStore> { JourneyStoreImpl(prefs = get()) }
         single { JourneyOpenRequests() }
         single {

@@ -1,6 +1,7 @@
 package com.example.pulsetransit.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -34,6 +35,10 @@ private val LightColorScheme =
         error = Color(0xFFBA1A1A), // M3 Light Error
         onError = Color(0xFFFFFFFF),
     )
+
+/** The app's own colours, for surfaces outside Compose UI (the Glance widgets before Android 12). */
+val PulseLightColorScheme: ColorScheme get() = LightColorScheme
+val PulseDarkColorScheme: ColorScheme get() = DarkColorScheme
 
 @Composable
 fun PulseTransitTheme(

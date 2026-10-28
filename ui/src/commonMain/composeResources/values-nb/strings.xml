@@ -336,4 +336,23 @@
     <string name="journey_progress_muted">Varsler hoppet over</string>
     <string name="journey_channel_alerts">Reisevarsler</string>
     <string name="journey_channel_progress">Reise pågår</string>
+    <!-- Hjemskjerm-widgeter. Navnene i widgetvelgeren er Android-ressurser i :app. -->
+    <string name="widget_no_stops">Legg til en favorittholdeplass i PulseTransit</string>
+    <string name="widget_no_destinations">Legg til en destinasjon i PulseTransit</string>
+    <string name="widget_no_origin">Angi posisjonen din eller legg til en holdeplass for å planlegge reiser</string>
+    <string name="widget_at_destination">Du er allerede ved %1$s</string>
+    <string name="widget_no_route">Fant ingen reise</string>
+    <string name="widget_unreachable">Fikk ikke kontakt med Entur</string>
+    <string name="widget_updated">Oppdatert %1$s</string>
+    <string name="widget_offline_since">Frakoblet · data fra %1$s</string>
+    <string name="widget_leave_at">Gå %1$s</string>
+    <string name="widget_board_at">Går %1$s</string>
+    <string name="widget_board_at_platform">Går %1$s · plattform %2$s</string>
+    <string name="widget_arrive_at">Fremme %1$s</string>
+    <string name="widget_duration">%1$d min</string>
+    <string name="widget_walk_only">Gå hele veien</string>
+    <string name="widget_realtime">Sanntid</string>
+    <string name="widget_choose_stop">Holdeplass som vises</string>
+    <string name="widget_choose_destination">Destinasjon som vises</string>
+    <string name="widget_choose_none">Ingenting er lagret ennå. Legg til i PulseTransit og kom tilbake.</string>
 </resources>
