@@ -34,6 +34,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,10 +67,17 @@ import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
+ * What a route's details offer under their header, provided by the screen that owns the actions
+ * (the board's journey alerts) so every details sheet gets them without passing them down.
+ */
+val LocalTripDetailsActions = staticCompositionLocalOf<@Composable (TripInfo) -> Unit> { {} }
+
+/**
  * A route's every leg, opened by tapping a fastest route: the board fits it on one line. Each ride
  * has its line, which way it heads, the platform, live times and delays; walks have their time and
  * distance, and waits between rides are shown. The stops each ride passes are fetched with
- * [loadLegStops] while the sheet is open, and listed on request.
+ * [loadLegStops] while the sheet is open, and listed on request. Under the header go the
+ * [LocalTripDetailsActions]: the journey alerts button.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,7 +128,9 @@ fun TripDetailsSheet(
                     .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
         ) {
             TripHeader(trip, nowMillis)
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+            LocalTripDetailsActions.current(trip)
+            Spacer(modifier = Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(trip.legs.indices.filter { trip.legs[it].isShown }) { index ->
                     val leg = trip.legs[index]

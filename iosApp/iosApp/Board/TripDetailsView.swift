@@ -12,12 +12,14 @@ struct TripSelection: Identifiable {
 /// A route's every leg, opened by tapping a fastest route: the board fits it on one line. Each ride
 /// has its line, which way it heads, the platform, live times and delays; walks have their time and
 /// distance, and waits between rides are shown. The stops each ride passes are fetched with
-/// `loadLegStops` while the sheet is open, and listed on request. As on Android.
+/// `loadLegStops` while the sheet is open, and listed on request. Under the header is the journey
+/// alerts button, and the rationale it opens. As on Android.
 struct TripDetailsView: View {
     let trip: TripInfo
     let showDelays: Bool
     let showMessages: Bool
     let loadLegStops: (TripLeg) async -> [JourneyStop]
+    @ObservedObject var journey: JourneyAlertsModel
 
     @Environment(\.dismiss) private var dismiss
     /// By leg index; a leg missing from it is still loading.
@@ -36,6 +38,8 @@ struct TripDetailsView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         TripHeader(trip: trip, nowMillis: nowMillis)
                             .padding(.bottom, 8)
+                        JourneyNotifyButton(model: journey, trip: trip)
+                            .padding(.bottom, 8)
                         ForEach(shownLegs, id: \.self) { index in
                             leg(at: index, nowMillis: nowMillis)
                         }
@@ -50,10 +54,18 @@ struct TripDetailsView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L("back")) { dismiss() }
+                        .accessibilityIdentifier("tripDetails.close")
                 }
             }
         }
         .navigationViewStyle(.stack)
+        .sheet(isPresented: rationaleShown) {
+            JourneyRationaleView(
+                onChoice: { journey.choose($0) },
+                onDismiss: { journey.viewModel.onRationaleDismiss() }
+            )
+        }
+        .onAppear { journey.refreshPermissions() }
         // Keyed by the journeys ridden, so a refresh of the same route keeps its stops.
         .task(id: TripDetailsKt.tripKey(trip: trip)) {
             legStops = [:]
@@ -66,10 +78,18 @@ struct TripDetailsView: View {
                 }
             }
         }
-        .task(id: interactions) {
+        // The rationale counts as using the details, so they do not close under it.
+        .task(id: interactions + (journey.state.rationaleFor == nil ? 0 : 1_000_000)) {
             try? await Task.sleep(nanoseconds: Self.autoCloseNanoseconds)
             if !Task.isCancelled { dismiss() }
         }
+    }
+
+    private var rationaleShown: Binding<Bool> {
+        Binding(
+            get: { journey.state.rationaleFor != nil },
+            set: { shown in if !shown { journey.viewModel.onRationaleDismiss() } }
+        )
     }
 
     private var shownLegs: [Int] {

@@ -8,10 +8,14 @@ import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
 import com.example.pulsetransit.platform.DesktopClockFormatter
 import com.example.pulsetransit.platform.IpLocationProvider
+import com.example.pulsetransit.platform.JourneyLauncher
+import com.example.pulsetransit.platform.JourneyNotifier
+import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.NetworkInterfaceConnectivityMonitor
 import com.example.pulsetransit.platform.NoAppUpdates
 import com.example.pulsetransit.platform.NoCameraMotion
+import com.example.pulsetransit.platform.NoJourneyAlerts
 import com.example.pulsetransit.platform.NoLightSensor
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
@@ -25,7 +29,7 @@ import java.util.prefs.Preferences
 /**
  * The desktop half of [sharedModule], for the Compose Hot Reload app. Settings persist in the
  * user's Java preferences, so stops added once stay between runs. Location is by IP address and
- * connectivity by network interface; there is no light sensor, camera or store.
+ * connectivity by network interface; there is no light sensor, camera, store or journey alerts.
  */
 val desktopPlatformModule =
     module {
@@ -38,4 +42,8 @@ val desktopPlatformModule =
         single<AppUpdateChecker> { NoAppUpdates() }
         single<SystemSensorManager> { NoLightSensor() }
         single<CameraMotionDetector> { NoCameraMotion() }
+        single { NoJourneyAlerts() }
+        single<JourneyNotifier> { get<NoJourneyAlerts>() }
+        single<JourneyPermissions> { get<NoJourneyAlerts>() }
+        single<JourneyLauncher> { get<NoJourneyAlerts>() }
     }

@@ -22,6 +22,7 @@ import com.example.pulsetransit.ui.screens.ModeSelectionScreen
 import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
+import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
@@ -64,6 +65,7 @@ private fun DesktopApp() {
     // on each return from Settings would leave the old one's clock and refresh loops running.
     val boardViewModel = remember { koin.get<StopBoardViewModel>() }
     val updateViewModel = remember { koin.get<AppUpdateViewModel>() }
+    val journeyViewModel = remember { koin.get<JourneyAlertsViewModel>() }
     // One instance for Settings and transport modes, so Settings' summary of them agrees.
     val settingsViewModel = remember { koin.get<SettingsViewModel>() }
     var screen by remember { mutableStateOf(Screen.BOARD) }
@@ -74,7 +76,12 @@ private fun DesktopApp() {
                 boardViewModel.loadSettings()
                 boardViewModel.startAutoRefresh()
             }
-            MainScreen(viewModel = boardViewModel, updateViewModel = updateViewModel, onNavigateToSettings = { screen = Screen.SETTINGS })
+            MainScreen(
+                viewModel = boardViewModel,
+                updateViewModel = updateViewModel,
+                journeyViewModel = journeyViewModel,
+                onNavigateToSettings = { screen = Screen.SETTINGS },
+            )
         }
         Screen.SETTINGS -> {
             LaunchedEffect(Unit) { settingsViewModel.loadSettings() }

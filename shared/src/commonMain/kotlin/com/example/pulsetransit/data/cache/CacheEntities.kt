@@ -86,6 +86,10 @@ data class CachedTripLeg(
     val serviceDate: String? = null,
     val fromQuayId: String? = null,
     val toQuayId: String? = null,
+    val fromLatitude: Double? = null,
+    val fromLongitude: Double? = null,
+    val toLatitude: Double? = null,
+    val toLongitude: Double? = null,
 )
 
 /**

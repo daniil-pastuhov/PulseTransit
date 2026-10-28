@@ -70,6 +70,10 @@ struct FastestTripBanner: View {
         .background(Palette.primary.opacity(0.18), ignoresSafeAreaEdges: .horizontal)
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+        // Read as one button that opens the route's details, by VoiceOver and the UI tests.
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("fastestTrip")
         .overlay(alignment: .bottom) {
             if isRefreshing { RefreshBar(color: Palette.textPrimary.opacity(0.6)) }
         }

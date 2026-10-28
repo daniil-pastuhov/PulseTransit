@@ -8,17 +8,68 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000090 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000091 /* FirebaseCrashlytics */; };
+		A10000000000000000000102 /* JourneyActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A10000000000000000000101 /* JourneyActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A10000000000000000000231 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000060 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000040;
+			remoteInfo = iosApp;
+		};
+		A10000000000000000000131 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000060 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000140;
+			remoteInfo = JourneyActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A10000000000000000000120 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10000000000000000000102 /* JourneyActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A10000000000000000000001 /* PulseTransit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PulseTransit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000002 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		A10000000000000000000201 /* iosAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = iosAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000101 /* JourneyActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = JourneyActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000103 /* JourneyActivity-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "JourneyActivity-Info.plist"; sourceTree = "<group>"; };
+		A10000000000000000000104 /* iosApp-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "iosApp-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A10000000000000000000010 /* iosApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = iosApp;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000210 /* iosAppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = iosAppUITests;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000110 /* JourneyActivity */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = JourneyActivity;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000111 /* JourneyActivityShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = JourneyActivityShared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +83,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000142 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000242 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -39,6 +104,9 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000010 /* iosApp */,
+				A10000000000000000000110 /* JourneyActivity */,
+				A10000000000000000000111 /* JourneyActivityShared */,
+				A10000000000000000000210 /* iosAppUITests */,
 				A10000000000000000000031 /* Configuration */,
 				A10000000000000000000032 /* Products */,
 			);
@@ -48,6 +116,8 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000002 /* Config.xcconfig */,
+				A10000000000000000000103 /* JourneyActivity-Info.plist */,
+				A10000000000000000000104 /* iosApp-Info.plist */,
 			);
 			path = Configuration;
 			sourceTree = "<group>";
@@ -56,6 +126,8 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000001 /* PulseTransit.app */,
+				A10000000000000000000101 /* JourneyActivity.appex */,
+				A10000000000000000000201 /* iosAppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -71,13 +143,16 @@
 				A10000000000000000000051 /* Sources */,
 				A10000000000000000000020 /* Frameworks */,
 				A10000000000000000000052 /* Resources */,
+				A10000000000000000000120 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A10000000000000000000130 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A10000000000000000000010 /* iosApp */,
+				A10000000000000000000111 /* JourneyActivityShared */,
 			);
 			name = iosApp;
 			packageProductDependencies = (
@@ -86,6 +161,52 @@
 			productName = PulseTransit;
 			productReference = A10000000000000000000001 /* PulseTransit.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A10000000000000000000140 /* JourneyActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000150 /* Build configuration list for PBXNativeTarget "JourneyActivity" */;
+			buildPhases = (
+				A10000000000000000000141 /* Sources */,
+				A10000000000000000000142 /* Frameworks */,
+				A10000000000000000000143 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000110 /* JourneyActivity */,
+				A10000000000000000000111 /* JourneyActivityShared */,
+			);
+			name = JourneyActivity;
+			packageProductDependencies = (
+			);
+			productName = JourneyActivity;
+			productReference = A10000000000000000000101 /* JourneyActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		A10000000000000000000240 /* iosAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000250 /* Build configuration list for PBXNativeTarget "iosAppUITests" */;
+			buildPhases = (
+				A10000000000000000000241 /* Sources */,
+				A10000000000000000000242 /* Frameworks */,
+				A10000000000000000000243 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000230 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000210 /* iosAppUITests */,
+			);
+			name = iosAppUITests;
+			packageProductDependencies = (
+			);
+			productName = iosAppUITests;
+			productReference = A10000000000000000000201 /* iosAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -116,12 +237,28 @@
 			projectRoot = "";
 			targets = (
 				A10000000000000000000040 /* iosApp */,
+				A10000000000000000000140 /* JourneyActivity */,
+				A10000000000000000000240 /* iosAppUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A10000000000000000000052 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000143 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000243 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -160,7 +297,34 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000141 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000241 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10000000000000000000130 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000140 /* JourneyActivity */;
+			targetProxy = A10000000000000000000131 /* PBXContainerItemProxy */;
+		};
+		A10000000000000000000230 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000040 /* iosApp */;
+			targetProxy = A10000000000000000000231 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A10000000000000000000080 /* Debug */ = {
@@ -226,11 +390,13 @@
 					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Configuration/iosApp-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The front camera wakes the screen when someone walks by. No images are stored or sent anywhere.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops and to show the weather where you are.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -265,11 +431,13 @@
 					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Configuration/iosApp-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The front camera wakes the screen when someone walks by. No images are stored or sent anywhere.";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops and to show the weather where you are.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -291,6 +459,82 @@
 			};
 			name = Release;
 		};
+		A10000000000000000000151 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Configuration/JourneyActivity-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).JourneyActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A10000000000000000000152 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Configuration/JourneyActivity-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).JourneyActivity";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A10000000000000000000251 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).UITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = iosApp;
+			};
+			name = Debug;
+		};
+		A10000000000000000000252 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).UITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = iosApp;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -308,6 +552,24 @@
 			buildConfigurations = (
 				A10000000000000000000080 /* Debug */,
 				A10000000000000000000081 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000150 /* Build configuration list for PBXNativeTarget "JourneyActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000151 /* Debug */,
+				A10000000000000000000152 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10000000000000000000250 /* Build configuration list for PBXNativeTarget "iosAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000251 /* Debug */,
+				A10000000000000000000252 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

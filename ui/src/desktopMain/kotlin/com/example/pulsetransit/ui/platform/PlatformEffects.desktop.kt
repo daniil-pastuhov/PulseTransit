@@ -28,6 +28,12 @@ actual fun rememberLocationAccess(onGranted: () -> Unit): () -> Unit = onGranted
 @Composable
 actual fun rememberLocationPermissionRequest(onGranted: () -> Unit): () -> Unit = onGranted
 
+/** Never called: the desktop app has no journey alerts, so their button is hidden. */
+@Composable
+actual fun rememberJourneyPermissionRequest(
+    onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit,
+): (notifications: Boolean, location: Boolean) -> Unit = { _, _ -> onResult(false, false) }
+
 /** From the locale's short time format: "HH:mm" is 24-hour, "h:mm a" is not. */
 @Composable
 actual fun is24HourClock(): Boolean =

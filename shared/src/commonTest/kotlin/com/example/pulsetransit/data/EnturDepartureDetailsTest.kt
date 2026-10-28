@@ -148,6 +148,43 @@ class EnturDepartureDetailsTest {
         }
 
     @Test
+    fun `a trip's stops carry their quay's position for journey alerts`() =
+        runTest {
+            val body =
+                """{"data":{"serviceJourney":{"estimatedCalls":[
+                   {"expectedDepartureTime":"2026-10-16T20:29:00+02:00",
+                    "quay":{"id":"Q1","latitude":59.8475,"longitude":10.8269,"stopPlace":{"id":"S1","name":"Mortensrud T"}}},
+                   {"expectedArrivalTime":"2026-10-16T20:32:00+02:00","quay":{"id":"Q2","name":"No position"}}
+                ]}}}"""
+
+            val stops = repo(ok(body)).getJourneyStops("RUT:ServiceJourney:1", "2026-10-16")
+
+            assertEquals(59.8475 to 10.8269, stops[0].latitude to stops[0].longitude)
+            assertEquals(null to null, stops[1].latitude to stops[1].longitude)
+        }
+
+    @Test
+    fun `route legs carry where they start and end and keep it in the cache`() =
+        runTest {
+            val body =
+                """{"data":{"trip":{"tripPatterns":[{"expectedStartTime":"2026-10-16T20:29:00+02:00",
+                   "expectedEndTime":"2026-10-16T20:50:00+02:00","duration":1260,"legs":[
+                   {"mode":"foot","duration":300,"distance":400,
+                    "fromPlace":{"name":"Origin","latitude":59.91,"longitude":10.75},
+                    "toPlace":{"name":"Destination","latitude":59.92,"longitude":10.67}}]}]}}}"""
+
+            val trip =
+                repo(ok(body))
+                    .getTripOptions(59.91, 10.75, StopPlace(id = "NSR:StopPlace:1", name = "Home"), count = 1)
+                    .data
+                    .single()
+            val leg = trip.legs.single()
+
+            assertEquals(listOf(59.91, 10.75, 59.92, 10.67), listOf(leg.fromLatitude, leg.fromLongitude, leg.toLatitude, leg.toLongitude))
+            assertEquals(leg, leg.toCacheEntity().toTripLeg())
+        }
+
+    @Test
     fun `a trip whose stops cannot be fetched has none`() =
         runTest {
             val stops = repo(MockEngine { throw IOException("offline") }).getJourneyStops("RUT:ServiceJourney:1", "2026-10-16")

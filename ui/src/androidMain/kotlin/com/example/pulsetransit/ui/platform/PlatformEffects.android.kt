@@ -8,6 +8,7 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.text.format.DateFormat
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -21,10 +22,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
@@ -133,6 +136,27 @@ actual fun rememberLocationPermissionRequest(onGranted: () -> Unit): () -> Unit 
             if (grants.values.any { it }) onGranted()
         }
     return { launcher.launch(LOCATION_PERMISSIONS) }
+}
+
+@Composable
+actual fun rememberJourneyPermissionRequest(
+    onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit,
+): (notifications: Boolean, location: Boolean) -> Unit {
+    val context = LocalContext.current
+    val currentOnResult by rememberUpdatedState(onResult)
+
+    fun report() = currentOnResult(NotificationManagerCompat.from(context).areNotificationsEnabled(), context.hasLocationPermission())
+    // Android shows the prompts one after the other; the answer is read back from the system, which
+    // also covers a prompt Android no longer shows after being refused for good.
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { report() }
+    return { notifications, location ->
+        val wanted =
+            buildList {
+                if (notifications && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+                if (location) addAll(LOCATION_PERMISSIONS)
+            }
+        if (wanted.isEmpty()) report() else launcher.launch(wanted.toTypedArray())
+    }
 }
 
 @Composable

@@ -40,6 +40,16 @@ expect fun rememberLocationAccess(onGranted: () -> Unit): () -> Unit
 @Composable
 expect fun rememberLocationPermissionRequest(onGranted: () -> Unit): () -> Unit
 
+/**
+ * Shows the system prompts journey alerts need, once the user has picked a mode in the rationale:
+ * notifications and/or location, as the returned action is told. [onResult] then gets what is
+ * granted, whether or not a prompt could be shown.
+ */
+@Composable
+expect fun rememberJourneyPermissionRequest(
+    onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit,
+): (notifications: Boolean, location: Boolean) -> Unit
+
 /** Whether the user reads time on a 24-hour clock, for the schedule editor's times. */
 @Composable
 expect fun is24HourClock(): Boolean

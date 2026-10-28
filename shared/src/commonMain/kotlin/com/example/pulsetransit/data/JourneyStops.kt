@@ -31,6 +31,8 @@ internal suspend fun HttpClient.fetchJourneyStops(
               quay {
                 id
                 name
+                latitude
+                longitude
                 stopPlace {
                   id
                   name
@@ -64,6 +66,8 @@ internal suspend fun HttpClient.fetchJourneyStops(
                     name = call.quay?.stopPlace?.name ?: call.quay?.name ?: return@mapNotNull null,
                     expectedTime = time,
                     isCancelled = call.cancellation,
+                    latitude = call.quay?.latitude,
+                    longitude = call.quay?.longitude,
                 )
             }
     } catch (e: CancellationException) {
@@ -109,6 +113,8 @@ private data class JourneyCallGraphQL(
 private data class JourneyQuayGraphQL(
     val id: String,
     val name: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val stopPlace: JourneyStopPlaceGraphQL? = null,
 )
 

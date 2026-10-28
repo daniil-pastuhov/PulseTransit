@@ -146,6 +146,9 @@ class FakeEnturRepository : EnturRepository {
     override suspend fun getStopPlaceWithQuays(stopId: String): StopPlace? = stopsWithQuays[stopId]
 
     var journeyStops = listOf<JourneyStop>()
+
+    /** Per-journey override of [journeyStops]; may throw, as a failing request would. */
+    var journeyStopsFor: (String) -> List<JourneyStop> = { journeyStops }
     var journeyStopsCalls = 0
 
     override suspend fun getJourneyStops(
@@ -153,7 +156,7 @@ class FakeEnturRepository : EnturRepository {
         serviceDate: String,
     ): List<JourneyStop> {
         journeyStopsCalls++
-        return journeyStops
+        return journeyStopsFor(serviceJourneyId)
     }
 
     override suspend fun getDepartures(

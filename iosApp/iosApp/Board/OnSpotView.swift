@@ -264,6 +264,7 @@ private struct RoutesSection: View {
     let onOpenSettings: () -> Void
     /// The tapped alternative, whose details are open.
     @State private var detailsTrip: TripSelection?
+    @EnvironmentObject private var journeyModel: JourneyAlertsModel
 
     var body: some View {
         if state.routeDestinations.isEmpty {
@@ -322,7 +323,8 @@ private struct RoutesSection: View {
                     trip: TripDetailsKt.currentTrip(trips: state.fastestTrips[selection.destinationId], selected: selection.trip),
                     showDelays: state.showDelays,
                     showMessages: state.showMessages,
-                    loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] }
+                    loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] },
+                    journey: journeyModel
                 )
             }
         }

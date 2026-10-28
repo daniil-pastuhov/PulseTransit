@@ -48,6 +48,7 @@ fun MainNavigation() {
                     MainScreen(
                         viewModel = viewModel,
                         updateViewModel = updateViewModel,
+                        journeyViewModel = koinViewModel(),
                         onNavigateToSettings = { backStack.add(Settings) },
                     )
                 }

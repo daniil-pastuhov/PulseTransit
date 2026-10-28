@@ -50,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -107,6 +108,10 @@ import com.example.pulsetransit.data.parseWeatherSymbol
 import com.example.pulsetransit.data.tripArrival
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.BlurredPlaceholder
+import com.example.pulsetransit.ui.components.FollowedJourneyBar
+import com.example.pulsetransit.ui.components.JourneyAlertsEffects
+import com.example.pulsetransit.ui.components.JourneyNotifyButton
+import com.example.pulsetransit.ui.components.LocalTripDetailsActions
 import com.example.pulsetransit.ui.components.PlaceholderBlock
 import com.example.pulsetransit.ui.components.PrecipitationBar
 import com.example.pulsetransit.ui.components.RefreshingIndicator
@@ -128,6 +133,7 @@ import com.example.pulsetransit.ui.platform.CameraMotionEffect
 import com.example.pulsetransit.ui.platform.rememberAppUpdateAction
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
+import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import org.jetbrains.compose.resources.stringResource
 import java.text.SimpleDateFormat
@@ -140,11 +146,13 @@ import kotlin.math.roundToInt
 fun MainScreen(
     viewModel: StopBoardViewModel,
     updateViewModel: AppUpdateViewModel,
+    journeyViewModel: JourneyAlertsViewModel,
     onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val updateState by updateViewModel.uiState.collectAsState()
+    val journeyState by journeyViewModel.uiState.collectAsState()
     val windowSize = LocalWindowInfo.current.containerSize
     val isLandscape = windowSize.width > windowSize.height
 
@@ -161,329 +169,371 @@ fun MainScreen(
     // The fastest route whose details are open, with its destination's id.
     var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
     var showRouteSearch by remember { mutableStateOf(false) }
+    // The followed journey's details, opened from its bar or a notification's "Show journey".
+    var showFollowedJourney by remember { mutableStateOf(false) }
+
+    JourneyAlertsEffects(journeyViewModel, onOpenJourney = { showFollowedJourney = true })
+    // A journey that ends while its details are open closes them, so the next one does not open them.
+    LaunchedEffect(journeyState.activeJourney == null) {
+        if (journeyState.activeJourney == null) showFollowedJourney = false
+    }
+    val journeyActions: @Composable (TripInfo) -> Unit = { trip ->
+        JourneyNotifyButton(
+            state = journeyState,
+            trip = trip,
+            onNotify = { journeyViewModel.onNotifyClick(trip) },
+            onStop = journeyViewModel::onStopClick,
+        )
+    }
 
     val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
     val screenAlpha = if (uiState.isScreenDimmed) 0.05f else 1f
 
-    PulseTransitTheme(themeMode = effectiveTheme) {
-        val backgroundColor = if (uiState.isScreenDimmed) Color.Black else MaterialTheme.colorScheme.background
-        Box(
-            modifier =
-                modifier
-                    .fillMaxSize()
-                    .background(backgroundColor)
-                    .pixelShift(uiState.burnInLevel),
-        ) {
-            Column(
+    CompositionLocalProvider(LocalTripDetailsActions provides journeyActions) {
+        PulseTransitTheme(themeMode = effectiveTheme) {
+            val backgroundColor = if (uiState.isScreenDimmed) Color.Black else MaterialTheme.colorScheme.background
+            Box(
                 modifier =
-                    Modifier
+                    modifier
                         .fillMaxSize()
-                        .graphicsLayer(alpha = screenAlpha),
+                        .background(backgroundColor)
+                        .pixelShift(uiState.burnInLevel),
             ) {
-                // Header Bar
-                BoxWithConstraints(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surface)
-                            .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.statusBars)
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                ) {
-                    // The buttons keep their room: the clock gets what they leave, stepping its date
-                    // down to fit, and only where even the time would not fit do they fold into a menu.
-                    val collapseActions = maxWidth < HEADER_ACTIONS_WIDTH + HEADER_MIN_CLOCK_WIDTH
-                    val clockMaxWidth = (maxWidth - if (collapseActions) HEADER_ACTION_SIZE else HEADER_ACTIONS_WIDTH).coerceAtLeast(0.dp)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        // Left: Digital Clock + date; tapping cycles the date style.
-                        HeaderClock(
-                            uiState = uiState,
-                            onClick = { viewModel.cycleDateStyle() },
-                            modifier = Modifier.widthIn(max = clockMaxWidth),
-                        )
-
-                        // Middle: Weather, unless turned off in Settings
-                        if (uiState.showWeather) {
-                            BoxWithConstraints(
-                                modifier =
-                                    Modifier
-                                        .weight(1f)
-                                        .padding(horizontal = 16.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                // Fit only as many columns as the width allows: a forced minimum
-                                // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
-                                // grow with the system font scale, so the column budget does too.
-                                // With no room for one, the forecast is left out.
-                                val itemWidth = 56.dp * LocalDensity.current.fontScale
-                                val maxItems = (maxWidth / itemWidth).toInt().coerceAtMost(8)
-                                val totalAvailable = uiState.weather.size
-                                val step = if (totalAvailable > maxItems) totalAvailable / maxItems.coerceAtLeast(1) else 1
-
-                                if (maxItems > 0) {
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceEvenly,
-                                    ) {
-                                        uiState.weather
-                                            .filterIndexed { index, _ -> index % step == 0 }
-                                            .take(maxItems)
-                                            .forEach { w ->
-                                                // Equal-width columns: a long condition label ("Partly
-                                                // cloudy") must wrap inside its column rather than stretch
-                                                // it and squeeze the neighbours.
-                                                WeatherItem(w, modifier = Modifier.weight(1f))
-                                            }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Right: Control Buttons
-                        HeaderActions(
-                            collapsed = collapseActions,
-                            onSearchRoute = { showRouteSearch = true },
-                            onRefresh = { viewModel.refreshData() },
-                            onOpenSettings = onNavigateToSettings,
-                        )
-                    }
-                }
-
-                if (updateState.update != null) {
-                    UpdateBanner(
-                        onUpdate = startAppUpdate,
-                        onDismiss = { updateViewModel.dismiss() },
-                    )
-                }
-
-                if (uiState.mode == AppMode.ON_SPOT) {
-                    OnSpotContent(
-                        uiState = uiState,
-                        viewModel = viewModel,
-                        isLandscape = isLandscape,
-                        onNavigateToSettings = onNavigateToSettings,
-                        modifier = Modifier.fillMaxSize().weight(1f),
-                    )
-                } else {
-                    // The tapped route, captured at the tap; the details follow its refreshes.
-                    detailsTrip?.let { (destinationId, selected) ->
-                        TripDetailsSheet(
-                            trip = currentTrip(uiState.fastestTrips[destinationId], selected),
-                            showDelays = uiState.showDelays,
-                            showMessages = uiState.showMessages,
-                            loadLegStops = viewModel::tripLegStops,
-                            onDismiss = { detailsTrip = null },
-                        )
-                    }
-                    // Fastest route banners (one per destination station set in Settings, after the
-                    // one searched for from the board), each appearing as soon as its own route
-                    // arrives. A destination with no route is left out once it has loaded. They
-                    // share one background colour, so without a rule between them consecutive
-                    // banners read as a single block.
-                    uiState.routeDestinations
-                        .filter {
-                            it.id in uiState.fastestTrips ||
-                                it.id in uiState.loadingTripDestinationIds ||
-                                it.id in uiState.failedTripDestinationIds
-                        }.forEachIndexed { index, destination ->
-                            key(destination.id) {
-                                if (index > 0) {
-                                    HorizontalDivider(
-                                        thickness = 1.dp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
-                                    )
-                                }
-                                val trip = uiState.fastestTrips[destination.id]?.firstOrNull()
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    AnimatedContent(
-                                        targetState = trip,
-                                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                        label = "fastestTrip",
-                                        contentKey = { it == null },
-                                        modifier = Modifier.weight(1f),
-                                    ) { loaded ->
-                                        if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
-                                            FastestTripUnavailable(
-                                                destinationName = destination.name,
-                                                isOnline = uiState.isOnline,
-                                                isRetrying = destination.id in uiState.loadingTripDestinationIds,
-                                            )
-                                        } else if (loaded == null) {
-                                            FastestTripPlaceholder(destinationName = destination.name)
-                                        } else {
-                                            FastestTripBanner(
-                                                trip = loaded,
-                                                onClick = { detailsTrip = destination.id to loaded },
-                                                isRefreshing = destination.id in uiState.loadingTripDestinationIds,
-                                            )
-                                        }
-                                    }
-                                    if (destination.id == uiState.temporaryDestination?.id) {
-                                        TemporaryRouteActions(
-                                            canSave = uiState.canSaveTemporaryDestination,
-                                            onSave = { viewModel.saveTemporaryDestination() },
-                                            onDismiss = { viewModel.dismissTemporaryDestination() },
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                    // Body Area (Equal screen division between favorite stops)
-                    if (uiState.favorites.isEmpty()) {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .weight(1f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(Res.string.no_stops_configured),
-                                    style = MaterialTheme.typography.headlineSmall,
-                                )
-                                Button(onClick = onNavigateToSettings) {
-                                    Text(stringResource(Res.string.open_settings_to_add))
-                                }
-                            }
-                        }
-                    } else {
-                        ReorderableFavoriteList(
-                            favorites = uiState.favorites,
-                            departures = uiState.departures,
-                            showDelays = uiState.showDelays,
-                            showMessages = uiState.showMessages,
-                            loadingStopIds = uiState.loadingStopIds,
-                            onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
-                            onFilterOut = { line -> viewModel.filterOutLine(line) },
-                            extendedStopIds = uiState.extendedStopIds,
-                            failedStopIds = uiState.failedStopIds,
-                            isOnline = uiState.isOnline,
-                            onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
-                            onRetry = { viewModel.refreshData() },
-                            canLoadMoreStopIds = uiState.canLoadMoreStopIds,
-                            loadingMoreStopIds = uiState.loadingMoreStopIds,
-                            onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
-                            loadJourney = viewModel::journeyStopsAhead,
-                            onRowCapacity = viewModel::setPanelRowCapacity,
-                            rotationPaused = uiState.isScreenDimmed,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize()
-                                    .weight(1f)
-                                    .padding(6.dp),
-                        )
-                    }
-                }
-
-                // Subtle Last Updated and Attribution at the bottom
                 Column(
                     modifier =
                         Modifier
-                            .fillMaxWidth()
-                            .windowInsetsPadding(
-                                if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.navigationBars,
-                            ).padding(top = 2.dp, bottom = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                            .fillMaxSize()
+                            .graphicsLayer(alpha = screenAlpha),
                 ) {
-                    uiState.staleAgeMinutes?.let { ageMinutes ->
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Icon(
-                                imageVector = loadFailureIcon(uiState.isOnline),
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.size(12.dp),
+                    // Header Bar
+                    BoxWithConstraints(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surface)
+                                .windowInsetsPadding(if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.statusBars)
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                    ) {
+                        // The buttons keep their room: the clock gets what they leave, stepping its date
+                        // down to fit, and only where even the time would not fit do they fold into a menu.
+                        val collapseActions = maxWidth < HEADER_ACTIONS_WIDTH + HEADER_MIN_CLOCK_WIDTH
+                        val clockMaxWidth =
+                            (maxWidth - if (collapseActions) HEADER_ACTION_SIZE else HEADER_ACTIONS_WIDTH).coerceAtLeast(
+                                0.dp,
                             )
-                            Text(
-                                text =
-                                    stringResource(
-                                        if (uiState.isOnline) Res.string.offline_stale_data else Res.string.offline_no_internet_stale_data,
-                                        ageMinutes,
-                                    ),
-                                style =
-                                    MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.error,
-                                    ),
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            // Left: Digital Clock + date; tapping cycles the date style.
+                            HeaderClock(
+                                uiState = uiState,
+                                onClick = { viewModel.cycleDateStyle() },
+                                modifier = Modifier.widthIn(max = clockMaxWidth),
+                            )
+
+                            // Middle: Weather, unless turned off in Settings
+                            if (uiState.showWeather) {
+                                BoxWithConstraints(
+                                    modifier =
+                                        Modifier
+                                            .weight(1f)
+                                            .padding(horizontal = 16.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    // Fit only as many columns as the width allows: a forced minimum
+                                    // squeezed "19:00" to "19:0" in a phone's portrait header. The labels
+                                    // grow with the system font scale, so the column budget does too.
+                                    // With no room for one, the forecast is left out.
+                                    val itemWidth = 56.dp * LocalDensity.current.fontScale
+                                    val maxItems = (maxWidth / itemWidth).toInt().coerceAtMost(8)
+                                    val totalAvailable = uiState.weather.size
+                                    val step = if (totalAvailable > maxItems) totalAvailable / maxItems.coerceAtLeast(1) else 1
+
+                                    if (maxItems > 0) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.SpaceEvenly,
+                                        ) {
+                                            uiState.weather
+                                                .filterIndexed { index, _ -> index % step == 0 }
+                                                .take(maxItems)
+                                                .forEach { w ->
+                                                    // Equal-width columns: a long condition label ("Partly
+                                                    // cloudy") must wrap inside its column rather than stretch
+                                                    // it and squeeze the neighbours.
+                                                    WeatherItem(w, modifier = Modifier.weight(1f))
+                                                }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Right: Control Buttons
+                            HeaderActions(
+                                collapsed = collapseActions,
+                                onSearchRoute = { showRouteSearch = true },
+                                onRefresh = { viewModel.refreshData() },
+                                onOpenSettings = onNavigateToSettings,
                             )
                         }
                     }
-                    Text(
-                        text = stringResource(Res.string.last_updated, uiState.lastUpdated),
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                fontSize = 10.sp,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            ),
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+
+                    if (updateState.update != null) {
+                        UpdateBanner(
+                            onUpdate = startAppUpdate,
+                            onDismiss = { updateViewModel.dismiss() },
+                        )
+                    }
+
+                    journeyState.activeJourney?.let { journey ->
+                        FollowedJourneyBar(
+                            journey = journey,
+                            onOpen = { showFollowedJourney = true },
+                            onStop = journeyViewModel::onStopClick,
+                        )
+                        if (showFollowedJourney) {
+                            TripDetailsSheet(
+                                trip = journey.trip,
+                                showDelays = uiState.showDelays,
+                                showMessages = uiState.showMessages,
+                                loadLegStops = viewModel::tripLegStops,
+                                onDismiss = { showFollowedJourney = false },
+                            )
+                        }
+                    }
+
+                    if (uiState.mode == AppMode.ON_SPOT) {
+                        OnSpotContent(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            isLandscape = isLandscape,
+                            onNavigateToSettings = onNavigateToSettings,
+                            modifier = Modifier.fillMaxSize().weight(1f),
+                        )
+                    } else {
+                        // The tapped route, captured at the tap; the details follow its refreshes.
+                        detailsTrip?.let { (destinationId, selected) ->
+                            TripDetailsSheet(
+                                trip = currentTrip(uiState.fastestTrips[destinationId], selected),
+                                showDelays = uiState.showDelays,
+                                showMessages = uiState.showMessages,
+                                loadLegStops = viewModel::tripLegStops,
+                                onDismiss = { detailsTrip = null },
+                            )
+                        }
+                        // Fastest route banners (one per destination station set in Settings, after the
+                        // one searched for from the board), each appearing as soon as its own route
+                        // arrives. A destination with no route is left out once it has loaded. They
+                        // share one background colour, so without a rule between them consecutive
+                        // banners read as a single block.
+                        uiState.routeDestinations
+                            .filter {
+                                it.id in uiState.fastestTrips ||
+                                    it.id in uiState.loadingTripDestinationIds ||
+                                    it.id in uiState.failedTripDestinationIds
+                            }.forEachIndexed { index, destination ->
+                                key(destination.id) {
+                                    if (index > 0) {
+                                        HorizontalDivider(
+                                            thickness = 1.dp,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f),
+                                        )
+                                    }
+                                    val trip = uiState.fastestTrips[destination.id]?.firstOrNull()
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        AnimatedContent(
+                                            targetState = trip,
+                                            transitionSpec = { fadeIn() togetherWith fadeOut() },
+                                            label = "fastestTrip",
+                                            contentKey = { it == null },
+                                            modifier = Modifier.weight(1f),
+                                        ) { loaded ->
+                                            if (loaded == null && destination.id in uiState.failedTripDestinationIds) {
+                                                FastestTripUnavailable(
+                                                    destinationName = destination.name,
+                                                    isOnline = uiState.isOnline,
+                                                    isRetrying = destination.id in uiState.loadingTripDestinationIds,
+                                                )
+                                            } else if (loaded == null) {
+                                                FastestTripPlaceholder(destinationName = destination.name)
+                                            } else {
+                                                FastestTripBanner(
+                                                    trip = loaded,
+                                                    onClick = { detailsTrip = destination.id to loaded },
+                                                    isRefreshing = destination.id in uiState.loadingTripDestinationIds,
+                                                )
+                                            }
+                                        }
+                                        if (destination.id == uiState.temporaryDestination?.id) {
+                                            TemporaryRouteActions(
+                                                canSave = uiState.canSaveTemporaryDestination,
+                                                onSave = { viewModel.saveTemporaryDestination() },
+                                                onDismiss = { viewModel.dismissTemporaryDestination() },
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                        // Body Area (Equal screen division between favorite stops)
+                        if (uiState.favorites.isEmpty()) {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .weight(1f),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.no_stops_configured),
+                                        style = MaterialTheme.typography.headlineSmall,
+                                    )
+                                    Button(onClick = onNavigateToSettings) {
+                                        Text(stringResource(Res.string.open_settings_to_add))
+                                    }
+                                }
+                            }
+                        } else {
+                            ReorderableFavoriteList(
+                                favorites = uiState.favorites,
+                                departures = uiState.departures,
+                                showDelays = uiState.showDelays,
+                                showMessages = uiState.showMessages,
+                                loadingStopIds = uiState.loadingStopIds,
+                                onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
+                                onFilterOut = { line -> viewModel.filterOutLine(line) },
+                                extendedStopIds = uiState.extendedStopIds,
+                                failedStopIds = uiState.failedStopIds,
+                                isOnline = uiState.isOnline,
+                                onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
+                                onRetry = { viewModel.refreshData() },
+                                canLoadMoreStopIds = uiState.canLoadMoreStopIds,
+                                loadingMoreStopIds = uiState.loadingMoreStopIds,
+                                onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
+                                loadJourney = viewModel::journeyStopsAhead,
+                                onRowCapacity = viewModel::setPanelRowCapacity,
+                                rotationPaused = uiState.isScreenDimmed,
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .weight(1f)
+                                        .padding(6.dp),
+                            )
+                        }
+                    }
+
+                    // Subtle Last Updated and Attribution at the bottom
+                    Column(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .windowInsetsPadding(
+                                    if (uiState.isFullScreenMode) WindowInsets(0, 0, 0, 0) else WindowInsets.navigationBars,
+                                ).padding(top = 2.dp, bottom = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
+                        uiState.staleAgeMinutes?.let { ageMinutes ->
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(
+                                    imageVector = loadFailureIcon(uiState.isOnline),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Text(
+                                    text =
+                                        stringResource(
+                                            if (uiState.isOnline) {
+                                                Res.string.offline_stale_data
+                                            } else {
+                                                Res.string.offline_no_internet_stale_data
+                                            },
+                                            ageMinutes,
+                                        ),
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.error,
+                                        ),
+                                )
+                            }
+                        }
                         Text(
-                            text = stringResource(Res.string.attribution_entur),
+                            text = stringResource(Res.string.last_updated, uiState.lastUpdated),
                             style =
                                 MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 8.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                                 ),
                         )
-                        if (uiState.showWeather) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             Text(
-                                text = stringResource(Res.string.attribution_met),
+                                text = stringResource(Res.string.attribution_entur),
                                 style =
                                     MaterialTheme.typography.labelSmall.copy(
                                         fontSize = 8.sp,
                                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                                     ),
                             )
+                            if (uiState.showWeather) {
+                                Text(
+                                    text = stringResource(Res.string.attribution_met),
+                                    style =
+                                        MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 8.sp,
+                                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
+                                        ),
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            if (showRouteSearch) {
-                RouteSearchSheet(
-                    query = uiState.routeSearchQuery,
-                    results = uiState.routeSearchResults,
-                    isSearching = uiState.isSearchingRoutePlaces,
-                    onQueryChange = { viewModel.onRouteSearchQueryChanged(it) },
-                    onPick = { place ->
-                        showRouteSearch = false
-                        viewModel.showTemporaryDestination(place)
-                    },
-                    onDismiss = {
-                        showRouteSearch = false
-                        viewModel.clearRouteSearch()
-                    },
-                )
-            }
+                if (showRouteSearch) {
+                    RouteSearchSheet(
+                        query = uiState.routeSearchQuery,
+                        results = uiState.routeSearchResults,
+                        isSearching = uiState.isSearchingRoutePlaces,
+                        onQueryChange = { viewModel.onRouteSearchQueryChanged(it) },
+                        onPick = { place ->
+                            showRouteSearch = false
+                            viewModel.showTemporaryDestination(place)
+                        },
+                        onDismiss = {
+                            showRouteSearch = false
+                            viewModel.clearRouteSearch()
+                        },
+                    )
+                }
 
-            if (uiState.isScreenDimmed) {
-                Box(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) { viewModel.wakeScreen() },
-                )
+                if (uiState.isScreenDimmed) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = null,
+                                ) { viewModel.wakeScreen() },
+                    )
+                }
             }
         }
     }
