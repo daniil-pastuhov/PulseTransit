@@ -304,17 +304,14 @@
     <string name="journey_mode_location">Also notice if I miss my ride</string>
     <string name="journey_mode_location_detail">Uses your location during the journey, also with the screen off.</string>
     <string name="journey_rationale_cancel">Not now</string>
-    <string name="journey_alert_departing">%1$s leaves in 1 minute</string>
+    <string name="journey_alert_departing">%1$s leaves at %2$s</string>
     <string name="journey_alert_from">From %1$s</string>
     <string name="journey_alert_platform">Platform %1$s</string>
     <string name="journey_alert_towards">Towards %1$s</string>
     <string name="journey_alert_next_stop">Next stop %1$s is yours</string>
     <string name="journey_alert_next_stop_detail">Get ready to get off.</string>
     <string name="journey_alert_transfer">Change to %1$s</string>
-    <plurals name="journey_alert_transfer_minutes">
-        <item quantity="one">Leaves in %1$d minute</item>
-        <item quantity="other">Leaves in %1$d minutes</item>
-    </plurals>
+    <string name="journey_alert_leaves_at">Leaves at %1$s</string>
     <string name="journey_alert_walk">Walk to %1$s</string>
     <string name="journey_alert_walk_detail">%1$d min on foot</string>
     <string name="journey_alert_missed">Looks like you missed your journey?</string>

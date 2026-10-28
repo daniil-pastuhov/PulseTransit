@@ -112,7 +112,8 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
         content.categoryIdentifier = Category.alert
         switch onEnum(of: alert) {
         case let .departingSoon(departing):
-            content.title = L("journey_alert_departing", departing.lineName)
+            // Clock times, not "in 9 minutes": a delivered notification is never updated.
+            content.title = L("journey_alert_departing", departing.lineName, clockTime(departing.departsAtMillis))
             content.body = [
                 departing.stopName.map { L("journey_alert_from", $0) },
                 departing.platform.map { L("journey_alert_platform", $0) },
@@ -124,7 +125,7 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
         case let .transfer(transfer):
             content.title = L("journey_alert_transfer", transfer.lineName)
             content.body = [
-                L("journey_alert_transfer_minutes", Int(transfer.minutes)),
+                L("journey_alert_leaves_at", clockTime(transfer.departsAtMillis)),
                 transfer.platform.map { L("journey_alert_platform", $0) },
             ].compactMap { $0 }.joined(separator: " · ")
         case let .walkTo(walk):
@@ -143,6 +144,10 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
             content.categoryIdentifier = Category.info
         }
         return content
+    }
+
+    private func clockTime(_ epochMillis: Int64) -> String {
+        clock.clockText(epochMillis: epochMillis).time
     }
 
     // MARK: UNUserNotificationCenterDelegate

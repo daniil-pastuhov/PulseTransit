@@ -1282,13 +1282,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ leaves in 1 minute"
+            "value": "%1$@ leaves at %2$@"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ går om 1 minutt"
+            "value": "%1$@ går kl. %2$@"
           }
         }
       }
@@ -1306,6 +1306,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fra %1$@"
+          }
+        }
+      }
+    },
+    "journey_alert_leaves_at": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaves at %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Går kl. %1$@"
           }
         }
       }
@@ -1425,47 +1442,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bytt til %1$@"
-          }
-        }
-      }
-    },
-    "journey_alert_transfer_minutes": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Leaves in %1$lld minute"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Leaves in %1$lld minutes"
-                }
-              }
-            }
-          }
-        },
-        "nb": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Går om %1$lld minutt"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Går om %1$lld minutter"
-                }
-              }
-            }
           }
         }
       }
