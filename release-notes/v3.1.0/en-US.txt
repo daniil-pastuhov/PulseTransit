@@ -1,0 +1,4 @@
+• New "Notify me about this journey" button to follow your route step-by-step
+• Get live alerts for departures, transfers, walking directions, and arrivals
+• Automatic alert timing updates when departures are delayed
+• Track active journeys easily from the top bar or iOS Live Activities

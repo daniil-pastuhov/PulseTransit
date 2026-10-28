@@ -1,0 +1,4 @@
+• Ny "Varsle meg om denne reisen"-knapp for å følge ruten din steg for steg
+• Få direktevarsler om avganger, bytter, gåanvisninger og ankomst
+• Automatisk oppdatering av varslingstidspunkter ved forsinkelser
+• Følg aktiv reise enkelt fra toppbar eller iOS Live-aktiviteter
