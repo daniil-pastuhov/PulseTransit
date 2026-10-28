@@ -36,11 +36,12 @@ import org.jetbrains.compose.resources.getString
  */
 class AndroidJourneyNotifier(
     private val context: Context,
-    private val clockFormatter: ClockFormatter,
+    clockFormatter: ClockFormatter,
 ) : JourneyNotifier {
     private val manager = NotificationManagerCompat.from(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val queue = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+    private val content = JourneyProgressContent(clockFormatter)
 
     init {
         scope.launch {
@@ -116,47 +117,38 @@ class AndroidJourneyNotifier(
             .setSmallIcon(R.drawable.ic_stat_journey)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            // Otherwise the header shows when the notification was built, which reads as a journey time.
+            .setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(showJourneyIntent())
 
+    /**
+     * The ongoing notification: what to do now as the title, the facts for this step under it (see
+     * [JourneyProgress.details]), the journey as a progress bar, and the steps still to come when
+     * expanded. On Android 16 it is a Live Update, with the minutes to the next moment in its chip.
+     */
     private suspend fun buildProgress(progress: JourneyProgress): Notification {
-        val text =
-            when (progress.phase) {
-                JourneyPhase.WAITING ->
-                    getString(
-                        Res.string.journey_progress_waiting,
-                        progress.lineName.orEmpty(),
-                        progress.targetName.orEmpty(),
-                    )
-                JourneyPhase.RIDING ->
-                    getString(
-                        Res.string.journey_progress_riding,
-                        progress.lineName.orEmpty(),
-                        progress.targetName.orEmpty(),
-                    )
-                JourneyPhase.WALKING -> getString(Res.string.journey_progress_walking, progress.targetName.orEmpty())
-                JourneyPhase.ARRIVED -> getString(Res.string.journey_progress_arrived, progress.destinationName)
-            }
-        val details =
-            listOfNotNull(
-                progress.stopsLeft?.let { getPluralString(Res.plurals.journey_progress_stops_left, it, it) },
-                progress.arrivalAtMillis?.let { getString(Res.string.journey_progress_arrival, clockFormatter.clockText(it).time) },
-                if (progress.locationLost) getString(Res.string.journey_progress_location_lost) else null,
-                if (progress.muted) getString(Res.string.journey_progress_muted) else null,
-            ).joinToString(" · ")
+        val details = content.details(progress)
         val builder =
             baseProgress()
-                .setContentTitle(text)
+                .setContentTitle(content.headline(progress))
                 .setContentText(details)
                 .setSubText(getString(Res.string.journey_progress_title, progress.destinationName))
-        // A countdown to the step's next moment: departure while waiting, arrival while on the way.
-        progress.nextAtMillis?.takeIf { progress.phase != JourneyPhase.ARRIVED }?.let { at ->
+                .setRequestPromotedOngoing(true)
+        // The header shows the next moment as a clock time, the one the text names. Not a
+        // chronometer: its "16:35" countdown reads as a time of day.
+        val next = progress.nextAtMillis?.takeIf { progress.phase != JourneyPhase.ARRIVED }
+        if (next != null) builder.setWhen(next).setShowWhen(true) else builder.setShowWhen(false)
+        progress.minutesToNext?.let { builder.setShortCriticalText(getString(Res.string.journey_progress_in_minutes, it)) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+            builder.setStyle(JourneyProgressContent.progressStyle(progress))
+        } else {
+            val expanded = (listOf(details) + content.upcomingLines(progress)).joinToString("\n")
+            val max = JourneyProgressContent.PROGRESS_MAX
             builder
-                .setWhen(at)
-                .setShowWhen(true)
-                .setUsesChronometer(true)
-                .setChronometerCountDown(true)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(expanded))
+                .setProgress(max, (progress.elapsedFraction * max).toInt(), false)
         }
         if (!progress.muted) builder.addAction(0, getString(Res.string.journey_action_skip), skipIntent())
         builder.addAction(0, getString(Res.string.journey_action_show), showJourneyIntent())

@@ -125,7 +125,10 @@ data class JourneyProgress(
     val lineName: String?,
     /** The stop or place the current step heads for. */
     val targetName: String?,
-    /** When the current step's next moment comes: departure while waiting, arrival while riding or walking. */
+    /**
+     * When the current step's next moment comes, to count down to: departure while waiting or
+     * walking to a ride, getting off while riding, and the arrival on the last walk.
+     */
     val nextAtMillis: Long?,
     val arrivalAtMillis: Long?,
     /** Stops left on the current ride; null when not riding or not known. */
@@ -134,11 +137,145 @@ data class JourneyProgress(
     /** True when location was wanted but is not available, so the journey follows times only. */
     val locationLost: Boolean,
     val muted: Boolean,
-)
+    /** When this was worked out. */
+    val nowMillis: Long,
+    /** What the vehicle waited for shows on its front ("Vestli"); null when not waiting or not known. */
+    val towards: String?,
+    /** The journey's steps with their live times, from the first to the arrival. */
+    val steps: List<JourneyStep>,
+    /** Which of [steps] the journey is on; null once arrived. */
+    val currentStepIndex: Int?,
+    /** What to say under the headline, most important first; see [JourneyDetail]. */
+    val details: List<JourneyDetail>,
+    /** The journey from its start to the arrival, waits included, for a progress bar. */
+    val timeline: List<JourneyTimelineSegment>,
+) {
+    /** The steps still to come after the current one. */
+    val upcomingSteps: List<JourneyStep>
+        get() = currentStepIndex?.let { steps.drop(it + 1) }.orEmpty()
+
+    /**
+     * Whole minutes until [nextAtMillis], rounded up so "1 min" lasts until the moment itself; null
+     * once arrived, without a next moment, or when it has passed.
+     */
+    val minutesToNext: Int?
+        get() {
+            val next = nextAtMillis?.takeIf { phase != JourneyPhase.ARRIVED } ?: return null
+            val left = next - nowMillis
+            if (left <= 0) return null
+            return ((left + MILLIS_PER_MINUTE - 1) / MILLIS_PER_MINUTE).toInt()
+        }
+
+    /** When the journey starts; null without times. */
+    val startAtMillis: Long?
+        get() = timeline.firstOrNull()?.startMillis
+
+    /** How far along the journey is, from 0 at its start to 1 on arrival; 0 without times. */
+    val elapsedFraction: Double
+        get() {
+            val start = timeline.firstOrNull()?.startMillis ?: return 0.0
+            val end = timeline.last().endMillis
+            if (end <= start) return if (nowMillis >= end) 1.0 else 0.0
+            return ((nowMillis - start).toDouble() / (end - start)).coerceIn(0.0, 1.0)
+        }
+
+    private companion object {
+        const val MILLIS_PER_MINUTE = 60_000L
+    }
+}
 
 enum class JourneyPhase {
     WAITING,
     RIDING,
     WALKING,
     ARRIVED,
+}
+
+/** One step of a journey as its progress shows it: a ride, or a walk that takes time. */
+data class JourneyStep(
+    val legIndex: Int,
+    val isRide: Boolean,
+    /** The line; null on a walk. */
+    val lineName: String?,
+    /** What the vehicle shows on its front. */
+    val towards: String?,
+    /** The boarding platform's code ("2", "B"). */
+    val platform: String?,
+    val fromName: String?,
+    /** Where the step ends: the stop to get off at, or the destination on the last step. */
+    val toName: String?,
+    val startMillis: Long,
+    val endMillis: Long,
+    /** Whole minutes a ride leaves after its timetable, from live times; 0 when on time or unknown. */
+    val delayMinutes: Int,
+)
+
+/**
+ * One fact under the progress' headline. [JourneyProgress.details] are in the order to show them,
+ * so the first ones fit a notification's collapsed line; each platform words them.
+ */
+sealed interface JourneyDetail {
+    /** "Leaves 09:08", with ", 2 min late" when [delayMinutes] is above 0. */
+    data class Departs(
+        val atMillis: Long,
+        val delayMinutes: Int,
+    ) : JourneyDetail
+
+    /** "Platform 2". */
+    data class Platform(
+        val platform: String,
+    ) : JourneyDetail
+
+    /** "From Jernbanetorget": where to board. */
+    data class From(
+        val stopName: String,
+    ) : JourneyDetail
+
+    /** "Next stop: Nationaltheatret", while riding with more than one stop left. */
+    data class NextStop(
+        val stopName: String,
+    ) : JourneyDetail
+
+    /** "2 stops left". */
+    data class StopsLeft(
+        val count: Int,
+    ) : JourneyDetail
+
+    /** "Then 20 at 09:18, platform B": the next ride after this step. */
+    data class Change(
+        val lineName: String,
+        val platform: String?,
+        val atMillis: Long,
+    ) : JourneyDetail
+
+    /** "Arrives 09:31": when the journey reaches its destination. */
+    data class Arrival(
+        val atMillis: Long,
+    ) : JourneyDetail
+
+    /** "Arrived 09:31", once it has. */
+    data class Arrived(
+        val atMillis: Long,
+    ) : JourneyDetail
+
+    /** Location was wanted but is off, so the journey follows times only. */
+    data object LocationLost : JourneyDetail
+
+    /** "Skip next alerts" was chosen. */
+    data object Muted : JourneyDetail
+}
+
+/** A stretch of the journey's time, for a progress bar split by what the user does in it. */
+data class JourneyTimelineSegment(
+    val kind: Kind,
+    val startMillis: Long,
+    val endMillis: Long,
+) {
+    enum class Kind {
+        WALK,
+        WAIT,
+        RIDE,
+    }
+
+    val lengthMillis: Long get() = endMillis - startMillis
 }

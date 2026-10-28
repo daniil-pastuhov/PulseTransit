@@ -1628,7 +1628,7 @@
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fremme %1$@"
+            "value": "Ankomst %1$@"
           }
         }
       }
@@ -1646,6 +1646,108 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fremme ved %1$@"
+          }
+        }
+      }
+    },
+    "journey_progress_arrived_time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrived %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fremme %1$@"
+          }
+        }
+      }
+    },
+    "journey_progress_change": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then %1$@ at %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Så %1$@ kl. %2$@"
+          }
+        }
+      }
+    },
+    "journey_progress_change_platform": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then %1$@ at %2$@, platform %3$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Så %1$@ kl. %2$@, plattform %3$@"
+          }
+        }
+      }
+    },
+    "journey_progress_in_minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld min"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld min"
+          }
+        }
+      }
+    },
+    "journey_progress_leaves": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaves %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Går %1$@"
+          }
+        }
+      }
+    },
+    "journey_progress_leaves_late": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaves %1$@, %2$lld min late"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Går %1$@, %2$lld min forsinket"
           }
         }
       }
@@ -1684,6 +1786,23 @@
         }
       }
     },
+    "journey_progress_next_stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next stop: %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste stopp: %1$@"
+          }
+        }
+      }
+    },
     "journey_progress_riding": {
       "extractionState": "manual",
       "localizations": {
@@ -1697,6 +1816,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Med %1$@ til %2$@"
+          }
+        }
+      }
+    },
+    "journey_progress_step_arrive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  Arrive at %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  Fremme ved %2$@"
+          }
+        }
+      }
+    },
+    "journey_progress_step_ride": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  %2$@ to %3$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  %2$@ til %3$@"
+          }
+        }
+      }
+    },
+    "journey_progress_step_ride_platform": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  %2$@ to %3$@, platform %4$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  %2$@ til %3$@, plattform %4$@"
+          }
+        }
+      }
+    },
+    "journey_progress_step_walk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  Walk to %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@  Gå til %2$@"
           }
         }
       }
@@ -1755,6 +1942,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Reise til %1$@"
+          }
+        }
+      }
+    },
+    "journey_progress_towards": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ towards %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ mot %2$@"
           }
         }
       }
