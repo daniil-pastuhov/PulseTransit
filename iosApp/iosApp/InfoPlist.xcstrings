@@ -48,13 +48,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your location is used to find nearby stops and to show the weather where you are."
+            "value" : "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device."
           }
         },
         "nb" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Posisjonen din brukes til å finne holdeplasser i nærheten og vise været der du er."
+            "value" : "Posisjonen din brukes til å finne holdeplasser i nærheten, vise været der du er og følge en reise du har bedt om varsler for. Posisjonen under en fulgt reise forlater aldri denne enheten."
           }
         }
       }

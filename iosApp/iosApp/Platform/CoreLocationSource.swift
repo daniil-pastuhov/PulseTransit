@@ -5,6 +5,10 @@ import UIKit
 
 /// Device location through CoreLocation, one-shot or continuous, asking for when-in-use permission
 /// the first time.
+///
+/// With `backgroundUpdates`, continuous updates go on while the app is in the background (journey
+/// alerts): iOS allows that on a when-in-use grant for updates started in the foreground, and shows
+/// the blue location indicator meanwhile. The app declares the `location` background mode for it.
 final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDelegate {
     /// How long to wait for a fix before reporting none, like the fused provider's own timeout.
     private static let timeout: TimeInterval = 15
@@ -18,9 +22,16 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
     /// Receives every fix while continuous updates run (on-spot mode).
     private var updates: ((any LocationResult) -> Void)?
 
-    override init() {
+    private let backgroundUpdates: Bool
+
+    init(backgroundUpdates: Bool = false) {
+        self.backgroundUpdates = backgroundUpdates
         super.init()
         manager.delegate = self
+        if backgroundUpdates {
+            manager.activityType = .otherNavigation
+            manager.pausesLocationUpdatesAutomatically = false
+        }
         // iOS shows one system prompt at a time. A permission request made while another prompt is
         // up (the camera's, say) is dropped without an answer, so ask again once the app is active,
         // which is when that other prompt has closed.
@@ -58,6 +69,10 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
             updates = onResult
             manager.desiredAccuracy = accuracy == .precise ? kCLLocationAccuracyBest : kCLLocationAccuracyHundredMeters
             manager.distanceFilter = distanceFilterMeters
+            if backgroundUpdates {
+                manager.allowsBackgroundLocationUpdates = true
+                manager.showsBackgroundLocationIndicator = true
+            }
             proceedUpdates()
         }
     }
@@ -67,6 +82,7 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
             updates = nil
             manager.distanceFilter = kCLDistanceFilterNone
             manager.stopUpdatingLocation()
+            if backgroundUpdates { manager.allowsBackgroundLocationUpdates = false }
         }
     }
 

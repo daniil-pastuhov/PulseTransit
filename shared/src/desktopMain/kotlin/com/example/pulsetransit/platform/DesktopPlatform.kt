@@ -1,5 +1,9 @@
 package com.example.pulsetransit.platform
 
+import com.example.pulsetransit.data.journey.JourneyAlert
+import com.example.pulsetransit.data.journey.JourneyProgress
+import com.example.pulsetransit.data.journey.ScheduledAlert
+import com.example.pulsetransit.data.journey.TrackedJourney
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.flow.Flow
@@ -43,4 +47,39 @@ class NoLightSensor : SystemSensorManager {
 /** No camera wake: the board is never dimmed by an empty room. */
 class NoCameraMotion : CameraMotionDetector {
     override fun motionEvents(): Flow<Unit> = emptyFlow()
+}
+
+/** No notifications to show journey alerts with: the details hide the button. */
+class NoJourneyAlerts :
+    JourneyNotifier,
+    JourneyPermissions,
+    JourneyLauncher {
+    override val isSupported = false
+
+    override fun notificationState() = PermissionState.DENIED
+
+    override fun locationState() = PermissionState.DENIED
+
+    override fun markAsked(
+        notifications: Boolean,
+        location: Boolean,
+    ) = Unit
+
+    override fun show(
+        journey: TrackedJourney,
+        alert: JourneyAlert,
+    ) = Unit
+
+    override fun updateProgress(progress: JourneyProgress) = Unit
+
+    override fun scheduleUpcoming(
+        journey: TrackedJourney,
+        upcoming: List<ScheduledAlert>,
+    ) = Unit
+
+    override fun end(journeyId: String) = Unit
+
+    override fun start() = Unit
+
+    override fun stop() = Unit
 }

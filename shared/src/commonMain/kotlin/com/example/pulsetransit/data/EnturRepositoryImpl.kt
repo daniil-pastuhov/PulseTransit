@@ -65,6 +65,8 @@ class EnturRepositoryImpl(
                 }
                 fromPlace {
                   name
+                  latitude
+                  longitude
                   quay {
                     id
                     publicCode
@@ -72,6 +74,8 @@ class EnturRepositoryImpl(
                 }
                 toPlace {
                   name
+                  latitude
+                  longitude
                   quay {
                     id
                   }
@@ -195,6 +199,8 @@ class EnturRepositoryImpl(
     @Serializable
     private data class TripPlaceGraphQL(
         val name: String? = null,
+        val latitude: Double? = null,
+        val longitude: Double? = null,
         val quay: QuayIdGraphQL? = null,
     )
 
@@ -877,6 +883,10 @@ class EnturRepositoryImpl(
             serviceDate = leg.serviceDate,
             fromQuayId = leg.fromPlace?.quay?.id,
             toQuayId = leg.toPlace?.quay?.id,
+            fromLatitude = leg.fromPlace?.latitude,
+            fromLongitude = leg.fromPlace?.longitude,
+            toLatitude = leg.toPlace?.latitude,
+            toLongitude = leg.toPlace?.longitude,
         )
 
     /** Stable key for an origin set and destination, independent of the order favourites are in. */

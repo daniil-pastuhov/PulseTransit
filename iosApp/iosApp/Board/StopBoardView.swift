@@ -6,6 +6,7 @@ import SwiftUI
 struct StopBoardView: View {
     @StateObject private var model = StopBoardModel()
     @StateObject private var updateModel = AppUpdateModel()
+    @StateObject private var journeyModel = JourneyAlertsModel()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     // A launch argument (-PTOpenSettings YES) opens Settings straight away, so the screen can be
@@ -18,6 +19,8 @@ struct StopBoardView: View {
     /// The fastest route whose details are open.
     @State private var detailsTrip: TripSelection?
     @State private var showRouteSearch = false
+    /// The followed journey's details, opened from its bar or a notification's "Show journey".
+    @State private var followedJourney: TripSelection?
     /// The board's size, for how much of the header fits in iPhone Duo's bar.
     @State private var boardSize = CGSize.zero
 
@@ -119,6 +122,13 @@ struct StopBoardView: View {
                 if let update = updateModel.state.update {
                     UpdateBanner(update: update, onDismiss: { updateModel.viewModel.dismiss() })
                 }
+                if let journey = journeyModel.state.activeJourney {
+                    FollowedJourneyBar(
+                        journey: journey,
+                        onOpen: { openFollowedJourney() },
+                        onStop: { journeyModel.viewModel.onStopClick() }
+                    )
+                }
                 if state.mode == .onSpot {
                     OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })
                 } else {
@@ -137,6 +147,22 @@ struct StopBoardView: View {
             .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
                 RouteSearchView(state: model.state, viewModel: viewModel)
             }
+            .background(
+                Color.clear.sheet(item: $followedJourney) { selection in
+                    TripDetailsView(
+                        trip: journeyModel.state.activeJourney?.trip ?? selection.trip,
+                        showDelays: state.showDelays,
+                        showMessages: state.showMessages,
+                        loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] },
+                        journey: journeyModel
+                    )
+                }
+            )
+            .environmentObject(journeyModel)
+            .onAppear { if journeyModel.state.openJourneyRequested { openFollowedJourney() } }
+            .onChange(of: journeyModel.state.openJourneyRequested) { requested in
+                if requested { openFollowedJourney() }
+            }
             .opacity(state.isScreenDimmed ? 0.05 : 1)
             .pixelShift(state.burnInLevel)
 
@@ -147,6 +173,14 @@ struct StopBoardView: View {
                     .onTapGesture { viewModel.wakeScreen() }
             }
         }
+    }
+
+    /// Opens the followed journey's details, closing any route's details first: one sheet at a time.
+    private func openFollowedJourney() {
+        journeyModel.viewModel.onJourneyOpened()
+        guard let journey = journeyModel.state.activeJourney else { return }
+        detailsTrip = nil
+        followedJourney = TripSelection(destinationId: journey.id, trip: journey.trip)
     }
 
     /// The wall board's body: a banner per destination (the searched-for one first), then a panel per favourite stop.
@@ -204,7 +238,8 @@ struct StopBoardView: View {
                 trip: TripDetailsKt.currentTrip(trips: state.fastestTrips[selection.destinationId], selected: selection.trip),
                 showDelays: state.showDelays,
                 showMessages: state.showMessages,
-                loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] }
+                loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] },
+                journey: journeyModel
             )
         }
         if state.favorites.isEmpty {

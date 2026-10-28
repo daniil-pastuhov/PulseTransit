@@ -73,6 +73,7 @@ data class Departure(
 )
 
 /** One stop on a trip, from [EnturRepository.getJourneyStops]. */
+@Serializable
 data class JourneyStop(
     val quayId: String?,
     val stopPlaceId: String?,
@@ -80,6 +81,9 @@ data class JourneyStop(
     /** When the trip reaches this stop (leaves it, at the first), as ISO-8601. */
     val expectedTime: String,
     val isCancelled: Boolean = false,
+    /** The quay's position, which journey alerts measure the device against. */
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 data class DepartureGroup(
@@ -155,6 +159,11 @@ data class TripLeg(
     val serviceDate: String? = null,
     val fromQuayId: String? = null,
     val toQuayId: String? = null,
+    /** Where the leg starts and ends, for journey alerts and walking directions. */
+    val fromLatitude: Double? = null,
+    val fromLongitude: Double? = null,
+    val toLatitude: Double? = null,
+    val toLongitude: Double? = null,
 )
 
 @Serializable

@@ -290,4 +290,50 @@
     <string name="update_available">En ny versjon av PulseTransit er tilgjengelig</string>
     <string name="update_app">Oppdater</string>
     <string name="dismiss_update">Ikke nå</string>
+
+    <!-- Journey alerts: following a route with notifications (and a Live Activity on iOS). -->
+    <string name="journey_notify_button">Varsle meg om denne reisen</string>
+    <string name="journey_stop_button">Slutt å følge</string>
+    <string name="journey_following">Følger reisen din til %1$s</string>
+    <string name="journey_rationale_title">Reisevarsler</string>
+    <string name="journey_rationale_body">PulseTransit kan si fra når du bør gå, når avgangen går og når neste stopp er ditt. Med posisjonen din kan appen også merke om du gikk glipp av avgangen.</string>
+    <string name="journey_rationale_privacy">Posisjonen din blir på denne enheten og sendes aldri noe sted.</string>
+    <string name="journey_mode_time">Varsler fra sanntid</string>
+    <string name="journey_mode_time_detail">Avganger, ditt stopp og bytter, med forsinkelser. Ingen posisjon.</string>
+    <string name="journey_mode_location">Merk også om jeg går glipp av avgangen</string>
+    <string name="journey_mode_location_detail">Bruker posisjonen din under reisen, også med skjermen av.</string>
+    <string name="journey_rationale_cancel">Ikke nå</string>
+    <string name="journey_alert_departing">%1$s går om 1 minutt</string>
+    <string name="journey_alert_from">Fra %1$s</string>
+    <string name="journey_alert_platform">Plattform %1$s</string>
+    <string name="journey_alert_towards">Mot %1$s</string>
+    <string name="journey_alert_next_stop">Neste stopp, %1$s, er ditt</string>
+    <string name="journey_alert_next_stop_detail">Gjør deg klar til å gå av.</string>
+    <string name="journey_alert_transfer">Bytt til %1$s</string>
+    <plurals name="journey_alert_transfer_minutes">
+        <item quantity="one">Går om %1$d minutt</item>
+        <item quantity="other">Går om %1$d minutter</item>
+    </plurals>
+    <string name="journey_alert_walk">Gå til %1$s</string>
+    <string name="journey_alert_walk_detail">%1$d min til fots</string>
+    <string name="journey_alert_missed">Ser ut som du gikk glipp av reisen?</string>
+    <string name="journey_alert_missed_detail">Åpne PulseTransit for å finne en annen rute.</string>
+    <string name="journey_alert_arrived">Fremme ved %1$s</string>
+    <string name="journey_action_skip">Hopp over neste varsler</string>
+    <string name="journey_action_show">Vis reisen</string>
+    <string name="journey_action_navigate">Vis veien</string>
+    <string name="journey_progress_title">Reise til %1$s</string>
+    <string name="journey_progress_waiting">%1$s fra %2$s</string>
+    <string name="journey_progress_riding">Med %1$s til %2$s</string>
+    <string name="journey_progress_walking">Går til %1$s</string>
+    <string name="journey_progress_arrived">Fremme ved %1$s</string>
+    <plurals name="journey_progress_stops_left">
+        <item quantity="one">%1$d stopp igjen</item>
+        <item quantity="other">%1$d stopp igjen</item>
+    </plurals>
+    <string name="journey_progress_arrival">Fremme %1$s</string>
+    <string name="journey_progress_location_lost">Posisjon av, følger bare tidene</string>
+    <string name="journey_progress_muted">Varsler hoppet over</string>
+    <string name="journey_channel_alerts">Reisevarsler</string>
+    <string name="journey_channel_progress">Reise pågår</string>
 </resources>

@@ -55,6 +55,10 @@ internal fun TripLeg.toCacheEntity() =
         serviceDate = serviceDate,
         fromQuayId = fromQuayId,
         toQuayId = toQuayId,
+        fromLatitude = fromLatitude,
+        fromLongitude = fromLongitude,
+        toLatitude = toLatitude,
+        toLongitude = toLongitude,
     )
 
 internal fun CachedTripLeg.toTripLeg() =
@@ -78,4 +82,8 @@ internal fun CachedTripLeg.toTripLeg() =
         serviceDate = serviceDate,
         fromQuayId = fromQuayId,
         toQuayId = toQuayId,
+        fromLatitude = fromLatitude,
+        fromLongitude = fromLongitude,
+        toLatitude = toLatitude,
+        toLongitude = toLongitude,
     )

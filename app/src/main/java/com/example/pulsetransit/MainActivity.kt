@@ -1,5 +1,6 @@
 package com.example.pulsetransit
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -14,6 +15,9 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.SettingsRepository
+import com.example.pulsetransit.data.journey.JourneyOpenRequests
+import com.example.pulsetransit.data.journey.JourneyStore
+import com.example.pulsetransit.platform.JourneyLauncher
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
@@ -21,11 +25,16 @@ import org.koin.android.ext.android.inject
 
 class MainActivity : ComponentActivity() {
     private val settingsRepository: SettingsRepository by inject()
+    private val journeyStore: JourneyStore by inject()
+    private val journeyLauncher: JourneyLauncher by inject()
+    private val journeyOpenRequests: JourneyOpenRequests by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
+        // Only on a fresh start: a recreated activity (rotation) gets the same intent again.
+        if (savedInstanceState == null) handleJourneyIntent(intent)
 
         // Full screen and always-on are wall-board settings; on-spot mode is a phone in the hand.
         val appMode = settingsRepository.getAppModeFlow()
@@ -60,6 +69,23 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleJourneyIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Picks a saved journey up again after its service was stopped (a reboot, or Android
+        // refusing to restart it in the background). Started from here, it may read the location.
+        if (journeyStore.active.value != null) journeyLauncher.start()
+    }
+
+    /** "Show journey" from a journey notification opens the followed journey's details. */
+    private fun handleJourneyIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(EXTRA_SHOW_JOURNEY, false) == true) journeyOpenRequests.request()
+    }
+
     private fun hideSystemBars() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
@@ -70,5 +96,9 @@ class MainActivity : ComponentActivity() {
     private fun showSystemBars() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
+    }
+
+    companion object {
+        const val EXTRA_SHOW_JOURNEY = "show_journey"
     }
 }
