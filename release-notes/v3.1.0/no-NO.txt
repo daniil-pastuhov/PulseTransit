@@ -1,1 +1,4 @@
-\u2022 Ny "Varsle meg om denne reisen"-knapp for \u00e5 f\u00f8lge ruten din steg for steg\n\u2022 F\u00e5 direktevarsler om avganger, bytter, g\u00e5anvisninger og ankomst\n\u2022 Automatisk oppdatering av varslingstidspunkter ved forsinkelser\n\u2022 F\u00f8lg aktiv reise enkelt fra toppbar eller iOS Live-aktiviteter
+• Ny "Varsle meg om denne reisen"-knapp for å følge ruten din steg for steg
+• Få direktevarsler om avganger, bytter, gåanvisninger og ankomst
+• Automatisk oppdatering av varslingstidspunkter ved forsinkelser
+• Følg aktiv reise enkelt fra toppbar eller iOS Live-aktiviteter
