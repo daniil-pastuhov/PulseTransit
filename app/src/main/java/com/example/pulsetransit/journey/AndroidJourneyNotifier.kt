@@ -234,21 +234,16 @@ class AndroidJourneyNotifier(
     private fun navigateIntent(
         latitude: Double,
         longitude: Double,
-    ): PendingIntent {
-        val maps = Intent(Intent.ACTION_VIEW, "google.navigation:q=$latitude,$longitude&mode=w".toUri())
-        val intent =
-            if (maps.resolveActivity(context.packageManager) != null) {
-                maps
-            } else {
-                Intent(Intent.ACTION_VIEW, "geo:$latitude,$longitude?q=$latitude,$longitude".toUri())
-            }
-        return PendingIntent.getActivity(
+    ): PendingIntent =
+        PendingIntent.getBroadcast(
             context,
             REQUEST_NAVIGATE,
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            Intent(context, JourneyActionReceiver::class.java)
+                .setAction(JourneyActionReceiver.ACTION_NAVIGATE)
+                .putExtra(JourneyActionReceiver.EXTRA_NAVIGATE_LATITUDE, latitude)
+                .putExtra(JourneyActionReceiver.EXTRA_NAVIGATE_LONGITUDE, longitude),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-    }
 
     private fun alertId(alert: JourneyAlert) = ALERT_ID_BASE + (alert.id.hashCode() and ALERT_ID_MASK)
 
