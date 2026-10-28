@@ -174,6 +174,7 @@ class StopBoardOnSpotTest : BoardTestBase() {
             assertEquals(tripCalls + 1, entur.tripCalls)
             assertEquals(thirtyMetresOn.latitude to thirtyMetresOn.longitude, entur.lastFastestTripCoords)
             assertEquals(thirtyMetresOn.latitude, (vm.uiState.value.location as OnSpotLocation.Located).latitude)
+            assertEquals(thirtyMetresOn.latitude to thirtyMetresOn.longitude, settings.getDeviceLocation(), "kept for the widgets")
         }
 
     @Test

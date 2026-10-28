@@ -58,8 +58,15 @@ class JourneyTrackerTest {
             scheduled += upcoming
         }
 
-        override fun end(journeyId: String) {
-            ended += journeyId
+        /** Whether each ended journey's shown alerts were cleared, by journey id. */
+        val clearedAlerts = mutableListOf<Boolean>()
+
+        override fun end(
+            journey: TrackedJourney,
+            clearAlerts: Boolean,
+        ) {
+            ended += journey.id
+            clearedAlerts += clearAlerts
         }
     }
 
@@ -131,7 +138,23 @@ class JourneyTrackerTest {
             assertNull(store.active.value)
             assertEquals(journey().id, store.history().single().id)
             assertEquals(listOf(journey().id), notifier.ended)
+            assertEquals(listOf(false), notifier.clearedAlerts, "its arrival alert stays in sight")
             assertTrue(harness.job.isCompleted, "the loop returns once nothing is followed")
+        }
+
+    @Test
+    fun `following another journey takes the first one's alerts down`() =
+        trackerTest {
+            val first = journey()
+            val harness = track(first, startAt = at(3))
+            assertEquals(listOf("walk-0"), shownIds)
+
+            store.start(first.copy(id = "another", startedAtMillis = at(3)))
+            runCurrent()
+
+            assertEquals(listOf(first.id), notifier.ended)
+            assertEquals(listOf(true), notifier.clearedAlerts)
+            harness.job.cancel()
         }
 
     @Test

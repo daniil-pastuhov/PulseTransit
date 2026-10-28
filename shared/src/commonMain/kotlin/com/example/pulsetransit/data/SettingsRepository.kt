@@ -101,6 +101,20 @@ interface SettingsRepository {
         lon: Double?,
     )
 
+    /**
+     * Where the device last was while the on-spot board followed it. Widgets refresh in the
+     * background, where the location cannot be read, so in on-spot mode they route from here.
+     * Kept out of backups; null on platforms without widgets, which do not store it.
+     */
+    fun getDeviceLocation(): Pair<Double, Double>?
+
+    fun setDeviceLocation(
+        lat: Double,
+        lon: Double,
+    )
+
+    fun clearDeviceLocation()
+
     // New settings
     fun isShowDelays(): Boolean
 

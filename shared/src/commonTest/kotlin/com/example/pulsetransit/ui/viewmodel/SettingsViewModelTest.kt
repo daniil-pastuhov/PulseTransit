@@ -4,9 +4,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.journey.JourneyStoreImpl
+import com.example.pulsetransit.data.journey.JourneyTrackingMode
+import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationResult
+import com.example.pulsetransit.platform.PermissionState
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel.LocationStatus
+import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -30,6 +35,20 @@ class SettingsViewModelTest {
     private val settings = FakeSettingsRepository()
     private val location = FakeLocationProvider()
     private val entur = FakeEnturRepository()
+    private val journeyStore = JourneyStoreImpl(MapSettings())
+    private val journeyPermissions =
+        object : JourneyPermissions {
+            override val isSupported = true
+
+            override fun notificationState() = PermissionState.GRANTED
+
+            override fun locationState() = PermissionState.GRANTED
+
+            override fun markAsked(
+                notifications: Boolean,
+                location: Boolean,
+            ) = Unit
+        }
 
     @BeforeTest
     fun setUp() = Dispatchers.setMain(dispatcher)
@@ -40,13 +59,25 @@ class SettingsViewModelTest {
     /** Like `boardTest`: the light-sensor collector never ends, so the scope must be cancelled. */
     private fun settingsTest(body: suspend TestScope.(SettingsViewModel) -> Unit) =
         runTest(dispatcher) {
-            val vm = SettingsViewModel(entur, settings, FakeSystemSensorManager(), location)
+            val vm = SettingsViewModel(entur, settings, FakeSystemSensorManager(), location, journeyStore, journeyPermissions)
             try {
                 runCurrent()
                 body(vm)
             } finally {
                 vm.viewModelScope.cancel()
             }
+        }
+
+    @Test
+    fun `the journey alert mode is shown and saved for the next journey`() =
+        settingsTest { vm ->
+            assertEquals(null, vm.uiState.value.journeyMode)
+            assertTrue(vm.uiState.value.journeyAlertsSupported)
+
+            vm.updateJourneyMode(JourneyTrackingMode.LOCATION)
+
+            assertEquals(JourneyTrackingMode.LOCATION, vm.uiState.value.journeyMode)
+            assertEquals(JourneyTrackingMode.LOCATION, journeyStore.preferredMode())
         }
 
     @Test

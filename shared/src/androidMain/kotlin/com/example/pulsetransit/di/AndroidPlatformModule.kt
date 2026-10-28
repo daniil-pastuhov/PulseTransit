@@ -5,6 +5,7 @@ import com.example.pulsetransit.data.cache.CacheDatabase
 import com.example.pulsetransit.data.cache.buildCacheDatabase
 import com.example.pulsetransit.data.cache.cacheDatabaseBuilder
 import com.example.pulsetransit.data.createAppSettings
+import com.example.pulsetransit.data.createDeviceStateSettings
 import com.example.pulsetransit.platform.AppUpdateChecker
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
@@ -24,6 +25,7 @@ import com.russhwolf.settings.Settings
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.okhttp.OkHttp
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 /** The Android half of [sharedModule]: everything that needs a `Context` or an Android API. */
@@ -31,6 +33,7 @@ val androidPlatformModule =
     module {
         single<HttpClientEngineFactory<*>> { OkHttp }
         single<Settings> { createAppSettings(androidContext()) }
+        single<Settings>(named(DEVICE_STATE)) { createDeviceStateSettings(androidContext()) }
         single<CacheDatabase> { cacheDatabaseBuilder(androidContext()).buildCacheDatabase() }
         single<ClockFormatter> { SystemClockFormatter() }
         single<LocationProvider> { createLocationProvider(androidContext()) }

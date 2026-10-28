@@ -26,6 +26,9 @@ import org.koin.dsl.module
 /** Names the `LocationProvider` journey alerts use, where it differs from the board's (iOS). */
 const val JOURNEY_LOCATION = "journeyLocation"
 
+/** A `Settings` kept out of backups for where the device last was; only platforms with widgets supply it. */
+const val DEVICE_STATE = "deviceState"
+
 /**
  * Everything that is the same on every platform. It relies on a platform module to provide:
  * - `HttpClientEngineFactory<*>` (OkHttp on Android, Darwin on iOS)
@@ -36,6 +39,8 @@ const val JOURNEY_LOCATION = "journeyLocation"
  * - `JourneyNotifier`, `JourneyPermissions` and `JourneyLauncher`, for journey alerts, and
  *   optionally a `LocationProvider` named [JOURNEY_LOCATION] where the journey's location must not
  *   share one with the board's (iOS, whose location source serves one caller at a time)
+ * - optionally a `Settings` named [DEVICE_STATE], never backed up, where the widgets need to know
+ *   where the device last was (Android)
  */
 val sharedModule =
     module {
@@ -44,7 +49,7 @@ val sharedModule =
         factory { get<CacheDatabase>().tripCacheDao() }
         factory { get<CacheDatabase>().forecastCacheDao() }
 
-        single<SettingsRepository> { SettingsRepositoryImpl(prefs = get()) }
+        single<SettingsRepository> { SettingsRepositoryImpl(prefs = get(), deviceState = getOrNull(named(DEVICE_STATE))) }
         single<EnturRepository> {
             EnturRepositoryImpl(client = get(), departureCache = get(), tripCache = get())
         }
@@ -84,6 +89,8 @@ val sharedModule =
                 settingsRepository = get(),
                 sensorManager = get(),
                 locationProvider = get(),
+                journeyStore = get(),
+                journeyPermissions = get(),
             )
         }
     }

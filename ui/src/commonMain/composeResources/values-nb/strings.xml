@@ -296,6 +296,7 @@
     <string name="journey_stop_button">Slutt å følge</string>
     <string name="journey_following">Følger reisen din til %1$s</string>
     <string name="journey_rationale_title">Reisevarsler</string>
+    <string name="settings_journey_alerts_hint">Hvordan «Varsle meg om denne reisen» følger reisen din. Du kan endre det når som helst.</string>
     <string name="journey_rationale_body">PulseTransit kan si fra når du bør gå, når avgangen går og når neste stopp er ditt. Med posisjonen din kan appen også merke om du gikk glipp av avgangen.</string>
     <string name="journey_rationale_privacy">Posisjonen din blir på denne enheten og sendes aldri noe sted.</string>
     <string name="journey_mode_time">Varsler fra sanntid</string>

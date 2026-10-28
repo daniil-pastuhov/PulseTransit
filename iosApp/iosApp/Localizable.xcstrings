@@ -4279,6 +4279,23 @@
         }
       }
     },
+    "settings_journey_alerts_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How “Notify me about this journey” follows your trip. You can change it any time."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvordan «Varsle meg om denne reisen» følger reisen din. Du kan endre det når som helst."
+          }
+        }
+      }
+    },
     "settings_mode": {
       "extractionState": "manual",
       "localizations": {

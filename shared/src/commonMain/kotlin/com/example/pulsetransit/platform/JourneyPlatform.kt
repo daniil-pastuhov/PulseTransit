@@ -26,8 +26,15 @@ interface JourneyNotifier {
         upcoming: List<ScheduledAlert>,
     )
 
-    /** The journey is over or no longer followed: take its notifications down. */
-    fun end(journeyId: String)
+    /**
+     * [journey] is over or no longer followed: take its ongoing notification down, and its alerts
+     * not yet shown. With [clearAlerts], because another journey took its place, the alerts it has
+     * already shown go too: only the followed journey's alerts are ever in sight.
+     */
+    fun end(
+        journey: TrackedJourney,
+        clearAlerts: Boolean,
+    )
 }
 
 enum class PermissionState {

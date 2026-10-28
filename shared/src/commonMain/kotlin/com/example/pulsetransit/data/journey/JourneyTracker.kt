@@ -68,6 +68,7 @@ class JourneyTracker(
 
     /** Follows journey [id] until it ends or another takes its place. */
     private suspend fun follow(id: String) {
+        val journey = store.active.value?.takeIf { it.id == id } ?: return
         lastFix = null
         offSinceMillis = null
         lastRefreshMillis = null
@@ -77,7 +78,8 @@ class JourneyTracker(
                 withTimeoutOrNull(TICK_MILLIS) { store.active.drop(1).first() }
             }
         } finally {
-            notifier.end(id)
+            val replaced = store.active.value.let { it != null && it.id != id }
+            notifier.end(journey, clearAlerts = replaced)
         }
     }
 

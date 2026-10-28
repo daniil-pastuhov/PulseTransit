@@ -3,13 +3,16 @@
    android:dataExtractionRules). Once an <include> is present, only the
    included domains are copied — settings live in SharedPreferences,
    while the Room offline cache (pulse_transit_cache.db) is disposable
-   derived data and must not be restored onto a new device.
+   derived data and must not be restored onto a new device. device_state.xml holds where the
+   device last was, for the widgets, and never leaves the device.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="." />
+        <exclude domain="sharedpref" path="device_state.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="." />
+        <exclude domain="sharedpref" path="device_state.xml" />
     </device-transfer>
 </data-extraction-rules>

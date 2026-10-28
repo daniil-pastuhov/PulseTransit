@@ -13,6 +13,13 @@ private const val PREFS_NAME = "app_settings"
 private const val LEGACY_FILTERED_LINES = "filtered_lines"
 private const val LEGACY_QUAYS_PREFIX = "quays_"
 
+/** Device state that must not leave the device; excluded from backup in both backup rule files. */
+private const val DEVICE_STATE_PREFS_NAME = "device_state"
+
+/** Where the device last was, for the widgets: a SharedPreferences file of its own, never backed up. */
+fun createDeviceStateSettings(context: Context): Settings =
+    SharedPreferencesSettings(context.getSharedPreferences(DEVICE_STATE_PREFS_NAME, Context.MODE_PRIVATE))
+
 /** The app's [Settings], backed by the same SharedPreferences file as before the KMP move. */
 fun createAppSettings(context: Context): Settings {
     val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

@@ -1,9 +1,11 @@
 package com.example.pulsetransit.data.widget
 
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.isoOslo
 import com.example.pulsetransit.ui.viewmodel.FakeEnturRepository
@@ -94,6 +96,45 @@ class BoardWidgetSourceTest {
         }
 
     @Test
+    fun `on the spot routes and weather are for where the device last was`() =
+        runTest {
+            settings.mode = AppMode.ON_SPOT
+            settings.lastDeviceFix = 59.95 to 10.80
+            settings.destinations = listOf(majorstuen)
+            entur.tripOptionsTo = { _, _ -> Sourced(listOf(trip(3))) }
+
+            source.route(null)
+            source.glance()
+
+            assertEquals<Pair<Double?, Double?>?>(59.95 to 10.80, entur.lastFastestTripCoords)
+            assertEquals(59.95 to 10.80, weather.lastCoords)
+        }
+
+    @Test
+    fun `on the spot with no fix yet the saved location is used`() =
+        runTest {
+            settings.mode = AppMode.ON_SPOT
+            settings.destinations = listOf(majorstuen)
+            entur.tripOptionsTo = { _, _ -> Sourced(listOf(trip(3))) }
+
+            source.route(null)
+
+            assertEquals<Pair<Double?, Double?>?>(settings.latitude to settings.longitude, entur.lastFastestTripCoords)
+        }
+
+    @Test
+    fun `a wall board routes from its saved location wherever the device was`() =
+        runTest {
+            settings.lastDeviceFix = 59.95 to 10.80
+            settings.destinations = listOf(majorstuen)
+            entur.tripOptionsTo = { _, _ -> Sourced(listOf(trip(3))) }
+
+            source.route(null)
+
+            assertEquals<Pair<Double?, Double?>?>(settings.latitude to settings.longitude, entur.lastFastestTripCoords)
+        }
+
+    @Test
     fun `without a saved location routes go from the favourites`() =
         runTest {
             settings.latitude = null
@@ -125,6 +166,26 @@ class BoardWidgetSourceTest {
 
             assertEquals(RouteWidgetState.AtDestination(majorstuen), source.route(null))
             assertEquals(0, entur.tripCalls)
+        }
+
+    @Test
+    fun `a route that starts with a walk begun a moment ago is still offered`() =
+        runTest {
+            settings.destinations = listOf(majorstuen)
+            val walkFirst =
+                trip(0).copy(
+                    expectedStartTime = isoOslo(now - 1_000L),
+                    legs =
+                        listOf(
+                            TripLeg(mode = "foot", expectedStartTime = isoOslo(now - 1_000L)),
+                            TripLeg(mode = "metro", lineName = "2", expectedStartTime = isoOslo(now + 4 * 60_000L)),
+                        ),
+                )
+            entur.tripOptionsTo = { _, _ -> Sourced(listOf(walkFirst)) }
+
+            val state = assertIs<RouteWidgetState.Route>(source.route(null))
+
+            assertEquals(now + 4 * 60_000L, state.route?.boardAtMillis)
         }
 
     @Test

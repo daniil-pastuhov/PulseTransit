@@ -26,7 +26,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getPluralString
 import org.jetbrains.compose.resources.getString
 
 /**
@@ -36,7 +35,7 @@ import org.jetbrains.compose.resources.getString
  */
 class AndroidJourneyNotifier(
     private val context: Context,
-    clockFormatter: ClockFormatter,
+    private val clockFormatter: ClockFormatter,
 ) : JourneyNotifier {
     private val manager = NotificationManagerCompat.from(context)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -71,7 +70,7 @@ class AndroidJourneyNotifier(
         journey: TrackedJourney,
         alert: JourneyAlert,
     ) {
-        queue.trySend { post(alertId(alert), buildAlert(alert)) }
+        queue.trySend { post(alertId(alert), buildAlert(alert), tag = alertTag(journey)) }
     }
 
     override fun updateProgress(progress: JourneyProgress) {
@@ -84,16 +83,30 @@ class AndroidJourneyNotifier(
         upcoming: List<ScheduledAlert>,
     ) = Unit
 
-    override fun end(journeyId: String) {
-        queue.trySend { manager.cancel(PROGRESS_ID) }
+    override fun end(
+        journey: TrackedJourney,
+        clearAlerts: Boolean,
+    ) {
+        queue.trySend {
+            manager.cancel(PROGRESS_ID)
+            if (clearAlerts) {
+                val tag = alertTag(journey)
+                context
+                    .getSystemService(NotificationManager::class.java)
+                    .activeNotifications
+                    .filter { it.tag == tag }
+                    .forEach { manager.cancel(tag, it.id) }
+            }
+        }
     }
 
     @SuppressLint("MissingPermission") // areNotificationsEnabled is checked; without it nothing is posted.
     private fun post(
         id: Int,
         notification: Notification,
+        tag: String? = null,
     ) {
-        if (manager.areNotificationsEnabled()) manager.notify(id, notification)
+        if (manager.areNotificationsEnabled()) manager.notify(tag, id, notification)
     }
 
     /**
@@ -253,6 +266,9 @@ class AndroidJourneyNotifier(
     }
 
     private fun alertId(alert: JourneyAlert) = ALERT_ID_BASE + (alert.id.hashCode() and ALERT_ID_MASK)
+
+    /** Marks a journey's alerts, so they can be taken down when another journey replaces it. */
+    private fun alertTag(journey: TrackedJourney) = "journey.${journey.startedAtMillis}"
 
     companion object {
         const val PROGRESS_ID = 4_100

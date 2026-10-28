@@ -32,6 +32,9 @@ struct SettingsView: View {
                     TripOptionsSection(state: state, viewModel: viewModel)
                 }
                 RouteSearchSection(model: model)
+                if state.journeyAlertsSupported {
+                    JourneyAlertsSection(state: state, viewModel: viewModel)
+                }
                 if isBoard {
                     LocationSection(state: state, viewModel: viewModel)
                     AddStopsSection(state: state, viewModel: viewModel)
@@ -75,6 +78,43 @@ private struct ModeSection: View {
                 onSelect: { viewModel.updateAppMode(mode: $0) }
             )
         }
+    }
+}
+
+/// How "Notify me about this journey" follows a trip, as the rationale offers it. Location mode
+/// still asks for the location through the rationale the first time it is used.
+private struct JourneyAlertsSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+
+    var body: some View {
+        Section {
+            choice(.timeOnly, title: "journey_mode_time", detail: "journey_mode_time_detail")
+            choice(.location, title: "journey_mode_location", detail: "journey_mode_location_detail")
+        } header: {
+            Text(L("journey_rationale_title"))
+        } footer: {
+            Text(L("settings_journey_alerts_hint"))
+        }
+    }
+
+    private func choice(_ mode: JourneyTrackingMode, title: String, detail: String) -> some View {
+        Button {
+            viewModel.updateJourneyMode(mode: mode)
+        } label: {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L(title)).foregroundColor(Palette.textPrimary)
+                    Text(L(detail)).font(.caption).foregroundColor(.secondary)
+                }
+                Spacer(minLength: 0)
+                if state.journeyMode == mode {
+                    Image(systemName: "checkmark").foregroundColor(Palette.primary)
+                }
+            }
+        }
+        .accessibilityAddTraits(state.journeyMode == mode ? .isSelected : [])
+        .accessibilityIdentifier("settings.journeyMode.\(mode.name.lowercased())")
     }
 }
 

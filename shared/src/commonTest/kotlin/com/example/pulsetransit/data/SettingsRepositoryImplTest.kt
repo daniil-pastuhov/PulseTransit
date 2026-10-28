@@ -5,11 +5,43 @@ import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** The parts of the settings store that are more than a plain key lookup. */
 class SettingsRepositoryImplTest {
     private val store = MapSettings()
     private val repo = SettingsRepositoryImpl(store)
+
+    @Test
+    fun `the device location is kept apart from the backed-up settings and rounded`() {
+        val deviceState = MapSettings()
+        val withDevice = SettingsRepositoryImpl(store, deviceState)
+
+        withDevice.setDeviceLocation(59.9111234567, 10.7522987654)
+
+        assertEquals(59.9111 to 10.7523, withDevice.getDeviceLocation())
+        assertTrue(store.keys.isEmpty(), "nothing in the backed-up store")
+        assertEquals(59.9111 to 10.7523, SettingsRepositoryImpl(MapSettings(), deviceState).getDeviceLocation())
+    }
+
+    @Test
+    fun `without a device store the location is not kept at all`() {
+        repo.setDeviceLocation(59.91, 10.75)
+
+        assertNull(repo.getDeviceLocation())
+        assertTrue(store.keys.isEmpty())
+    }
+
+    @Test
+    fun `leaving on-spot mode forgets where the device was`() {
+        val withDevice = SettingsRepositoryImpl(store, MapSettings())
+        withDevice.setAppMode(AppMode.ON_SPOT)
+        withDevice.setDeviceLocation(59.91, 10.75)
+
+        withDevice.setAppMode(AppMode.BOARD)
+
+        assertNull(withDevice.getDeviceLocation())
+    }
 
     @Test
     fun `filtered lines round-trip and reach the flow`() {

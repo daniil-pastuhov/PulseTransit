@@ -86,11 +86,20 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
         scheduled = wanted
     }
 
-    func end(journeyId _: String) {
+    func end(journey: TrackedJourney, clearAlerts: Bool) {
+        // Only this journey's: by the time the lists arrive the next journey may have scheduled its own.
+        let prefix = Self.idPrefix(journey)
         center.getPendingNotificationRequests { [center] requests in
             center.removePendingNotificationRequests(
-                withIdentifiers: requests.map(\.identifier).filter { $0.hasPrefix(Self.prefix) }
+                withIdentifiers: requests.map(\.identifier).filter { $0.hasPrefix(prefix) }
             )
+        }
+        if clearAlerts {
+            center.getDeliveredNotifications { [center] delivered in
+                center.removeDeliveredNotifications(
+                    withIdentifiers: delivered.map(\.request.identifier).filter { $0.hasPrefix(prefix) }
+                )
+            }
         }
         scheduled = [:]
         if #available(iOS 16.2, *) {
@@ -101,7 +110,11 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     /// One per alert of one followed journey: following the same trip again later is a new journey,
     /// whose alerts must not be taken for the ones already delivered.
     private static func identifier(_ journey: TrackedJourney, _ alert: any JourneyAlert) -> String {
-        "\(prefix)\(journey.startedAtMillis).\(alert.id)"
+        "\(idPrefix(journey))\(alert.id)"
+    }
+
+    private static func idPrefix(_ journey: TrackedJourney) -> String {
+        "\(prefix)\(journey.startedAtMillis)."
     }
 
     // MARK: Content
