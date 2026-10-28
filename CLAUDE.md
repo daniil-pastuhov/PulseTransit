@@ -136,8 +136,9 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   `-PTUITest YES` swaps in fixed data (a board at Oslo S with one route to Majorstuen, no network) and
   a settings store of its own, which `-PTUITestReset YES` empties first (`di/UiTestFixtures.kt`).
   The XCUITest target `iosAppUITests` drives journey alerts on it end to end, system prompts and a
-  delivered notification included: `xcodebuild test -project iosApp/iosApp.xcodeproj -scheme iosApp
-  -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:iosAppUITests`.
+  delivered notification included: `scripts/run-ios-ui-tests.sh`, which CI's ios-build job runs on
+  pull requests (in place of a plain build). xcodebuild may hang once they finish, so the script
+  reads the outcome from the log and stops it
 - iOS shows one system permission prompt at a time and silently drops a request made while another
   is up, with no callback. So permissions are asked for where the user turns the feature on (camera
   in Settings, location on "Detect location"), and `CoreLocationSource` re-asks when the app becomes

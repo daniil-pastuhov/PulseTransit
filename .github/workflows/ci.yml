@@ -104,6 +104,7 @@ jobs:
             ios:
               - 'iosApp/**'
               - 'scripts/build-shared-framework.sh'
+              - 'scripts/run-ios-ui-tests.sh'
 
   # --- Android ----------------------------------------------------------------------------------
 
@@ -334,14 +335,11 @@ jobs:
         run: ./gradlew :shared:iosSimulatorArm64Test --stacktrace
 
       # Not on a release push: ios-testflight archives the app from the same commit, which compiles
-      # everything this would. A generic destination builds the Swift packages for every simulator
-      # architecture (the app target already excludes x86_64), so it is narrowed to arm64.
-      - name: Build the iOS app
+      # everything this would. The UI tests build the app for a simulator first, so they are also
+      # the build check. They run on fixed data, with no network (see the script).
+      - name: Build the iOS app and run its UI tests
         if: github.event_name != 'push'
-        run: |
-          xcodebuild build -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
-            CODE_SIGNING_ALLOWED=NO
+        run: scripts/run-ios-ui-tests.sh
 
       - name: Upload test reports
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -349,7 +347,10 @@ jobs:
         with:
           name: ios-test-reports
           retention-days: 7
-          path: shared/build/reports/tests/iosSimulatorArm64Test/
+          path: |
+            shared/build/reports/tests/iosSimulatorArm64Test/
+            iosApp/build/UITests.xcresult
+            iosApp/build/ui-tests.log
 
   # Runs alongside ios-build rather than after it, as the Play upload does alongside the Android
   # tests: a failing check still shows up red in the release PR before it is merged.
