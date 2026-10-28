@@ -180,7 +180,9 @@ class AndroidJourneyNotifier(
         }
         builder.addAction(0, getString(Res.string.journey_action_show), showJourneyIntent())
         if (alert is JourneyAlert.WalkTo && alert.canNavigate) {
-            builder.addAction(0, getString(Res.string.journey_action_navigate), navigateIntent(alert.latitude!!, alert.longitude!!))
+            navigateIntent(alert.latitude!!, alert.longitude!!)?.let { navigate ->
+                builder.addAction(0, getString(Res.string.journey_action_navigate), navigate)
+            }
         }
         return builder.build()
     }
@@ -228,22 +230,29 @@ class AndroidJourneyNotifier(
         )
 
     /**
-     * Walking directions in Google Maps, or any map app through a `geo:` link. An activity, not a
-     * receiver: Android does not let a notification's broadcast open an app.
+     * Walking directions in Google Maps, or else a map app that opens `geo:` links; null without
+     * either. An activity, not a receiver: Android does not let a notification's broadcast open an
+     * app. The intent names the app it resolved to, so no other app can step in to receive it.
      */
     private fun navigateIntent(
         latitude: Double,
         longitude: Double,
-    ): PendingIntent =
-        PendingIntent.getBroadcast(
+    ): PendingIntent? {
+        val intent =
+            listOf(
+                "google.navigation:q=$latitude,$longitude&mode=w",
+                "geo:$latitude,$longitude?q=$latitude,$longitude",
+            ).firstNotNullOfOrNull { uri ->
+                val candidate = Intent(Intent.ACTION_VIEW, uri.toUri())
+                candidate.resolveActivity(context.packageManager)?.let { candidate.setComponent(it) }
+            } ?: return null
+        return PendingIntent.getActivity(
             context,
             REQUEST_NAVIGATE,
-            Intent(context, JourneyActionReceiver::class.java)
-                .setAction(JourneyActionReceiver.ACTION_NAVIGATE)
-                .putExtra(JourneyActionReceiver.EXTRA_NAVIGATE_LATITUDE, latitude)
-                .putExtra(JourneyActionReceiver.EXTRA_NAVIGATE_LONGITUDE, longitude),
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+    }
 
     private fun alertId(alert: JourneyAlert) = ALERT_ID_BASE + (alert.id.hashCode() and ALERT_ID_MASK)
 
