@@ -135,8 +135,9 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   tour the App Store previews are recorded from (see "App Store screenshots and previews" in README).
   `-PTUITest YES` swaps in fixed data (a board at Oslo S with one route to Majorstuen, no network) and
   a settings store of its own, which `-PTUITestReset YES` empties first (`di/UiTestFixtures.kt`).
-  The XCUITest target `iosAppUITests` drives journey alerts on it end to end, system prompts and a
-  delivered notification included: `scripts/run-ios-ui-tests.sh`, which CI's ios-build job runs on
+  The XCUITest target `iosAppUITests` checks journey alerts on it up to the notification prompt:
+  on a fresh simulator (CI's) `requestAuthorization` never answers, so following a journey is not
+  UI-tested on iOS. It runs with `scripts/run-ios-ui-tests.sh`, which CI's ios-build job runs on
   pull requests (in place of a plain build). xcodebuild may hang once they finish, so the script
   reads the outcome from the log and stops it
 - iOS shows one system permission prompt at a time and silently drops a request made while another
