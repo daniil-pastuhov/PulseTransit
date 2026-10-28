@@ -93,24 +93,22 @@ object JourneyPosition {
         val trip = journey.trip
         val times = legTimes(journey)
         val arrival = endMillis(journey)
-        val current =
-            trip.legs.indices.firstOrNull { index ->
-                val leg = trip.legs[index]
-                val time = times[index]
-                (leg.isTransit || leg.isShown) && time != null && time.endMillis > nowMillis
-            }
+        val steps = steps(journey, times)
+        val currentStep = steps.indexOfFirst { it.endMillis > nowMillis }.takeIf { it >= 0 }
+        val notes = listOfNotNull(JourneyDetail.LocationLost.takeIf { locationLost }, JourneyDetail.Muted.takeIf { journey.muted })
 
         fun progress(
             phase: JourneyPhase,
-            line: String?,
+            step: JourneyStep?,
             target: String?,
             nextAt: Long?,
             stopsLeft: Int?,
+            details: List<JourneyDetail>,
         ) = JourneyProgress(
             journeyId = journey.id,
             destinationName = trip.destinationName,
             phase = phase,
-            lineName = line,
+            lineName = step?.lineName,
             targetName = target,
             nextAtMillis = nextAt,
             arrivalAtMillis = arrival,
@@ -118,19 +116,106 @@ object JourneyPosition {
             mode = journey.mode,
             locationLost = locationLost,
             muted = journey.muted,
+            nowMillis = nowMillis,
+            towards = step?.towards?.takeIf { phase == JourneyPhase.WAITING },
+            steps = steps,
+            currentStepIndex = currentStep,
+            details = details + notes,
+            timeline = timeline(steps),
         )
-        if (current == null) return progress(JourneyPhase.ARRIVED, null, trip.destinationName, arrival, null)
-        val leg = trip.legs[current]
-        val time = times[current]!!
+        if (currentStep == null) {
+            return progress(
+                JourneyPhase.ARRIVED,
+                null,
+                trip.destinationName,
+                arrival,
+                null,
+                listOfNotNull(arrival?.let { JourneyDetail.Arrived(it) }),
+            )
+        }
+        val step = steps[currentStep]
+        val arrivalDetail = listOfNotNull(arrival?.let { JourneyDetail.Arrival(it) })
+        // The next ride after this step: where to change, or, on a walk to it, what to catch.
+        val nextRide = steps.drop(currentStep + 1).firstOrNull { it.isRide }
+        val change = listOfNotNull(nextRide?.let { JourneyDetail.Change(it.lineName.orEmpty(), it.platform, it.startMillis) })
         return when {
-            !leg.isTransit -> progress(JourneyPhase.WALKING, null, legEndName(trip, current), time.endMillis, null)
-            nowMillis < time.startMillis -> progress(JourneyPhase.WAITING, leg.lineName, leg.fromName, time.startMillis, null)
+            !step.isRide -> {
+                // On the way to a ride, what counts is when it leaves.
+                val nextAt = steps.getOrNull(currentStep + 1)?.takeIf { it.isRide }?.startMillis ?: step.endMillis
+                progress(JourneyPhase.WALKING, step, step.toName, nextAt, null, change + arrivalDetail)
+            }
+            nowMillis < step.startMillis ->
+                progress(JourneyPhase.WAITING, step, step.fromName, step.startMillis, null, waitingDetails(step) + arrivalDetail)
             else -> {
-                val stopsLeft =
-                    journey.legStops[current]
-                        ?.count { stop -> (parseIsoToMillis(stop.expectedTime) ?: 0) > nowMillis }
-                progress(JourneyPhase.RIDING, leg.lineName, legEndName(trip, current), time.endMillis, stopsLeft)
+                // The ride's stops still ahead, the one to get off at last.
+                val ahead =
+                    journey.legStops[step.legIndex]
+                        ?.filter { stop -> (parseIsoToMillis(stop.expectedTime) ?: 0) > nowMillis }
+                val riding =
+                    listOfNotNull(
+                        ahead?.takeIf { it.size > 1 }?.let { JourneyDetail.NextStop(it.first().name) },
+                        ahead?.let { JourneyDetail.StopsLeft(it.size) },
+                    )
+                progress(JourneyPhase.RIDING, step, step.toName, step.endMillis, ahead?.size, riding + change + arrivalDetail)
             }
         }
     }
+
+    /** When and where the ride waited for leaves. */
+    private fun waitingDetails(step: JourneyStep): List<JourneyDetail> =
+        listOfNotNull(
+            JourneyDetail.Departs(step.startMillis, step.delayMinutes),
+            step.platform?.let { JourneyDetail.Platform(it) },
+            // The headline names the vehicle's destination then, so this says where to board.
+            step.fromName?.takeIf { step.towards != null }?.let { JourneyDetail.From(it) },
+        )
+
+    /** The legs the progress shows, with their live times: every ride, and walks that take time. */
+    private fun steps(
+        journey: TrackedJourney,
+        times: List<LegTime?>,
+    ): List<JourneyStep> {
+        val trip = journey.trip
+        return trip.legs.indices.mapNotNull { index ->
+            val leg = trip.legs[index]
+            val time = times[index]
+            if (!leg.isShown || time == null) return@mapNotNull null
+            val aimedStart = leg.aimedStartTime?.let(::parseIsoToMillis)
+            JourneyStep(
+                legIndex = index,
+                isRide = leg.isTransit,
+                lineName = leg.lineName,
+                towards = leg.destination?.takeIf { leg.isTransit },
+                platform = leg.platform?.takeIf { leg.isTransit },
+                fromName = leg.fromName,
+                toName = legEndName(trip, index),
+                startMillis = time.startMillis,
+                endMillis = time.endMillis,
+                delayMinutes =
+                    if (leg.isTransit && aimedStart != null) {
+                        ((time.startMillis - aimedStart) / MILLIS_PER_MINUTE).toInt().coerceAtLeast(0)
+                    } else {
+                        0
+                    },
+            )
+        }
+    }
+
+    /** [steps] end to end, with a wait wherever one starts after the one before it ends. */
+    private fun timeline(steps: List<JourneyStep>): List<JourneyTimelineSegment> {
+        val segments = mutableListOf<JourneyTimelineSegment>()
+        steps.forEach { step ->
+            val previousEnd = segments.lastOrNull()?.endMillis
+            if (previousEnd != null && step.startMillis > previousEnd) {
+                segments += JourneyTimelineSegment(JourneyTimelineSegment.Kind.WAIT, previousEnd, step.startMillis)
+            }
+            // A walk that runs into the next ride's time (a delay moved it) starts where the ride before ended.
+            val start = previousEnd?.let { maxOf(it, step.startMillis) } ?: step.startMillis
+            val kind = if (step.isRide) JourneyTimelineSegment.Kind.RIDE else JourneyTimelineSegment.Kind.WALK
+            segments += JourneyTimelineSegment(kind, start, maxOf(start, step.endMillis))
+        }
+        return segments
+    }
+
+    private const val MILLIS_PER_MINUTE = 60_000L
 }

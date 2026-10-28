@@ -335,6 +335,18 @@
     <string name="journey_progress_arrival">Arrives %1$s</string>
     <string name="journey_progress_location_lost">Location off, following times only</string>
     <string name="journey_progress_muted">Alerts skipped</string>
+    <string name="journey_progress_towards">%1$s towards %2$s</string>
+    <string name="journey_progress_leaves">Leaves %1$s</string>
+    <string name="journey_progress_leaves_late">Leaves %1$s, %2$d min late</string>
+    <string name="journey_progress_next_stop">Next stop: %1$s</string>
+    <string name="journey_progress_change">Then %1$s at %2$s</string>
+    <string name="journey_progress_change_platform">Then %1$s at %2$s, platform %3$s</string>
+    <string name="journey_progress_arrived_time">Arrived %1$s</string>
+    <string name="journey_progress_in_minutes">%1$d min</string>
+    <string name="journey_progress_step_ride">%1$s  %2$s to %3$s</string>
+    <string name="journey_progress_step_ride_platform">%1$s  %2$s to %3$s, platform %4$s</string>
+    <string name="journey_progress_step_walk">%1$s  Walk to %2$s</string>
+    <string name="journey_progress_step_arrive">%1$s  Arrive at %2$s</string>
     <string name="journey_channel_alerts">Journey alerts</string>
     <string name="journey_channel_progress">Journey in progress</string>
 </resources>

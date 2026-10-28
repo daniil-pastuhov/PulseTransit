@@ -9,12 +9,16 @@ struct JourneyActivityAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
         /// What is happening now: "On 5 to Majorstuen".
         var headline: String
-        /// Stops left, arrival time and any notes: "2 stops left · Arrives 09:31".
+        /// The step's facts, most important first: "Next stop: Stortinget · 2 stops left · Then 20 at 09:18".
         var detail: String
         /// The current step's next moment (departure, or arrival), counted down to.
         var nextAt: Date?
         /// An SF Symbol for the step: walking, waiting, riding or arrived.
         var symbol: String
+        /// When the journey starts and arrives, for a progress bar that fills by itself. Optional, so
+        /// an activity started by an older build still decodes.
+        var startAt: Date?
+        var endAt: Date?
     }
 
     /// "Journey to Home".

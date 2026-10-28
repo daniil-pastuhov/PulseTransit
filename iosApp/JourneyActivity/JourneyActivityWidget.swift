@@ -35,10 +35,13 @@ struct JourneyActivityWidget: Widget {
                         .lineLimit(1)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text(context.state.detail)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(context.state.detail)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                        JourneyBar(start: context.state.startAt, end: context.state.endAt)
+                    }
                 }
             } compactLeading: {
                 Image(systemName: context.state.symbol)
@@ -73,9 +76,28 @@ private struct LockScreenView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .lineLimit(2)
+            JourneyBar(start: state.startAt, end: state.endAt)
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
+        }
+    }
+}
+
+/// How far along the journey is, filling by itself from its start to the arrival; nothing without
+/// both times.
+private struct JourneyBar: View {
+    let start: Date?
+    let end: Date?
+
+    var body: some View {
+        if let start, let end, end > start {
+            ProgressView(timerInterval: start...end, countsDown: false) {
+                EmptyView()
+            } currentValueLabel: {
+                EmptyView()
+            }
+            .progressViewStyle(.linear)
         }
     }
 }

@@ -331,9 +331,21 @@
         <item quantity="one">%1$d stopp igjen</item>
         <item quantity="other">%1$d stopp igjen</item>
     </plurals>
-    <string name="journey_progress_arrival">Fremme %1$s</string>
+    <string name="journey_progress_arrival">Ankomst %1$s</string>
     <string name="journey_progress_location_lost">Posisjon av, følger bare tidene</string>
     <string name="journey_progress_muted">Varsler hoppet over</string>
+    <string name="journey_progress_towards">%1$s mot %2$s</string>
+    <string name="journey_progress_leaves">Går %1$s</string>
+    <string name="journey_progress_leaves_late">Går %1$s, %2$d min forsinket</string>
+    <string name="journey_progress_next_stop">Neste stopp: %1$s</string>
+    <string name="journey_progress_change">Så %1$s kl. %2$s</string>
+    <string name="journey_progress_change_platform">Så %1$s kl. %2$s, plattform %3$s</string>
+    <string name="journey_progress_arrived_time">Fremme %1$s</string>
+    <string name="journey_progress_in_minutes">%1$d min</string>
+    <string name="journey_progress_step_ride">%1$s  %2$s til %3$s</string>
+    <string name="journey_progress_step_ride_platform">%1$s  %2$s til %3$s, plattform %4$s</string>
+    <string name="journey_progress_step_walk">%1$s  Gå til %2$s</string>
+    <string name="journey_progress_step_arrive">%1$s  Fremme ved %2$s</string>
     <string name="journey_channel_alerts">Reisevarsler</string>
     <string name="journey_channel_progress">Reise pågår</string>
 </resources>
