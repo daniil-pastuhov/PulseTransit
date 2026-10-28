@@ -67,6 +67,8 @@ data class GlanceView(
     val temperature: String? = null,
     val stopName: String? = null,
     val next: RowView? = null,
+    /** The departures after [next], for a widget tall enough to list them. */
+    val later: List<RowView> = emptyList(),
     val message: String? = null,
     val labels: WidgetLabels = WidgetLabels(),
 )

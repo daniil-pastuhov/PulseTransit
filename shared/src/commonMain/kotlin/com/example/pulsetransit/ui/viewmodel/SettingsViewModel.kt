@@ -13,6 +13,9 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WalkingSpeed
+import com.example.pulsetransit.data.journey.JourneyStore
+import com.example.pulsetransit.data.journey.JourneyTrackingMode
+import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.LocationResult
@@ -31,6 +34,8 @@ class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val sensorManager: SystemSensorManager,
     private val locationProvider: LocationProvider,
+    private val journeyStore: JourneyStore,
+    private val journeyPermissions: JourneyPermissions,
 ) : ViewModel() {
     /** Where the location lookup stands. Each platform turns this into its own localized text. */
     sealed interface LocationStatus {
@@ -65,6 +70,10 @@ class SettingsViewModel(
         val routePreference: RoutePreference = RoutePreference.FASTEST,
         val excludedRouteModes: Set<RouteTransportMode> = emptySet(),
         val walkingSpeed: WalkingSpeed = WalkingSpeed.NORMAL,
+        /** Whether this platform has journey alerts at all, and so their setting. */
+        val journeyAlertsSupported: Boolean = false,
+        /** How "Notify me about this journey" follows a journey; null until first chosen. */
+        val journeyMode: JourneyTrackingMode? = null,
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -131,6 +140,8 @@ class SettingsViewModel(
                 routePreference = settingsRepository.getRoutePreference(),
                 excludedRouteModes = settingsRepository.getExcludedRouteModes(),
                 walkingSpeed = settingsRepository.getWalkingSpeed(),
+                journeyAlertsSupported = journeyPermissions.isSupported,
+                journeyMode = journeyStore.preferredMode(),
                 themeMode = settingsRepository.getThemeMode(),
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
@@ -230,6 +241,15 @@ class SettingsViewModel(
     fun updateRoutePreference(preference: RoutePreference) {
         settingsRepository.setRoutePreference(preference)
         _uiState.update { it.copy(routePreference = preference) }
+    }
+
+    /**
+     * The mode the next followed journey uses. A journey followed now keeps its own; location mode
+     * still asks for the location, through the rationale, the first time it is used.
+     */
+    fun updateJourneyMode(mode: JourneyTrackingMode) {
+        journeyStore.setPreferredMode(mode)
+        _uiState.update { it.copy(journeyMode = mode) }
     }
 
     fun updateWalkingSpeed(speed: WalkingSpeed) {

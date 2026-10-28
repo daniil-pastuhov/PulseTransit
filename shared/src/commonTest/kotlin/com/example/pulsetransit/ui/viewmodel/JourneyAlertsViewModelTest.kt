@@ -212,6 +212,25 @@ class JourneyAlertsViewModelTest {
         }
 
     @Test
+    fun `live times chosen before start straight away though location was never asked`() =
+        vmTest(FakePermissions(GRANTED, NOT_ASKED)) { vm ->
+            store.setPreferredMode(JourneyTrackingMode.TIME_ONLY)
+            vm.onNotifyClick(trip)
+
+            assertNull(vm.uiState.value.rationaleFor)
+            assertEquals(JourneyTrackingMode.TIME_ONLY, followedMode)
+        }
+
+    @Test
+    fun `location chosen in settings but never asked shows the rationale`() =
+        vmTest(FakePermissions(GRANTED, NOT_ASKED)) { vm ->
+            store.setPreferredMode(JourneyTrackingMode.LOCATION)
+            vm.onNotifyClick(trip)
+
+            assertEquals(trip, vm.uiState.value.rationaleFor)
+        }
+
+    @Test
     fun `granted before but no mode chosen asks which without prompts`() =
         vmTest(FakePermissions(GRANTED, GRANTED)) { vm ->
             vm.onNotifyClick(trip)

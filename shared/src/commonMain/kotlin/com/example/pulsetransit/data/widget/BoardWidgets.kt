@@ -191,7 +191,15 @@ data class GlanceWidgetState(
     val weather: WeatherInfo?,
     /** The first favourite stop, or null when none is saved. */
     val stop: StopPlace?,
-    /** That stop's next departure, as a row with one time. */
-    val next: WidgetDepartureRow?,
+    /** That stop's next departures, a row with one time each, soonest first; as many as a tall widget may show. */
+    val upcoming: List<WidgetDepartureRow>,
     val freshness: WidgetFreshness,
-)
+) {
+    /** The next departure, the one every size shows. */
+    val next: WidgetDepartureRow? get() = upcoming.firstOrNull()
+
+    companion object {
+        /** The most departures a glance widget lists. */
+        const val MAX_UPCOMING = 4
+    }
+}

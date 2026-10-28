@@ -1,5 +1,6 @@
 package com.example.pulsetransit.data.widget
 
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.SettingsRepository
@@ -73,8 +74,7 @@ class BoardWidgetSource(
                 bannedLines = settingsRepository.getFilteredLines(),
                 walkingSpeed = settingsRepository.getWalkingSpeed(),
             )
-        val lat = settingsRepository.getSavedLatitude()
-        val lon = settingsRepository.getSavedLongitude()
+        val (lat, lon) = origin()
         val fromIds = stops().map { it.id }
         return when {
             lat != null && lon != null && destination.isArrivedFrom(lat, lon) -> RouteWidgetState.AtDestination(destination)
@@ -93,27 +93,30 @@ class BoardWidgetSource(
         result: Sourced<TripInfo?>,
         now: Instant,
     ): RouteWidgetState.Route {
-        // A cached route may already have left; then there is nothing to take.
-        val route = result.data?.let(::widgetRoute)?.takeIf { it.leaveAtMillis >= now.toEpochMilliseconds() }
+        // A cached route may already have left; then there is nothing to take. What counts is the
+        // first ride: a route that starts with a walk starts at the moment it was asked for, which
+        // is already past when the answer arrives.
+        val route =
+            result.data?.let(::widgetRoute)?.takeIf { (it.boardAtMillis ?: it.leaveAtMillis) >= now.toEpochMilliseconds() }
         return RouteWidgetState.Route(destination, route, result.freshness())
     }
 
-    /** The compact widget's weather and the first favourite's next departure. */
+    /** The compact widget's weather and the first favourite's next departures. */
     suspend fun glance(): GlanceWidgetState {
         val weather = currentWeather()
         val stop = stops().firstOrNull()
-        if (stop == null) return GlanceWidgetState(weather, null, null, WidgetFreshness(null, false))
-        val result = fetchDepartures(stop, maxRows = 1)
-        val next =
+        if (stop == null) return GlanceWidgetState(weather, null, emptyList(), WidgetFreshness(null, false))
+        val result = fetchDepartures(stop, maxRows = GlanceWidgetState.MAX_UPCOMING)
+        val upcoming =
             widgetDepartureRows(
                 departures = result.data,
                 nowMillis = clock.now().toEpochMilliseconds(),
                 hiddenLines = settingsRepository.getFilteredLines(),
                 showCancelled = false,
-                maxRows = 1,
+                maxRows = GlanceWidgetState.MAX_UPCOMING,
                 timesPerRow = 1,
-            ).firstOrNull()
-        return GlanceWidgetState(weather, stop, next, result.freshness())
+            )
+        return GlanceWidgetState(weather, stop, upcoming, result.freshness())
     }
 
     private suspend fun fetchDepartures(
@@ -131,10 +134,19 @@ class BoardWidgetSource(
         if (!settingsRepository.isShowWeather()) {
             null
         } else {
-            val lat = settingsRepository.getSavedLatitude()
-            val lon = settingsRepository.getSavedLongitude()
+            val (lat, lon) = origin()
             if (lat == null || lon == null) null else weatherRepository.getWeather(lat, lon).data.firstOrNull()
         }
+
+    /**
+     * Where routes and weather are for, as on the board: on the spot, where the device last was
+     * while the app followed it; on a wall board, its saved location. Either falls back to the
+     * saved one, then to none.
+     */
+    private fun origin(): Pair<Double?, Double?> {
+        val device = settingsRepository.getDeviceLocation()?.takeIf { settingsRepository.getAppMode() == AppMode.ON_SPOT }
+        return device ?: (settingsRepository.getSavedLatitude() to settingsRepository.getSavedLongitude())
+    }
 
     private fun <T> Sourced<T>.freshness() = WidgetFreshness(fetchedAtMillis, failed)
 

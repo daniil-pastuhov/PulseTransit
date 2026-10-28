@@ -89,7 +89,11 @@ class JourneyAlertsViewModel(
             notifications == PermissionState.DENIED -> refreshPermissions()
             notifications == PermissionState.GRANTED && location == PermissionState.DENIED ->
                 start(trip, JourneyTrackingMode.TIME_ONLY)
-            notifications == PermissionState.NOT_ASKED || location == PermissionState.NOT_ASKED || preferred == null -> {
+            // A mode chosen before (in the rationale or Settings) is used without asking again,
+            // unless it needs the location and that was never asked.
+            notifications == PermissionState.NOT_ASKED ||
+                preferred == null ||
+                (preferred.usesLocation && location == PermissionState.NOT_ASKED) -> {
                 pendingTrip = trip
                 _uiState.update { it.copy(rationaleFor = trip) }
             }

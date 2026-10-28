@@ -1237,6 +1237,8 @@ class StopBoardViewModel(
 
     /** Refreshes what depends on where the device is, now it has moved far enough to matter. */
     private fun onDeviceMoved(fix: LocationResult.Fix) {
+        // For the widgets, which cannot read the location in the background.
+        settingsRepository.setDeviceLocation(fix.latitude, fix.longitude)
         refreshNearbyStops(fix)
         refreshFastestTrip()
         val weatherAt = lastWeatherFix

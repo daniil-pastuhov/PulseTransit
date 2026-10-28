@@ -297,6 +297,7 @@
     <string name="journey_stop_button">Stop following</string>
     <string name="journey_following">Following your journey to %1$s</string>
     <string name="journey_rationale_title">Journey alerts</string>
+    <string name="settings_journey_alerts_hint">How “Notify me about this journey” follows your trip. You can change it any time.</string>
     <string name="journey_rationale_body">PulseTransit can tell you when to leave, when your ride departs and when the next stop is yours. With your location it can also notice if you missed the ride.</string>
     <string name="journey_rationale_privacy">Your location stays on this device and is never sent anywhere.</string>
     <string name="journey_mode_time">Alerts from live times</string>

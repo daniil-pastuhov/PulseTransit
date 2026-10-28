@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.json.Json
 
+/** Scales a coordinate so rounding keeps 4 decimals. */
+private const val FOUR_DECIMALS = 10_000.0
+
 /**
  * Settings in a key-value [Settings] store: SharedPreferences on Android, NSUserDefaults on iOS.
  *
@@ -15,8 +18,16 @@ import kotlinx.serialization.json.Json
  */
 class SettingsRepositoryImpl(
     private val prefs: Settings,
+    /**
+     * Where the device last was, kept apart from [prefs] because settings are backed up and a
+     * followed location must stay on the device. Null where nothing needs it (no widgets): then
+     * it is not stored at all.
+     */
+    private val deviceState: Settings? = null,
 ) : SettingsRepository {
     object Keys {
+        const val DEVICE_LAT = "device_lat"
+        const val DEVICE_LON = "device_lon"
         const val FILTERED_LINES = "filtered_lines_json"
         const val EXCLUDED_ROUTE_MODES = "route_excluded_modes_json"
         const val DESTINATION_SCHEDULES = "destination_schedules_json"
@@ -84,6 +95,8 @@ class SettingsRepositoryImpl(
     }
 
     override fun setAppMode(mode: AppMode) {
+        // Only on the spot does anything follow the device; a wall board has no use for where it was.
+        if (mode != AppMode.ON_SPOT) clearDeviceLocation()
         prefs.putString("app_mode", mode.name)
         _appMode.value = mode
     }
@@ -257,6 +270,30 @@ class SettingsRepositoryImpl(
             prefs.putString("saved_lon", lon.toString())
         }
     }
+
+    override fun getDeviceLocation(): Pair<Double, Double>? {
+        val store = deviceState ?: return null
+        val lat = store.getStringOrNull(Keys.DEVICE_LAT)?.toDoubleOrNull() ?: return null
+        val lon = store.getStringOrNull(Keys.DEVICE_LON)?.toDoubleOrNull() ?: return null
+        return lat to lon
+    }
+
+    override fun setDeviceLocation(
+        lat: Double,
+        lon: Double,
+    ) {
+        val store = deviceState ?: return
+        // As precise as a widget needs: MET takes 4 decimals (about 10 m), and a route starts there.
+        store.putString(Keys.DEVICE_LAT, roundTo4(lat).toString())
+        store.putString(Keys.DEVICE_LON, roundTo4(lon).toString())
+    }
+
+    override fun clearDeviceLocation() {
+        deviceState?.remove(Keys.DEVICE_LAT)
+        deviceState?.remove(Keys.DEVICE_LON)
+    }
+
+    private fun roundTo4(value: Double) = kotlin.math.round(value * FOUR_DECIMALS) / FOUR_DECIMALS
 
     override fun isShowDelays(): Boolean = prefs.getBoolean("show_delays", true)
 

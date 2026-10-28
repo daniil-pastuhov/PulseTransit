@@ -209,6 +209,7 @@ class FakeEnturRepository : EnturRepository {
 class FakeWeatherRepository : WeatherRepository {
     var weather: Sourced<List<WeatherInfo>> = Sourced(emptyList())
     var calls = 0
+    var lastCoords: Pair<Double, Double>? = null
 
     /** How long a fetch takes, so a test can change settings while one is in flight. */
     var delayMillis = 0L
@@ -218,6 +219,7 @@ class FakeWeatherRepository : WeatherRepository {
         lon: Double,
     ): Sourced<List<WeatherInfo>> {
         calls++
+        lastCoords = lat to lon
         if (delayMillis > 0) delay(delayMillis)
         return weather
     }
@@ -436,6 +438,21 @@ class FakeSettingsRepository : SettingsRepository {
     ) {
         latitude = lat
         longitude = lon
+    }
+
+    var lastDeviceFix: Pair<Double, Double>? = null
+
+    override fun getDeviceLocation() = lastDeviceFix
+
+    override fun setDeviceLocation(
+        lat: Double,
+        lon: Double,
+    ) {
+        lastDeviceFix = lat to lon
+    }
+
+    override fun clearDeviceLocation() {
+        lastDeviceFix = null
     }
 
     override fun isShowDelays() = delaysShown

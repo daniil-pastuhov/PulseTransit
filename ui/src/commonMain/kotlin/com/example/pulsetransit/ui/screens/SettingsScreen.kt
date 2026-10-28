@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -53,6 +54,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -87,6 +89,7 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WalkingSpeed
+import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -700,6 +703,52 @@ fun SettingsScreen(
                             )
                         }
                         Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                    }
+                }
+
+                // Section: Journey alerts, how "Notify me about this journey" follows a trip
+                if (uiState.journeyAlertsSupported) {
+                    SettingsCard(title = stringResource(Res.string.journey_rationale_title)) {
+                        Text(
+                            stringResource(Res.string.settings_journey_alerts_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val modes =
+                            listOf(
+                                Triple(JourneyTrackingMode.TIME_ONLY, Res.string.journey_mode_time, Res.string.journey_mode_time_detail),
+                                Triple(
+                                    JourneyTrackingMode.LOCATION,
+                                    Res.string.journey_mode_location,
+                                    Res.string.journey_mode_location_detail,
+                                ),
+                            )
+                        modes.forEach { (mode, titleId, detailId) ->
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .selectable(
+                                            selected = uiState.journeyMode == mode,
+                                            role = Role.RadioButton,
+                                            onClick = { viewModel.updateJourneyMode(mode) },
+                                        ).padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(selected = uiState.journeyMode == mode, onClick = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(titleId), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        stringResource(detailId),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 

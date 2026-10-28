@@ -77,7 +77,10 @@ class NoJourneyAlerts :
         upcoming: List<ScheduledAlert>,
     ) = Unit
 
-    override fun end(journeyId: String) = Unit
+    override fun end(
+        journey: TrackedJourney,
+        clearAlerts: Boolean,
+    ) = Unit
 
     override fun start() = Unit
 
