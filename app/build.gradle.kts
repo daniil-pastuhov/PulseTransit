@@ -1,3 +1,4 @@
+import com.android.build.api.variant.HostTestBuilder
 import com.github.triplet.gradle.androidpublisher.ReleaseStatus
 import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 
@@ -118,11 +119,23 @@ android {
         buildConfig = false
         shaders = false
     }
+    // AGP 9.5's Compose Preview task (:app:generate*ComposePreviewRunfiles) fails to configure,
+    // breaking IDE sync, unless every variant has a unit-test component with compiled resources.
+    // :app has no unit tests, so this is free. Release gets its component in androidComponents below.
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
 
     packaging {
         resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         }
+    }
+}
+
+androidComponents {
+    beforeVariants { variant ->
+        variant.hostTests[HostTestBuilder.UNIT_TEST_TYPE]?.enable = true
     }
 }
 
