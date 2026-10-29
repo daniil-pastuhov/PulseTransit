@@ -1,0 +1,5 @@
+• Når du følger en ny reise, fjernes varslene for den forrige
+• Ny seksjon for reisevarsler i Innstillinger: bruk bare sanntid, eller bruk også posisjonen for å merke en tapt avgang
+• Har du allerede valgt varsler fra sanntid, starter reisen med en gang uten å spørre igjen
+• Oversiktsmodulen: 24-timersklokke, datoen kuttes ikke lenger, og høye moduler viser de neste avgangene
+• Rutemodulen viser nå reiser som starter med gange

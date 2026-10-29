@@ -1,0 +1,5 @@
+• Following a new journey now clears the previous journey's alerts
+• New Journey alerts section in Settings: use live times only, or also use your location to notice a missed ride
+• If you've already picked live-time alerts, journeys start right away without asking again
+• Glance widget: 24-hour clock, the date is no longer cut off, and tall widgets list the next departures
+• Route widget now shows trips that start with a walk
