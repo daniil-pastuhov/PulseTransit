@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
         WidgetRefresh.refreshNow(this)
     }
 
-    /** "Show journey" from a journey notification opens the followed journey's details. */
+    /** A tap on a journey notification opens the followed journey's details. */
     private fun handleJourneyIntent(intent: Intent?) {
         if (intent?.getBooleanExtra(EXTRA_SHOW_JOURNEY, false) == true) journeyOpenRequests.request()
     }

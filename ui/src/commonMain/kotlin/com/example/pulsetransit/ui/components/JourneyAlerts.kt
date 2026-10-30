@@ -178,7 +178,7 @@ fun FollowedJourneyBar(
 /**
  * The parts of journey alerts that outlive a route's details: the rationale, the system prompts
  * after it, re-reading the permissions when the app comes back (they may have changed in system
- * settings), and "Show journey" from a notification, which calls [onOpenJourney].
+ * settings), and a tap on a notification, which calls [onOpenJourney].
  */
 @Composable
 fun JourneyAlertsEffects(

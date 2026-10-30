@@ -50,7 +50,7 @@ class JourneyAlertsViewModel(
         /** The route the rationale is open for; null when it is closed. */
         val rationaleFor: TripInfo? = null,
         val permissionRequest: PermissionRequest? = null,
-        /** The app was opened from an alert's "Show journey": open the followed journey's details. */
+        /** The app was opened by a tap on an alert: open the followed journey's details. */
         val openJourneyRequested: Boolean = false,
     ) {
         fun isFollowing(trip: TripInfo): Boolean = activeJourney?.id == journeyId(trip)

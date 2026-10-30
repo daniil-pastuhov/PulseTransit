@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
 /**
- * Journey alerts as Android notifications: each alert on a high-importance channel, and the
+ * Journey alerts as Android notifications: the latest alert on a high-importance channel, and the
  * progress as the ongoing notification of [JourneyTrackingService]. Strings are Compose resources,
  * which load asynchronously, so notifications are built in order on one queue.
  */
@@ -70,7 +70,7 @@ class AndroidJourneyNotifier(
         journey: TrackedJourney,
         alert: JourneyAlert,
     ) {
-        queue.trySend { post(alertId(alert), buildAlert(alert), tag = alertTag(journey)) }
+        queue.trySend { post(ALERT_ID, buildAlert(alert), tag = alertTag(journey)) }
     }
 
     override fun updateProgress(progress: JourneyProgress) {
@@ -164,7 +164,6 @@ class AndroidJourneyNotifier(
                 .setProgress(max, (progress.elapsedFraction * max).toInt(), false)
         }
         if (!progress.muted) builder.addAction(0, getString(Res.string.journey_action_skip), skipIntent())
-        builder.addAction(0, getString(Res.string.journey_action_show), showJourneyIntent())
         return builder.build()
     }
 
@@ -183,7 +182,6 @@ class AndroidJourneyNotifier(
         if (alert !is JourneyAlert.MissedJourney && alert !is JourneyAlert.Arrived) {
             builder.addAction(0, getString(Res.string.journey_action_skip), skipIntent())
         }
-        builder.addAction(0, getString(Res.string.journey_action_show), showJourneyIntent())
         if (alert is JourneyAlert.WalkTo && alert.canNavigate) {
             navigateIntent(alert.latitude!!, alert.longitude!!)?.let { navigate ->
                 builder.addAction(0, getString(Res.string.journey_action_navigate), navigate)
@@ -265,15 +263,14 @@ class AndroidJourneyNotifier(
         )
     }
 
-    private fun alertId(alert: JourneyAlert) = ALERT_ID_BASE + (alert.id.hashCode() and ALERT_ID_MASK)
-
     /** Marks a journey's alerts, so they can be taken down when another journey replaces it. */
     private fun alertTag(journey: TrackedJourney) = "journey.${journey.startedAtMillis}"
 
     companion object {
         const val PROGRESS_ID = 4_100
-        private const val ALERT_ID_BASE = 4_200
-        private const val ALERT_ID_MASK = 0xFFFF
+
+        /** One for every alert: each replaces the one before, which is no longer what to do now. */
+        private const val ALERT_ID = 4_200
         private const val ALERTS_CHANNEL = "journey_alerts"
         const val PROGRESS_CHANNEL = "journey_progress"
         private const val REQUEST_SHOW = 1

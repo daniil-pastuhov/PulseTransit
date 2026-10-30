@@ -169,7 +169,7 @@ fun MainScreen(
     // The fastest route whose details are open, with its destination's id.
     var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
     var showRouteSearch by remember { mutableStateOf(false) }
-    // The followed journey's details, opened from its bar or a notification's "Show journey".
+    // The followed journey's details, opened from its bar or a tap on a notification.
     var showFollowedJourney by remember { mutableStateOf(false) }
 
     JourneyAlertsEffects(journeyViewModel, onOpenJourney = { showFollowedJourney = true })
