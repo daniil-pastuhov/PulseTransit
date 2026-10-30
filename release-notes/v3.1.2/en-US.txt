@@ -1,0 +1,2 @@
+• Journey alerts now replace each other, so you only see the latest one instead of a pile of notifications.
+• Simpler journey notifications: tap one to open your journey. The extra "Show journey" button is gone.
