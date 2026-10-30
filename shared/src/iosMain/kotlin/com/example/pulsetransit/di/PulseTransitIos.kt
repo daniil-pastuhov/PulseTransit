@@ -96,7 +96,7 @@ object PulseTransitIos : KoinComponent {
         if (get<JourneyStore>().active.value != null) get<JourneyLauncher>().start()
     }
 
-    /** "Show journey" from a notification: the board opens the followed journey's details. */
+    /** A tap on a journey notification: the board opens the followed journey's details. */
     fun requestOpenJourney() = get<JourneyOpenRequests>().request()
 
     /** "Skip next alerts" from a notification: the journey stays followed, silently. */

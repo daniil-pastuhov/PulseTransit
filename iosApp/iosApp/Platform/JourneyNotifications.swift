@@ -3,12 +3,14 @@ import Shared
 import UIKit
 import UserNotifications
 
-/// Journey alerts as iOS notifications, and their actions: "Skip next alerts", "Show journey" and,
-/// on the walk to the destination, "Navigate me". The progress goes to the Live Activity.
+/// Journey alerts as iOS notifications, and their actions: "Skip next alerts" and, on the walk to
+/// the destination, "Navigate me"; a tap opens the journey. The progress goes to the Live Activity.
 ///
 /// iOS suspends the app unless the journey reads the location, so every alert
 /// still to come is also scheduled with the system, under the alert's own id. The tracker shows an
 /// alert as it falls due when the app runs; one the system has already delivered is not repeated.
+/// Only the latest alert stays in Notification Centre: the earlier ones are removed whenever the app
+/// shows or is told of a newer one (one delivered while it is suspended waits for that).
 final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationCenterDelegate {
     static let shared = JourneyNotifications()
 
@@ -20,7 +22,6 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
 
     private enum Action {
         static let skip = "JOURNEY_SKIP"
-        static let show = "JOURNEY_SHOW"
         static let navigate = "JOURNEY_NAVIGATE"
     }
 
@@ -38,12 +39,11 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     func register() {
         center.delegate = self
         let skip = UNNotificationAction(identifier: Action.skip, title: L("journey_action_skip"))
-        let show = UNNotificationAction(identifier: Action.show, title: L("journey_action_show"), options: [.foreground])
         let navigate = UNNotificationAction(identifier: Action.navigate, title: L("journey_action_navigate"), options: [.foreground])
         center.setNotificationCategories([
-            UNNotificationCategory(identifier: Category.alert, actions: [skip, show], intentIdentifiers: []),
-            UNNotificationCategory(identifier: Category.finalWalk, actions: [navigate, show, skip], intentIdentifiers: []),
-            UNNotificationCategory(identifier: Category.info, actions: [show], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.alert, actions: [skip], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.finalWalk, actions: [navigate, skip], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.info, actions: [], intentIdentifiers: []),
         ])
     }
 
@@ -52,15 +52,24 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     func show(journey: TrackedJourney, alert: any JourneyAlert) {
         let id = Self.identifier(journey, alert)
         // Scheduled with the system for a time now passed: the system shows it, or already has, and
-        // the user may have opened or cleared it since. Either way it is not posted again.
-        if let at = scheduled[id], at <= Int64(Date().timeIntervalSince1970 * 1000) { return }
+        // the user may have opened or cleared it since. Either way it is not posted again, but it
+        // still replaces the alerts before it.
+        let dueBySystem = scheduled[id].map { $0 <= Int64(Date().timeIntervalSince1970 * 1000) } ?? false
         let content = content(for: alert)
         center.getDeliveredNotifications { [center] delivered in
+            Self.removeAlerts(except: id, from: delivered, center: center)
+            guard !dueBySystem else { return }
             // Delivered by the system while the app was suspended: already seen.
             guard !delivered.contains(where: { $0.request.identifier == id }) else { return }
             center.removePendingNotificationRequests(withIdentifiers: [id])
             center.add(UNNotificationRequest(identifier: id, content: content, trigger: nil))
         }
+    }
+
+    /// Takes down the journey alerts delivered before the one with [id], which replaces them.
+    private static func removeAlerts(except id: String, from delivered: [UNNotification], center: UNUserNotificationCenter) {
+        let earlier = delivered.map(\.request.identifier).filter { $0.hasPrefix(prefix) && $0 != id }
+        if !earlier.isEmpty { center.removeDeliveredNotifications(withIdentifiers: earlier) }
     }
 
     func updateProgress(progress: JourneyProgress) {
@@ -166,11 +175,18 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     // MARK: UNUserNotificationCenterDelegate
 
     /// Alerts show as banners while the app is open too: the user may be looking at another screen.
+    /// A scheduled alert presented now replaces the ones before it.
     func userNotificationCenter(
-        _: UNUserNotificationCenter,
-        willPresent _: UNNotification,
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        let id = notification.request.identifier
+        if id.hasPrefix(Self.prefix) {
+            center.getDeliveredNotifications { delivered in
+                Self.removeAlerts(except: id, from: delivered, center: center)
+            }
+        }
         completionHandler([.banner, .list, .sound])
     }
 
@@ -192,7 +208,7 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
             case UNNotificationDismissActionIdentifier:
                 break
             default:
-                // "Show journey", or a tap on the notification itself.
+                // A tap on the notification itself.
                 PulseTransitIos.shared.requestOpenJourney()
             }
             completionHandler()

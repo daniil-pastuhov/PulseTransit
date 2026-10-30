@@ -319,7 +319,6 @@
     <string name="journey_alert_missed_detail">Open PulseTransit to find another route.</string>
     <string name="journey_alert_arrived">Arriving at %1$s</string>
     <string name="journey_action_skip">Skip next alerts</string>
-    <string name="journey_action_show">Show journey</string>
     <string name="journey_action_navigate">Navigate me</string>
     <string name="journey_progress_title">Journey to %1$s</string>
     <string name="journey_progress_waiting">%1$s from %2$s</string>

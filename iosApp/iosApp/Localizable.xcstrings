@@ -1225,23 +1225,6 @@
         }
       }
     },
-    "journey_action_show": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show journey"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Vis reisen"
-          }
-        }
-      }
-    },
     "journey_action_skip": {
       "extractionState": "manual",
       "localizations": {

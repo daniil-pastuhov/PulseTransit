@@ -19,7 +19,7 @@ struct StopBoardView: View {
     /// The fastest route whose details are open.
     @State private var detailsTrip: TripSelection?
     @State private var showRouteSearch = false
-    /// The followed journey's details, opened from its bar or a notification's "Show journey".
+    /// The followed journey's details, opened from its bar or a tap on a notification.
     @State private var followedJourney: TripSelection?
     /// The board's size, for how much of the header fits in iPhone Duo's bar.
     @State private var boardSize = CGSize.zero

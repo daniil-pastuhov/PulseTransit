@@ -318,7 +318,6 @@
     <string name="journey_alert_missed_detail">Åpne PulseTransit for å finne en annen rute.</string>
     <string name="journey_alert_arrived">Fremme ved %1$s</string>
     <string name="journey_action_skip">Hopp over neste varsler</string>
-    <string name="journey_action_show">Vis reisen</string>
     <string name="journey_action_navigate">Vis veien</string>
     <string name="journey_progress_title">Reise til %1$s</string>
     <string name="journey_progress_waiting">%1$s fra %2$s</string>
