@@ -65,6 +65,7 @@ internal suspend fun HttpClient.fetchJourneyStops(
                     stopPlaceId = call.quay?.stopPlace?.id,
                     name = call.quay?.stopPlace?.name ?: call.quay?.name ?: return@mapNotNull null,
                     expectedTime = time,
+                    expectedDepartureTime = call.expectedDepartureTime,
                     isCancelled = call.cancellation,
                     latitude = call.quay?.latitude,
                     longitude = call.quay?.longitude,

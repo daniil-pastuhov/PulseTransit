@@ -307,6 +307,9 @@
     <string name="journey_mode_location">Merk også om jeg går glipp av avgangen</string>
     <string name="journey_mode_location_detail">Bruker posisjonen din under reisen, også med skjermen av.</string>
     <string name="journey_rationale_cancel">Ikke nå</string>
+    <string name="journey_tracking_title">Følge reisen</string>
+    <string name="journey_alerts_all">Alle varsler</string>
+    <string name="journey_alerts_count">%1$d av %2$d varsler</string>
     <string name="journey_alert_kinds_title">Varsle meg om</string>
     <string name="journey_alert_kind_departing">Når avgangen går</string>
     <string name="journey_alert_kind_next_stop">Når stoppet mitt er neste</string>

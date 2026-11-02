@@ -308,6 +308,9 @@
     <string name="journey_mode_location">Also notice if I miss my ride</string>
     <string name="journey_mode_location_detail">Uses your location during the journey, also with the screen off.</string>
     <string name="journey_rationale_cancel">Not now</string>
+    <string name="journey_tracking_title">Following the trip</string>
+    <string name="journey_alerts_all">All alerts</string>
+    <string name="journey_alerts_count">%1$d of %2$d alerts</string>
     <string name="journey_alert_kinds_title">Notify me about</string>
     <string name="journey_alert_kind_departing">When my ride leaves</string>
     <string name="journey_alert_kind_next_stop">When my stop is next</string>

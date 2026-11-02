@@ -10,5 +10,8 @@ import kotlinx.serialization.Serializable
 /** Settings' "Travel by": the kinds of transport route searches may use. */
 @Serializable data object RouteModes : NavKey
 
+/** Settings' journey alerts: how a followed journey is tracked and which alerts it sends. */
+@Serializable data object JourneyAlerts : NavKey
+
 /** The first-launch choice of [com.example.pulsetransit.data.AppMode]. */
 @Serializable data object ModeSelection : NavKey

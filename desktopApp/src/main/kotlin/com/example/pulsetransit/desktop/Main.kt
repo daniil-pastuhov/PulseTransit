@@ -17,6 +17,7 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.di.desktopPlatformModule
 import com.example.pulsetransit.di.sharedModule
+import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
 import com.example.pulsetransit.ui.screens.RouteModesScreen
@@ -48,7 +49,7 @@ fun main() {
 }
 
 /** The desktop app's screens, in place of the Android app's Navigation 3 back stack. */
-private enum class Screen { BOARD, SETTINGS, ROUTE_MODES }
+private enum class Screen { BOARD, SETTINGS, ROUTE_MODES, JOURNEY_ALERTS }
 
 /** The app as Android shows it: the mode prompt once, then the board, Settings and transport modes. */
 @Composable
@@ -66,7 +67,7 @@ private fun DesktopApp() {
     val boardViewModel = remember { koin.get<StopBoardViewModel>() }
     val updateViewModel = remember { koin.get<AppUpdateViewModel>() }
     val journeyViewModel = remember { koin.get<JourneyAlertsViewModel>() }
-    // One instance for Settings and transport modes, so Settings' summary of them agrees.
+    // One instance for Settings and its subscreens, so Settings' summary of them agrees.
     val settingsViewModel = remember { koin.get<SettingsViewModel>() }
     var screen by remember { mutableStateOf(Screen.BOARD) }
     when (screen) {
@@ -89,9 +90,11 @@ private fun DesktopApp() {
                 viewModel = settingsViewModel,
                 onBack = { screen = Screen.BOARD },
                 onOpenRouteModes = { screen = Screen.ROUTE_MODES },
+                onOpenJourneyAlerts = { screen = Screen.JOURNEY_ALERTS },
             )
         }
         Screen.ROUTE_MODES -> RouteModesScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
+        Screen.JOURNEY_ALERTS -> JourneyAlertsScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
     }
 }
 

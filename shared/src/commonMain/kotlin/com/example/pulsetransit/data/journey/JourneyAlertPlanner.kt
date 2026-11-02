@@ -192,8 +192,9 @@ object JourneyAlertPlanner {
     ): Long =
         when {
             stops.size >= MIN_STOPS_WITH_ONE_BETWEEN ->
-                parseIsoToMillis(stops[stops.size - 2].expectedTime)
-                    ?: (time.endMillis - NEXT_STOP_FALLBACK_MILLIS)
+                stops[stops.size - 2].let { before ->
+                    before.expectedDepartureTime?.let(::parseIsoToMillis) ?: parseIsoToMillis(before.expectedTime)
+                } ?: (time.endMillis - NEXT_STOP_FALLBACK_MILLIS)
             stops.size == 2 -> time.startMillis
             else -> (time.endMillis - NEXT_STOP_FALLBACK_MILLIS).coerceAtLeast(time.startMillis)
         }
