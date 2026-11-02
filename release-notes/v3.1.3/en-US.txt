@@ -1,0 +1,3 @@
+• Following a journey? At each change, the app now looks for a faster route and offers to switch if it gets you there at least 3 minutes sooner.
+• Every walking alert, including a walk to another stop at a change, now has an "Open map" button.
+• Choose which journey alerts you get in Settings. All are on by default.

@@ -1,0 +1,3 @@
+• Følger du en reise? Ved hvert bytte ser appen nå etter en raskere rute og tilbyr å bytte hvis den får deg fram minst 3 minutter tidligere.
+• Alle gåvarsler, også når du må gå til et annet stoppested ved bytte, har nå en «Åpne kart»-knapp.
+• Velg hvilke reisevarsler du vil få i Innstillinger. Alle er på som standard.
