@@ -15,6 +15,7 @@ import androidx.glance.text.TextStyle
 import com.example.pulsetransit.data.widget.RouteWidgetState
 import com.example.pulsetransit.data.widget.WidgetRoute
 import com.example.pulsetransit.ui.components.getTransportEmoji
+import com.example.pulsetransit.ui.components.tripDurationString
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.getString
 
@@ -69,7 +70,7 @@ class RouteWidget : BoardWidget<RouteView>() {
         val boardAt = boardAtMillis
         val platform = platform
         val arriveAt = arriveAtMillis
-        val duration = getString(Res.string.widget_duration, durationMinutes)
+        val duration = tripDurationString(durationMinutes)
         return RouteView(
             title = title,
             leaveAt = getString(Res.string.widget_leave_at, time(leaveAtMillis)),

@@ -178,7 +178,7 @@ private fun TripHeader(
                     append(clockText(it, nowMillis))
                 }
                 append(" · ")
-                append(stringResource(Res.string.duration_min, trip.durationMinutes))
+                append(tripDurationText(trip.durationMinutes))
             },
         style = MaterialTheme.typography.titleMedium,
     )
@@ -410,7 +410,7 @@ private fun StopsToggle(
         Text(
             text =
                 listOfNotNull(
-                    stringResource(Res.string.duration_min, leg.durationMinutes),
+                    tripDurationText(leg.durationMinutes),
                     ridden?.let { pluralStringResource(Res.plurals.trip_details_stops, it, it) },
                 ).joinToString(" · "),
             style = MaterialTheme.typography.bodyMedium.copy(color = muted),

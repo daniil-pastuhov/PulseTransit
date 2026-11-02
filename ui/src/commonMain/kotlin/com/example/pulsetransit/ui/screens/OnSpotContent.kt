@@ -77,6 +77,7 @@ import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
+import com.example.pulsetransit.ui.components.tripDurationText
 import com.example.pulsetransit.ui.platform.rememberLocationAccess
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
@@ -537,7 +538,7 @@ private fun TripOptionRow(
             }
         }
         Text(
-            text = stringResource(Res.string.duration_min, trip.durationMinutes),
+            text = tripDurationText(trip.durationMinutes),
             style = MaterialTheme.typography.titleMedium,
             color = onContainer,
         )

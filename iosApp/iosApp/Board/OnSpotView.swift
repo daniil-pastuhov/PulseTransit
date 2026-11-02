@@ -411,7 +411,7 @@ private struct TripOptionRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Text(L("duration_min", Int(trip.durationMinutes)))
+            Text(tripDuration(trip.durationMinutes))
                 .font(.headline)
         }
         .padding(.horizontal, 16)
