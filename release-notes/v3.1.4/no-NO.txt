@@ -1,0 +1,5 @@
+• Reiser langt frem i tid viser reisetiden i timer, dager, måneder eller år i stedet for et langt antall minutter
+• Søk etter holdeplasser og steder viser bare steder i Norge
+• Innstillinger viser nå alle transportselskapene PulseTransit har avganger fra, så du kan sjekke dem du reiser med
+• Dra reisemålene dine i Innstillinger i den rekkefølgen du vil ha dem på tavla
+• Der du er får holdeplassen plassen reisene ikke trenger, med flere avganger, og endringer animeres jevnt
