@@ -562,4 +562,23 @@ class EnturRepositoryImplTest {
             assertEquals(listOf("Ski", "Halden"), quays.single().destinations)
             assertEquals("NSR:StopPlace:337", quays.single().stopPlaceId)
         }
+
+    @Test
+    fun `stop and place searches are limited to Norway`() =
+        runTest {
+            val countries = mutableListOf<String?>()
+            val engine =
+                MockEngine { request ->
+                    countries += request.url.parameters["countries"]
+                    respond("""{"features":[]}""", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            repo.searchStopPlaces("Berlin")
+            repo.searchPlaces("Berlin", focusLat = null, focusLon = null)
+            repo.getNearbyStopPlaces(59.91, 10.75, radiusKm = 1.0)
+
+            // The geocoder wants "no": "NOR" filters out every stop, Norwegian ones included.
+            assertEquals(listOf<String?>("no", "no", "no"), countries)
+        }
 }
