@@ -121,6 +121,21 @@ class JourneyAlertPlannerTest {
     }
 
     @Test
+    fun `the next stop is announced as the vehicle leaves the stop before not as it arrives`() {
+        // The metro waits a minute at Nationaltheatret: in at 10 and out at 11.
+        val stops =
+            liveStops().mapValues { (leg, legStops) ->
+                if (leg != 1) {
+                    legStops
+                } else {
+                    legStops.map { if (it.name == "Nationaltheatret") it.copy(expectedDepartureTime = JourneyFixtures.iso(11)) else it }
+                }
+            }
+
+        assertEquals(at(11), scheduleOf(journey(legStops = stops))["next-stop-1"])
+    }
+
+    @Test
     fun `on a one-stop ride the next stop is announced on boarding`() {
         val oneStop = mapOf(3 to JourneyFixtures.busStops().let { listOf(it.first(), it.last()) })
 

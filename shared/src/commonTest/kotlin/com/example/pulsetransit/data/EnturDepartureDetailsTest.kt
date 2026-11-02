@@ -121,7 +121,7 @@ class EnturDepartureDetailsTest {
         }
 
     @Test
-    fun `a trip's stops use arrival times and stop names and skip calls missing either`() =
+    fun `a trip's stops use arrival times keep departure times and skip calls missing a time or a name`() =
         runTest {
             val body =
                 """{"data":{"serviceJourney":{"estimatedCalls":[
@@ -139,8 +139,8 @@ class EnturDepartureDetailsTest {
 
             assertEquals(
                 listOf(
-                    JourneyStop("Q1", "S1", "Mortensrud T", "2026-10-16T20:29:00+02:00"),
-                    JourneyStop("Q2", null, "Kantarellen legesenter", "2026-10-16T20:32:00+02:00"),
+                    JourneyStop("Q1", "S1", "Mortensrud T", "2026-10-16T20:29:00+02:00", "2026-10-16T20:29:00+02:00"),
+                    JourneyStop("Q2", null, "Kantarellen legesenter", "2026-10-16T20:32:00+02:00", "2026-10-16T20:33:00+02:00"),
                     JourneyStop("Q5", "S5", "Holmlia stasjon", "2026-10-16T20:45:00+02:00", isCancelled = true),
                 ),
                 stops,

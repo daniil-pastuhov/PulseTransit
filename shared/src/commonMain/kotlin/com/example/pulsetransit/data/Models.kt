@@ -80,6 +80,11 @@ data class JourneyStop(
     val name: String,
     /** When the trip reaches this stop (leaves it, at the first), as ISO-8601. */
     val expectedTime: String,
+    /**
+     * When the trip leaves this stop, as ISO-8601; null at the last stop, or for stops saved by an
+     * older build. A train can wait a minute at a stop, so this is not [expectedTime].
+     */
+    val expectedDepartureTime: String? = null,
     val isCancelled: Boolean = false,
     /** The quay's position, which journey alerts measure the device against. */
     val latitude: Double? = null,
