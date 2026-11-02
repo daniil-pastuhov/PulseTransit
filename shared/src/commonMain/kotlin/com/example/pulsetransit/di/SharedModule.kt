@@ -2,6 +2,7 @@ package com.example.pulsetransit.di
 
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.EnturRepositoryImpl
+import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.SettingsRepositoryImpl
 import com.example.pulsetransit.data.WeatherRepository
@@ -58,11 +59,21 @@ val sharedModule =
         single<JourneyStore> { JourneyStoreImpl(prefs = get()) }
         single { JourneyOpenRequests() }
         single {
+            val settings = get<SettingsRepository>()
             JourneyTracker(
                 store = get(),
                 enturRepository = get(),
                 notifier = get(),
                 locationProvider = getOrNull(named(JOURNEY_LOCATION)) ?: get(),
+                // As the board plans routes, so a faster way on avoids what the board's routes avoid.
+                routeOptions = {
+                    RouteOptions(
+                        preference = settings.getRoutePreference(),
+                        excludedModes = settings.getExcludedRouteModes(),
+                        bannedLines = settings.getFilteredLines(),
+                        walkingSpeed = settings.getWalkingSpeed(),
+                    )
+                },
             )
         }
 

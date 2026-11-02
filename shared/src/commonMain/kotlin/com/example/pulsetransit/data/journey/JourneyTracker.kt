@@ -1,6 +1,8 @@
 package com.example.pulsetransit.data.journey
 
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.RouteOptions
+import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.isTransit
 import com.example.pulsetransit.data.legStops
 import com.example.pulsetransit.platform.JourneyNotifier
@@ -24,7 +26,9 @@ import kotlin.time.Clock
 /**
  * Follows the store's active journey until it ends: refreshes its live stop times, reads the
  * device's location when the journey's mode allows, and sends [JourneyAlertPlanner]'s alerts and
- * progress to the [notifier]. Every decision is the planner's; this only keeps it fed.
+ * progress to the [notifier]. At each transfer it also searches for a faster way on ([FasterRoutes]),
+ * by [routeOptions], the options routes are planned by. Every decision is the planner's and
+ * [FasterRoutes]'; this only keeps them fed.
  *
  * Run [run] on the main thread (see [JourneyStore]). It returns when no journey is active: after
  * arrival, or when the journey is stopped from the app or a notification.
@@ -35,6 +39,7 @@ class JourneyTracker(
     private val notifier: JourneyNotifier,
     private val locationProvider: LocationProvider,
     private val clock: Clock = Clock.System,
+    private val routeOptions: () -> RouteOptions = { RouteOptions() },
 ) {
     private val _locationLost = MutableStateFlow(false)
 
@@ -49,6 +54,7 @@ class JourneyTracker(
     private var lastFix: Fix? = null
     private var offSinceMillis: Long? = null
     private var lastRefreshMillis: Long? = null
+    private var lastFasterSearchMillis: Long? = null
 
     private fun now() = clock.now().toEpochMilliseconds()
 
@@ -72,6 +78,7 @@ class JourneyTracker(
         lastFix = null
         offSinceMillis = null
         lastRefreshMillis = null
+        lastFasterSearchMillis = null
         try {
             while (step(id)) {
                 // Woken early by any change to the store: a stop or skip from a notification.
@@ -99,9 +106,11 @@ class JourneyTracker(
             ?.takeIf { it.id == id }
             ?.let { checkOffJourney(it, now) }
         fireDue(id, now)
+        checkFasterRoute(id, now)
         val latest = store.active.value?.takeIf { it.id == id } ?: return false
         notifier.updateProgress(JourneyPosition.progress(latest, now, _locationLost.value))
-        notifier.scheduleUpcoming(latest, JourneyAlertPlanner.upcomingAlerts(latest, now))
+        val disabled = store.disabledAlerts()
+        notifier.scheduleUpcoming(latest, JourneyAlertPlanner.upcomingAlerts(latest, now).filter { it.alert.kind !in disabled })
         val end = JourneyAlertPlanner.endMillis(latest)
         val over = end == null || now >= end + LINGER_AFTER_ARRIVAL_MILLIS
         if (over) store.finish(now)
@@ -116,7 +125,73 @@ class JourneyTracker(
         val due = JourneyAlertPlanner.dueAlerts(journey, now)
         if (due.consumedIds.isEmpty()) return
         store.update(id) { it.copy(firedAlertIds = it.firedAlertIds + due.consumedIds) }
-        due.show.forEach { notifier.show(journey, it) }
+        // Kinds turned off in Settings are still marked fired, so turning one back on never brings
+        // back alerts already past.
+        val disabled = store.disabledAlerts()
+        due.show.filter { it.kind !in disabled }.forEach { notifier.show(journey, it) }
+    }
+
+    /**
+     * Searches for a faster way on when the ride before a transfer has arrived, and offers one
+     * found. A failed or cached answer says nothing about now, so the search is tried again (at most
+     * every [FAST_REFRESH_MILLIS]) until the next ride leaves; any live answer settles it.
+     */
+    private suspend fun checkFasterRoute(
+        id: String,
+        now: Long,
+    ) {
+        val search = dueFasterSearch(id, now) ?: return
+        lastFasterSearchMillis = now
+        val found = searchRoutesOn(search) ?: return
+        // The journey may have changed while the search ran: a stop, skip or newer live times.
+        val latest = store.active.value?.takeIf { it.id == id } ?: return
+        val faster = FasterRoutes.fasterOf(latest, found)
+        val alert = faster?.let { FasterRoutes.alert(latest, search.rideIndex, it) }
+        store.update(id) {
+            it.copy(
+                checkedTransfers = it.checkedTransfers + search.rideIndex,
+                fasterRoute = if (alert != null) faster else it.fasterRoute,
+                firedAlertIds = if (alert != null) it.firedAlertIds + alert.id else it.firedAlertIds,
+            )
+        }
+        if (alert != null && !latest.muted) notifier.show(latest, alert)
+    }
+
+    /**
+     * The faster-route search due for journey [id] at [now]; null when none is, it is turned off in
+     * Settings (nothing would be shown), or the last try was too recent.
+     */
+    private fun dueFasterSearch(
+        id: String,
+        now: Long,
+    ): FasterRoutes.Search? {
+        val journey = store.active.value?.takeIf { it.id == id }
+        val lastSearch = lastFasterSearchMillis
+        val tooSoon = lastSearch != null && now - lastSearch < FAST_REFRESH_MILLIS
+        val off = JourneyAlertKind.FASTER_ROUTE in store.disabledAlerts()
+        return if (journey == null || tooSoon || off) null else FasterRoutes.dueSearch(journey, now)
+    }
+
+    /** The routes on from [search]'s transfer stop; null when only a failed or cached answer came. */
+    private suspend fun searchRoutesOn(search: FasterRoutes.Search): List<TripInfo>? {
+        val found =
+            try {
+                enturRepository.getTripOptions(
+                    lat = search.latitude,
+                    lon = search.longitude,
+                    to = search.destination,
+                    count = FasterRoutes.CANDIDATES,
+                    options = routeOptions(),
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (
+                @Suppress("TooGenericExceptionCaught") e: Exception,
+            ) {
+                e.printStackTrace()
+                null
+            }
+        return found?.takeUnless { it.failed || it.isFromCache }?.data
     }
 
     /** Fetches the live stops of every ride; a failed fetch keeps the stops from before. */
@@ -164,6 +239,11 @@ class JourneyTracker(
         now: Long,
     ) {
         if (JourneyAlert.MissedJourney.id in journey.firedAlertIds) return
+        // Turned off in Settings: never judged missed, so the journey is never silenced for it.
+        if (JourneyAlertKind.MISSED in store.disabledAlerts()) {
+            offSinceMillis = null
+            return
+        }
         // Updates come only after the device moves, so an old fix still means "still there" while
         // they run; it is cleared when they stop.
         val off = lastFix?.let { fix -> JourneyPosition.isOffJourney(journey, now, fix.latitude, fix.longitude) }

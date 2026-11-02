@@ -3,8 +3,9 @@ import Shared
 import UIKit
 import UserNotifications
 
-/// Journey alerts as iOS notifications, and their actions: "Skip next alerts" and, on the walk to
-/// the destination, "Navigate me"; a tap opens the journey. The progress goes to the Live Activity.
+/// Journey alerts as iOS notifications, and their actions: "Skip next alerts", on a walk (to the
+/// first stop, to another stop at a change, to the destination) "Open map", and on a faster route found at a transfer "Switch to it"; a tap opens
+/// the journey. The progress goes to the Live Activity.
 ///
 /// iOS suspends the app unless the journey reads the location, so every alert
 /// still to come is also scheduled with the system, under the alert's own id. The tracker shows an
@@ -16,13 +17,15 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
 
     private enum Category {
         static let alert = "JOURNEY_ALERT"
-        static let finalWalk = "JOURNEY_FINAL_WALK"
+        static let walk = "JOURNEY_WALK"
+        static let fasterRoute = "JOURNEY_FASTER_ROUTE"
         static let info = "JOURNEY_INFO"
     }
 
     private enum Action {
         static let skip = "JOURNEY_SKIP"
         static let navigate = "JOURNEY_NAVIGATE"
+        static let switchRoute = "JOURNEY_SWITCH"
     }
 
     private static let prefix = "journey."
@@ -39,10 +42,12 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     func register() {
         center.delegate = self
         let skip = UNNotificationAction(identifier: Action.skip, title: L("journey_action_skip"))
-        let navigate = UNNotificationAction(identifier: Action.navigate, title: L("journey_action_navigate"), options: [.foreground])
+        let openMap = UNNotificationAction(identifier: Action.navigate, title: L("journey_action_open_map"), options: [.foreground])
+        let switchRoute = UNNotificationAction(identifier: Action.switchRoute, title: L("journey_action_switch"))
         center.setNotificationCategories([
             UNNotificationCategory(identifier: Category.alert, actions: [skip], intentIdentifiers: []),
-            UNNotificationCategory(identifier: Category.finalWalk, actions: [navigate, skip], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.walk, actions: [openMap, skip], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.fasterRoute, actions: [switchRoute, skip], intentIdentifiers: []),
             UNNotificationCategory(identifier: Category.info, actions: [], intentIdentifiers: []),
         ])
     }
@@ -150,11 +155,27 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
                 L("journey_alert_leaves_at", clockTime(transfer.departsAtMillis)),
                 transfer.platform.map { L("journey_alert_platform", $0) },
             ].compactMap { $0 }.joined(separator: " · ")
+            if transfer.canNavigate, let latitude = transfer.latitude, let longitude = transfer.longitude {
+                content.categoryIdentifier = Category.walk
+                content.userInfo = ["latitude": latitude.doubleValue, "longitude": longitude.doubleValue]
+            }
+        case let .fasterRoute(faster):
+            if let line = faster.lineName, let departs = faster.departsAtMillis {
+                content.title = L("journey_alert_faster", line, clockTime(departs.int64Value))
+            } else {
+                content.title = L("journey_alert_faster_walk")
+            }
+            content.body = [
+                L("journey_alert_faster_detail", clockTime(faster.arrivesAtMillis), Int(faster.minutesSooner)),
+                faster.lineName == nil ? nil : faster.stopName.map { L("journey_alert_from", $0) },
+                faster.platform.map { L("journey_alert_platform", $0) },
+            ].compactMap { $0 }.joined(separator: " · ")
+            content.categoryIdentifier = Category.fasterRoute
         case let .walkTo(walk):
             content.title = L("journey_alert_walk", walk.name)
             content.body = L("journey_alert_walk_detail", Int(walk.minutes))
             if walk.canNavigate, let latitude = walk.latitude, let longitude = walk.longitude {
-                content.categoryIdentifier = Category.finalWalk
+                content.categoryIdentifier = Category.walk
                 content.userInfo = ["latitude": latitude.doubleValue, "longitude": longitude.doubleValue]
             }
         case .missedJourney:
@@ -200,6 +221,8 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
             switch response.actionIdentifier {
             case Action.skip:
                 PulseTransitIos.shared.skipJourneyAlerts()
+            case Action.switchRoute:
+                PulseTransitIos.shared.switchToFasterRoute()
             case Action.navigate:
                 if let latitude = info["latitude"] as? Double, let longitude = info["longitude"] as? Double,
                    let url = URL(string: "https://maps.apple.com/?daddr=\(latitude),\(longitude)&dirflg=w") {

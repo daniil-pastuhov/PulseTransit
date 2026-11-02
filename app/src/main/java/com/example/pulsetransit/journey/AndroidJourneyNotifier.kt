@@ -179,16 +179,27 @@ class AndroidJourneyNotifier(
                 .setCategory(NotificationCompat.CATEGORY_REMINDER)
                 .setAutoCancel(true)
                 .setContentIntent(showJourneyIntent())
+        if (alert is JourneyAlert.FasterRoute) {
+            builder.addAction(0, getString(Res.string.journey_action_switch), switchIntent())
+        }
         if (alert !is JourneyAlert.MissedJourney && alert !is JourneyAlert.Arrived) {
             builder.addAction(0, getString(Res.string.journey_action_skip), skipIntent())
         }
-        if (alert is JourneyAlert.WalkTo && alert.canNavigate) {
-            navigateIntent(alert.latitude!!, alert.longitude!!)?.let { navigate ->
-                builder.addAction(0, getString(Res.string.journey_action_navigate), navigate)
+        directionsTo(alert)?.let { (latitude, longitude) ->
+            navigateIntent(latitude, longitude)?.let { navigate ->
+                builder.addAction(0, getString(Res.string.journey_action_open_map), navigate)
             }
         }
         return builder.build()
     }
+
+    /** Where an alert's "Open map" leads: the end of a walk it is about; null when it offers none. */
+    private fun directionsTo(alert: JourneyAlert): Pair<Double, Double>? =
+        when {
+            alert is JourneyAlert.WalkTo && alert.canNavigate -> alert.latitude!! to alert.longitude!!
+            alert is JourneyAlert.Transfer && alert.canNavigate -> alert.latitude!! to alert.longitude!!
+            else -> null
+        }
 
     private suspend fun alertText(alert: JourneyAlert): Pair<String, String?> =
         when (alert) {
@@ -207,12 +218,31 @@ class AndroidJourneyNotifier(
                         getString(Res.string.journey_alert_leaves_at, clockTime(alert.departsAtMillis)),
                         alert.platform?.let { getString(Res.string.journey_alert_platform, it) },
                     ).joinToString(" · ")
+            is JourneyAlert.FasterRoute -> fasterRouteText(alert)
             is JourneyAlert.WalkTo ->
                 getString(Res.string.journey_alert_walk, alert.name) to getString(Res.string.journey_alert_walk_detail, alert.minutes)
             JourneyAlert.MissedJourney ->
                 getString(Res.string.journey_alert_missed) to getString(Res.string.journey_alert_missed_detail)
             is JourneyAlert.Arrived -> getString(Res.string.journey_alert_arrived, alert.destinationName) to null
         }
+
+    /** "Faster: 19 at 09:16", with when it arrives, how much sooner, and where to board. */
+    private suspend fun fasterRouteText(alert: JourneyAlert.FasterRoute): Pair<String, String?> {
+        val line = alert.lineName
+        val departs = alert.departsAtMillis
+        val title =
+            if (line != null && departs != null) {
+                getString(Res.string.journey_alert_faster, line, clockTime(departs))
+            } else {
+                getString(Res.string.journey_alert_faster_walk)
+            }
+        return title to
+            listOfNotNull(
+                getString(Res.string.journey_alert_faster_detail, clockTime(alert.arrivesAtMillis), alert.minutesSooner),
+                alert.stopName?.takeIf { line != null }?.let { getString(Res.string.journey_alert_from, it) },
+                alert.platform?.let { getString(Res.string.journey_alert_platform, it) },
+            ).joinToString(" · ")
+    }
 
     /**
      * A departure as a clock time: an alert is posted once and may be read minutes later, when
@@ -235,6 +265,14 @@ class AndroidJourneyNotifier(
             context,
             REQUEST_SKIP,
             Intent(context, JourneyActionReceiver::class.java).setAction(JourneyActionReceiver.ACTION_SKIP),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+    private fun switchIntent(): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            REQUEST_SWITCH,
+            Intent(context, JourneyActionReceiver::class.java).setAction(JourneyActionReceiver.ACTION_SWITCH),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -276,5 +314,6 @@ class AndroidJourneyNotifier(
         private const val REQUEST_SHOW = 1
         private const val REQUEST_SKIP = 2
         private const val REQUEST_NAVIGATE = 3
+        private const val REQUEST_SWITCH = 4
     }
 }

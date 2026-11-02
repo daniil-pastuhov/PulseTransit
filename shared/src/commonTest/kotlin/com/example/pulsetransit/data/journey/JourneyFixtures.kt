@@ -150,6 +150,54 @@ object JourneyFixtures {
                 ),
         )
 
+    const val TRAM_JOURNEY = "RUT:ServiceJourney:19"
+
+    /**
+     * A way on from Majorstuen arriving at Home at T0+[arrival]: a minute's walk to the tram stop,
+     * then tram 19 from T0+16, and the walk to Home from Skøyen.
+     */
+    fun tramOn(arrival: Int = 25) =
+        TripInfo(
+            destinationName = "",
+            expectedStartTime = iso(15),
+            expectedEndTime = iso(arrival),
+            lineName = "19",
+            durationMinutes = arrival - 15,
+            originName = "Majorstuen",
+            legs =
+                listOf(
+                    TripLeg(
+                        mode = "foot",
+                        fromName = "Origin",
+                        toName = "Majorstuen",
+                        durationMinutes = 1,
+                        expectedStartTime = iso(15),
+                        expectedEndTime = iso(16),
+                    ),
+                    TripLeg(
+                        mode = "tram",
+                        lineName = "19",
+                        fromName = "Majorstuen",
+                        toName = "Skøyen",
+                        expectedStartTime = iso(16),
+                        expectedEndTime = iso(arrival - 2),
+                        platform = "C",
+                        serviceJourneyId = TRAM_JOURNEY,
+                        serviceDate = "2026-10-28",
+                    ),
+                    TripLeg(
+                        mode = "foot",
+                        fromName = "Skøyen",
+                        toName = "Destination",
+                        durationMinutes = 2,
+                        expectedStartTime = iso(arrival - 2),
+                        expectedEndTime = iso(arrival),
+                        toLatitude = home.first,
+                        toLongitude = home.second,
+                    ),
+                ),
+        )
+
     /** The legs' own stops, as the tracker stores them after a fetch. */
     fun liveStops(
         metroDelay: Int = 0,

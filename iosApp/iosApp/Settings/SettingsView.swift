@@ -81,22 +81,51 @@ private struct ModeSection: View {
     }
 }
 
-/// How "Notify me about this journey" follows a trip, as the rationale offers it. Location mode
-/// still asks for the location through the rationale the first time it is used.
+/// How "Notify me about this journey" follows a trip, as the rationale offers it, and which of its
+/// alerts to show. Location mode still asks for the location through the rationale the first time
+/// it is used.
 private struct JourneyAlertsSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
 
     var body: some View {
         Section {
-            choice(.timeOnly, title: "journey_mode_time", detail: "journey_mode_time_detail")
+            choice(.timeOnly, title: "journey_mode_time", detail: "journey_mode_time_detail_ios")
             choice(.location, title: "journey_mode_location", detail: "journey_mode_location_detail")
         } header: {
             Text(L("journey_rationale_title"))
         } footer: {
-            Text(L("settings_journey_alerts_hint"))
+            VStack(alignment: .leading, spacing: 8) {
+                // What time-only alerts cannot do on iOS, while they are the ones chosen.
+                if state.journeyMode == .timeOnly {
+                    Label(L("journey_ios_time_limit"), systemImage: "info.circle")
+                        .accessibilityIdentifier("settings.journeyMode.iosLimit")
+                }
+                Text(L("settings_journey_alerts_hint"))
+            }
+        }
+        Section {
+            ForEach(Self.kinds, id: \.0) { kind, title in
+                Toggle(L(title), isOn: binding(!state.disabledJourneyAlerts.contains(kind)) { enabled in
+                    viewModel.updateJourneyAlert(kind: kind, enabled: enabled)
+                })
+                .accessibilityIdentifier("settings.journeyAlert.\(kind.name.lowercased())")
+            }
+        } header: {
+            Text(L("journey_alert_kinds_title"))
         }
     }
+
+    /// Every kind of journey alert, in the order Android lists them, with its label.
+    private static let kinds: [(JourneyAlertKind, String)] = [
+        (.departing, "journey_alert_kind_departing"),
+        (.nextStop, "journey_alert_kind_next_stop"),
+        (.transfer, "journey_alert_kind_transfer"),
+        (.walk, "journey_alert_kind_walk"),
+        (.fasterRoute, "journey_alert_kind_faster_route"),
+        (.missed, "journey_alert_kind_missed"),
+        (.arrived, "journey_alert_kind_arrived"),
+    ]
 
     private func choice(_ mode: JourneyTrackingMode, title: String, detail: String) -> some View {
         Button {

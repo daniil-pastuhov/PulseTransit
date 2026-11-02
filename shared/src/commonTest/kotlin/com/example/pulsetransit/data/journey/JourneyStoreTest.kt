@@ -81,4 +81,15 @@ class JourneyStoreTest {
         assertNull(store.active.value)
         assertTrue(store.history().isEmpty())
     }
+
+    @Test
+    fun `every kind of alert is on until turned off and stays off after a restart`() {
+        assertTrue(store.disabledAlerts().isEmpty())
+        store.setAlertEnabled(JourneyAlertKind.WALK, false)
+        store.setAlertEnabled(JourneyAlertKind.ARRIVED, false)
+        assertEquals(setOf(JourneyAlertKind.WALK, JourneyAlertKind.ARRIVED), JourneyStoreImpl(settings).disabledAlerts())
+
+        store.setAlertEnabled(JourneyAlertKind.WALK, true)
+        assertEquals(setOf(JourneyAlertKind.ARRIVED), store.disabledAlerts())
+    }
 }

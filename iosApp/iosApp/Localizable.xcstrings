@@ -1208,19 +1208,19 @@
         }
       }
     },
-    "journey_action_navigate": {
+    "journey_action_open_map": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Navigate me"
+            "value": "Open map"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vis veien"
+            "value": "Åpne kart"
           }
         }
       }
@@ -1238,6 +1238,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hopp over neste varsler"
+          }
+        }
+      }
+    },
+    "journey_action_switch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to it"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bytt til den"
           }
         }
       }
@@ -1276,6 +1293,57 @@
         }
       }
     },
+    "journey_alert_faster": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faster: %1$@ at %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskere: %1$@ kl. %2$@"
+          }
+        }
+      }
+    },
+    "journey_alert_faster_detail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrives %1$@, %2$lld min sooner"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fremme kl. %1$@, %2$lld min før"
+          }
+        }
+      }
+    },
+    "journey_alert_faster_walk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faster on foot"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskere til fots"
+          }
+        }
+      }
+    },
     "journey_alert_from": {
       "extractionState": "manual",
       "localizations": {
@@ -1289,6 +1357,142 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fra %1$@"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_arrived": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrival"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når jeg er fremme"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_departing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When my ride leaves"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når avgangen går"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_faster_route": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faster routes at a change"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskere ruter ved bytte"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_missed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A missed ride (with location)"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En tapt avgang (med posisjon)"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_next_stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When my stop is next"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når stoppet mitt er neste"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_transfer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where to change"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvor jeg bytter"
+          }
+        }
+      }
+    },
+    "journey_alert_kind_walk": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When to walk"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når jeg skal gå"
+          }
+        }
+      }
+    },
+    "journey_alert_kinds_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notify me about"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varsle meg om"
           }
         }
       }
@@ -1514,6 +1718,23 @@
         }
       }
     },
+    "journey_ios_time_limit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Without location, iOS pauses PulseTransit soon after you leave it. Alerts then come at the times known when it was last open, so later delays and faster routes are missed."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uten posisjon setter iOS PulseTransit på pause kort tid etter at du forlater appen. Varslene kommer da til tidene som var kjent sist appen var åpen, så senere forsinkelser og raskere ruter fanges ikke opp."
+          }
+        }
+      }
+    },
     "journey_mode_location": {
       "extractionState": "manual",
       "localizations": {
@@ -1578,6 +1799,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Avganger, ditt stopp og bytter, med forsinkelser. Ingen posisjon."
+          }
+        }
+      }
+    },
+    "journey_mode_time_detail_ios": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departures, your stop and changes. No location."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avganger, stoppet ditt og bytter. Ingen posisjon."
           }
         }
       }

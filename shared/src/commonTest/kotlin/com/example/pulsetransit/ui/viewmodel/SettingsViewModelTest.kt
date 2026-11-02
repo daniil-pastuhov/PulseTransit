@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.platform.JourneyPermissions
@@ -78,6 +79,25 @@ class SettingsViewModelTest {
 
             assertEquals(JourneyTrackingMode.LOCATION, vm.uiState.value.journeyMode)
             assertEquals(JourneyTrackingMode.LOCATION, journeyStore.preferredMode())
+        }
+
+    @Test
+    fun `journey alerts are all on by default and each can be turned off`() =
+        settingsTest { vm ->
+            assertTrue(
+                vm.uiState.value.disabledJourneyAlerts
+                    .isEmpty(),
+            )
+
+            vm.updateJourneyAlert(JourneyAlertKind.FASTER_ROUTE, enabled = false)
+
+            assertEquals(setOf(JourneyAlertKind.FASTER_ROUTE), vm.uiState.value.disabledJourneyAlerts)
+            assertEquals(setOf(JourneyAlertKind.FASTER_ROUTE), journeyStore.disabledAlerts())
+            vm.updateJourneyAlert(JourneyAlertKind.FASTER_ROUTE, enabled = true)
+            assertTrue(
+                vm.uiState.value.disabledJourneyAlerts
+                    .isEmpty(),
+            )
         }
 
     @Test

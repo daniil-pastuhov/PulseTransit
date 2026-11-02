@@ -51,8 +51,13 @@ struct JourneyRationaleView: View {
                         .accessibilityIdentifier("journey.rationale.privacy")
                     choice(.location, symbol: "location.fill", title: "journey_mode_location", detail: "journey_mode_location_detail")
                         .accessibilityIdentifier("journey.mode.location")
-                    choice(.timeOnly, symbol: "clock", title: "journey_mode_time", detail: "journey_mode_time_detail")
+                    choice(.timeOnly, symbol: "clock", title: "journey_mode_time", detail: "journey_mode_time_detail_ios")
                         .accessibilityIdentifier("journey.mode.time")
+                    // Unlike Android, iOS suspends the app, so time-only alerts stop following live times.
+                    Label(L("journey_ios_time_limit"), systemImage: "info.circle")
+                        .font(.footnote)
+                        .foregroundColor(Palette.textSecondary)
+                        .accessibilityIdentifier("journey.rationale.iosLimit")
                 }
                 .padding(20)
             }

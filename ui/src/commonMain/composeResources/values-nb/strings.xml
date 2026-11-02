@@ -301,9 +301,20 @@
     <string name="journey_rationale_privacy">Posisjonen din blir på denne enheten og sendes aldri noe sted.</string>
     <string name="journey_mode_time">Varsler fra sanntid</string>
     <string name="journey_mode_time_detail">Avganger, ditt stopp og bytter, med forsinkelser. Ingen posisjon.</string>
+    <!-- Kun iOS: iOS setter appen på pause i bakgrunnen med mindre reisen bruker posisjonen. -->
+    <string name="journey_mode_time_detail_ios">Avganger, stoppet ditt og bytter. Ingen posisjon.</string>
+    <string name="journey_ios_time_limit">Uten posisjon setter iOS PulseTransit på pause kort tid etter at du forlater appen. Varslene kommer da til tidene som var kjent sist appen var åpen, så senere forsinkelser og raskere ruter fanges ikke opp.</string>
     <string name="journey_mode_location">Merk også om jeg går glipp av avgangen</string>
     <string name="journey_mode_location_detail">Bruker posisjonen din under reisen, også med skjermen av.</string>
     <string name="journey_rationale_cancel">Ikke nå</string>
+    <string name="journey_alert_kinds_title">Varsle meg om</string>
+    <string name="journey_alert_kind_departing">Når avgangen går</string>
+    <string name="journey_alert_kind_next_stop">Når stoppet mitt er neste</string>
+    <string name="journey_alert_kind_transfer">Hvor jeg bytter</string>
+    <string name="journey_alert_kind_walk">Når jeg skal gå</string>
+    <string name="journey_alert_kind_faster_route">Raskere ruter ved bytte</string>
+    <string name="journey_alert_kind_missed">En tapt avgang (med posisjon)</string>
+    <string name="journey_alert_kind_arrived">Når jeg er fremme</string>
     <string name="journey_alert_departing">%1$s går kl. %2$s</string>
     <string name="journey_alert_from">Fra %1$s</string>
     <string name="journey_alert_platform">Plattform %1$s</string>
@@ -317,8 +328,12 @@
     <string name="journey_alert_missed">Ser ut som du gikk glipp av reisen?</string>
     <string name="journey_alert_missed_detail">Åpne PulseTransit for å finne en annen rute.</string>
     <string name="journey_alert_arrived">Fremme ved %1$s</string>
+    <string name="journey_alert_faster">Raskere: %1$s kl. %2$s</string>
+    <string name="journey_alert_faster_walk">Raskere til fots</string>
+    <string name="journey_alert_faster_detail">Fremme kl. %1$s, %2$d min før</string>
+    <string name="journey_action_switch">Bytt til den</string>
     <string name="journey_action_skip">Hopp over neste varsler</string>
-    <string name="journey_action_navigate">Vis veien</string>
+    <string name="journey_action_open_map">Åpne kart</string>
     <string name="journey_progress_title">Reise til %1$s</string>
     <string name="journey_progress_waiting">%1$s fra %2$s</string>
     <string name="journey_progress_riding">Med %1$s til %2$s</string>

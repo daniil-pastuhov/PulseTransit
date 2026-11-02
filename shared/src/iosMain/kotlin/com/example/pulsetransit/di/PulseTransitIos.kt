@@ -10,6 +10,7 @@ import co.touchlab.crashkios.crashlytics.enableCrashlytics
 import co.touchlab.crashkios.crashlytics.setCrashlyticsUnhandledExceptionHook
 import com.example.pulsetransit.data.journey.JourneyOpenRequests
 import com.example.pulsetransit.data.journey.JourneyStore
+import com.example.pulsetransit.data.journey.switchToFasterRoute
 import com.example.pulsetransit.platform.CameraFrameMotionDetector
 import com.example.pulsetransit.platform.CameraFrameSource
 import com.example.pulsetransit.platform.ClockFormatter
@@ -104,6 +105,11 @@ object PulseTransitIos : KoinComponent {
         val store = get<JourneyStore>()
         val journey = store.active.value ?: return
         store.update(journey.id) { it.copy(muted = true) }
+    }
+
+    /** "Switch to it" on a faster route found at a transfer: that route is followed instead. */
+    fun switchToFasterRoute() {
+        get<JourneyStore>().switchToFasterRoute(Clock.System.now().toEpochMilliseconds())
     }
 
     fun stopBoardViewModel(owner: ViewModelOwner): StopBoardViewModel = owner.viewModel { get<StopBoardViewModel>() }

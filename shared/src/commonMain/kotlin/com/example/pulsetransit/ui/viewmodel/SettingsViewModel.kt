@@ -13,6 +13,7 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WalkingSpeed
+import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.platform.JourneyPermissions
@@ -74,6 +75,8 @@ class SettingsViewModel(
         val journeyAlertsSupported: Boolean = false,
         /** How "Notify me about this journey" follows a journey; null until first chosen. */
         val journeyMode: JourneyTrackingMode? = null,
+        /** The kinds of journey alert turned off; empty when all are on, the default. */
+        val disabledJourneyAlerts: Set<JourneyAlertKind> = emptySet(),
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -142,6 +145,7 @@ class SettingsViewModel(
                 walkingSpeed = settingsRepository.getWalkingSpeed(),
                 journeyAlertsSupported = journeyPermissions.isSupported,
                 journeyMode = journeyStore.preferredMode(),
+                disabledJourneyAlerts = journeyStore.disabledAlerts(),
                 themeMode = settingsRepository.getThemeMode(),
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
@@ -250,6 +254,15 @@ class SettingsViewModel(
     fun updateJourneyMode(mode: JourneyTrackingMode) {
         journeyStore.setPreferredMode(mode)
         _uiState.update { it.copy(journeyMode = mode) }
+    }
+
+    /** Turns one kind of journey alert on or off, also for the journey followed now. */
+    fun updateJourneyAlert(
+        kind: JourneyAlertKind,
+        enabled: Boolean,
+    ) {
+        journeyStore.setAlertEnabled(kind, enabled)
+        _uiState.update { it.copy(disabledJourneyAlerts = journeyStore.disabledAlerts()) }
     }
 
     fun updateWalkingSpeed(speed: WalkingSpeed) {
