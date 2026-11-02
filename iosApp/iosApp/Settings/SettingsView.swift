@@ -33,7 +33,7 @@ struct SettingsView: View {
                 }
                 RouteSearchSection(model: model)
                 if state.journeyAlertsSupported {
-                    JourneyAlertsSection(state: state, viewModel: viewModel)
+                    JourneyAlertsSection(model: model)
                 }
                 if isBoard {
                     LocationSection(state: state, viewModel: viewModel)
@@ -81,69 +81,36 @@ private struct ModeSection: View {
     }
 }
 
-/// How "Notify me about this journey" follows a trip, as the rationale offers it, and which of its
-/// alerts to show. Location mode still asks for the location through the rationale the first time
-/// it is used.
+/// Journey alerts in Settings: how a followed journey is tracked and how many of its alerts are on,
+/// with the choices themselves on a screen of their own.
 private struct JourneyAlertsSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
+    @ObservedObject var model: SettingsModel
 
     var body: some View {
-        Section {
-            choice(.timeOnly, title: "journey_mode_time", detail: "journey_mode_time_detail_ios")
-            choice(.location, title: "journey_mode_location", detail: "journey_mode_location_detail")
-        } header: {
-            Text(L("journey_rationale_title"))
-        } footer: {
-            VStack(alignment: .leading, spacing: 8) {
-                // What time-only alerts cannot do on iOS, while they are the ones chosen.
-                if state.journeyMode == .timeOnly {
-                    Label(L("journey_ios_time_limit"), systemImage: "info.circle")
-                        .accessibilityIdentifier("settings.journeyMode.iosLimit")
+        let state = model.state
+        let total = JourneyAlertsView.kinds.count
+        Section(L("journey_rationale_title")) {
+            NavigationLink(destination: JourneyAlertsView(model: model)) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L(Self.modeKey(state.journeyMode)))
+                    Text(state.disabledJourneyAlerts.isEmpty
+                        ? L("journey_alerts_all")
+                        : L("journey_alerts_count", total - state.disabledJourneyAlerts.count, total))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
-                Text(L("settings_journey_alerts_hint"))
             }
-        }
-        Section {
-            ForEach(Self.kinds, id: \.0) { kind, title in
-                Toggle(L(title), isOn: binding(!state.disabledJourneyAlerts.contains(kind)) { enabled in
-                    viewModel.updateJourneyAlert(kind: kind, enabled: enabled)
-                })
-                .accessibilityIdentifier("settings.journeyAlert.\(kind.name.lowercased())")
-            }
-        } header: {
-            Text(L("journey_alert_kinds_title"))
+            .accessibilityIdentifier("settings.journeyAlerts")
         }
     }
 
-    /// Every kind of journey alert, in the order Android lists them, with its label.
-    private static let kinds: [(JourneyAlertKind, String)] = [
-        (.departing, "journey_alert_kind_departing"),
-        (.nextStop, "journey_alert_kind_next_stop"),
-        (.transfer, "journey_alert_kind_transfer"),
-        (.walk, "journey_alert_kind_walk"),
-        (.fasterRoute, "journey_alert_kind_faster_route"),
-        (.missed, "journey_alert_kind_missed"),
-        (.arrived, "journey_alert_kind_arrived"),
-    ]
-
-    private func choice(_ mode: JourneyTrackingMode, title: String, detail: String) -> some View {
-        Button {
-            viewModel.updateJourneyMode(mode: mode)
-        } label: {
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L(title)).foregroundColor(Palette.textPrimary)
-                    Text(L(detail)).font(.caption).foregroundColor(.secondary)
-                }
-                Spacer(minLength: 0)
-                if state.journeyMode == mode {
-                    Image(systemName: "checkmark").foregroundColor(Palette.primary)
-                }
-            }
+    /// The chosen way of following a journey, or "Not set" until the rationale or this screen picks one.
+    private static func modeKey(_ mode: JourneyTrackingMode?) -> String {
+        switch mode {
+        case .timeOnly: return "journey_mode_time"
+        case .location: return "journey_mode_location"
+        default: return "not_set"
         }
-        .accessibilityAddTraits(state.journeyMode == mode ? .isSelected : [])
-        .accessibilityIdentifier("settings.journeyMode.\(mode.name.lowercased())")
     }
 }
 

@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -54,7 +53,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -90,7 +88,6 @@ import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.journey.JourneyAlertKind
-import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -114,6 +111,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel,
     onBack: () -> Unit,
     onOpenRouteModes: () -> Unit,
+    onOpenJourneyAlerts: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -707,71 +705,36 @@ fun SettingsScreen(
                     }
                 }
 
-                // Section: Journey alerts, how "Notify me about this journey" follows a trip
+                // Section: Journey alerts, how "Notify me about this journey" follows a trip; the
+                // choices themselves are on a screen of their own.
                 if (uiState.journeyAlertsSupported) {
                     SettingsCard(title = stringResource(Res.string.journey_rationale_title)) {
-                        Text(
-                            stringResource(Res.string.settings_journey_alerts_hint),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        val modes =
-                            listOf(
-                                Triple(JourneyTrackingMode.TIME_ONLY, Res.string.journey_mode_time, Res.string.journey_mode_time_detail),
-                                Triple(
-                                    JourneyTrackingMode.LOCATION,
-                                    Res.string.journey_mode_location,
-                                    Res.string.journey_mode_location_detail,
-                                ),
-                            )
-                        modes.forEach { (mode, titleId, detailId) ->
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .selectable(
-                                            selected = uiState.journeyMode == mode,
-                                            role = Role.RadioButton,
-                                            onClick = { viewModel.updateJourneyMode(mode) },
-                                        ).padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(selected = uiState.journeyMode == mode, onClick = null)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(stringResource(titleId), style = MaterialTheme.typography.bodyLarge)
-                                    Text(
-                                        stringResource(detailId),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                        val enabledCount = JourneyAlertKind.entries.size - uiState.disabledJourneyAlerts.size
+                        Row(
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(role = Role.Button, onClick = onOpenJourneyAlerts)
+                                    .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    stringResource(uiState.journeyMode?.let(::journeyModeLabel) ?: Res.string.not_set),
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                                Text(
+                                    if (uiState.disabledJourneyAlerts.isEmpty()) {
+                                        stringResource(Res.string.journey_alerts_all)
+                                    } else {
+                                        stringResource(Res.string.journey_alerts_count, enabledCount, JourneyAlertKind.entries.size)
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            stringResource(Res.string.journey_alert_kinds_title),
-                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                        )
-                        JourneyAlertKind.entries.forEach { kind ->
-                            val enabled = kind !in uiState.disabledJourneyAlerts
-                            Row(
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .toggleable(
-                                            value = enabled,
-                                            role = Role.Checkbox,
-                                            onValueChange = { viewModel.updateJourneyAlert(kind, it) },
-                                        ),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Checkbox(checked = enabled, onCheckedChange = null)
-                                Text(stringResource(journeyAlertKindLabel(kind)))
-                            }
+                            Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                         }
                     }
                 }
@@ -1319,16 +1282,4 @@ private fun locationStatusText(status: SettingsViewModel.LocationStatus): String
         is SettingsViewModel.LocationStatus.Error -> stringResource(Res.string.loc_error, status.message)
         SettingsViewModel.LocationStatus.Manual -> stringResource(Res.string.loc_manual)
         SettingsViewModel.LocationStatus.InvalidManualFormat -> stringResource(Res.string.loc_invalid_format)
-    }
-
-/** What each kind of journey alert is called in Settings. */
-private fun journeyAlertKindLabel(kind: JourneyAlertKind): StringResource =
-    when (kind) {
-        JourneyAlertKind.DEPARTING -> Res.string.journey_alert_kind_departing
-        JourneyAlertKind.NEXT_STOP -> Res.string.journey_alert_kind_next_stop
-        JourneyAlertKind.TRANSFER -> Res.string.journey_alert_kind_transfer
-        JourneyAlertKind.WALK -> Res.string.journey_alert_kind_walk
-        JourneyAlertKind.FASTER_ROUTE -> Res.string.journey_alert_kind_faster_route
-        JourneyAlertKind.MISSED -> Res.string.journey_alert_kind_missed
-        JourneyAlertKind.ARRIVED -> Res.string.journey_alert_kind_arrived
     }

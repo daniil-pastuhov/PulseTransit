@@ -1667,6 +1667,40 @@
         }
       }
     },
+    "journey_alerts_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All alerts"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle varsler"
+          }
+        }
+      }
+    },
+    "journey_alerts_count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %2$lld alerts"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld av %2$lld varsler"
+          }
+        }
+      }
+    },
     "journey_channel_alerts": {
       "extractionState": "manual",
       "localizations": {
@@ -2299,6 +2333,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Slutt å følge"
+          }
+        }
+      }
+    },
+    "journey_tracking_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following the trip"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Følge reisen"
           }
         }
       }
