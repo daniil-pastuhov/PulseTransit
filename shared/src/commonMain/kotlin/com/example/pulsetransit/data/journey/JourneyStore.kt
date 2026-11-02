@@ -36,6 +36,14 @@ interface JourneyStore {
 
     fun setPreferredMode(mode: JourneyTrackingMode)
 
+    /** The kinds of alert turned off in Settings; empty, so every alert is shown, until one is. */
+    fun disabledAlerts(): Set<JourneyAlertKind>
+
+    fun setAlertEnabled(
+        kind: JourneyAlertKind,
+        enabled: Boolean,
+    )
+
     companion object {
         const val HISTORY_SIZE = 5
     }
@@ -48,6 +56,7 @@ class JourneyStoreImpl(
         const val ACTIVE = "journey_active_json"
         const val HISTORY = "journey_history_json"
         const val PREFERRED_MODE = "journey_preferred_mode"
+        const val DISABLED_ALERTS = "journey_disabled_alerts_json"
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -105,5 +114,22 @@ class JourneyStoreImpl(
 
     override fun setPreferredMode(mode: JourneyTrackingMode) {
         prefs.putString(Keys.PREFERRED_MODE, mode.name)
+    }
+
+    // By name, so a kind a later version drops is skipped rather than failing the whole set.
+    override fun disabledAlerts(): Set<JourneyAlertKind> {
+        val names =
+            prefs.getStringOrNull(Keys.DISABLED_ALERTS)?.let {
+                runCatching { json.decodeFromString<List<String>>(it) }.getOrNull()
+            } ?: return emptySet()
+        return JourneyAlertKind.entries.filter { it.name in names }.toSet()
+    }
+
+    override fun setAlertEnabled(
+        kind: JourneyAlertKind,
+        enabled: Boolean,
+    ) {
+        val disabled = if (enabled) disabledAlerts() - kind else disabledAlerts() + kind
+        prefs.putString(Keys.DISABLED_ALERTS, json.encodeToString(disabled.map { it.name }.sorted()))
     }
 }

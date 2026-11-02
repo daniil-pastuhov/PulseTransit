@@ -13,8 +13,9 @@ import com.example.pulsetransit.data.parseIsoToMillis
  *
  * - Each ride: "leaves at 14:32" a minute before it does, and "next stop is yours" as it leaves
  *   the stop before the one to get off at.
- * - Between rides: where to change and when the next ride leaves.
- * - A walk to the first ride, and the walk to the destination, which offers directions.
+ * - Between rides: where to change and when the next ride leaves, with directions when the change
+ *   is a walk to another stop.
+ * - A walk to the first ride, and the walk to the destination, both with directions.
  * - Arrival.
  */
 object JourneyAlertPlanner {
@@ -138,14 +139,26 @@ object JourneyAlertPlanner {
         val transfer =
             nextRide?.let { times[it] }?.let { nextTime ->
                 val next = trip.legs[nextRide]
-                ScheduledAlert(JourneyAlert.Transfer(index, next.lineName.orEmpty(), next.platform, nextTime.startMillis), time.endMillis)
+                // A walk that takes time between the rides is to another stop: directions to it.
+                val walks = (index + 1 until nextRide).any { trip.legs[it].isShown }
+                ScheduledAlert(
+                    JourneyAlert.Transfer(
+                        legIndex = index,
+                        lineName = next.lineName.orEmpty(),
+                        platform = next.platform,
+                        departsAtMillis = nextTime.startMillis,
+                        latitude = next.fromLatitude?.takeIf { walks },
+                        longitude = next.fromLongitude?.takeIf { walks },
+                    ),
+                    time.endMillis,
+                )
             }
         return listOfNotNull(departing, nextStop, transfer)
     }
 
     /**
      * The walk to the first ride, a minute before it should start, and the walk to the destination,
-     * which offers directions. A walk between rides is the transfer alert's to tell.
+     * both with directions. A walk between rides is the transfer alert's to tell.
      */
     private fun walkAlert(
         journey: TrackedJourney,

@@ -38,6 +38,10 @@ data class TrackedJourney(
     val muted: Boolean = false,
     /** When the journey ended (arrived or stopped); null while it is being followed. */
     val endedAtMillis: Long? = null,
+    /** Rides whose transfer [FasterRoutes] has checked for a faster way on, by leg index. */
+    val checkedTransfers: Set<Int> = emptySet(),
+    /** The faster route last offered at a transfer, which "Switch" follows instead; null when none is. */
+    val fasterRoute: TripInfo? = null,
 )
 
 /** One notification about a followed journey. [id] is stable across refreshes, for dedupe. */
@@ -70,19 +74,26 @@ sealed interface JourneyAlert {
     /**
      * Leg [legIndex] has arrived; change to [lineName], which leaves at [departsAtMillis]. A clock
      * time rather than minutes from now, which would go stale in a notification that stays up.
+     * When the change means a walk to another stop, [latitude], [longitude] is that stop, and the
+     * alert offers "Open map" to it.
      */
     data class Transfer(
         val legIndex: Int,
         val lineName: String,
         val platform: String?,
         val departsAtMillis: Long,
+        val latitude: Double? = null,
+        val longitude: Double? = null,
     ) : JourneyAlert {
         override val id get() = "transfer-$legIndex"
+
+        /** Whether the alert offers "Open map": there is a walk to the next ride's stop. */
+        val canNavigate: Boolean get() = latitude != null && longitude != null
     }
 
     /**
-     * Time to walk to [name]. When [isFinal] it is the walk to the destination, and the alert offers
-     * directions to [latitude], [longitude].
+     * Time to walk to [name]: the first ride's stop, or, when [isFinal], the destination. The alert
+     * offers walking directions to [latitude], [longitude] ("Open map").
      */
     data class WalkTo(
         val legIndex: Int,
@@ -94,8 +105,25 @@ sealed interface JourneyAlert {
     ) : JourneyAlert {
         override val id get() = "walk-$legIndex"
 
-        /** Whether the alert offers "Navigate me". */
-        val canNavigate: Boolean get() = isFinal && latitude != null && longitude != null
+        /** Whether the alert offers "Open map". */
+        val canNavigate: Boolean get() = latitude != null && longitude != null
+    }
+
+    /**
+     * At the transfer after leg [legIndex], a route found now arrives [minutesSooner] minutes before
+     * the journey would, at [arrivesAtMillis]: [lineName] from [stopName] at [departsAtMillis]. With
+     * no [lineName] the faster way is on foot. Offers switching to it ([TrackedJourney.fasterRoute]).
+     */
+    data class FasterRoute(
+        val legIndex: Int,
+        val lineName: String?,
+        val stopName: String?,
+        val platform: String?,
+        val departsAtMillis: Long?,
+        val arrivesAtMillis: Long,
+        val minutesSooner: Int,
+    ) : JourneyAlert {
+        override val id get() = "faster-$legIndex"
     }
 
     /** The device is far from where the journey should be: the user probably missed it. */
@@ -109,6 +137,29 @@ sealed interface JourneyAlert {
         override val id get() = "arrived"
     }
 }
+
+/** The kinds of [JourneyAlert], each of which can be turned off in Settings. All are on by default. */
+enum class JourneyAlertKind {
+    DEPARTING,
+    NEXT_STOP,
+    TRANSFER,
+    WALK,
+    FASTER_ROUTE,
+    MISSED,
+    ARRIVED,
+}
+
+val JourneyAlert.kind: JourneyAlertKind
+    get() =
+        when (this) {
+            is JourneyAlert.DepartingSoon -> JourneyAlertKind.DEPARTING
+            is JourneyAlert.NextStopIsYours -> JourneyAlertKind.NEXT_STOP
+            is JourneyAlert.Transfer -> JourneyAlertKind.TRANSFER
+            is JourneyAlert.WalkTo -> JourneyAlertKind.WALK
+            is JourneyAlert.FasterRoute -> JourneyAlertKind.FASTER_ROUTE
+            JourneyAlert.MissedJourney -> JourneyAlertKind.MISSED
+            is JourneyAlert.Arrived -> JourneyAlertKind.ARRIVED
+        }
 
 /** An alert and when it is due. */
 data class ScheduledAlert(

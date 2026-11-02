@@ -89,6 +89,7 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.WalkingSpeed
+import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
@@ -749,6 +750,29 @@ fun SettingsScreen(
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            stringResource(Res.string.journey_alert_kinds_title),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                        )
+                        JourneyAlertKind.entries.forEach { kind ->
+                            val enabled = kind !in uiState.disabledJourneyAlerts
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .toggleable(
+                                            value = enabled,
+                                            role = Role.Checkbox,
+                                            onValueChange = { viewModel.updateJourneyAlert(kind, it) },
+                                        ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(checked = enabled, onCheckedChange = null)
+                                Text(stringResource(journeyAlertKindLabel(kind)))
+                            }
+                        }
                     }
                 }
 
@@ -1295,4 +1319,16 @@ private fun locationStatusText(status: SettingsViewModel.LocationStatus): String
         is SettingsViewModel.LocationStatus.Error -> stringResource(Res.string.loc_error, status.message)
         SettingsViewModel.LocationStatus.Manual -> stringResource(Res.string.loc_manual)
         SettingsViewModel.LocationStatus.InvalidManualFormat -> stringResource(Res.string.loc_invalid_format)
+    }
+
+/** What each kind of journey alert is called in Settings. */
+private fun journeyAlertKindLabel(kind: JourneyAlertKind): StringResource =
+    when (kind) {
+        JourneyAlertKind.DEPARTING -> Res.string.journey_alert_kind_departing
+        JourneyAlertKind.NEXT_STOP -> Res.string.journey_alert_kind_next_stop
+        JourneyAlertKind.TRANSFER -> Res.string.journey_alert_kind_transfer
+        JourneyAlertKind.WALK -> Res.string.journey_alert_kind_walk
+        JourneyAlertKind.FASTER_ROUTE -> Res.string.journey_alert_kind_faster_route
+        JourneyAlertKind.MISSED -> Res.string.journey_alert_kind_missed
+        JourneyAlertKind.ARRIVED -> Res.string.journey_alert_kind_arrived
     }

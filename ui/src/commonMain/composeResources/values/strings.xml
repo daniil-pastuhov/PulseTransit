@@ -302,9 +302,20 @@
     <string name="journey_rationale_privacy">Your location stays on this device and is never sent anywhere.</string>
     <string name="journey_mode_time">Alerts from live times</string>
     <string name="journey_mode_time_detail">Departures, your stop and changes, following delays. No location.</string>
+    <!-- iOS only: iOS suspends the app in the background unless the journey reads the location. -->
+    <string name="journey_mode_time_detail_ios">Departures, your stop and changes. No location.</string>
+    <string name="journey_ios_time_limit">Without location, iOS pauses PulseTransit soon after you leave it. Alerts then come at the times known when it was last open, so later delays and faster routes are missed.</string>
     <string name="journey_mode_location">Also notice if I miss my ride</string>
     <string name="journey_mode_location_detail">Uses your location during the journey, also with the screen off.</string>
     <string name="journey_rationale_cancel">Not now</string>
+    <string name="journey_alert_kinds_title">Notify me about</string>
+    <string name="journey_alert_kind_departing">When my ride leaves</string>
+    <string name="journey_alert_kind_next_stop">When my stop is next</string>
+    <string name="journey_alert_kind_transfer">Where to change</string>
+    <string name="journey_alert_kind_walk">When to walk</string>
+    <string name="journey_alert_kind_faster_route">Faster routes at a change</string>
+    <string name="journey_alert_kind_missed">A missed ride (with location)</string>
+    <string name="journey_alert_kind_arrived">Arrival</string>
     <string name="journey_alert_departing">%1$s leaves at %2$s</string>
     <string name="journey_alert_from">From %1$s</string>
     <string name="journey_alert_platform">Platform %1$s</string>
@@ -318,8 +329,12 @@
     <string name="journey_alert_missed">Looks like you missed your journey?</string>
     <string name="journey_alert_missed_detail">Open PulseTransit to find another route.</string>
     <string name="journey_alert_arrived">Arriving at %1$s</string>
+    <string name="journey_alert_faster">Faster: %1$s at %2$s</string>
+    <string name="journey_alert_faster_walk">Faster on foot</string>
+    <string name="journey_alert_faster_detail">Arrives %1$s, %2$d min sooner</string>
+    <string name="journey_action_switch">Switch to it</string>
     <string name="journey_action_skip">Skip next alerts</string>
-    <string name="journey_action_navigate">Navigate me</string>
+    <string name="journey_action_open_map">Open map</string>
     <string name="journey_progress_title">Journey to %1$s</string>
     <string name="journey_progress_waiting">%1$s from %2$s</string>
     <string name="journey_progress_riding">On %1$s to %2$s</string>

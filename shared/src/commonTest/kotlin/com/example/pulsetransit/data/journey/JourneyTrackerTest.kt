@@ -1,11 +1,13 @@
 package com.example.pulsetransit.data.journey
 
+import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.journey.JourneyFixtures.BUS_JOURNEY
 import com.example.pulsetransit.data.journey.JourneyFixtures.METRO_JOURNEY
 import com.example.pulsetransit.data.journey.JourneyFixtures.MINUTE
 import com.example.pulsetransit.data.journey.JourneyFixtures.at
 import com.example.pulsetransit.data.journey.JourneyFixtures.journey
 import com.example.pulsetransit.data.journey.JourneyFixtures.liveStops
+import com.example.pulsetransit.data.journey.JourneyFixtures.tramOn
 import com.example.pulsetransit.platform.JourneyNotifier
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationResult
@@ -336,6 +338,134 @@ class JourneyTrackerTest {
                     .first()
                     .alert.id,
             )
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `arriving at a transfer stop offers a faster way on once`() =
+        trackerTest {
+            var searches = 0
+            entur.tripOptionsTo = { _, _ ->
+                searches++
+                Sourced(listOf(tramOn(arrival = 25)))
+            }
+            val harness = track(journey(), startAt = at(13))
+            assertEquals(0, searches, "still on the metro")
+
+            advanceMinutes(1)
+            assertEquals(1, searches)
+            assertEquals(listOf("transfer-1", "faster-1"), shownIds.takeLast(2), "the offer comes after the change it replaces")
+            val faster = notifier.shown.last() as JourneyAlert.FasterRoute
+            assertEquals(6, faster.minutesSooner)
+            assertEquals(JourneyFixtures.majorstuen.second to JourneyFixtures.majorstuen.third, entur.lastFastestTripCoords)
+            assertEquals(tramOn(arrival = 25), store.active.value?.fasterRoute)
+
+            advanceMinutes(2)
+            assertEquals(1, searches, "a transfer is searched once")
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `no faster way on stays quiet`() =
+        trackerTest {
+            entur.tripOptionsTo = { _, _ -> Sourced(listOf(tramOn(arrival = 30))) }
+            val harness = track(journey(), startAt = at(14))
+            assertFalse("faster-1" in shownIds)
+            assertEquals(setOf(1), store.active.value?.checkedTransfers)
+            assertNull(store.active.value?.fasterRoute)
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `a failed search is tried again until the next ride leaves`() =
+        trackerTest {
+            var searches = 0
+            entur.tripOptionsTo = { _, _ ->
+                searches++
+                if (searches < 3) Sourced.failed(emptyList()) else Sourced(listOf(tramOn(arrival = 25)))
+            }
+            val harness = track(journey(), startAt = at(14))
+            assertEquals(1, searches)
+            assertEquals(emptySet(), store.active.value?.checkedTransfers)
+            advanceMinutes(1)
+            assertEquals(3, searches, "every 30 s, not every tick")
+            assertTrue("faster-1" in shownIds)
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `switching to the faster route follows it instead`() =
+        trackerTest {
+            entur.tripOptionsTo = { _, _ -> Sourced(listOf(tramOn(arrival = 25))) }
+            val harness = track(journey(), startAt = at(14))
+            assertTrue("faster-1" in shownIds)
+
+            store.switchToFasterRoute(at(14))
+            runCurrent()
+            assertEquals(JourneyFixtures.TRAM_JOURNEY, store.active.value?.id)
+            assertEquals(listOf(journey().id), notifier.ended)
+            assertEquals(listOf(true), notifier.clearedAlerts, "the old journey's alerts go")
+            assertEquals("Home", notifier.progress.last().destinationName)
+            assertEquals(journey().id, store.history().single().id)
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `a muted journey is not searched`() =
+        trackerTest {
+            var searches = 0
+            entur.tripOptionsTo = { _, _ ->
+                searches++
+                Sourced(listOf(tramOn(arrival = 25)))
+            }
+            val harness = track(journey(muted = true), startAt = at(14))
+            assertEquals(0, searches)
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `alerts turned off in Settings are not shown nor scheduled and do not come back`() =
+        trackerTest {
+            store.setAlertEnabled(JourneyAlertKind.DEPARTING, false)
+            val harness = track(journey(), startAt = at(3))
+            assertEquals(listOf("walk-0"), shownIds)
+            assertTrue(notifier.scheduled.last().none { it.alert.kind == JourneyAlertKind.DEPARTING })
+
+            advanceMinutes(2)
+            assertFalse("depart-1" in shownIds)
+            store.setAlertEnabled(JourneyAlertKind.DEPARTING, true)
+            advanceMinutes(1)
+            assertFalse("depart-1" in shownIds, "one already past stays unshown")
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `faster routes turned off are never searched for`() =
+        trackerTest {
+            var searches = 0
+            entur.tripOptionsTo = { _, _ ->
+                searches++
+                Sourced(listOf(tramOn(arrival = 25)))
+            }
+            store.setAlertEnabled(JourneyAlertKind.FASTER_ROUTE, false)
+            val harness = track(journey(), startAt = at(14))
+            advanceMinutes(1)
+            assertEquals(0, searches)
+            harness.job.cancel()
+        }
+
+    @Test
+    fun `missed rides turned off never silence the journey`() =
+        trackerTest {
+            store.setAlertEnabled(JourneyAlertKind.MISSED, false)
+            val (_, lat, lon) = JourneyFixtures.jernbanetorget
+            val harness = track(journey(JourneyTrackingMode.LOCATION, legStops = liveStops()), startAt = at(9))
+            repeat(4) {
+                location.updates.getValue(LocationAccuracy.PRECISE).emit(LocationResult.Fix(lat, lon + it * 0.0001))
+                advanceMinutes(1)
+            }
+            assertFalse("missed" in shownIds)
+            assertFalse(store.active.value!!.muted)
             harness.job.cancel()
         }
 }

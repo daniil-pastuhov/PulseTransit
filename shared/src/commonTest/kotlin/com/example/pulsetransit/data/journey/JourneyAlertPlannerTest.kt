@@ -46,16 +46,34 @@ class JourneyAlertPlannerTest {
     }
 
     @Test
-    fun `only the final walk offers directions`() {
+    fun `the first and the final walk offer directions`() {
         val alerts = JourneyAlertPlanner.schedule(journey()).associateBy { it.alert.id }
         val first = alerts.getValue("walk-0").alert as JourneyAlert.WalkTo
         val last = alerts.getValue("walk-4").alert as JourneyAlert.WalkTo
 
-        assertFalse(first.canNavigate)
+        assertTrue(first.canNavigate)
+        assertFalse(first.isFinal)
         assertEquals("Jernbanetorget", first.name)
+        assertEquals(JourneyFixtures.jernbanetorget.second to JourneyFixtures.jernbanetorget.third, first.latitude to first.longitude)
         assertTrue(last.canNavigate)
         assertEquals("Home", last.name)
         assertEquals(JourneyFixtures.home, last.latitude to last.longitude)
+    }
+
+    @Test
+    fun `a change on foot offers directions to the next ride's stop`() {
+        val atStop = JourneyAlertPlanner.schedule(journey()).first { it.alert.id == "transfer-1" }.alert as JourneyAlert.Transfer
+        assertFalse(atStop.canNavigate, "a zero-minute walk is a change within the stop")
+
+        val trip = JourneyFixtures.trip
+        val walking = trip.copy(legs = trip.legs.mapIndexed { i, leg -> if (i == 2) leg.copy(durationMinutes = 3) else leg })
+        val onFoot =
+            JourneyAlertPlanner
+                .schedule(journey().copy(trip = walking))
+                .first { it.alert.id == "transfer-1" }
+                .alert as JourneyAlert.Transfer
+        assertTrue(onFoot.canNavigate)
+        assertEquals(JourneyFixtures.majorstuen.second to JourneyFixtures.majorstuen.third, onFoot.latitude to onFoot.longitude)
     }
 
     @Test
