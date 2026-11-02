@@ -37,6 +37,13 @@ class EnturRepositoryImpl(
         /** How long departed rows are kept before pruning, purely to bound cache growth. */
         const val PRUNE_AFTER_MS = 6 * 60 * 60 * 1000L
 
+        /**
+         * The geocoder also indexes foreign stops (Berlin, Stockholm…) the app has no departures
+         * for. Its `countries` filter takes the lower-case ISO 3166-1 alpha-2 code: "NOR" matches
+         * nothing at all.
+         */
+        const val NORWAY = "no"
+
         const val COORDINATE_DECIMALS = 4
         const val COORDINATE_SCALE = 10_000.0
 
@@ -319,6 +326,7 @@ class EnturRepositoryImpl(
                         parameter("q", query)
                         parameter("layers", "stopPlace")
                         parameter("limit", 15)
+                        parameter("countries", NORWAY)
                     }.body()
 
             response.features.mapNotNull { it.toStopPlace() }
@@ -343,6 +351,7 @@ class EnturRepositoryImpl(
                         // groupOfStopPlaces is left out: the trip planner can't route to one.
                         parameter("layers", "stopPlace,address,poi,place")
                         parameter("limit", 15)
+                        parameter("countries", NORWAY)
                         if (focusLat != null && focusLon != null) {
                             parameter("lat", focusLat)
                             parameter("lon", focusLon)
@@ -411,6 +420,7 @@ class EnturRepositoryImpl(
                         parameter("radius", radiusKm)
                         parameter("layers", "stopPlace")
                         parameter("limit", 20)
+                        parameter("countries", NORWAY)
                     }.body()
 
             response.features.mapNotNull { it.toStopPlace() }
