@@ -919,6 +919,40 @@
         }
       }
     },
+    "duration_days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld d"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld d"
+          }
+        }
+      }
+    },
+    "duration_hours": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld h"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld t"
+          }
+        }
+      }
+    },
     "duration_min": {
       "extractionState": "manual",
       "localizations": {
@@ -932,6 +966,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$lld min"
+          }
+        }
+      }
+    },
+    "duration_months": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld mo"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld mnd"
+          }
+        }
+      }
+    },
+    "duration_years": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld y"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld år"
           }
         }
       }
@@ -5598,23 +5666,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Holdeplass som vises"
-          }
-        }
-      }
-    },
-    "widget_duration": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld min"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld min"
           }
         }
       }

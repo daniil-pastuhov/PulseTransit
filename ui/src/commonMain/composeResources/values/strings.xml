@@ -132,6 +132,10 @@
     <string name="leg_walk">🚶 %1$d min</string>
     <string name="leg_from">from %1$s</string>
     <string name="duration_min">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_days">%1$d d</string>
+    <string name="duration_months">%1$d mo</string>
+    <string name="duration_years">%1$d y</string>
 
     <!-- Refresh Intervals -->
     <string name="refresh_none">None</string>
@@ -377,7 +381,6 @@
     <string name="widget_board_at">Departs %1$s</string>
     <string name="widget_board_at_platform">Departs %1$s · platform %2$s</string>
     <string name="widget_arrive_at">Arrives %1$s</string>
-    <string name="widget_duration">%1$d min</string>
     <string name="widget_walk_only">Walk all the way</string>
     <string name="widget_realtime">Realtime</string>
     <string name="widget_choose_stop">Stop to show</string>

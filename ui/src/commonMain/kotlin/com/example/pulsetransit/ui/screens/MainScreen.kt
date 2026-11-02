@@ -126,6 +126,7 @@ import com.example.pulsetransit.ui.components.loadFailureIcon
 import com.example.pulsetransit.ui.components.loadFailureReason
 import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
 import com.example.pulsetransit.ui.components.temperatureColor
+import com.example.pulsetransit.ui.components.tripDurationText
 import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.layout.BoardLayout
 import com.example.pulsetransit.ui.pixelshift.pixelShift
@@ -564,7 +565,7 @@ fun FastestTripBanner(
     }
     val durationText: @Composable () -> Unit = {
         Text(
-            text = stringResource(Res.string.duration_min, trip.durationMinutes),
+            text = tripDurationText(trip.durationMinutes),
             style = MaterialTheme.typography.titleMedium,
             color = onContainer,
             maxLines = 1,

@@ -146,7 +146,7 @@ private struct TripHeader: View {
     private var times: String {
         let start = clockText(trip.expectedStartTime, nowMillis: nowMillis)
         let span = trip.expectedEndTime.map { "\(start) → \(clockText($0, nowMillis: nowMillis))" } ?? start
-        return "\(span) · \(L("duration_min", Int(trip.durationMinutes)))"
+        return "\(span) · \(tripDuration(trip.durationMinutes))"
     }
 
     private var facts: String {
@@ -274,7 +274,7 @@ private struct RideCard: View {
         } label: {
             HStack(spacing: 4) {
                 Text(
-                    [L("duration_min", Int(leg.durationMinutes)), ridden.map { L("trip_details_stops", $0) }]
+                    [tripDuration(leg.durationMinutes), ridden.map { L("trip_details_stops", $0) }]
                         .compactMap { $0 }
                         .joined(separator: " · ")
                 )

@@ -18,7 +18,7 @@ struct FastestTripBanner: View {
     }
 
     private var durationText: some View {
-        Text(L("duration_min", Int(trip.durationMinutes)))
+        Text(tripDuration(trip.durationMinutes))
             .font(.headline)
             .lineLimit(1)
     }
