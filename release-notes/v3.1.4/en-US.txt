@@ -1,0 +1,5 @@
+• Trips far in the future show their travel time in hours, days, months or years instead of a long count of minutes
+• Stop and place search only shows places in Norway
+• Settings now lists every transport company PulseTransit has departures for, so you can check the ones you travel with
+• Drag your route destinations in Settings into the order you want them on the board
+• On the spot, the stop gets the space the routes don't need, showing more departures, and changes animate smoothly
