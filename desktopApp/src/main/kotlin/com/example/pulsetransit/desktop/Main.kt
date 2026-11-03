@@ -18,6 +18,7 @@ import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.di.desktopPlatformModule
 import com.example.pulsetransit.di.sharedModule
 import com.example.pulsetransit.ui.screens.DataSourcesScreen
+import com.example.pulsetransit.ui.screens.IntroScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
@@ -61,6 +62,10 @@ private fun DesktopApp() {
     val modeState by modeSelection.uiState.collectAsState()
     if (modeState.mode == null) {
         ModeSelectionScreen(onChoose = modeSelection::choose)
+        return
+    }
+    if (modeState.showsIntro) {
+        IntroScreen(pages = modeState.intro, onFinish = modeSelection::finishIntro)
         return
     }
     // Created once, for the life of the app: Koin's viewModel definitions hand out a new instance on

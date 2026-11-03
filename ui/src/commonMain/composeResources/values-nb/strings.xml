@@ -235,6 +235,25 @@
     <string name="mode_board">Veggtavle</string>
     <string name="mode_board_description">En skjerm som alltid står på for stoppestedene du velger, med innbrenningsvern og dimming.</string>
     <string name="settings_mode">Modus</string>
+    <!-- Intro after choosing a mode -->
+    <string name="intro_skip">Hopp over</string>
+    <string name="intro_next">Neste</string>
+    <string name="intro_done">Kom i gang</string>
+    <string name="intro_step">Steg %1$d av %2$d</string>
+    <string name="intro_nearest_stop_title">Avganger der du er</string>
+    <string name="intro_nearest_stop_body">Avgangene fra nærmeste stoppested vises av seg selv og følger deg når du flytter deg. Trykk på navnet til stoppestedet for å velge et annet i nærheten.</string>
+    <string name="intro_routes_title">Reiser herfra</string>
+    <string name="intro_routes_body">Legg til stedene du ofte skal til i Innstillinger, så får hvert av dem de neste reisene fra der du står. For en enkelt tur, trykk på søkeknappen.</string>
+    <string name="intro_resize_title">Gi plass</string>
+    <string name="intro_resize_body">Dra linjen mellom reiser og avganger for å gi en av dem mer plass.</string>
+    <string name="intro_choose_stops_title">Velg stoppestedene dine</string>
+    <string name="intro_choose_stops_body">Åpne Innstillinger for å legge til opptil 6 stoppesteder, og velg hvilke retninger som vises for hvert. Når ikke alle får plass, viser tavlen dem etter tur.</string>
+    <string name="intro_fastest_routes_title">Raskeste ruter</string>
+    <string name="intro_fastest_routes_body">Legg til opptil 5 reisemål i Innstillinger for å se den raskeste veien dit fra tavlens posisjon, og velg når hvert av dem vises, for eksempel hverdagsmorgener.</string>
+    <string name="intro_details_title">Trykk for detaljer</string>
+    <string name="intro_details_body">Trykk på en avgang for å se stoppene og senere avganger, eller for å skjule en linje du aldri tar. Trykk på en reise for å se hvert steg og få varsler underveis.</string>
+    <string name="intro_screen_care_title">Laget for å stå på</string>
+    <string name="intro_screen_care_body">Innstillinger har innbrenningsvern, dimming når ingen er i nærheten, vekking ved bevegelse foran kameraet og et tema som følger lyset i rommet.</string>
     <!-- On the spot -->
     <string name="locating_precise">Finner posisjonen din…</string>
     <string name="locating_approximate">Finner omtrentlig posisjon…</string>

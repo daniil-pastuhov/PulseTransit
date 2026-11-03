@@ -18,3 +18,6 @@ import kotlinx.serialization.Serializable
 
 /** The first-launch choice of [com.example.pulsetransit.data.AppMode]. */
 @Serializable data object ModeSelection : NavKey
+
+/** The intro to the chosen mode, shown once after [ModeSelection]; every page can be skipped. */
+@Serializable data object Intro : NavKey

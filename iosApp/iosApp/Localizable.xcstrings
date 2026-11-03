@@ -1446,6 +1446,312 @@
         }
       }
     },
+    "intro_choose_stops_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings to add up to 6 stops, and pick which directions of each to show. When they don’t all fit, the board takes turns showing them."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne Innstillinger for å legge til opptil 6 stoppesteder, og velg hvilke retninger som vises for hvert. Når ikke alle får plass, viser tavlen dem etter tur."
+          }
+        }
+      }
+    },
+    "intro_choose_stops_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose your stops"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg stoppestedene dine"
+          }
+        }
+      }
+    },
+    "intro_details_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a departure to see its stops and later times, or to hide a line you never take. Tap a route to see every step and get alerts along the way."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk på en avgang for å se stoppene og senere avganger, eller for å skjule en linje du aldri tar. Trykk på en reise for å se hvert steg og få varsler underveis."
+          }
+        }
+      }
+    },
+    "intro_details_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap for details"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk for detaljer"
+          }
+        }
+      }
+    },
+    "intro_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get started"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kom i gang"
+          }
+        }
+      }
+    },
+    "intro_fastest_routes_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add up to 5 destinations in Settings to see the fastest way there from the board’s location, and choose when each one is shown, like weekday mornings."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til opptil 5 reisemål i Innstillinger for å se den raskeste veien dit fra tavlens posisjon, og velg når hvert av dem vises, for eksempel hverdagsmorgener."
+          }
+        }
+      }
+    },
+    "intro_fastest_routes_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fastest routes"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskeste ruter"
+          }
+        }
+      }
+    },
+    "intro_nearest_stop_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The nearest stop’s departures show on their own and follow you as you move. Tap the stop’s name to pick another one nearby."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avgangene fra nærmeste stoppested vises av seg selv og følger deg når du flytter deg. Trykk på navnet til stoppestedet for å velge et annet i nærheten."
+          }
+        }
+      }
+    },
+    "intro_nearest_stop_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departures from where you are"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avganger der du er"
+          }
+        }
+      }
+    },
+    "intro_next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste"
+          }
+        }
+      }
+    },
+    "intro_resize_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag the bar between routes and departures to give either one more space."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra linjen mellom reiser og avganger for å gi en av dem mer plass."
+          }
+        }
+      }
+    },
+    "intro_resize_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make room"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gi plass"
+          }
+        }
+      }
+    },
+    "intro_routes_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add the places you often go to in Settings, and each gets its next routes from where you stand. For a one-off trip, tap the search button."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til stedene du ofte skal til i Innstillinger, så får hvert av dem de neste reisene fra der du står. For en enkelt tur, trykk på søkeknappen."
+          }
+        }
+      }
+    },
+    "intro_routes_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes from right here"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reiser herfra"
+          }
+        }
+      }
+    },
+    "intro_screen_care_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings has burn-in protection, dimming when no one is around, waking by camera motion and a theme that follows the light in the room."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Innstillinger har innbrenningsvern, dimming når ingen er i nærheten, vekking ved bevegelse foran kameraet og et tema som følger lyset i rommet."
+          }
+        }
+      }
+    },
+    "intro_screen_care_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made to stay on"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laget for å stå på"
+          }
+        }
+      }
+    },
+    "intro_skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hopp over"
+          }
+        }
+      }
+    },
+    "intro_step": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Step %1$lld of %2$lld"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steg %1$lld av %2$lld"
+          }
+        }
+      }
+    },
     "journey_action_open_map": {
       "extractionState": "manual",
       "localizations": {

@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.pulsetransit.ui.screens.DataSourcesScreen
+import com.example.pulsetransit.ui.screens.IntroScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
@@ -21,10 +22,17 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MainNavigation() {
-    // The choice of mode comes first, once; after that the app opens on the board.
+    // The choice of mode comes first, once, then the intro to it; after that the app opens on the board.
     val modeSelection: ModeSelectionViewModel = koinViewModel()
     val modeState by modeSelection.uiState.collectAsState()
-    val backStack = rememberNavBackStack(if (modeState.mode == null) ModeSelection else Main)
+    val backStack =
+        rememberNavBackStack(
+            when {
+                modeState.mode == null -> ModeSelection
+                modeState.showsIntro -> Intro
+                else -> Main
+            },
+        )
 
     NavDisplay(
         backStack = backStack,
@@ -35,8 +43,18 @@ fun MainNavigation() {
                     ModeSelectionScreen(
                         onChoose = { mode ->
                             modeSelection.choose(mode)
-                            backStack.add(Main)
+                            backStack.add(Intro)
                             backStack.remove(ModeSelection)
+                        },
+                    )
+                }
+                entry<Intro> {
+                    IntroScreen(
+                        pages = modeState.intro,
+                        onFinish = {
+                            modeSelection.finishIntro()
+                            backStack.add(Main)
+                            backStack.remove(Intro)
                         },
                     )
                 }

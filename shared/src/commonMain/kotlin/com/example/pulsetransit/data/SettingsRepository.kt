@@ -24,6 +24,15 @@ interface SettingsRepository {
 
     fun getAppModeFlow(): Flow<AppMode?>
 
+    /**
+     * True from choosing a mode on first launch until the intro that follows is finished or
+     * skipped, so an intro left half-way is shown again on the next launch. False on installs
+     * that chose a mode before the intro existed.
+     */
+    fun isIntroPending(): Boolean
+
+    fun setIntroPending(pending: Boolean)
+
     /** Route alternatives per destination in on-spot mode: [TRIP_OPTIONS_AUTO] or 1..[MAX_TRIP_OPTIONS]. */
     fun getTripOptionsCount(): Int
 

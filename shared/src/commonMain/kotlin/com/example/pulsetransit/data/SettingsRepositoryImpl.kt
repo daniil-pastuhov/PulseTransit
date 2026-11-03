@@ -101,6 +101,12 @@ class SettingsRepositoryImpl(
         _appMode.value = mode
     }
 
+    override fun isIntroPending(): Boolean = prefs.getBoolean("intro_pending", false)
+
+    override fun setIntroPending(pending: Boolean) {
+        prefs.putBoolean("intro_pending", pending)
+    }
+
     override fun getTripOptionsCount(): Int =
         prefs
             .getInt("trip_options_count", SettingsRepository.TRIP_OPTIONS_AUTO)
