@@ -194,4 +194,17 @@ class SettingsRepositoryImplTest {
         repo.setExcludedRouteModes(RouteTransportMode.entries.toSet())
         assertEquals(emptySet(), repo.getExcludedRouteModes())
     }
+
+    @Test
+    fun `destinations are saved in the order given and none is dropped`() {
+        val (a, b, c) = listOf("A", "B", "C").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+        listOf(a, b, c).forEach(repo::addDestinationStation)
+
+        repo.reorderDestinationStations(listOf(c.id, a.id, b.id))
+        assertEquals(listOf(c, a, b), repo.getDestinationStations())
+
+        // A stale list that misses one, or names one since removed, still keeps every destination.
+        repo.reorderDestinationStations(listOf(b.id, "NSR:StopPlace:gone"))
+        assertEquals(listOf(b, c, a), repo.getDestinationStations())
+    }
 }

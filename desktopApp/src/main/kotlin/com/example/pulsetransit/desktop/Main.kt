@@ -17,12 +17,14 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.di.desktopPlatformModule
 import com.example.pulsetransit.di.sharedModule
+import com.example.pulsetransit.ui.screens.DataSourcesScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
 import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
+import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -49,7 +51,7 @@ fun main() {
 }
 
 /** The desktop app's screens, in place of the Android app's Navigation 3 back stack. */
-private enum class Screen { BOARD, SETTINGS, ROUTE_MODES, JOURNEY_ALERTS }
+private enum class Screen { BOARD, SETTINGS, ROUTE_MODES, JOURNEY_ALERTS, DATA_SOURCES }
 
 /** The app as Android shows it: the mode prompt once, then the board, Settings and transport modes. */
 @Composable
@@ -91,10 +93,16 @@ private fun DesktopApp() {
                 onBack = { screen = Screen.BOARD },
                 onOpenRouteModes = { screen = Screen.ROUTE_MODES },
                 onOpenJourneyAlerts = { screen = Screen.JOURNEY_ALERTS },
+                onOpenDataSources = { screen = Screen.DATA_SOURCES },
             )
         }
         Screen.ROUTE_MODES -> RouteModesScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
         Screen.JOURNEY_ALERTS -> JourneyAlertsScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
+        // Unlike the others, a new one each visit: it holds no loops, and its repository keeps the list.
+        Screen.DATA_SOURCES -> {
+            val dataSources = remember { koin.get<DataSourcesViewModel>() }
+            DataSourcesScreen(viewModel = dataSources, onBack = { screen = Screen.SETTINGS })
+        }
     }
 }
 

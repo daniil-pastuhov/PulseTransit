@@ -28,4 +28,4 @@ VEGGTAVLE
 VÆR
 • Nåværende vær og varsel for der du er, fra Meteorologisk institutt. Kan slås av
 
-Avgangsdata fra Entur. Værdata fra Meteorologisk institutt (yr.no).
+Avgangsdata fra Entur, det nasjonale registeret for kollektivtrafikk i Norge: alle selskaper som deler rutetidene sine med Entur, er med, og under Innstillinger finner du hele lista, så du kan sjekke dem du reiser med. Værdata fra Meteorologisk institutt (yr.no).

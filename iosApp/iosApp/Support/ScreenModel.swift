@@ -72,3 +72,11 @@ extension ScreenModel where ViewModel == JourneyAlertsViewModel, State == Journe
         self.init(create: { PulseTransitIos.shared.journeyAlertsViewModel(owner: $0) }, stateFlow: { $0.uiState })
     }
 }
+
+typealias DataSourcesModel = ScreenModel<DataSourcesViewModel, DataSourcesViewModel.UiState>
+
+extension ScreenModel where ViewModel == DataSourcesViewModel, State == DataSourcesViewModel.UiState {
+    convenience init() {
+        self.init(create: { PulseTransitIos.shared.dataSourcesViewModel(owner: $0) }, stateFlow: { $0.uiState })
+    }
+}

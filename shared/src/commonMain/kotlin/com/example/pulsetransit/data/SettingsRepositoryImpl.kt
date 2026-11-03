@@ -375,6 +375,13 @@ class SettingsRepositoryImpl(
         setDestinationSchedule(stopId, null)
     }
 
+    override fun reorderDestinationStations(stopIds: List<String>) {
+        val current = getDestinationStations()
+        val listed = stopIds.distinct().mapNotNull { id -> current.find { it.id == id } }
+        val reordered = listed + current.filter { it !in listed }
+        prefs.putString("destination_stations", json.encodeToString(reordered))
+    }
+
     override fun getDestinationSchedules(): Map<String, DestinationSchedule> {
         val jsonStr = prefs.getStringOrNull(Keys.DESTINATION_SCHEDULES) ?: return emptyMap()
         return try {

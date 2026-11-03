@@ -50,6 +50,28 @@ object OnSpotSplit {
             }
         }
 
+    /**
+     * The routes' size as shown for a stored [split] once their content is laid out: the
+     * [routesSize], shrunk to [contentSize] when the routes need less, so the stop gets the space
+     * that would sit empty below them (a share too small for another alternative). Only while both
+     * sections are open, and never below [minSectionSize]. Pass [Float.POSITIVE_INFINITY] for a
+     * [contentSize] not known yet, or one that does not run along the split (landscape).
+     *
+     * How many alternatives the routes show must come from [routesSize], not from this, or showing
+     * fewer would shrink the routes and leave room for fewer still.
+     */
+    fun fittedRoutesSize(
+        split: Float,
+        totalSize: Float,
+        barSize: Float,
+        minSize: Float,
+        contentSize: Float,
+    ): Float {
+        val size = routesSize(split, totalSize, barSize, minSize)
+        if (split <= ROUTES_COLLAPSED || split >= STOP_COLLAPSED) return size
+        return maxOf(minSectionSize(totalSize, minSize), minOf(size, contentSize))
+    }
+
     /** The routes' size while dragged by [delta]: never past either section's bar. */
     fun dragRoutesSize(
         routesSize: Float,

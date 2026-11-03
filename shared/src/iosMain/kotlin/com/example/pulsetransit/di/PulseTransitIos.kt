@@ -26,6 +26,7 @@ import com.example.pulsetransit.platform.LocationSourceProvider
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
+import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -121,6 +122,8 @@ object PulseTransitIos : KoinComponent {
     fun appUpdateViewModel(owner: ViewModelOwner): AppUpdateViewModel = owner.viewModel { get<AppUpdateViewModel>() }
 
     fun journeyAlertsViewModel(owner: ViewModelOwner): JourneyAlertsViewModel = owner.viewModel { get<JourneyAlertsViewModel>() }
+
+    fun dataSourcesViewModel(owner: ViewModelOwner): DataSourcesViewModel = owner.viewModel { get<DataSourcesViewModel>() }
 }
 
 /**

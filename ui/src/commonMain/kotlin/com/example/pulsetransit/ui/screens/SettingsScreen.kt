@@ -38,6 +38,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
@@ -54,6 +55,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -67,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -93,6 +96,7 @@ import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
+import com.example.pulsetransit.ui.components.ReorderableColumn
 import com.example.pulsetransit.ui.components.scheduleSummary
 import com.example.pulsetransit.ui.platform.rememberLocationPermissionRequest
 import com.example.pulsetransit.ui.resources.*
@@ -103,7 +107,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /** The single-column layout's widest, so a tablet's form rows do not stretch across the screen. */
-private val SINGLE_COLUMN_MAX_WIDTH = 640.dp
+internal val SINGLE_COLUMN_MAX_WIDTH = 640.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -112,6 +116,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenRouteModes: () -> Unit,
     onOpenJourneyAlerts: () -> Unit,
+    onOpenDataSources: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -187,8 +192,17 @@ fun SettingsScreen(
                         )
                     }
                     if (destinations.isNotEmpty()) {
-                        destinations.forEach { destination ->
-                            key(destination.id) {
+                        // In the order the board shows their routes; a handle drags a row elsewhere.
+                        ReorderableColumn(
+                            items = destinations,
+                            key = { it.id },
+                            onMove = viewModel::moveDestinationStation,
+                        ) { destination, dragHandle, isDragging ->
+                            Surface(
+                                color = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp),
+                                shadowElevation = if (isDragging) 4.dp else 0.dp,
+                            ) {
                                 val schedule = uiState.destinationSchedules[destination.id]
                                 val editLabel = stringResource(Res.string.schedule_edit, destination.name)
                                 val scheduleColor =
@@ -203,6 +217,15 @@ fun SettingsScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
+                                    if (destinations.size > 1) {
+                                        Box(modifier = dragHandle.size(40.dp), contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.DragIndicator,
+                                                contentDescription = stringResource(Res.string.drag_to_reorder),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
                                     PlaceKindIcon(destination.kind)
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
@@ -801,6 +824,30 @@ fun SettingsScreen(
                                 Text(stringResource(Res.string.save_coords))
                             }
                         }
+                    }
+                }
+
+                // Section: Data sources, the companies whose timetables reach Entur, on a screen of
+                // their own; it answers "is the bus I take in here?".
+                SettingsCard(title = stringResource(Res.string.data_sources_title)) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(role = Role.Button, onClick = onOpenDataSources)
+                                .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(Res.string.data_sources_row), style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                stringResource(Res.string.data_sources_row_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                     }
                 }
             }

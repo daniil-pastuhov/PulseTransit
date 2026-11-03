@@ -8,6 +8,8 @@ struct SettingsView: View {
     /// The board's theme setting, so the sheet opens in the same scheme the board uses.
     let themeMode: ThemeMode
     @StateObject private var model = SettingsModel()
+    /// Destinations being reordered. Move handles need the whole Form in edit mode, not one section.
+    @State private var reorderingDestinations = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -19,7 +21,7 @@ struct SettingsView: View {
             let isBoard = state.appMode == .board
             Form {
                 ModeSection(state: state, viewModel: viewModel)
-                DestinationsSection(state: state, viewModel: viewModel)
+                DestinationsSection(state: state, viewModel: viewModel, reordering: $reorderingDestinations)
                 ThemeSection(state: state, viewModel: viewModel)
                 RefreshSection(state: state, viewModel: viewModel)
                 if isBoard {
@@ -37,10 +39,14 @@ struct SettingsView: View {
                 }
                 if isBoard {
                     LocationSection(state: state, viewModel: viewModel)
+                }
+                DataSourcesSection()
+                if isBoard {
                     AddStopsSection(state: state, viewModel: viewModel)
-                    FavoritesSection(state: state, viewModel: viewModel)
+                    FavoritesSection(state: state, viewModel: viewModel, deleteDisabled: reorderingDestinations)
                 }
             }
+            .environment(\.editMode, .constant(reorderingDestinations ? .active : .inactive))
             .navigationTitle(L("settings_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -83,6 +89,24 @@ private struct ModeSection: View {
 
 /// Journey alerts in Settings: how a followed journey is tracked and how many of its alerts are on,
 /// with the choices themselves on a screen of their own.
+/// The companies whose timetables reach Entur, on a screen of their own; it answers "is the bus
+/// I take in here?". As on Android, it comes after the settings and before the stop lists.
+private struct DataSourcesSection: View {
+    var body: some View {
+        Section(L("data_sources_title")) {
+            NavigationLink(destination: DataSourcesView()) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("data_sources_row"))
+                    Text(L("data_sources_row_hint"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .accessibilityIdentifier("settings.dataSources")
+        }
+    }
+}
+
 private struct JourneyAlertsSection: View {
     @ObservedObject var model: SettingsModel
 
@@ -326,10 +350,27 @@ private struct DestinationsSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
     @State private var editing: StopPlace?
+    /// While on, the rows show their move handles; the board shows routes in this order.
+    @Binding var reordering: Bool
+
+    private var header: some View {
+        HStack {
+            Text(L("fastest_route_destination"))
+            Spacer()
+            if state.destinationStations.count > 1 {
+                Button(reordering ? L("reorder_done") : L("reorder")) {
+                    withAnimation { reordering.toggle() }
+                }
+                .font(.footnote)
+                .textCase(nil)
+                .accessibilityIdentifier("settings.destinations.reorder")
+            }
+        }
+    }
 
     var body: some View {
         let max = Int(SettingsRepositoryCompanion.shared.MAX_DESTINATION_STATIONS)
-        Section(L("fastest_route_destination")) {
+        Section(header: header) {
             if state.destinationStations.isEmpty {
                 Text(L("no_destination_set")).foregroundColor(.secondary)
             }
@@ -363,6 +404,13 @@ private struct DestinationsSection: View {
                     .accessibilityLabel(L("remove"))
                 }
             }
+            .onMove { sources, destination in
+                // SwiftUI's destination counts the moved row still in place; the ViewModel wants
+                // the index it ends up at.
+                guard let from = sources.first else { return }
+                let to = destination > from ? destination - 1 : destination
+                viewModel.moveDestinationStation(fromIndex: Int32(from), toIndex: Int32(to))
+            }
             if state.destinationStations.count >= max {
                 Text(L("max_destinations_reached", max)).font(.footnote).foregroundColor(.secondary)
             } else {
@@ -382,6 +430,7 @@ private struct DestinationsSection: View {
                 }
             }
         }
+        .onChange(of: state.destinationStations.count) { if $0 < 2 { reordering = false } }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
             if let destination = editing {
                 DestinationScheduleView(
@@ -485,6 +534,8 @@ private struct AddStopsSection: View {
 private struct FavoritesSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
+    /// While destinations are reordered the Form is in edit mode, which would offer to delete these.
+    var deleteDisabled = false
 
     var body: some View {
         Section(L("favorite_stops", state.favorites.count)) {
@@ -498,6 +549,7 @@ private struct FavoritesSection: View {
                     selected: state.selectedQuays[stop.id] ?? [],
                     onToggleQuay: { viewModel.toggleQuay(stopId: stop.id, quayId: $0) }
                 )
+                .deleteDisabled(deleteDisabled)
             }
             .onDelete { offsets in
                 offsets.map { state.favorites[$0].id }.forEach { viewModel.removeFavorite(stopId: $0) }
@@ -605,7 +657,12 @@ struct PlaceKindIcon: View {
     }
 }
 
-/// A labelled choice among a few options, segmented when they fit and a menu when they do not.
+/// A labelled choice among a few options, as a segmented control.
+///
+/// The control keeps its own copy of the selection. Bound straight to the ViewModel, a tap would
+/// only take effect once the new state came back through the StateFlow, after the tap's animation:
+/// the Liquid Glass thumb then vanished and reappeared on the new segment, swelling up and down,
+/// instead of sliding across to it.
 private struct OptionPicker<Value: Hashable>: View {
     let title: String
     var footnote: String?
@@ -613,13 +670,24 @@ private struct OptionPicker<Value: Hashable>: View {
     let selection: Value
     let onSelect: (Value) -> Void
 
+    @State private var current: Value
+
+    init(title: String, footnote: String? = nil, options: [(Value, String)], selection: Value, onSelect: @escaping (Value) -> Void) {
+        self.title = title
+        self.footnote = footnote
+        self.options = options
+        self.selection = selection
+        self.onSelect = onSelect
+        _current = State(initialValue: selection)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
             if let footnote {
                 Text(footnote).font(.caption).foregroundColor(.secondary)
             }
-            Picker(title, selection: Binding(get: { selection }, set: onSelect)) {
+            Picker(title, selection: $current) {
                 ForEach(options, id: \.0) { option in
                     Text(option.1).tag(option.0)
                 }
@@ -627,6 +695,10 @@ private struct OptionPicker<Value: Hashable>: View {
             .pickerStyle(.segmented)
             .labelsHidden()
         }
+        // A tap moves the thumb at once and is then saved; a change made elsewhere (loadSettings)
+        // moves it when the state arrives. The guards stop each from echoing the other.
+        .onChange(of: current) { if $0 != selection { onSelect($0) } }
+        .onChange(of: selection) { if $0 != current { current = $0 } }
     }
 }
 

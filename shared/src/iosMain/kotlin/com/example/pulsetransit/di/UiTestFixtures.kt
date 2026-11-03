@@ -1,6 +1,9 @@
 package com.example.pulsetransit.di
 
 import com.example.pulsetransit.data.AppMode
+import com.example.pulsetransit.data.DataSource
+import com.example.pulsetransit.data.DataSourceMode
+import com.example.pulsetransit.data.DataSourceRepository
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
@@ -41,6 +44,10 @@ private val osloS = StopPlace(id = "NSR:StopPlace:337", name = "Oslo S", localit
 private val majorstuen =
     StopPlace(id = "NSR:StopPlace:58381", name = "Majorstuen", locality = "Oslo", latitude = 59.9297, longitude = 10.7155)
 
+/** What any place search finds, so a test can add a second destination. */
+private val nationaltheatret =
+    StopPlace(id = "NSR:StopPlace:58404", name = "Nationaltheatret", locality = "Oslo", latitude = 59.9147, longitude = 10.7312)
+
 /** The test store, emptied first when [reset]: a test that relaunches to check restoring keeps it. */
 internal fun uiTestSettings(reset: Boolean): Settings {
     val defaults = NSUserDefaults(suiteName = SUITE)
@@ -62,6 +69,7 @@ internal fun uiTestModule(launchMillis: Long) =
         single<EnturRepository> { FixtureEnturRepository(launchMillis) }
         single<WeatherRepository> { FixtureWeatherRepository() }
         single<AppUpdateChecker> { NoUpdate() }
+        single<DataSourceRepository> { FixtureDataSourceRepository() }
     }
 
 private fun iso(millis: Long): String {
@@ -150,7 +158,7 @@ private class FixtureEnturRepository(
         query: String,
         focusLat: Double?,
         focusLon: Double?,
-    ) = emptyList<StopPlace>()
+    ) = if (query.isBlank()) emptyList() else listOf(nationaltheatret)
 
     override suspend fun getNearbyStopPlaces(
         lat: Double,
@@ -207,6 +215,20 @@ private class FixtureWeatherRepository : WeatherRepository {
         lat: Double,
         lon: Double,
     ) = Sourced.live(emptyList<WeatherInfo>())
+}
+
+private class FixtureDataSourceRepository : DataSourceRepository {
+    override suspend fun getDataSources() =
+        listOf(
+            DataSource("Bygdøyfergen", "https://nyc.no/", listOf(DataSourceMode.BOAT)),
+            DataSource("NOR-WAY Bussekspress", "https://nor-way.no", listOf(DataSourceMode.BUS, DataSourceMode.COACH)),
+            DataSource(
+                "Ruter",
+                "https://ruter.no/",
+                listOf(DataSourceMode.BUS, DataSourceMode.METRO, DataSourceMode.TRAM, DataSourceMode.BOAT),
+            ),
+            DataSource("Vy", "https://www.vy.no/", listOf(DataSourceMode.TRAIN)),
+        )
 }
 
 private class NoUpdate : AppUpdateChecker {

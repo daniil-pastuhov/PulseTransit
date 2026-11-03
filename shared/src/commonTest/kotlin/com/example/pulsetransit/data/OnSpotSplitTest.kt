@@ -35,6 +35,42 @@ class OnSpotSplitTest {
     }
 
     @Test
+    fun `routes needing less than their share give the rest to the stop`() {
+        assertEquals(400f, OnSpotSplit.fittedRoutesSize(0.6f, totalSize = 1000f, barSize = 56f, minSize = 120f, contentSize = 400f))
+        // Content taller than the share scrolls within it.
+        assertEquals(600f, OnSpotSplit.fittedRoutesSize(0.6f, totalSize = 1000f, barSize = 56f, minSize = 120f, contentSize = 900f))
+        // Not measured yet: the share as stored.
+        assertEquals(
+            600f,
+            OnSpotSplit.fittedRoutesSize(0.6f, totalSize = 1000f, barSize = 56f, minSize = 120f, contentSize = Float.POSITIVE_INFINITY),
+        )
+    }
+
+    @Test
+    fun `fitted routes never shrink below an open section's minimum`() {
+        assertEquals(120f, OnSpotSplit.fittedRoutesSize(0.6f, totalSize = 1000f, barSize = 56f, minSize = 120f, contentSize = 40f))
+    }
+
+    @Test
+    fun `a folded section is not fitted to the routes`() {
+        // With the stop folded the routes keep the board; folded routes keep their bar.
+        assertEquals(
+            944f,
+            OnSpotSplit.fittedRoutesSize(OnSpotSplit.STOP_COLLAPSED, totalSize = 1000f, barSize = 56f, minSize = 120f, contentSize = 300f),
+        )
+        assertEquals(
+            56f,
+            OnSpotSplit.fittedRoutesSize(
+                OnSpotSplit.ROUTES_COLLAPSED,
+                totalSize = 1000f,
+                barSize = 56f,
+                minSize = 120f,
+                contentSize = 300f,
+            ),
+        )
+    }
+
+    @Test
     fun `dragging stops at either bar`() {
         assertEquals(650f, OnSpotSplit.dragRoutesSize(600f, delta = 50f, totalSize = 1000f, barSize = 56f))
         assertEquals(56f, OnSpotSplit.dragRoutesSize(100f, delta = -500f, totalSize = 1000f, barSize = 56f))
