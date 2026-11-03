@@ -84,3 +84,27 @@ fun currentTrip(
     val key = tripKey(selected)
     return trips?.firstOrNull { tripKey(it) == key } ?: selected
 }
+
+/** Where a trip's opening walk leads: the stop its first ride boards at, for "Show on map". */
+data class WalkToStop(
+    /** The walking leg's index in the trip's legs. */
+    val legIndex: Int,
+    val latitude: Double,
+    val longitude: Double,
+)
+
+/**
+ * The walk [trip] opens with, to the first stop it rides from; null when the trip starts with a
+ * ride, has no ride at all, or the stop has no coordinates. Zero-minute transfers before the ride
+ * are skipped, as the details do, so the button sits on the walk that is shown.
+ */
+fun firstWalkToStop(trip: TripInfo): WalkToStop? {
+    val rideIndex = trip.legs.indexOfFirst { it.isTransit }.takeIf { it > 0 } ?: return null
+    val walkIndex = (0 until rideIndex).firstOrNull { trip.legs[it].isShown } ?: return null
+    val ride = trip.legs[rideIndex]
+    // The leg just before the ride arrives where it boards, even when it is a transfer, not the walk.
+    val arrival = trip.legs[rideIndex - 1]
+    val latitude = ride.fromLatitude ?: arrival.toLatitude ?: return null
+    val longitude = ride.fromLongitude ?: arrival.toLongitude ?: return null
+    return WalkToStop(walkIndex, latitude, longitude)
+}

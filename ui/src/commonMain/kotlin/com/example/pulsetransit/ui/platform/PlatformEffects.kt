@@ -51,3 +51,10 @@ expect fun rememberJourneyPermissionRequest(onResult: (notificationsGranted: Boo
 /** Whether the user reads time on a 24-hour clock, for the schedule editor's times. */
 @Composable
 expect fun is24HourClock(): Boolean
+
+/**
+ * Opens walking directions to a point in the installed map app: Google Maps, or else any app that
+ * opens `geo:` links, on Android; the browser's Google Maps on the desktop.
+ */
+@Composable
+expect fun rememberWalkingDirections(): (latitude: Double, longitude: Double) -> Unit

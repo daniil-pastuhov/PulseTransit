@@ -212,3 +212,31 @@ private fun Context.openAppSettings() {
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     )
 }
+
+/**
+ * Walking directions in Google Maps, or else a map app that opens `geo:` links, as the journey
+ * alerts' "Open map" does; Google Maps on the web when neither is installed.
+ */
+@Composable
+actual fun rememberWalkingDirections(): (latitude: Double, longitude: Double) -> Unit {
+    val context = LocalContext.current
+    return { latitude, longitude ->
+        // The map apps are declared in the manifest's <queries>, so they can be looked for; the web
+        // page is just tried, as any browser opens it.
+        val intent =
+            listOf(
+                "google.navigation:q=$latitude,$longitude&mode=w",
+                "geo:$latitude,$longitude?q=$latitude,$longitude",
+            ).map { Intent(Intent.ACTION_VIEW, it.toUri()) }
+                .firstOrNull { it.resolveActivity(context.packageManager) != null }
+                ?: Intent(
+                    Intent.ACTION_VIEW,
+                    "https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude&travelmode=walking".toUri(),
+                )
+        try {
+            context.startActivity(intent)
+        } catch (_: ActivityNotFoundException) {
+            // Neither a map app nor a browser: nothing can show it.
+        }
+    }
+}

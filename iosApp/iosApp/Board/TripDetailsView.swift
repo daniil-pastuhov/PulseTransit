@@ -13,7 +13,8 @@ struct TripSelection: Identifiable {
 /// has its line, which way it heads, the platform, live times and delays; walks have their time and
 /// distance, and waits between rides are shown. The stops each ride passes are fetched with
 /// `loadLegStops` while the sheet is open, and listed on request. Under the header is the journey
-/// alerts button, and the rationale it opens. As on Android.
+/// alerts button, and the rationale it opens. A walk to the first stop offers walking directions to
+/// it in Maps. As on Android.
 struct TripDetailsView: View {
     let trip: TripInfo
     let showDelays: Bool
@@ -92,8 +93,24 @@ struct TripDetailsView: View {
         )
     }
 
+    /// The opening walk and the stop it leads to, for its "Show on map".
+    private var walkToStop: WalkToStop? {
+        TripDetailsKt.firstWalkToStop(trip: trip)
+    }
+
     private var shownLegs: [Int] {
         trip.legs.indices.filter { trip.legs[$0].isShown }
+    }
+
+    /// Opens Maps with walking directions to the first stop, when the leg at `index` walks there.
+    private func showOnMap(forLeg index: Int) -> (() -> Void)? {
+        guard let target = walkToStop, Int(target.legIndex) == index,
+              let url = URL(string: "https://maps.apple.com/?daddr=\(target.latitude),\(target.longitude)&dirflg=w")
+        else { return nil }
+        return {
+            interactions += 1
+            UIApplication.shared.open(url)
+        }
     }
 
     @ViewBuilder
@@ -118,7 +135,7 @@ struct TripDetailsView: View {
                     onInteract: { interactions += 1 }
                 )
             } else {
-                WalkRow(leg: leg, endName: endName)
+                WalkRow(leg: leg, endName: endName, showOnMap: showOnMap(forLeg: index))
             }
         }
     }
@@ -168,11 +185,30 @@ private struct TripHeader: View {
     }
 }
 
+/// A walk's time, distance and end; with `showOnMap`, a button that opens the walk in Maps.
 private struct WalkRow: View {
     let leg: TripLeg
     let endName: String?
+    let showOnMap: (() -> Void)?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            summary
+            if let showOnMap {
+                Button(action: showOnMap) {
+                    Label(L("trip_details_show_on_map"), systemImage: "map")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.bordered)
+                .padding(.leading, 36)
+                .accessibilityIdentifier("tripDetails.showOnMap")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+    }
+
+    private var summary: some View {
         HStack(spacing: 12) {
             Text(verbatim: "🚶").font(.headline)
             VStack(alignment: .leading, spacing: 2) {
@@ -189,8 +225,6 @@ private struct WalkRow: View {
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
     }
 }

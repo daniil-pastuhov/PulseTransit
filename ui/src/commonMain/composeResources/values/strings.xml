@@ -79,6 +79,7 @@
     <string name="trip_details_walk_total">%1$d m walking</string>
     <string name="trip_details_walk">Walk %1$d min</string>
     <string name="trip_details_to_place">to %1$s</string>
+    <string name="trip_details_show_on_map">Show on map</string>
     <string name="trip_details_wait">Wait %1$d min</string>
     <plurals name="trip_details_stops">
         <item quantity="one">%1$d stop</item>

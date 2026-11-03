@@ -79,6 +79,7 @@
     <string name="trip_details_walk_total">%1$d m gange</string>
     <string name="trip_details_walk">Gå %1$d min</string>
     <string name="trip_details_to_place">til %1$s</string>
+    <string name="trip_details_show_on_map">Vis på kart</string>
     <string name="trip_details_wait">Vent %1$d min</string>
     <plurals name="trip_details_stops">
         <item quantity="one">%1$d stopp</item>
