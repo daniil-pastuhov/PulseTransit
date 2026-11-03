@@ -124,8 +124,7 @@ object BoardLayout {
      * Whether a panel's wide rows show the platform. Only when its departures leave from more than
      * one: at a stop with a single quay the column would repeat the same code on every row.
      */
-    fun showsPlatform(groups: List<DepartureGroup>): Boolean =
-        groups.mapNotNullTo(HashSet()) { it.departures.firstOrNull()?.platform }.size > 1
+    fun showsPlatform(groups: List<DepartureGroup>): Boolean = groups.mapNotNullTo(HashSet()) { it.departures.firstOrNull()?.platform }.size > 1
 
     private fun ceilDiv(
         a: Int,

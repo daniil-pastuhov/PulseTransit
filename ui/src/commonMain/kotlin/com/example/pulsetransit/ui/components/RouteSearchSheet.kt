@@ -48,12 +48,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.PlaceKind
 import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 /**
  * Finds a place to route to from the board. Picking one closes the sheet; the board then routes
- * to it until the user dismisses or saves it.
+ * to it, at [tripTime], until the user dismisses or saves it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,7 +62,9 @@ fun RouteSearchSheet(
     query: String,
     results: List<StopPlace>,
     isSearching: Boolean,
+    tripTime: TripTime,
     onQueryChange: (String) -> Unit,
+    onTripTimeChange: (TripTime) -> Unit,
     onPick: (StopPlace) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -88,6 +91,7 @@ fun RouteSearchSheet(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
             )
+            TripTimeChip(time = tripTime, onTimeChange = onTripTimeChange, modifier = Modifier.padding(top = 4.dp))
             when {
                 isSearching && results.isEmpty() ->
                     Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
@@ -136,9 +140,14 @@ fun RouteSearchSheet(
     }
 }
 
-/** Save and close buttons for the board's temporary destination; save is left out when it can't be. */
+/**
+ * The board's temporary destination's time, save and close buttons; save is left out when it
+ * can't be.
+ */
 @Composable
 fun TemporaryRouteActions(
+    time: TripTime,
+    onTimeChange: (TripTime) -> Unit,
     canSave: Boolean,
     onSave: () -> Unit,
     onDismiss: () -> Unit,
@@ -146,6 +155,7 @@ fun TemporaryRouteActions(
     tint: Color = MaterialTheme.colorScheme.onPrimaryContainer,
 ) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(0.dp), verticalAlignment = Alignment.CenterVertically) {
+        TripTimeButton(time = time, onTimeChange = onTimeChange, tint = tint)
         if (canSave) {
             IconButton(onClick = onSave) {
                 Icon(Icons.Default.BookmarkAdd, contentDescription = stringResource(Res.string.save_destination), tint = tint)

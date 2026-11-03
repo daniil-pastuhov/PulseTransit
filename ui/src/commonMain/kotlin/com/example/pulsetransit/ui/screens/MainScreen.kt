@@ -40,6 +40,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -102,6 +103,7 @@ import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.parseWeatherSymbol
@@ -126,6 +128,7 @@ import com.example.pulsetransit.ui.components.loadFailureIcon
 import com.example.pulsetransit.ui.components.loadFailureReason
 import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
 import com.example.pulsetransit.ui.components.temperatureColor
+import com.example.pulsetransit.ui.components.tripClockText
 import com.example.pulsetransit.ui.components.tripDurationText
 import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.layout.BoardLayout
@@ -334,7 +337,9 @@ fun MainScreen(
                             .filter {
                                 it.id in uiState.fastestTrips ||
                                     it.id in uiState.loadingTripDestinationIds ||
-                                    it.id in uiState.failedTripDestinationIds
+                                    it.id in uiState.failedTripDestinationIds ||
+                                    // The searched-for one stays, to say it has no route and keep its buttons.
+                                    it.id == uiState.temporaryDestination?.id
                             }.forEachIndexed { index, destination ->
                                 key(destination.id) {
                                     if (index > 0) {
@@ -344,6 +349,7 @@ fun MainScreen(
                                         )
                                     }
                                     val trip = uiState.fastestTrips[destination.id]?.firstOrNull()
+                                    val noRouteTime = uiState.noRouteTime(destination.id)
                                     Row(
                                         modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer),
                                         verticalAlignment = Alignment.CenterVertically,
@@ -361,6 +367,8 @@ fun MainScreen(
                                                     isOnline = uiState.isOnline,
                                                     isRetrying = destination.id in uiState.loadingTripDestinationIds,
                                                 )
+                                            } else if (loaded == null && noRouteTime != null) {
+                                                FastestTripNone(destinationName = destination.name, time = noRouteTime)
                                             } else if (loaded == null) {
                                                 FastestTripPlaceholder(destinationName = destination.name)
                                             } else {
@@ -373,6 +381,8 @@ fun MainScreen(
                                         }
                                         if (destination.id == uiState.temporaryDestination?.id) {
                                             TemporaryRouteActions(
+                                                time = uiState.temporaryTripTime,
+                                                onTimeChange = { viewModel.setTripTime(it) },
                                                 canSave = uiState.canSaveTemporaryDestination,
                                                 onSave = { viewModel.saveTemporaryDestination() },
                                                 onDismiss = { viewModel.dismissTemporaryDestination() },
@@ -512,7 +522,9 @@ fun MainScreen(
                         query = uiState.routeSearchQuery,
                         results = uiState.routeSearchResults,
                         isSearching = uiState.isSearchingRoutePlaces,
+                        tripTime = uiState.temporaryTripTime,
                         onQueryChange = { viewModel.onRouteSearchQueryChanged(it) },
+                        onTripTimeChange = { viewModel.setTripTime(it) },
                         onPick = { place ->
                             showRouteSearch = false
                             viewModel.showTemporaryDestination(place)
@@ -722,6 +734,46 @@ fun FastestTripUnavailable(
                 color = onContainer.copy(alpha = 0.6f),
             )
         }
+    }
+}
+
+/**
+ * Says that Entur found no route to a destination, e.g. none arriving by the [time] asked for,
+ * rather than leaving a placeholder that never fills.
+ */
+@Composable
+fun FastestTripNone(
+    destinationName: String,
+    time: TripTime,
+    modifier: Modifier = Modifier,
+) {
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    Row(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Default.SearchOff,
+            contentDescription = null,
+            tint = onContainer.copy(alpha = 0.8f),
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text =
+                if (time is TripTime.ArriveBy) {
+                    stringResource(Res.string.no_route_to_arriving, destinationName, tripClockText(time.atMillis))
+                } else {
+                    stringResource(Res.string.no_route_to, destinationName)
+                },
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+            color = onContainer,
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 

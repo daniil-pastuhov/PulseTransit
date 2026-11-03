@@ -27,8 +27,7 @@ class IpLocationProvider(
     private val override: String? = System.getProperty(OVERRIDE_PROPERTY),
     private val pollInterval: Duration = 5.minutes,
 ) : LocationProvider {
-    override suspend fun currentLocation(accuracy: LocationAccuracy): LocationResult =
-        if (accuracy == LocationAccuracy.PRECISE) LocationResult.Unavailable else lookUp()
+    override suspend fun currentLocation(accuracy: LocationAccuracy): LocationResult = if (accuracy == LocationAccuracy.PRECISE) LocationResult.Unavailable else lookUp()
 
     /** Emits the location, then again whenever a later look-up has moved [minDistanceMeters]. */
     override fun locationUpdates(

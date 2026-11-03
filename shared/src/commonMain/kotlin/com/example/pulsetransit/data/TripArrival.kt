@@ -32,5 +32,4 @@ fun tripArrival(trip: TripInfo): TripArrival? {
     return TripArrival(end.substring(ISO_HOUR_START, ISO_MINUTE_END), dayOffset)
 }
 
-private fun isoDate(iso: String): LocalDate? =
-    if (iso.length < ISO_DATE_END) null else runCatching { LocalDate.parse(iso.substring(0, ISO_DATE_END)) }.getOrNull()
+private fun isoDate(iso: String): LocalDate? = if (iso.length < ISO_DATE_END) null else runCatching { LocalDate.parse(iso.substring(0, ISO_DATE_END)) }.getOrNull()

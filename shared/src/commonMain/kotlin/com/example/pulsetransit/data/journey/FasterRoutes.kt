@@ -131,8 +131,7 @@ object FasterRoutes {
         )
     }
 
-    private fun arrivalMillis(trip: TripInfo): Long? =
-        (trip.expectedEndTime ?: trip.legs.lastOrNull()?.expectedEndTime)?.let(::parseIsoToMillis)
+    private fun arrivalMillis(trip: TripInfo): Long? = (trip.expectedEndTime ?: trip.legs.lastOrNull()?.expectedEndTime)?.let(::parseIsoToMillis)
 
     private const val MILLIS_PER_MINUTE = 60_000L
 }

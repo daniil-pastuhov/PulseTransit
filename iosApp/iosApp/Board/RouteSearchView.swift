@@ -20,6 +20,7 @@ struct RouteSearchView: View {
                 .disableAutocorrection(true)
                 .submitLabel(.search)
                 .focused($isFieldFocused)
+                TripTimeControls(time: state.temporaryTripTime) { viewModel.setTripTime(time: $0) }
                 if state.isSearchingRoutePlaces && state.routeSearchResults.isEmpty {
                     ProgressView().frame(maxWidth: .infinity)
                 } else if !state.routeSearchQuery.trimmingCharacters(in: .whitespaces).isEmpty && state.routeSearchResults.isEmpty {
@@ -54,8 +55,10 @@ struct RouteSearchView: View {
     }
 }
 
-/// Save and close buttons for the board's temporary destination; save is left out when it can't be.
+/// The board's temporary destination's time, save and close buttons; save is left out when it can't be.
 struct TemporaryRouteActions: View {
+    let time: TripTime
+    let onTimeChange: (TripTime) -> Void
     let canSave: Bool
     let onSave: () -> Void
     let onDismiss: () -> Void
@@ -64,6 +67,7 @@ struct TemporaryRouteActions: View {
 
     var body: some View {
         HStack(spacing: 4) {
+            TripTimeButton(time: time, onChange: onTimeChange)
             if canSave {
                 Button(action: onSave) {
                     Image(systemName: "bookmark")

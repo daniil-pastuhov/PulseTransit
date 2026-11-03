@@ -46,8 +46,7 @@ class BoardWidgetSourceTest {
         inMinutes: Int,
     ) = Departure(line, "Somewhere", isoOslo(now + inMinutes * 60_000L), isoOslo(now + inMinutes * 60_000L), isRealtime = true)
 
-    private fun trip(inMinutes: Int) =
-        TripInfo("Majorstuen", isoOslo(now + inMinutes * 60_000L), isoOslo(now + (inMinutes + 15) * 60_000L), "2", 15, "Home")
+    private fun trip(inMinutes: Int) = TripInfo("Majorstuen", isoOslo(now + inMinutes * 60_000L), isoOslo(now + (inMinutes + 15) * 60_000L), "2", 15, "Home")
 
     @Test
     fun `departures without a favourite say so`() =

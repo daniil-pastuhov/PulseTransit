@@ -17,8 +17,7 @@ private const val LEGACY_QUAYS_PREFIX = "quays_"
 private const val DEVICE_STATE_PREFS_NAME = "device_state"
 
 /** Where the device last was, for the widgets: a SharedPreferences file of its own, never backed up. */
-fun createDeviceStateSettings(context: Context): Settings =
-    SharedPreferencesSettings(context.getSharedPreferences(DEVICE_STATE_PREFS_NAME, Context.MODE_PRIVATE))
+fun createDeviceStateSettings(context: Context): Settings = SharedPreferencesSettings(context.getSharedPreferences(DEVICE_STATE_PREFS_NAME, Context.MODE_PRIVATE))
 
 /** The app's [Settings], backed by the same SharedPreferences file as before the KMP move. */
 fun createAppSettings(context: Context): Settings {

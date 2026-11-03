@@ -228,4 +228,119 @@ class EnturRouteOptionsTest {
                 repo.getFastestTrip(fromIds = origins, to = to, options = RouteOptions(RoutePreference.LESS_WALKING)).data?.lineName,
             )
         }
+
+    @Test
+    fun `a chosen time reaches Entur and keeps its routes apart in the cache`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val repo = EnturRepositoryImpl(client(routeOptionsEngine(bodies)), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+            val at = 1_800_000_000_000L
+
+            repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 1, options = RouteOptions())
+            repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 1, options = RouteOptions(time = TripTime.DepartAt(at)))
+            repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 1, options = RouteOptions(time = TripTime.ArriveBy(at)))
+
+            val (now, departAt, arriveBy) = bodies.map(::variables)
+            assertFalse("dateTime" in now || "arriveBy" in now, "now is Entur's default")
+            assertEquals(enturDateTime(at), departAt["dateTime"]!!.jsonPrimitive.content)
+            assertFalse("arriveBy" in departAt)
+            assertEquals(enturDateTime(at), arriveBy["dateTime"]!!.jsonPrimitive.content)
+            assertTrue(arriveBy["arriveBy"]!!.jsonPrimitive.content.toBoolean())
+            val keys =
+                listOf(RouteOptions(), RouteOptions(time = TripTime.DepartAt(at)), RouteOptions(time = TripTime.ArriveBy(at)))
+                    .map { it.cacheKeySuffix }
+            assertEquals(3, keys.toSet().size)
+            assertEquals("", keys.first(), "routes for now keep their old key")
+        }
+
+    @Test
+    fun `to arrive by a time routes that have already left are dropped and the latest to leave wins`() =
+        runTest {
+            val now = nowMillis()
+
+            fun pattern(
+                startMinutes: Int,
+                line: String,
+            ) = """{"expectedStartTime":"${isoOslo(now + startMinutes * minute)}",
+                   "expectedEndTime":"${isoOslo(now + 40 * minute)}","duration":1200,
+                   "legs":[{"mode":"bus","duration":1200,"line":{"publicCode":"$line"}}]}"""
+            val engine =
+                MockEngine { request ->
+                    val from = variables((request.body as TextContent).text)["from"]?.jsonPrimitive?.content
+                    val patterns =
+                        when (from) {
+                            "NSR:StopPlace:A" -> listOf(pattern(10, "1"), pattern(-5, "gone"))
+                            "NSR:StopPlace:B" -> listOf(pattern(15, "2"))
+                            else -> listOf(pattern(-2, "gone"), pattern(8, "3"))
+                        }
+                    respond(
+                        """{"data":{"trip":{"tripPatterns":[${patterns.joinToString(",")}]}}}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+            val options = RouteOptions(time = TripTime.ArriveBy(now + 45 * minute))
+
+            val options2 = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 2, options = options)
+            assertEquals(listOf("3"), options2.data.map { it.lineName })
+            val fastest = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = to, options = options)
+            assertEquals("2", fastest.data?.lineName)
+        }
+
+    @Test
+    fun `an origin whose only route to arrive by a time has left gives no route`() =
+        runTest {
+            val now = nowMillis()
+            val body = """{"data":{"trip":{"tripPatterns":[{"expectedStartTime":"${isoOslo(now - 2 * minute)}",
+               "expectedEndTime":"${isoOslo(now + 20 * minute)}","duration":1320,
+               "legs":[{"mode":"bus","duration":1320,"line":{"publicCode":"gone"}}]}]}}}"""
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+
+            val trip = repo.getFastestTrip(fromIds = listOf(stopId), to = to, options = RouteOptions(time = TripTime.ArriveBy(now + 25 * minute)))
+
+            assertEquals(null, trip.data)
+        }
+
+    @Test
+    fun `to arrive by a time a route with an unreadable start is kept`() =
+        runTest {
+            val body = """{"data":{"trip":{"tripPatterns":[{"expectedStartTime":"soon","expectedEndTime":"later","duration":600,
+               "legs":[{"mode":"bus","duration":600,"line":{"publicCode":"7"}}]}]}}}"""
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 1, options = RouteOptions(time = TripTime.ArriveBy(nowMillis() + 30 * minute)))
+
+            assertEquals(listOf("7"), trips.data.map { it.lineName })
+        }
+
+    @Test
+    fun `across origins a preset breaks ties by leaving latest to arrive by a time`() =
+        runTest {
+            val now = nowMillis()
+
+            fun body(
+                startMinutes: Int,
+                line: String,
+            ) = """{"data":{"trip":{"tripPatterns":[{"expectedStartTime":"${isoOslo(now + startMinutes * minute)}",
+                   "expectedEndTime":"${isoOslo(now + (startMinutes + 20) * minute)}","duration":1200,
+                   "legs":[{"mode":"bus","duration":1200,"line":{"publicCode":"$line"}}]}]}}}"""
+            val engine =
+                MockEngine { request ->
+                    val from = variables((request.body as TextContent).text)["from"]!!.jsonPrimitive.content
+                    val answer = if (from == "NSR:StopPlace:A") body(5, "early") else body(12, "late")
+                    respond(answer, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+            val to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+            val options = RouteOptions(preference = RoutePreference.FEWER_TRANSFERS, time = TripTime.ArriveBy(now + 40 * minute))
+
+            val trip = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = to, options = options)
+
+            assertEquals("late", trip.data?.lineName)
+        }
 }

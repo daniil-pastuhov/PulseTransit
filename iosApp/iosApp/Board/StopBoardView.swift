@@ -188,11 +188,12 @@ struct StopBoardView: View {
     private func boardBody(state: StopBoardViewModel.UiState, viewModel: StopBoardViewModel) -> some View {
         // One banner per destination, each appearing as soon as its own route arrives; a
         // destination with no route is left out once it has loaded, but one that failed
-        // keeps its slot.
+        // keeps its slot, and so does the searched-for one, to say so and keep its buttons.
         let routes = state.routeDestinations.filter {
             state.fastestTrips[$0.id] != nil ||
                 state.loadingTripDestinationIds.contains($0.id) ||
-                state.failedTripDestinationIds.contains($0.id)
+                state.failedTripDestinationIds.contains($0.id) ||
+                $0.id == state.temporaryDestination?.id
         }
         VStack(spacing: 0) {
             ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
@@ -214,6 +215,9 @@ struct StopBoardView: View {
                                 isRetrying: state.loadingTripDestinationIds.contains(destination.id)
                             )
                             .transition(.opacity)
+                        } else if let noRouteTime = state.noRouteTime(destinationId: destination.id) {
+                            FastestTripNone(destinationName: destination.name, time: noRouteTime)
+                                .transition(.opacity)
                         } else {
                             FastestTripPlaceholder(destinationName: destination.name)
                                 .transition(.opacity)
@@ -222,6 +226,8 @@ struct StopBoardView: View {
                     .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
                     if destination.id == state.temporaryDestination?.id {
                         TemporaryRouteActions(
+                            time: state.temporaryTripTime,
+                            onTimeChange: { viewModel.setTripTime(time: $0) },
                             canSave: state.canSaveTemporaryDestination,
                             onSave: { viewModel.saveTemporaryDestination() },
                             onDismiss: { viewModel.dismissTemporaryDestination() },

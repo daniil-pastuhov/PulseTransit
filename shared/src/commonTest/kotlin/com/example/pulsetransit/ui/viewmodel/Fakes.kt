@@ -85,6 +85,9 @@ class FakeEnturRepository : EnturRepository {
     var departureCalls = 0
     var tripCalls = 0
     var lastRouteOptions: RouteOptions? = null
+
+    /** The options each destination was last routed with, by destination id. */
+    val routeOptionsTo = mutableMapOf<String, RouteOptions>()
     val requestedQuays = mutableMapOf<String, Set<String>?>()
     val requestedTimeRanges = mutableMapOf<String, Int>()
     val requestedLimits = mutableMapOf<String, Int>()
@@ -183,6 +186,7 @@ class FakeEnturRepository : EnturRepository {
     ): Sourced<TripInfo?> {
         tripCalls++
         lastRouteOptions = options
+        routeOptionsTo[to.id] = options
         lastFastestTripFromIds = fromIds
         val result = tripTo(to)
         latency(tripDelayMillis(to))
@@ -198,6 +202,7 @@ class FakeEnturRepository : EnturRepository {
     ): Sourced<List<TripInfo>> {
         tripCalls++
         lastRouteOptions = options
+        routeOptionsTo[to.id] = options
         lastFastestTripCoords = lat to lon
         lastTripOptionsCount = count
         val result = tripOptionsTo(to, count)
