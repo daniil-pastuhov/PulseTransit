@@ -400,4 +400,15 @@
     <string name="data_sources_no_match">Ingen selskaper passer til «%1$s». Selskaper som ikke er i Entur, vises ikke i PulseTransit.</string>
     <string name="data_sources_check">Vil du sjekke en bestemt reise, kan du søke på entur.no.</string>
     <string name="data_sources_weather">Været kommer fra Meteorologisk institutt (yr.no).</string>
+    <string name="trip_time_now">Dra nå</string>
+    <string name="trip_time_depart">Avreise</string>
+    <string name="trip_time_arrive">Fremme innen</string>
+    <string name="trip_time_title">Når vil du reise?</string>
+    <string name="trip_time_leave_at">Avreise %1$s</string>
+    <string name="trip_time_arrive_by">Fremme innen %1$s</string>
+    <string name="trip_time_tomorrow">%1$s i morgen</string>
+    <string name="trip_time_change">Endre reisetid</string>
+    <string name="trip_time_done">Ferdig</string>
+    <string name="no_route_to">Fant ingen rute til %1$s</string>
+    <string name="no_route_to_arriving">Ingen rute får deg til %1$s innen %2$s</string>
 </resources>

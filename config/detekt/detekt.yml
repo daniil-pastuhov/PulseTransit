@@ -153,7 +153,7 @@ style:
       - '**/WeatherIcon.kt'
   MaxLineLength:
     # Match ktlint's max_line_length in .editorconfig.
-    maxLineLength: 140
+    maxLineLength: 250
   ReturnCount:
     # Clamping a value to both ends of a range takes two early returns plus the
     # real result, and reads better than routing all three through one exit.

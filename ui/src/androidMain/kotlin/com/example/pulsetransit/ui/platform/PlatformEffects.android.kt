@@ -139,9 +139,7 @@ actual fun rememberLocationPermissionRequest(onGranted: () -> Unit): () -> Unit 
 }
 
 @Composable
-actual fun rememberJourneyPermissionRequest(
-    onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit,
-): (notifications: Boolean, location: Boolean) -> Unit {
+actual fun rememberJourneyPermissionRequest(onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit): (notifications: Boolean, location: Boolean) -> Unit {
     val context = LocalContext.current
     val currentOnResult by rememberUpdatedState(onResult)
 
@@ -197,11 +195,9 @@ private fun openPlayStorePage(context: Context) {
     }
 }
 
-private fun Context.hasCameraPermission(): Boolean =
-    ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+private fun Context.hasCameraPermission(): Boolean = ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
 
-private fun Context.hasLocationPermission(): Boolean =
-    LOCATION_PERMISSIONS.any { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
+private fun Context.hasLocationPermission(): Boolean = LOCATION_PERMISSIONS.any { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
 
 private tailrec fun Context.findActivity(): Activity? =
     when (this) {

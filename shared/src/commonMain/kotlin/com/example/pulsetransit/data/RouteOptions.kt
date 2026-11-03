@@ -161,6 +161,8 @@ data class RouteOptions(
     /** Public codes of lines routes may not use: the board's filtered-out lines. */
     val bannedLines: Set<String> = emptySet(),
     val walkingSpeed: WalkingSpeed = WalkingSpeed.NORMAL,
+    /** When to travel. Only a route searched for on the board sets one; saved destinations leave now. */
+    val time: TripTime = TripTime.Now,
 ) {
     /**
      * What Entur should leave out for [excludedModes], in [RouteTransportMode] order. A group with
@@ -194,7 +196,16 @@ data class RouteOptions(
             if (this == RouteOptions()) return ""
             val modes = excludedModes.map { it.name }.sorted().joinToString(",")
             val lines = bannedLines.sorted().joinToString(",")
-            return "|${preference.name}|-$modes|-$lines|${walkingSpeed.name}"
+            val base = copy(time = TripTime.Now)
+            val settings =
+                if (base == RouteOptions()) "" else "|${preference.name}|-$modes|-$lines|${walkingSpeed.name}"
+            val at =
+                when (time) {
+                    TripTime.Now -> ""
+                    is TripTime.DepartAt -> "|dep${time.atMillis}"
+                    is TripTime.ArriveBy -> "|arr${time.atMillis}"
+                }
+            return settings + at
         }
 
     companion object {
@@ -214,10 +225,19 @@ data class RouteOptions(
 
 /**
  * These routes, best first for [preference]. [RoutePreference.FASTEST] keeps Entur's order; the
- * others sort by their own measure and then by arrival, keeping Entur's order for ties.
+ * others sort by their own measure and then by arrival, keeping Entur's order for ties. Routes
+ * found to [arriveBy] a time break ties by leaving latest instead, as Entur orders them.
  */
-fun List<TripInfo>.rankedBy(preference: RoutePreference): List<TripInfo> {
-    val byArrival = compareBy<TripInfo, String?>(nullsLast()) { it.expectedEndTime }
+fun List<TripInfo>.rankedBy(
+    preference: RoutePreference,
+    arriveBy: Boolean = false,
+): List<TripInfo> {
+    val byArrival =
+        if (arriveBy) {
+            compareByDescending<TripInfo, String?>(nullsFirst()) { it.expectedStartTime }
+        } else {
+            compareBy<TripInfo, String?>(nullsLast()) { it.expectedEndTime }
+        }
     return when (preference) {
         RoutePreference.FASTEST -> this
         RoutePreference.FEWER_TRANSFERS -> sortedWith(compareBy<TripInfo> { transferCount(it) }.then(byArrival))

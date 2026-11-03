@@ -133,8 +133,7 @@ object PulseTransitIos : KoinComponent {
 class ViewModelOwner : ViewModelStoreOwner {
     override val viewModelStore = ViewModelStore()
 
-    internal inline fun <reified T : ViewModel> viewModel(noinline create: () -> T): T =
-        ViewModelProvider.create(this, viewModelFactory { initializer { create() } })[T::class]
+    internal inline fun <reified T : ViewModel> viewModel(noinline create: () -> T): T = ViewModelProvider.create(this, viewModelFactory { initializer { create() } })[T::class]
 
     fun clear() = viewModelStore.clear()
 }

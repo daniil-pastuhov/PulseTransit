@@ -26,8 +26,7 @@ import org.jetbrains.compose.resources.stringResource
  * connection that couldn't get an answer out of Entur.
  */
 @Composable
-fun loadFailureReason(isOnline: Boolean): String =
-    stringResource(if (isOnline) Res.string.error_entur_unreachable else Res.string.error_no_internet)
+fun loadFailureReason(isOnline: Boolean): String = stringResource(if (isOnline) Res.string.error_entur_unreachable else Res.string.error_no_internet)
 
 fun loadFailureIcon(isOnline: Boolean): ImageVector = if (isOnline) Icons.Default.CloudOff else Icons.Default.WifiOff
 

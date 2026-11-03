@@ -401,4 +401,15 @@
     <string name="data_sources_no_match">No company matches “%1$s”. Companies that aren’t in Entur aren’t shown in PulseTransit.</string>
     <string name="data_sources_check">To check a particular trip, search for it at entur.no.</string>
     <string name="data_sources_weather">Weather comes from MET Norway (yr.no).</string>
+    <string name="trip_time_now">Leave now</string>
+    <string name="trip_time_depart">Depart at</string>
+    <string name="trip_time_arrive">Arrive by</string>
+    <string name="trip_time_title">When to travel</string>
+    <string name="trip_time_leave_at">Leave %1$s</string>
+    <string name="trip_time_arrive_by">Arrive by %1$s</string>
+    <string name="trip_time_tomorrow">%1$s tomorrow</string>
+    <string name="trip_time_change">Change travel time</string>
+    <string name="trip_time_done">Done</string>
+    <string name="no_route_to">No route to %1$s found</string>
+    <string name="no_route_to_arriving">No route gets you to %1$s by %2$s</string>
 </resources>

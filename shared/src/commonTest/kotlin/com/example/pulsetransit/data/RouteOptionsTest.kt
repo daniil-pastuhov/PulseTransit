@@ -127,4 +127,13 @@ class RouteOptionsTest {
         assertTrue(a.cacheKeySuffix != a.copy(walkingSpeed = WalkingSpeed.FAST).cacheKeySuffix)
         assertTrue(RouteOptions(walkingSpeed = WalkingSpeed.SLOW).cacheKeySuffix.isNotEmpty())
     }
+
+    @Test
+    fun `to arrive by a time equals are ranked by leaving latest`() {
+        val early = trip("early", "2026-10-17T12:00:00+02:00", ride("31")).copy(expectedStartTime = "2026-10-17T11:30:00+02:00")
+        val late = trip("late", "2026-10-17T12:10:00+02:00", ride("31")).copy(expectedStartTime = "2026-10-17T11:45:00+02:00")
+
+        assertEquals(listOf(early, late), listOf(late, early).rankedBy(RoutePreference.FEWER_TRANSFERS))
+        assertEquals(listOf(late, early), listOf(early, late).rankedBy(RoutePreference.FEWER_TRANSFERS, arriveBy = true))
+    }
 }

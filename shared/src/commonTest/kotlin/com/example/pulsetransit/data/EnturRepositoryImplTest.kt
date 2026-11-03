@@ -46,8 +46,7 @@ class EnturRepositoryImplTest {
          "notices":[]}
         """.trimIndent()
 
-    private fun departuresBody(vararg calls: String) =
-        """{"data":{"stopPlace":{"id":"$stopId","name":"Oslo S","estimatedCalls":[${calls.joinToString(",")}]}}}"""
+    private fun departuresBody(vararg calls: String) = """{"data":{"stopPlace":{"id":"$stopId","name":"Oslo S","estimatedCalls":[${calls.joinToString(",")}]}}}"""
 
     private fun client(engine: MockEngine) =
         HttpClient(engine) {

@@ -23,5 +23,4 @@ private val TimeSpanUnit.label: StringResource
 fun tripDurationText(minutes: Int): String = tripDurationParts(minutes).map { stringResource(it.unit.label, it.value) }.joinToString(" ")
 
 /** [tripDurationText] outside composition, for widgets. */
-suspend fun tripDurationString(minutes: Int): String =
-    tripDurationParts(minutes).map { getString(it.unit.label, it.value) }.joinToString(" ")
+suspend fun tripDurationString(minutes: Int): String = tripDurationParts(minutes).map { getString(it.unit.label, it.value) }.joinToString(" ")

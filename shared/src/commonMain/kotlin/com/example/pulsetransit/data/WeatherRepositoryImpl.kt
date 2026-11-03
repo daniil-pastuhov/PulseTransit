@@ -219,8 +219,7 @@ class WeatherRepositoryImpl(
         return minOf(expiry, nowMillis + MAX_EXPIRY_MS)
     }
 
-    private fun retryAfterMs(response: HttpResponse): Long =
-        response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()?.times(MILLIS_PER_SECOND) ?: THROTTLE_BACKOFF_MS
+    private fun retryAfterMs(response: HttpResponse): Long = response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()?.times(MILLIS_PER_SECOND) ?: THROTTLE_BACKOFF_MS
 
     private fun MetResponse.toWeather(): List<WeatherInfo> =
         properties.timeseries.take(FORECAST_HOURS).map { ts ->

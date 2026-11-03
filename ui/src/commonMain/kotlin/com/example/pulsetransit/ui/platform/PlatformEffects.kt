@@ -46,9 +46,7 @@ expect fun rememberLocationPermissionRequest(onGranted: () -> Unit): () -> Unit
  * granted, whether or not a prompt could be shown.
  */
 @Composable
-expect fun rememberJourneyPermissionRequest(
-    onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit,
-): (notifications: Boolean, location: Boolean) -> Unit
+expect fun rememberJourneyPermissionRequest(onResult: (notificationsGranted: Boolean, locationGranted: Boolean) -> Unit): (notifications: Boolean, location: Boolean) -> Unit
 
 /** Whether the user reads time on a 24-hour clock, for the schedule editor's times. */
 @Composable

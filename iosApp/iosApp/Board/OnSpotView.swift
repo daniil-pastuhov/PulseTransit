@@ -320,11 +320,13 @@ private struct RoutesSection: View {
             .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface))
             .padding(6)
         } else {
-            // A destination with no route is left out once it has loaded, as on the wall board.
+            // A destination with no route is left out once it has loaded, as on the wall board,
+            // except the searched-for one, which says so and keeps its buttons.
             let destinations = state.routeDestinations.filter {
                 state.fastestTrips[$0.id] != nil ||
                     state.loadingTripDestinationIds.contains($0.id) ||
-                    state.failedTripDestinationIds.contains($0.id)
+                    state.failedTripDestinationIds.contains($0.id) ||
+                    $0.id == state.temporaryDestination?.id
             }
             Group {
                 let autoCount = TripOptionLayoutKt.autoTripOptionCount(
@@ -343,10 +345,13 @@ private struct RoutesSection: View {
                                 count: count,
                                 isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
                                 isFailed: state.failedTripDestinationIds.contains(destination.id),
+                                noRouteTime: state.noRouteTime(destinationId: destination.id),
                                 isOnline: state.isOnline,
                                 onTripTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: $0) },
                                 actions: destination.id == state.temporaryDestination?.id
                                     ? TemporaryRouteActions(
+                                        time: state.temporaryTripTime,
+                                        onTimeChange: { viewModel.setTripTime(time: $0) },
                                         canSave: state.canSaveTemporaryDestination,
                                         onSave: { viewModel.saveTemporaryDestination() },
                                         onDismiss: { viewModel.dismissTemporaryDestination() }
@@ -382,6 +387,8 @@ private struct DestinationRoutesCard: View {
     let count: Int
     let isRefreshing: Bool
     let isFailed: Bool
+    /// Set when Entur found no route: the time it was searched for.
+    let noRouteTime: TripTime?
     let isOnline: Bool
     let onTripTap: (TripInfo) -> Void
     var actions: TemporaryRouteActions?
@@ -417,6 +424,8 @@ private struct DestinationRoutesCard: View {
                 HStack(spacing: 0) {
                     if isFailed {
                         FastestTripUnavailable(destinationName: destination.name, isOnline: isOnline, isRetrying: isRefreshing)
+                    } else if let noRouteTime {
+                        FastestTripNone(destinationName: destination.name, time: noRouteTime)
                     } else {
                         FastestTripPlaceholder(destinationName: destination.name)
                     }

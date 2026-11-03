@@ -18,8 +18,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class StopBoardLoadMoreTest : BoardTestBase() {
     /** As many departures as asked for, up to [available], so the stop has that many in its window. */
-    private fun fullPages(available: Int) =
-        { limit: Int -> Sourced.live(List(minOf(limit, available)) { departure("L$it", "Somewhere", nowMillis() + it * 60_000L) }) }
+    private fun fullPages(available: Int) = { limit: Int -> Sourced.live(List(minOf(limit, available)) { departure("L$it", "Somewhere", nowMillis() + it * 60_000L) }) }
 
     @Test
     fun `scrolling to the end fetches another page for that stop alone and keeps it across refreshes`() =

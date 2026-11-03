@@ -33,8 +33,7 @@ enum class WidgetKind(
             GLANCE -> AtAGlanceWidget()
         }
 
-    fun hasWidgets(context: Context): Boolean =
-        AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, receiver)).isNotEmpty()
+    fun hasWidgets(context: Context): Boolean = AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, receiver)).isNotEmpty()
 
     companion object {
         fun ofProvider(provider: ComponentName?): WidgetKind? = entries.firstOrNull { it.receiver.name == provider?.className }

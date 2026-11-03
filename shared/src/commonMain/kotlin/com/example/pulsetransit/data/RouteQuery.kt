@@ -23,10 +23,11 @@ import kotlinx.serialization.json.putJsonArray
  * of the request counts as not given, so Entur applies its own default for it.
  */
 internal const val TRIP_OPTION_VARIABLES =
-    "\$count: Int!, \$transferPenalty: Int, \$walkReluctance: Float, \$walkSpeed: Float, \$filters: [TripFilterInput!]"
+    "\$count: Int!, \$transferPenalty: Int, \$walkReluctance: Float, \$walkSpeed: Float, \$filters: [TripFilterInput!], " +
+        "\$dateTime: DateTime, \$arriveBy: Boolean"
 internal const val TRIP_OPTION_ARGUMENTS =
     "numTripPatterns: \$count transferPenalty: \$transferPenalty walkReluctance: \$walkReluctance " +
-        "walkSpeed: \$walkSpeed filters: \$filters"
+        "walkSpeed: \$walkSpeed filters: \$filters dateTime: \$dateTime arriveBy: \$arriveBy"
 
 /**
  * Fills the [TRIP_OPTION_VARIABLES] for [options], asking for [wanted] routes, or more when the
@@ -45,6 +46,7 @@ internal fun JsonObjectBuilder.putRouteOptions(
         RoutePreference.LESS_WALKING -> put("walkReluctance", RouteOptions.LESS_WALKING_RELUCTANCE)
     }
     options.walkingSpeed.metersPerSecond?.let { put("walkSpeed", it) }
+    putTripTime(options.time)
     // One trip filter excluding the kinds and lines: anything matching a `not` selector is left out.
     // Unlike `modes`, it matches sub-modes per trip, and needs no access modes to keep walking.
     val excludedModes = options.excludedEnturModes
@@ -145,4 +147,10 @@ internal class LineIdLookup(
         val id: String,
         val publicCode: String? = null,
     )
+}
+
+/** Fills `dateTime` and `arriveBy` for [time]; both are left out for now, which is Entur's default. */
+private fun JsonObjectBuilder.putTripTime(time: TripTime) {
+    time.atMillis?.let { put("dateTime", enturDateTime(it)) }
+    if (time.isArriveBy) put("arriveBy", true)
 }

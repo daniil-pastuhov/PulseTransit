@@ -74,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
+import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.data.autoTripOptionCount
 import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.tripArrival
@@ -421,12 +422,14 @@ private fun RoutesSection(
         return
     }
 
-    // A destination with no route is left out once it has loaded, as on the wall board.
+    // A destination with no route is left out once it has loaded, as on the wall board, except
+    // the searched-for one, which says so and keeps its buttons.
     val destinations =
         uiState.routeDestinations.filter {
             it.id in uiState.fastestTrips ||
                 it.id in uiState.loadingTripDestinationIds ||
-                it.id in uiState.failedTripDestinationIds
+                it.id in uiState.failedTripDestinationIds ||
+                it.id == uiState.temporaryDestination?.id
         }
     // The tapped alternative, with its destination's id; the details follow its refreshes.
     var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
@@ -466,12 +469,15 @@ private fun RoutesSection(
                         count = count,
                         isRefreshing = destination.id in uiState.loadingTripDestinationIds,
                         isFailed = destination.id in uiState.failedTripDestinationIds,
+                        noRouteTime = uiState.noRouteTime(destination.id),
                         isOnline = uiState.isOnline,
                         onTripClick = { detailsTrip = destination.id to it },
                         actions =
                             if (destination.id == uiState.temporaryDestination?.id) {
                                 {
                                     TemporaryRouteActions(
+                                        time = uiState.temporaryTripTime,
+                                        onTimeChange = { viewModel.setTripTime(it) },
                                         canSave = uiState.canSaveTemporaryDestination,
                                         onSave = { viewModel.saveTemporaryDestination() },
                                         onDismiss = { viewModel.dismissTemporaryDestination() },
@@ -495,6 +501,8 @@ private fun DestinationRoutesCard(
     count: Int,
     isRefreshing: Boolean,
     isFailed: Boolean,
+    /** Set when Entur found no route: the time it was searched for. */
+    noRouteTime: TripTime?,
     isOnline: Boolean,
     onTripClick: (TripInfo) -> Unit,
     actions: (@Composable () -> Unit)? = null,
@@ -509,6 +517,8 @@ private fun DestinationRoutesCard(
                     Box(modifier = Modifier.weight(1f)) {
                         if (isFailed) {
                             FastestTripUnavailable(destinationName = destination.name, isOnline = isOnline, isRetrying = isRefreshing)
+                        } else if (noRouteTime != null) {
+                            FastestTripNone(destinationName = destination.name, time = noRouteTime)
                         } else {
                             FastestTripPlaceholder(destinationName = destination.name)
                         }

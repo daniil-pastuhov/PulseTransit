@@ -733,7 +733,8 @@ class EnturRepositoryImpl(
                     ?.tripPatterns
                     .orEmpty()
                     .map(::parseTripPattern)
-                    .rankedBy(options.preference)
+                    .notLeftBefore(now, options)
+                    .rankedBy(options.preference, options.time.isArriveBy)
                     .take(wanted)
             if (trips.isEmpty()) {
                 return Sourced(emptyList())
@@ -807,7 +808,8 @@ class EnturRepositoryImpl(
                         ?.tripPatterns
                         .orEmpty()
                         .map(::parseTripPattern)
-                        .rankedBy(options.preference)
+                        .notLeftBefore(now, options)
+                        .rankedBy(options.preference, options.time.isArriveBy)
                         .firstOrNull() ?: continue
                 bestByOrigin += best
             } catch (e: Exception) {
@@ -817,10 +819,12 @@ class EnturRepositoryImpl(
         }
 
         val fastestTrip =
-            if (options.preference == RoutePreference.FASTEST) {
-                bestByOrigin.minByOrNull { it.expectedStartTime }
-            } else {
-                bestByOrigin.rankedBy(options.preference).firstOrNull()
+            when {
+                options.preference != RoutePreference.FASTEST ->
+                    bestByOrigin.rankedBy(options.preference, options.time.isArriveBy).firstOrNull()
+                // To arrive by a time, the best route is the one that lets you leave latest.
+                options.time.isArriveBy -> bestByOrigin.maxByOrNull { it.expectedStartTime }
+                else -> bestByOrigin.minByOrNull { it.expectedStartTime }
             }
         if (fastestTrip == null) {
             // Only reach for the cache when the network is the reason we have nothing.
@@ -831,6 +835,20 @@ class EnturRepositoryImpl(
         tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
         return Sourced.live(fastestTrip)
     }
+
+    /**
+     * Drops routes that have already left. Only routes found to arrive by a time can have: Entur
+     * plans back from the arrival, so a deadline close at hand turns up departures in the past.
+     */
+    private fun List<TripInfo>.notLeftBefore(
+        nowMillis: Long,
+        options: RouteOptions,
+    ): List<TripInfo> =
+        if (!options.time.isArriveBy) {
+            this
+        } else {
+            filter { trip -> parseIsoToMillis(trip.expectedStartTime)?.let { it >= nowMillis } ?: true }
+        }
 
     private fun parseTripPattern(pattern: TripPatternGraphQL): TripInfo {
         // The first leg may be a foot leg (line == null); use the first transit leg for line/origin

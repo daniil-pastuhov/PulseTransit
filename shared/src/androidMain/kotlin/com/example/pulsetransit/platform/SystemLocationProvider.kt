@@ -111,8 +111,7 @@ class SystemLocationProvider(
         }
 
     // Fine access implies coarse: Android grants both together.
-    private fun hasPermission(permission: String) =
-        ContextCompat.checkSelfPermission(appContext, permission) == PackageManager.PERMISSION_GRANTED
+    private fun hasPermission(permission: String) = ContextCompat.checkSelfPermission(appContext, permission) == PackageManager.PERMISSION_GRANTED
 
     private fun Location.toFix() = LocationResult.Fix(latitude, longitude)
 
