@@ -1,5 +1,7 @@
 package com.example.pulsetransit.data.journey
 
+import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.isShown
 import com.example.pulsetransit.data.isTransit
@@ -8,6 +10,7 @@ import com.example.pulsetransit.data.journey.JourneyAlertPlanner.endMillis
 import com.example.pulsetransit.data.journey.JourneyAlertPlanner.legTimes
 import com.example.pulsetransit.data.legEndName
 import com.example.pulsetransit.data.parseIsoToMillis
+import com.example.pulsetransit.data.tripKey
 
 /**
  * Where a followed journey is: the step it is on, for the progress notification and Live Activity,
@@ -159,6 +162,29 @@ object JourneyPosition {
                 progress(JourneyPhase.RIDING, step, step.toName, step.endMillis, ahead?.size, riding + change + arrivalDetail)
             }
         }
+    }
+
+    /**
+     * Where [trip] is at [nowMillis] while it is under way, from the same live times as a followed
+     * journey's, whether or not it is followed: for the trip details, opened mid-journey. [legStops]
+     * are the stops loaded per leg index. Null before the trip starts and once it has arrived.
+     */
+    fun underWay(
+        trip: TripInfo,
+        legStops: Map<Int, List<JourneyStop>>,
+        nowMillis: Long,
+    ): JourneyProgress? {
+        val journey =
+            TrackedJourney(
+                id = tripKey(trip),
+                trip = trip,
+                mode = JourneyTrackingMode.TIME_ONLY,
+                startedAtMillis = nowMillis,
+                legStops = legStops,
+            )
+        val progress = progress(journey, nowMillis, locationLost = false)
+        val start = progress.startAtMillis ?: return null
+        return progress.takeIf { nowMillis >= start && it.phase != JourneyPhase.ARRIVED }
     }
 
     /** When and where the ride waited for leaves. */

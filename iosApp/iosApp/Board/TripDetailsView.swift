@@ -13,7 +13,9 @@ struct TripSelection: Identifiable {
 /// has its line, which way it heads, the platform, live times and delays; walks have their time and
 /// distance, and waits between rides are shown. The stops each ride passes are fetched with
 /// `loadLegStops` while the sheet is open, and listed on request. Under the header is the journey
-/// alerts button, and the rationale it opens. As on Android.
+/// alerts button, and the rationale it opens. While the trip is under way, a "Now" card says where
+/// it is, and its legs show which one it is on. Each walk offers walking directions to where it
+/// leads in the map app. As on Android.
 struct TripDetailsView: View {
     let trip: TripInfo
     let showDelays: Bool
@@ -34,14 +36,20 @@ struct TripDetailsView: View {
         NavigationView {
             TimelineView(.periodic(from: .now, by: 1)) { timeline in
                 let nowMillis = Int64(timeline.date.timeIntervalSince1970 * 1000)
+                // Where the trip is, while it is under way; the same live times a followed journey goes by.
+                let progress = JourneyPosition.shared.underWay(trip: trip, legStops: kotlinLegStops, nowMillis: nowMillis)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         TripHeader(trip: trip, nowMillis: nowMillis)
                             .padding(.bottom, 8)
+                        if let progress {
+                            TripProgressCard(progress: progress)
+                                .padding(.bottom, 8)
+                        }
                         JourneyNotifyButton(model: journey, trip: trip)
                             .padding(.bottom, 8)
                         ForEach(shownLegs, id: \.self) { index in
-                            leg(at: index, nowMillis: nowMillis)
+                            legState(leg(at: index, nowMillis: nowMillis), index: index, progress: progress)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -92,8 +100,36 @@ struct TripDetailsView: View {
         )
     }
 
+    /// The loaded stops as Kotlin wants them.
+    private var kotlinLegStops: [KotlinInt: [JourneyStop]] {
+        Dictionary(uniqueKeysWithValues: legStops.map { (KotlinInt(int: Int32($0.key)), $0.value) })
+    }
+
+    /// While the trip is under way, the leg it is on outlined and the ones it is past faded.
+    @ViewBuilder
+    private func legState(_ content: some View, index: Int, progress: JourneyProgress?) -> some View {
+        if let progress, progress.currentLegIndex?.intValue == index {
+            content
+                .padding(4)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Palette.primary, lineWidth: 2))
+        } else if progress?.isLegDone(legIndex: Int32(index)) == true {
+            content.opacity(0.45)
+        } else {
+            content
+        }
+    }
+
     private var shownLegs: [Int] {
         trip.legs.indices.filter { trip.legs[$0].isShown }
+    }
+
+    /// Opens walking directions to where the walk at `index` leads in the map app; nil for a ride.
+    private func showOnMap(forLeg index: Int) -> (() -> Void)? {
+        guard let target = TripDetailsKt.walkDestination(trip: trip, index: Int32(index)) else { return nil }
+        return {
+            interactions += 1
+            WalkingDirections.open(latitude: target.latitude, longitude: target.longitude)
+        }
     }
 
     @ViewBuilder
@@ -118,9 +154,54 @@ struct TripDetailsView: View {
                     onInteract: { interactions += 1 }
                 )
             } else {
-                WalkRow(leg: leg, endName: endName)
+                WalkRow(leg: leg, endName: endName, showOnMap: showOnMap(forLeg: index))
             }
         }
+    }
+}
+
+/// Where the trip is now, shown while it is under way: what to do ("On 5 to Majorstuen"), the
+/// minutes to the step's next moment, how far along the trip is, and the step's live facts. As on
+/// Android.
+private struct TripProgressCard: View {
+    let progress: JourneyProgress
+
+    private static let clock = SystemClockFormatter()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L("now"))
+                .font(.caption.bold())
+                .foregroundColor(Palette.primary)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(JourneyProgressText.headline(progress))
+                    .font(.headline)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+                if let minutes = progress.minutesToNext {
+                    Text(L("journey_progress_in_minutes", minutes.intValue))
+                        .font(.headline)
+                        .monospacedDigit()
+                }
+            }
+            ProgressView(value: progress.elapsedFraction)
+                .progressViewStyle(.linear)
+                .tint(Palette.primary)
+            // The arrival is in the header already.
+            let facts = progress.details
+                .filter { if case .arrival = onEnum(of: $0) { return false } else { return true } }
+                .map { JourneyProgressText.detail($0, clock: Self.clock) }
+            if !facts.isEmpty {
+                Text(facts.joined(separator: " · "))
+                    .font(.subheadline)
+                    .foregroundColor(Palette.textSecondary)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Palette.primary.opacity(0.14)))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("tripDetails.progress")
     }
 }
 
@@ -168,11 +249,30 @@ private struct TripHeader: View {
     }
 }
 
+/// A walk's time, distance and end; with `showOnMap`, a button that opens the walk in the map app.
 private struct WalkRow: View {
     let leg: TripLeg
     let endName: String?
+    let showOnMap: (() -> Void)?
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            summary
+            if let showOnMap {
+                Button(action: showOnMap) {
+                    Label(L("trip_details_show_on_map"), systemImage: "map")
+                        .font(.subheadline)
+                }
+                .buttonStyle(.bordered)
+                .padding(.leading, 36)
+                .accessibilityIdentifier("tripDetails.showOnMap")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 4)
+    }
+
+    private var summary: some View {
         HStack(spacing: 12) {
             Text(verbatim: "🚶").font(.headline)
             VStack(alignment: .leading, spacing: 2) {
@@ -189,8 +289,6 @@ private struct WalkRow: View {
                 }
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
     }
 }

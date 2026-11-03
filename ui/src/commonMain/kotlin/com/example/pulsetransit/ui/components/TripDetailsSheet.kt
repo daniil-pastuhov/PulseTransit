@@ -2,9 +2,11 @@ package com.example.pulsetransit.ui.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,11 +20,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -37,11 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -53,18 +60,27 @@ import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.departureCountdown
 import com.example.pulsetransit.data.isShown
 import com.example.pulsetransit.data.isTransit
+import com.example.pulsetransit.data.journey.JourneyDetail
+import com.example.pulsetransit.data.journey.JourneyPhase
+import com.example.pulsetransit.data.journey.JourneyPosition
+import com.example.pulsetransit.data.journey.JourneyProgress
 import com.example.pulsetransit.data.legDelayMinutes
 import com.example.pulsetransit.data.legEndName
 import com.example.pulsetransit.data.minutesUntil
 import com.example.pulsetransit.data.transferCount
 import com.example.pulsetransit.data.tripKey
 import com.example.pulsetransit.data.waitMinutesBefore
+import com.example.pulsetransit.data.walkDestination
 import com.example.pulsetransit.data.walkDistanceMeters
+import com.example.pulsetransit.ui.platform.rememberWalkingDirections
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * What a route's details offer under their header, provided by the screen that owns the actions
@@ -77,7 +93,9 @@ val LocalTripDetailsActions = staticCompositionLocalOf<@Composable (TripInfo) ->
  * has its line, which way it heads, the platform, live times and delays; walks have their time and
  * distance, and waits between rides are shown. The stops each ride passes are fetched with
  * [loadLegStops] while the sheet is open, and listed on request. Under the header go the
- * [LocalTripDetailsActions]: the journey alerts button.
+ * [LocalTripDetailsActions]: the journey alerts button. While the trip is under way, a "Now" card
+ * says where it is, and its legs show which one it is on. Each walk offers walking directions to
+ * where it leads in the map app.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,6 +135,10 @@ fun TripDetailsSheet(
         }
     }
 
+    val openWalkingDirections = rememberWalkingDirections()
+    // Where the trip is, while it is under way; the same live times a followed journey goes by.
+    val progress = remember(trip, legStops, nowMillis) { JourneyPosition.underWay(trip, legStops, nowMillis) }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -129,12 +151,27 @@ fun TripDetailsSheet(
         ) {
             TripHeader(trip, nowMillis)
             Spacer(modifier = Modifier.height(12.dp))
+            progress?.let {
+                TripProgressCard(it)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             LocalTripDetailsActions.current(trip)
             Spacer(modifier = Modifier.height(12.dp))
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(trip.legs.indices.filter { trip.legs[it].isShown }) { index ->
                     val leg = trip.legs[index]
-                    Column {
+                    val current = progress?.currentLegIndex == index
+                    Column(
+                        modifier =
+                            when {
+                                current ->
+                                    Modifier
+                                        .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(14.dp))
+                                        .padding(4.dp)
+                                progress?.isLegDone(index) == true -> Modifier.alpha(DONE_LEG_ALPHA)
+                                else -> Modifier
+                            },
+                    ) {
                         waitMinutesBefore(trip, index)?.let { WaitRow(it) }
                         if (leg.isTransit) {
                             RideCard(
@@ -147,12 +184,114 @@ fun TripDetailsSheet(
                                 onInteract = { interactions++ },
                             )
                         } else {
-                            WalkRow(leg, legEndName(trip, index))
+                            WalkRow(
+                                leg = leg,
+                                endName = legEndName(trip, index),
+                                onShowOnMap =
+                                    walkDestination(trip, index)?.let { target ->
+                                        {
+                                            interactions++
+                                            openWalkingDirections(target.latitude, target.longitude)
+                                        }
+                                    },
+                            )
                         }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * Where the trip is now, shown while it is under way: what to do ("On 5 to Majorstuen"), the
+ * minutes to the step's next moment, how far along the trip is, and the step's live facts.
+ */
+@Composable
+private fun TripProgressCard(progress: JourneyProgress) {
+    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(12.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.now),
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary),
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = progressHeadline(progress),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = onContainer),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            progress.minutesToNext?.let {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(Res.string.journey_progress_in_minutes, it),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = onContainer),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LinearProgressIndicator(
+            progress = { progress.elapsedFraction.toFloat() },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        // The arrival is in the header already.
+        val facts = progress.details.filterNot { it is JourneyDetail.Arrival }.map { progressDetailText(it) }
+        if (facts.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = facts.joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium.copy(color = onContainer),
+            )
+        }
+    }
+}
+
+/** What to do now, worded like the journey's notification. */
+@Composable
+private fun progressHeadline(progress: JourneyProgress): String {
+    val line = progress.lineName.orEmpty()
+    val target = progress.targetName.orEmpty()
+    return when (progress.phase) {
+        JourneyPhase.WAITING ->
+            progress.towards?.let { stringResource(Res.string.journey_progress_towards, line, it) }
+                ?: stringResource(Res.string.journey_progress_waiting, line, target)
+        JourneyPhase.RIDING -> stringResource(Res.string.journey_progress_riding, line, target)
+        JourneyPhase.WALKING -> stringResource(Res.string.journey_progress_walking, target)
+        JourneyPhase.ARRIVED -> stringResource(Res.string.journey_progress_arrived, progress.destinationName)
+    }
+}
+
+/** One of the progress' facts, worded like the journey's notification. */
+@Composable
+private fun progressDetailText(detail: JourneyDetail): String {
+    fun time(millis: Long) = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(millis))
+    return when (detail) {
+        is JourneyDetail.Departs ->
+            if (detail.delayMinutes > 0) {
+                stringResource(Res.string.journey_progress_leaves_late, time(detail.atMillis), detail.delayMinutes)
+            } else {
+                stringResource(Res.string.journey_progress_leaves, time(detail.atMillis))
+            }
+        is JourneyDetail.Platform -> stringResource(Res.string.journey_alert_platform, detail.platform)
+        is JourneyDetail.From -> stringResource(Res.string.journey_alert_from, detail.stopName)
+        is JourneyDetail.NextStop -> stringResource(Res.string.journey_progress_next_stop, detail.stopName)
+        is JourneyDetail.StopsLeft -> pluralStringResource(Res.plurals.journey_progress_stops_left, detail.count, detail.count)
+        is JourneyDetail.Change ->
+            detail.platform?.let { stringResource(Res.string.journey_progress_change_platform, detail.lineName, time(detail.atMillis), it) }
+                ?: stringResource(Res.string.journey_progress_change, detail.lineName, time(detail.atMillis))
+        is JourneyDetail.Arrival -> stringResource(Res.string.journey_progress_arrival, time(detail.atMillis))
+        is JourneyDetail.Arrived -> stringResource(Res.string.journey_progress_arrived_time, time(detail.atMillis))
+        JourneyDetail.LocationLost -> stringResource(Res.string.journey_progress_location_lost)
+        JourneyDetail.Muted -> stringResource(Res.string.journey_progress_muted)
     }
 }
 
@@ -216,37 +355,61 @@ private fun WaitRow(minutes: Int) {
     )
 }
 
+/** A walk's time, distance and end; with [onShowOnMap], a button that opens the walk in the map app. */
 @Composable
 private fun WalkRow(
     leg: TripLeg,
     endName: String?,
+    onShowOnMap: (() -> Unit)? = null,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = "🚶", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text =
-                    listOfNotNull(
-                        stringResource(Res.string.trip_details_walk, leg.durationMinutes),
-                        leg.distanceMeters.takeIf { it > 0 }?.let { "$it m" },
-                    ).joinToString(" · "),
-                style = MaterialTheme.typography.bodyLarge,
+                text = "🚶",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(WALK_ICON_WIDTH),
             )
-            endName?.let {
+            Spacer(modifier = Modifier.width(WALK_ICON_GAP))
+            Column {
                 Text(
-                    text = stringResource(Res.string.trip_details_to_place, it),
-                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    text =
+                        listOfNotNull(
+                            stringResource(Res.string.trip_details_walk, leg.durationMinutes),
+                            leg.distanceMeters.takeIf { it > 0 }?.let { "$it m" },
+                        ).joinToString(" · "),
+                    style = MaterialTheme.typography.bodyLarge,
                 )
+                endName?.let {
+                    Text(
+                        text = stringResource(Res.string.trip_details_to_place, it),
+                        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        if (onShowOnMap != null) {
+            OutlinedButton(
+                onClick = onShowOnMap,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                modifier = Modifier.padding(start = WALK_ICON_WIDTH + WALK_ICON_GAP, top = 6.dp).height(36.dp),
+            ) {
+                Icon(imageVector = Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = stringResource(Res.string.trip_details_show_on_map), maxLines = 1)
             }
         }
     }
 }
+
+/** How faint the legs the trip is past are, while it is under way. */
+private const val DONE_LEG_ALPHA = 0.45f
+
+/** The walk's icon column, so the map button lines up with the walk's text. */
+private val WALK_ICON_WIDTH = 24.dp
+private val WALK_ICON_GAP = 12.dp
 
 /**
  * One ride: line badge and heading, who runs it, then where it boards and gets off. Once its stops

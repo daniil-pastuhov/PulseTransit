@@ -2,12 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- The app's Info.plist entries that build settings cannot generate; the rest come from the
      INFOPLIST_KEY_* settings (GENERATE_INFOPLIST_FILE). The location background mode lets a
-     journey followed with "Also notice if I miss my ride" keep reading it with the app closed. -->
+     journey followed with "Also notice if I miss my ride" keep reading it with the app closed.
+     The queried scheme lets walking directions open in Google Maps when it is installed. -->
 <plist version="1.0">
 <dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>comgooglemaps</string>
 	</array>
 </dict>
 </plist>

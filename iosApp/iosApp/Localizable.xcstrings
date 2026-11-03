@@ -5510,6 +5510,23 @@
         }
       }
     },
+    "trip_details_show_on_map": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show on map"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis på kart"
+          }
+        }
+      }
+    },
     "trip_details_show_stops": {
       "extractionState": "manual",
       "localizations": {

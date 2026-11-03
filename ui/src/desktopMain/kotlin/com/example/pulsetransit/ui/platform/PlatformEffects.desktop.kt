@@ -1,6 +1,7 @@
 package com.example.pulsetransit.ui.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalUriHandler
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import java.text.DateFormat
 import java.text.SimpleDateFormat
@@ -35,3 +36,14 @@ actual fun rememberJourneyPermissionRequest(onResult: (notificationsGranted: Boo
 /** From the locale's short time format: "HH:mm" is 24-hour, "h:mm a" is not. */
 @Composable
 actual fun is24HourClock(): Boolean = (DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault()) as? SimpleDateFormat)?.toPattern()?.contains('H') ?: true
+
+/** The desktop has no map app of its own, so Google Maps' walking directions open in the browser. */
+@Composable
+actual fun rememberWalkingDirections(): (latitude: Double, longitude: Double) -> Unit {
+    val uriHandler = LocalUriHandler.current
+    return { latitude, longitude ->
+        runCatching {
+            uriHandler.openUri("https://www.google.com/maps/dir/?api=1&destination=$latitude,$longitude&travelmode=walking")
+        }
+    }
+}

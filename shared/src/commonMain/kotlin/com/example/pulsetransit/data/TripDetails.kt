@@ -84,3 +84,28 @@ fun currentTrip(
     val key = tripKey(selected)
     return trips?.firstOrNull { tripKey(it) == key } ?: selected
 }
+
+/** Where a walk leads, for its "Show on map". */
+data class WalkDestination(
+    val latitude: Double,
+    val longitude: Double,
+)
+
+/**
+ * Where [trip]'s walk at [index] leads: the stop the next ride boards at, or where the walk ends
+ * when no ride follows it (the destination, or another walk's start). Zero-minute transfers after
+ * it are passed over, as the details do, the last of them arriving where the walk really ends.
+ * Null for a ride, for a walk the details leave out, and without coordinates.
+ */
+fun walkDestination(
+    trip: TripInfo,
+    index: Int,
+): WalkDestination? {
+    trip.legs.getOrNull(index)?.takeIf { !it.isTransit && it.isShown } ?: return null
+    val next = (index + 1 until trip.legs.size).firstOrNull { trip.legs[it].isShown }
+    val ride = next?.let { trip.legs[it] }?.takeIf { it.isTransit }
+    val arrival = trip.legs[(next ?: trip.legs.size) - 1]
+    val latitude = ride?.fromLatitude ?: arrival.toLatitude ?: return null
+    val longitude = ride?.fromLongitude ?: arrival.toLongitude ?: return null
+    return WalkDestination(latitude, longitude)
+}
