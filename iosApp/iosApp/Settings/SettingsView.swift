@@ -605,7 +605,12 @@ struct PlaceKindIcon: View {
     }
 }
 
-/// A labelled choice among a few options, segmented when they fit and a menu when they do not.
+/// A labelled choice among a few options, as a segmented control.
+///
+/// The control keeps its own copy of the selection. Bound straight to the ViewModel, a tap would
+/// only take effect once the new state came back through the StateFlow, after the tap's animation:
+/// the Liquid Glass thumb then vanished and reappeared on the new segment, swelling up and down,
+/// instead of sliding across to it.
 private struct OptionPicker<Value: Hashable>: View {
     let title: String
     var footnote: String?
@@ -613,13 +618,24 @@ private struct OptionPicker<Value: Hashable>: View {
     let selection: Value
     let onSelect: (Value) -> Void
 
+    @State private var current: Value
+
+    init(title: String, footnote: String? = nil, options: [(Value, String)], selection: Value, onSelect: @escaping (Value) -> Void) {
+        self.title = title
+        self.footnote = footnote
+        self.options = options
+        self.selection = selection
+        self.onSelect = onSelect
+        _current = State(initialValue: selection)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
             if let footnote {
                 Text(footnote).font(.caption).foregroundColor(.secondary)
             }
-            Picker(title, selection: Binding(get: { selection }, set: onSelect)) {
+            Picker(title, selection: $current) {
                 ForEach(options, id: \.0) { option in
                     Text(option.1).tag(option.0)
                 }
@@ -627,6 +643,10 @@ private struct OptionPicker<Value: Hashable>: View {
             .pickerStyle(.segmented)
             .labelsHidden()
         }
+        // A tap moves the thumb at once and is then saved; a change made elsewhere (loadSettings)
+        // moves it when the state arrives. The guards stop each from echoing the other.
+        .onChange(of: current) { if $0 != selection { onSelect($0) } }
+        .onChange(of: selection) { if $0 != current { current = $0 } }
     }
 }
 
