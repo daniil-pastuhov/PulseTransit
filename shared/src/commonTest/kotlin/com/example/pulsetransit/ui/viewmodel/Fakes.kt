@@ -514,6 +514,11 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun removeDestinationStation(stopId: String) {}
 
+    override fun reorderDestinationStations(stopIds: List<String>) {
+        val listed = stopIds.mapNotNull { id -> destinations.find { it.id == id } }
+        destinations = listed + destinations.filter { it !in listed }
+    }
+
     override fun getDestinationSchedules() = schedules
 
     override fun setDestinationSchedule(

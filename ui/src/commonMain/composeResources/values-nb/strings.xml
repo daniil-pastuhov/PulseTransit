@@ -94,6 +94,10 @@
     </plurals>
     <string name="more_actions">Flere handlinger</string>
     <string name="drag_to_reorder">Dra for å endre rekkefølgen</string>
+    <string name="move_up">Flytt opp</string>
+    <string name="move_down">Flytt ned</string>
+    <string name="reorder">Endre rekkefølge</string>
+    <string name="reorder_done">Ferdig</string>
     <!-- Board pages, when the stops take turns -->
     <string name="board_page_stops">Stopp %1$d–%2$d av %3$d</string>
     <string name="board_page_stop">Stopp %1$d av %2$d</string>

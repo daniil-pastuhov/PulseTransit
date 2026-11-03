@@ -44,6 +44,10 @@ private val osloS = StopPlace(id = "NSR:StopPlace:337", name = "Oslo S", localit
 private val majorstuen =
     StopPlace(id = "NSR:StopPlace:58381", name = "Majorstuen", locality = "Oslo", latitude = 59.9297, longitude = 10.7155)
 
+/** What any place search finds, so a test can add a second destination. */
+private val nationaltheatret =
+    StopPlace(id = "NSR:StopPlace:58404", name = "Nationaltheatret", locality = "Oslo", latitude = 59.9147, longitude = 10.7312)
+
 /** The test store, emptied first when [reset]: a test that relaunches to check restoring keeps it. */
 internal fun uiTestSettings(reset: Boolean): Settings {
     val defaults = NSUserDefaults(suiteName = SUITE)
@@ -154,7 +158,7 @@ private class FixtureEnturRepository(
         query: String,
         focusLat: Double?,
         focusLon: Double?,
-    ) = emptyList<StopPlace>()
+    ) = if (query.isBlank()) emptyList() else listOf(nationaltheatret)
 
     override suspend fun getNearbyStopPlaces(
         lat: Double,

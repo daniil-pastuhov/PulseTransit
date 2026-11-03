@@ -8,6 +8,8 @@ struct SettingsView: View {
     /// The board's theme setting, so the sheet opens in the same scheme the board uses.
     let themeMode: ThemeMode
     @StateObject private var model = SettingsModel()
+    /// Destinations being reordered. Move handles need the whole Form in edit mode, not one section.
+    @State private var reorderingDestinations = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -19,7 +21,7 @@ struct SettingsView: View {
             let isBoard = state.appMode == .board
             Form {
                 ModeSection(state: state, viewModel: viewModel)
-                DestinationsSection(state: state, viewModel: viewModel)
+                DestinationsSection(state: state, viewModel: viewModel, reordering: $reorderingDestinations)
                 ThemeSection(state: state, viewModel: viewModel)
                 RefreshSection(state: state, viewModel: viewModel)
                 if isBoard {
@@ -41,9 +43,10 @@ struct SettingsView: View {
                 DataSourcesSection()
                 if isBoard {
                     AddStopsSection(state: state, viewModel: viewModel)
-                    FavoritesSection(state: state, viewModel: viewModel)
+                    FavoritesSection(state: state, viewModel: viewModel, deleteDisabled: reorderingDestinations)
                 }
             }
+            .environment(\.editMode, .constant(reorderingDestinations ? .active : .inactive))
             .navigationTitle(L("settings_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -347,10 +350,27 @@ private struct DestinationsSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
     @State private var editing: StopPlace?
+    /// While on, the rows show their move handles; the board shows routes in this order.
+    @Binding var reordering: Bool
+
+    private var header: some View {
+        HStack {
+            Text(L("fastest_route_destination"))
+            Spacer()
+            if state.destinationStations.count > 1 {
+                Button(reordering ? L("reorder_done") : L("reorder")) {
+                    withAnimation { reordering.toggle() }
+                }
+                .font(.footnote)
+                .textCase(nil)
+                .accessibilityIdentifier("settings.destinations.reorder")
+            }
+        }
+    }
 
     var body: some View {
         let max = Int(SettingsRepositoryCompanion.shared.MAX_DESTINATION_STATIONS)
-        Section(L("fastest_route_destination")) {
+        Section(header: header) {
             if state.destinationStations.isEmpty {
                 Text(L("no_destination_set")).foregroundColor(.secondary)
             }
@@ -384,6 +404,13 @@ private struct DestinationsSection: View {
                     .accessibilityLabel(L("remove"))
                 }
             }
+            .onMove { sources, destination in
+                // SwiftUI's destination counts the moved row still in place; the ViewModel wants
+                // the index it ends up at.
+                guard let from = sources.first else { return }
+                let to = destination > from ? destination - 1 : destination
+                viewModel.moveDestinationStation(fromIndex: Int32(from), toIndex: Int32(to))
+            }
             if state.destinationStations.count >= max {
                 Text(L("max_destinations_reached", max)).font(.footnote).foregroundColor(.secondary)
             } else {
@@ -403,6 +430,7 @@ private struct DestinationsSection: View {
                 }
             }
         }
+        .onChange(of: state.destinationStations.count) { if $0 < 2 { reordering = false } }
         .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
             if let destination = editing {
                 DestinationScheduleView(
@@ -506,6 +534,8 @@ private struct AddStopsSection: View {
 private struct FavoritesSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
+    /// While destinations are reordered the Form is in edit mode, which would offer to delete these.
+    var deleteDisabled = false
 
     var body: some View {
         Section(L("favorite_stops", state.favorites.count)) {
@@ -519,6 +549,7 @@ private struct FavoritesSection: View {
                     selected: state.selectedQuays[stop.id] ?? [],
                     onToggleQuay: { viewModel.toggleQuay(stopId: stop.id, quayId: $0) }
                 )
+                .deleteDisabled(deleteDisabled)
             }
             .onDelete { offsets in
                 offsets.map { state.favorites[$0].id }.forEach { viewModel.removeFavorite(stopId: $0) }

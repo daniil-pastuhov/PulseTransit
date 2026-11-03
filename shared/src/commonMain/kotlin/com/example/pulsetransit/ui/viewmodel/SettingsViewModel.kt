@@ -505,6 +505,21 @@ class SettingsViewModel(
         }
     }
 
+    /**
+     * Moves the destination at [fromIndex] to [toIndex], as Settings' list is dragged; the board
+     * shows their routes in this order. Out-of-range indices are ignored.
+     */
+    fun moveDestinationStation(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        val current = _uiState.value.destinationStations.toMutableList()
+        if (fromIndex !in current.indices || toIndex !in current.indices || fromIndex == toIndex) return
+        current.add(toIndex, current.removeAt(fromIndex))
+        settingsRepository.reorderDestinationStations(current.map { it.id })
+        _uiState.update { it.copy(destinationStations = settingsRepository.getDestinationStations()) }
+    }
+
     fun removeDestinationStation(stopId: String) {
         settingsRepository.removeDestinationStation(stopId)
         _uiState.update {

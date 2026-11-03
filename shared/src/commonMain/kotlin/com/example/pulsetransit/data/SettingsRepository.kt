@@ -161,6 +161,13 @@ interface SettingsRepository {
     /** Also forgets the destination's schedule. */
     fun removeDestinationStation(stopId: String)
 
+    /**
+     * Saves the destinations in the order of [stopIds], which the board shows their routes in.
+     * Ids not among them are ignored; a saved destination left out of [stopIds] keeps its place
+     * after the others, so a stale list can reorder but never drop one.
+     */
+    fun reorderDestinationStations(stopIds: List<String>)
+
     /** Schedules by destination id; a destination without one is always shown. */
     fun getDestinationSchedules(): Map<String, DestinationSchedule>
 

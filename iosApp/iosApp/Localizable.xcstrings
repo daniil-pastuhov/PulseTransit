@@ -3235,6 +3235,40 @@
         }
       }
     },
+    "move_down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move down"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytt ned"
+          }
+        }
+      }
+    },
+    "move_up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move up"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytt opp"
+          }
+        }
+      }
+    },
     "nearby_stops": {
       "extractionState": "manual",
       "localizations": {
@@ -3782,6 +3816,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fjern"
+          }
+        }
+      }
+    },
+    "reorder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reorder"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Endre rekkefølge"
+          }
+        }
+      }
+    },
+    "reorder_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferdig"
           }
         }
       }

@@ -94,6 +94,10 @@
     </plurals>
     <string name="more_actions">More actions</string>
     <string name="drag_to_reorder">Drag to reorder</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="reorder">Reorder</string>
+    <string name="reorder_done">Done</string>
     <!-- Board pages, when the stops take turns -->
     <string name="board_page_stops">Stops %1$d–%2$d of %3$d</string>
     <string name="board_page_stop">Stop %1$d of %2$d</string>

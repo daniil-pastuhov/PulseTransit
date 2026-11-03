@@ -38,6 +38,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
@@ -54,6 +55,7 @@ import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -67,6 +69,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -93,6 +96,7 @@ import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
+import com.example.pulsetransit.ui.components.ReorderableColumn
 import com.example.pulsetransit.ui.components.scheduleSummary
 import com.example.pulsetransit.ui.platform.rememberLocationPermissionRequest
 import com.example.pulsetransit.ui.resources.*
@@ -188,8 +192,17 @@ fun SettingsScreen(
                         )
                     }
                     if (destinations.isNotEmpty()) {
-                        destinations.forEach { destination ->
-                            key(destination.id) {
+                        // In the order the board shows their routes; a handle drags a row elsewhere.
+                        ReorderableColumn(
+                            items = destinations,
+                            key = { it.id },
+                            onMove = viewModel::moveDestinationStation,
+                        ) { destination, dragHandle, isDragging ->
+                            Surface(
+                                color = if (isDragging) MaterialTheme.colorScheme.surfaceContainerHighest else Color.Transparent,
+                                shape = RoundedCornerShape(8.dp),
+                                shadowElevation = if (isDragging) 4.dp else 0.dp,
+                            ) {
                                 val schedule = uiState.destinationSchedules[destination.id]
                                 val editLabel = stringResource(Res.string.schedule_edit, destination.name)
                                 val scheduleColor =
@@ -204,6 +217,15 @@ fun SettingsScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
+                                    if (destinations.size > 1) {
+                                        Box(modifier = dragHandle.size(40.dp), contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                imageVector = Icons.Default.DragIndicator,
+                                                contentDescription = stringResource(Res.string.drag_to_reorder),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    }
                                     PlaceKindIcon(destination.kind)
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {

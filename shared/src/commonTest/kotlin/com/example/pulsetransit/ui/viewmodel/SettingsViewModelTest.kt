@@ -70,6 +70,23 @@ class SettingsViewModelTest {
         }
 
     @Test
+    fun `dragging a destination saves the new order`() =
+        settingsTest { vm ->
+            val (a, b, c) = listOf("A", "B", "C").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+            settings.destinations = listOf(a, b, c)
+            vm.loadSettings()
+            runCurrent()
+
+            vm.moveDestinationStation(fromIndex = 2, toIndex = 0)
+
+            assertEquals(listOf(c, a, b), vm.uiState.value.destinationStations)
+            assertEquals(listOf(c, a, b), settings.destinations)
+
+            vm.moveDestinationStation(fromIndex = 0, toIndex = 5)
+            assertEquals(listOf(c, a, b), settings.destinations, "an index out of range changes nothing")
+        }
+
+    @Test
     fun `the journey alert mode is shown and saved for the next journey`() =
         settingsTest { vm ->
             assertEquals(null, vm.uiState.value.journeyMode)
