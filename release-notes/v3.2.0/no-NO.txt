@@ -1,0 +1,5 @@
+• Planlegg en reise til senere: søk med «Avreise» eller «Fremme innen» og velg et klokkeslett.
+• Alle gåetapper i reisedetaljene har nå «Vis på kart» med gåveibeskrivelse.
+• Mens du reiser, viser reisedetaljene hva du gjør nå, minutter til neste steg og hvor langt du har kommet.
+• Nye brukere får en kort introduksjon til valgt modus, som kan hoppes over.
+• Hvis ingen rute får deg frem i tide, sier søket nå fra.

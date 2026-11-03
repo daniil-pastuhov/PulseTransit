@@ -1,0 +1,5 @@
+• Plan a route for later: search with "Depart at" or "Arrive by" and pick a time.
+• Every walk in trip details now has "Show on map" for walking directions.
+• While you travel, trip details show your current step, the minutes until the next one and how far along you are.
+• New users get a short intro to their chosen mode, which they can skip.
+• If no route gets you there in time, the search now tells you.
