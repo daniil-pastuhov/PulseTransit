@@ -148,49 +148,67 @@ class TripDetailsTest {
     private val walkToMetro =
         walk.copy(fromName = "Origin", toName = "Jernbanetorget", toLatitude = 59.911, toLongitude = 10.750)
     private val metroWithCoordinates = metro.copy(fromLatitude = 59.9115, fromLongitude = 10.7505)
+    private val busWithCoordinates = bus.copy(fromLatitude = 59.929, fromLongitude = 10.715)
+    private val walkToDestination = walk.copy(toName = "Destination", toLatitude = 59.922, toLongitude = 10.678)
 
     @Test
-    fun `the opening walk leads to where the first ride boards`() {
-        val target = firstWalkToStop(trip(walkToMetro, metroWithCoordinates, walk, bus))
-        assertEquals(WalkToStop(0, 59.9115, 10.7505), target)
+    fun `a walk to a ride leads to where the ride boards`() {
+        val trip = trip(walkToMetro, metroWithCoordinates, walk, busWithCoordinates)
+        assertEquals(WalkDestination(59.9115, 10.7505), walkDestination(trip, 0))
+        assertEquals(WalkDestination(59.929, 10.715), walkDestination(trip, 2))
+    }
+
+    @Test
+    fun `the last walk leads to where it ends`() {
+        val trip = trip(walkToMetro, metroWithCoordinates, walkToDestination)
+        assertEquals(WalkDestination(59.922, 10.678), walkDestination(trip, 2))
     }
 
     @Test
     fun `the end of the walk stands in when the ride has no coordinates`() {
-        val target = firstWalkToStop(trip(walkToMetro, metro))
-        assertEquals(WalkToStop(0, 59.911, 10.750), target)
+        assertEquals(WalkDestination(59.911, 10.750), walkDestination(trip(walkToMetro, metro), 0))
     }
 
     @Test
-    fun `a zero-minute transfer before the ride is passed over for the shown walk`() {
+    fun `a walk followed by another walk leads to its own end`() {
+        // Entur gives every leg where it starts, walks too; a walk's start is no boarding stop.
+        val secondWalk = walk.copy(fromLatitude = 59.9112, fromLongitude = 10.7502, toLatitude = 59.912, toLongitude = 10.751)
+        val trip = trip(walkToMetro, secondWalk, metroWithCoordinates)
+        assertEquals(WalkDestination(59.911, 10.750), walkDestination(trip, 0))
+        assertEquals(WalkDestination(59.9115, 10.7505), walkDestination(trip, 1))
+    }
+
+    @Test
+    fun `a zero-minute transfer before the ride is passed over`() {
         val transfer = TripLeg(mode = "foot", durationMinutes = 0)
-        val target = firstWalkToStop(trip(walkToMetro, transfer, metroWithCoordinates))
-        assertEquals(0, target?.legIndex)
-        assertEquals(59.9115, target?.latitude)
-    }
-
-    @Test
-    fun `no target when the trip starts with a ride or never rides`() {
-        assertNull(firstWalkToStop(trip(metroWithCoordinates, walkToMetro)))
-        assertNull(firstWalkToStop(trip(walkToMetro)))
-        assertNull(firstWalkToStop(trip(TripLeg(mode = "foot", durationMinutes = 0), metroWithCoordinates)))
-    }
-
-    @Test
-    fun `no target without coordinates`() {
-        assertNull(firstWalkToStop(trip(walk, metro)))
-    }
-
-    @Test
-    fun `the button goes on the first of several walks before the ride`() {
-        val secondWalk = walk.copy(toLatitude = 59.912, toLongitude = 10.751)
-        assertEquals(0, firstWalkToStop(trip(walkToMetro, secondWalk, metroWithCoordinates))?.legIndex)
+        assertEquals(WalkDestination(59.9115, 10.7505), walkDestination(trip(walkToMetro, transfer, metroWithCoordinates), 0))
     }
 
     @Test
     fun `without ride coordinates the leg arriving at the stop is used rather than the walk`() {
         val transfer = TripLeg(mode = "foot", durationMinutes = 0, toLatitude = 59.9118, toLongitude = 10.7508)
-        val target = firstWalkToStop(trip(walkToMetro, transfer, metro))
-        assertEquals(WalkToStop(0, 59.9118, 10.7508), target)
+        assertEquals(WalkDestination(59.9118, 10.7508), walkDestination(trip(walkToMetro, transfer, metro), 0))
+    }
+
+    @Test
+    fun `a trailing zero-minute leg is where the last walk ends`() {
+        val transfer = TripLeg(mode = "foot", durationMinutes = 0, toLatitude = 59.923, toLongitude = 10.679)
+        assertEquals(WalkDestination(59.923, 10.679), walkDestination(trip(metroWithCoordinates, walkToDestination, transfer), 1))
+    }
+
+    @Test
+    fun `no destination for rides or hidden walks or legs out of range`() {
+        val transfer = TripLeg(mode = "foot", durationMinutes = 0, toLatitude = 59.9, toLongitude = 10.7)
+        val trip = trip(transfer, metroWithCoordinates, walkToDestination)
+        assertNull(walkDestination(trip, 0))
+        assertNull(walkDestination(trip, 1))
+        assertNull(walkDestination(trip, 3))
+        assertNull(walkDestination(trip, -1))
+    }
+
+    @Test
+    fun `no destination without coordinates`() {
+        assertNull(walkDestination(trip(walk, metro), 0))
+        assertNull(walkDestination(trip(metro, walk), 1))
     }
 }

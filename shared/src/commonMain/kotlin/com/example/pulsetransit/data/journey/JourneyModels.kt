@@ -205,6 +205,13 @@ data class JourneyProgress(
     val upcomingSteps: List<JourneyStep>
         get() = currentStepIndex?.let { steps.drop(it + 1) }.orEmpty()
 
+    /** The trip leg the journey is on, as [JourneyStep.legIndex]; null once arrived. */
+    val currentLegIndex: Int?
+        get() = currentStepIndex?.let { steps[it].legIndex }
+
+    /** Whether the journey is past the trip leg at [legIndex]: a step of it that has ended. */
+    fun isLegDone(legIndex: Int): Boolean = steps.any { it.legIndex == legIndex && it.endMillis <= nowMillis }
+
     /**
      * Whole minutes until [nextAtMillis], rounded up so "1 min" lasts until the moment itself; null
      * once arrived, without a next moment, or when it has passed.

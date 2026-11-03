@@ -85,26 +85,27 @@ fun currentTrip(
     return trips?.firstOrNull { tripKey(it) == key } ?: selected
 }
 
-/** Where a trip's opening walk leads: the stop its first ride boards at, for "Show on map". */
-data class WalkToStop(
-    /** The walking leg's index in the trip's legs. */
-    val legIndex: Int,
+/** Where a walk leads, for its "Show on map". */
+data class WalkDestination(
     val latitude: Double,
     val longitude: Double,
 )
 
 /**
- * The walk [trip] opens with, to the first stop it rides from; null when the trip starts with a
- * ride, has no ride at all, or the stop has no coordinates. Zero-minute transfers before the ride
- * are skipped, as the details do, so the button sits on the walk that is shown.
+ * Where [trip]'s walk at [index] leads: the stop the next ride boards at, or where the walk ends
+ * when no ride follows it (the destination, or another walk's start). Zero-minute transfers after
+ * it are passed over, as the details do, the last of them arriving where the walk really ends.
+ * Null for a ride, for a walk the details leave out, and without coordinates.
  */
-fun firstWalkToStop(trip: TripInfo): WalkToStop? {
-    val rideIndex = trip.legs.indexOfFirst { it.isTransit }.takeIf { it > 0 } ?: return null
-    val walkIndex = (0 until rideIndex).firstOrNull { trip.legs[it].isShown } ?: return null
-    val ride = trip.legs[rideIndex]
-    // The leg just before the ride arrives where it boards, even when it is a transfer, not the walk.
-    val arrival = trip.legs[rideIndex - 1]
-    val latitude = ride.fromLatitude ?: arrival.toLatitude ?: return null
-    val longitude = ride.fromLongitude ?: arrival.toLongitude ?: return null
-    return WalkToStop(walkIndex, latitude, longitude)
+fun walkDestination(
+    trip: TripInfo,
+    index: Int,
+): WalkDestination? {
+    trip.legs.getOrNull(index)?.takeIf { !it.isTransit && it.isShown } ?: return null
+    val next = (index + 1 until trip.legs.size).firstOrNull { trip.legs[it].isShown }
+    val ride = next?.let { trip.legs[it] }?.takeIf { it.isTransit }
+    val arrival = trip.legs[(next ?: trip.legs.size) - 1]
+    val latitude = ride?.fromLatitude ?: arrival.toLatitude ?: return null
+    val longitude = ride?.fromLongitude ?: arrival.toLongitude ?: return null
+    return WalkDestination(latitude, longitude)
 }
