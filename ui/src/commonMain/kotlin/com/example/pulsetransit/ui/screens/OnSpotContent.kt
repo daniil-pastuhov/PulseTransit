@@ -1,5 +1,7 @@
 package com.example.pulsetransit.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -46,6 +49,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -56,6 +60,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.contentDescription
@@ -63,6 +68,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.OnSpotSplit
@@ -136,10 +142,23 @@ private fun LocatedContent(
         val total = ((if (isLandscape) maxWidth else maxHeight) - SPLIT_HANDLE_SIZE).value
         val bar = SPLIT_BAR_SIZE.value
         val min = OnSpotSplit.minSectionSize(total, (if (isLandscape) SPLIT_MIN_SECTION_WIDTH else SPLIT_MIN_SECTION_SIZE).value)
-        val target = OnSpotSplit.routesSize(uiState.onSpotSplit, total, bar, min)
-        // A new size (rotation, a window resize) jumps there; a new split animates to it.
+        // How tall the routes' cards are, measured; null while they show something else.
+        var routesContentHeight by remember { mutableStateOf<Float?>(null) }
+        // The routes get no more than their cards need, the stop taking the rest.
+        fun fitted(split: Float) =
+            OnSpotSplit.fittedRoutesSize(
+                split = split,
+                totalSize = total,
+                barSize = bar,
+                minSize = min,
+                contentSize = routesContentHeight?.takeUnless { isLandscape } ?: Float.POSITIVE_INFINITY,
+            )
+        val target = fitted(uiState.onSpotSplit)
+        var isDragging by remember { mutableStateOf(false) }
+        // A new size (rotation, a window resize) jumps there; a new split or content animates to
+        // it, though not while dragged, so the grip follows the finger.
         val routesSize = remember(total) { Animatable(target) }
-        LaunchedEffect(target) { routesSize.animateTo(target) }
+        LaunchedEffect(target, isDragging) { if (!isDragging) routesSize.animateTo(target) }
 
         val scope = rememberCoroutineScope()
         val density = LocalDensity.current
@@ -149,7 +168,6 @@ private fun LocatedContent(
                 val delta = with(density) { deltaPx.toDp().value }
                 scope.launch { routesSize.snapTo(OnSpotSplit.dragRoutesSize(routesSize.value, delta, total, bar)) }
             }
-        var isDragging by remember { mutableStateOf(false) }
 
         // A folded bar opens when dragged, but the section turns back into its content on the way,
         // so the drag sits on a wrapper that stays and is kept enabled until the drag ends.
@@ -165,7 +183,7 @@ private fun LocatedContent(
                     isDragging = false
                     val split = OnSpotSplit.settle(routesSize.value, total, min)
                     viewModel.setOnSpotSplit(split)
-                    routesSize.animateTo(OnSpotSplit.routesSize(split, total, bar, min))
+                    routesSize.animateTo(fitted(split))
                 },
             )
         val onExpand = { viewModel.setOnSpotSplit(OnSpotSplit.DEFAULT) }
@@ -173,35 +191,54 @@ private fun LocatedContent(
         // A section dragged below its minimum shows the bar it will fold to.
         val routesFolded = routesSize.value < min
         val stopFolded = total - routesSize.value < min
+        // How many alternatives show follows the routes' share, not the fitted size, or showing
+        // fewer would leave room for fewer still. Landscape counts the full height.
+        val countHeight =
+            when {
+                isLandscape -> null
+                isDragging -> routesSize.value.dp
+                else -> OnSpotSplit.routesSize(uiState.onSpotSplit, total, bar, min).dp
+            }
         val routes: @Composable (Modifier) -> Unit = { sectionModifier ->
             Box(modifier = sectionModifier.then(drag(enabled = routesFolded))) {
-                if (routesFolded) {
-                    FoldedSection(
-                        label = stringResource(Res.string.on_spot_routes),
-                        icon = Icons.Default.Directions,
-                        expandLabel = stringResource(Res.string.on_spot_show_routes),
-                        edge = if (isLandscape) FoldedEdge.START else FoldedEdge.TOP,
-                        onExpand = onExpand,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    RoutesSection(uiState, viewModel, onNavigateToSettings, Modifier.fillMaxSize())
+                Crossfade(targetState = routesFolded, label = "routesFolded") { folded ->
+                    if (folded) {
+                        FoldedSection(
+                            label = stringResource(Res.string.on_spot_routes),
+                            icon = Icons.Default.Directions,
+                            expandLabel = stringResource(Res.string.on_spot_show_routes),
+                            edge = if (isLandscape) FoldedEdge.START else FoldedEdge.TOP,
+                            onExpand = onExpand,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        RoutesSection(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onNavigateToSettings = onNavigateToSettings,
+                            countHeight = countHeight,
+                            onContentHeight = { routesContentHeight = it },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 }
             }
         }
         val stop: @Composable (Modifier) -> Unit = { sectionModifier ->
             Box(modifier = sectionModifier.then(drag(enabled = stopFolded))) {
-                if (stopFolded) {
-                    FoldedSection(
-                        label = uiState.favorites.firstOrNull()?.name ?: stringResource(Res.string.details_departures),
-                        icon = Icons.Default.DirectionsBus,
-                        expandLabel = stringResource(Res.string.on_spot_show_departures),
-                        edge = if (isLandscape) FoldedEdge.END else FoldedEdge.BOTTOM,
-                        onExpand = onExpand,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    NearbyStopSection(uiState, viewModel, Modifier.fillMaxSize())
+                Crossfade(targetState = stopFolded, label = "stopFolded") { folded ->
+                    if (folded) {
+                        FoldedSection(
+                            label = uiState.favorites.firstOrNull()?.name ?: stringResource(Res.string.details_departures),
+                            icon = Icons.Default.DirectionsBus,
+                            expandLabel = stringResource(Res.string.on_spot_show_departures),
+                            edge = if (isLandscape) FoldedEdge.END else FoldedEdge.BOTTOM,
+                            onExpand = onExpand,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        NearbyStopSection(uiState, viewModel, Modifier.fillMaxSize())
+                    }
                 }
             }
         }
@@ -350,14 +387,22 @@ private fun LocationStatus(
     }
 }
 
+/**
+ * The route alternatives, as many per destination as fit [countHeight] (or the section's own
+ * height when null). The height of the cards goes to [onContentHeight], null while there are none.
+ */
 @Composable
 private fun RoutesSection(
     uiState: StopBoardViewModel.UiState,
     viewModel: StopBoardViewModel,
     onNavigateToSettings: () -> Unit,
+    countHeight: Dp?,
+    onContentHeight: (Float?) -> Unit,
     modifier: Modifier,
 ) {
+    DisposableEffect(Unit) { onDispose { onContentHeight(null) } }
     if (uiState.routeDestinations.isEmpty()) {
+        LaunchedEffect(Unit) { onContentHeight(null) }
         Card(modifier = modifier.padding(6.dp)) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -394,16 +439,24 @@ private fun RoutesSection(
         )
     }
     BoxWithConstraints(modifier = modifier) {
-        val fontScale = LocalDensity.current.fontScale
+        val density = LocalDensity.current
+        val fontScale = density.fontScale
         val autoCount =
             autoTripOptionCount(
-                availableHeight = maxHeight.value,
+                availableHeight = (countHeight ?: maxHeight).value,
                 destinationCount = destinations.size,
                 rowHeight = TRIP_ROW_HEIGHT_DP * fontScale,
                 headerHeight = DESTINATION_HEADER_HEIGHT_DP * fontScale,
             )
         val count = visibleTripOptionCount(uiState.tripOptionsCount, autoCount)
-        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .wrapContentHeight(Alignment.Top)
+                    .onSizeChanged { onContentHeight(with(density) { it.height.toDp().value }) },
+        ) {
             destinations.forEach { destination ->
                 key(destination.id) {
                     DestinationRoutesCard(
@@ -475,14 +528,19 @@ private fun DestinationRoutesCard(
                             )
                             actions?.invoke()
                         }
-                        trips.take(count).forEachIndexed { index, trip ->
-                            if (index > 0) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
-                                )
+                        // Alternatives come and go as the split or the setting changes.
+                        trips.forEachIndexed { index, trip ->
+                            AnimatedVisibility(visible = index < count) {
+                                Column {
+                                    if (index > 0) {
+                                        HorizontalDivider(
+                                            modifier = Modifier.padding(horizontal = 16.dp),
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
+                                        )
+                                    }
+                                    TripOptionRow(trip = trip, isFirst = index == 0, onClick = { onTripClick(trip) })
+                                }
                             }
-                            TripOptionRow(trip = trip, isFirst = index == 0, onClick = { onTripClick(trip) })
                         }
                     }
                     if (isRefreshing) {
@@ -580,6 +638,8 @@ private fun NearbyStopSection(
         onRetry = viewModel::refreshData,
         onLoadMore = { viewModel.loadMoreDepartures(stop.id) },
         loadJourney = { departure -> viewModel.journeyStopsAhead(departure, stop.id) },
+        // Asks for enough departures to fill the panel, as on the wall board.
+        onRowCapacity = { rows -> viewModel.setPanelRowCapacity(stop.id, rows) },
         modifier = modifier,
         header = {
             StopPicker(

@@ -61,6 +61,8 @@ private struct SplitSections: View {
     @State private var dragSize: Float?
     /// The split just dropped or tapped open, until the ViewModel's state has it.
     @State private var pendingSplit: Float?
+    /// How tall the routes' cards are, measured; nil while they show something else.
+    @State private var routesContentHeight: CGFloat?
 
     var body: some View {
         GeometryReader { geometry in
@@ -70,11 +72,23 @@ private struct SplitSections: View {
                 totalSize: total,
                 minSize: isLandscape ? splitMinSectionWidth : splitMinSectionSize
             )
-            let routesSize = dragSize ?? OnSpotSplit.shared.routesSize(
-                split: pendingSplit ?? state.onSpotSplit,
+            let split = pendingSplit ?? state.onSpotSplit
+            // The routes' share, which decides how many alternatives they show...
+            let allottedSize = dragSize ?? OnSpotSplit.shared.routesSize(
+                split: split,
                 totalSize: total,
                 barSize: splitBarSize,
                 minSize: minSize
+            )
+            // ...and the size they get: no taller than those need, the stop taking the rest. Not
+            // while dragged, so the grip follows the finger.
+            let contentHeight = isLandscape ? nil : routesContentHeight
+            let routesSize = dragSize ?? OnSpotSplit.shared.fittedRoutesSize(
+                split: split,
+                totalSize: total,
+                barSize: splitBarSize,
+                minSize: minSize,
+                contentSize: contentHeight.map { Float($0) } ?? .infinity
             )
             // A section dragged below its minimum shows the bar it will fold to.
             let routesFolded = routesSize < minSize
@@ -91,8 +105,15 @@ private struct SplitSections: View {
                         edge: isLandscape ? .leading : .top,
                         onExpand: expand
                     )
+                    .transition(.opacity)
                 } else {
-                    RoutesSection(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
+                    RoutesSection(
+                        state: state,
+                        viewModel: viewModel,
+                        onOpenSettings: onOpenSettings,
+                        availableHeight: isLandscape ? geometry.size.height : CGFloat(allottedSize)
+                    )
+                    .transition(.opacity)
                 }
             }
             .gesture(drag, including: routesFolded || dragSize != nil ? .all : .subviews)
@@ -105,8 +126,10 @@ private struct SplitSections: View {
                         edge: isLandscape ? .trailing : .bottom,
                         onExpand: expand
                     )
+                    .transition(.opacity)
                 } else {
                     NearbyStopSection(state: state, viewModel: viewModel)
+                        .transition(.opacity)
                 }
             }
             .gesture(drag, including: stopFolded || dragSize != nil ? .all : .subviews)
@@ -128,6 +151,11 @@ private struct SplitSections: View {
                 }
             }
         }
+        .onPreferenceChange(RoutesContentHeightKey.self) { routesContentHeight = $0 }
+        // The routes grow and shrink with what they show, and a split the ViewModel brings (a
+        // restored one) moves like a dropped one; neither while dragged.
+        .animation(dragSize == nil ? .spring() : nil, value: routesContentHeight)
+        .animation(dragSize == nil ? .spring() : nil, value: state.onSpotSplit)
         .onChange(of: state.onSpotSplit) { _ in pendingSplit = nil }
     }
 
@@ -156,6 +184,14 @@ private struct SplitSections: View {
     private func expand() {
         withAnimation(.spring()) { pendingSplit = OnSpotSplit.shared.DEFAULT }
         viewModel.setOnSpotSplit(split: OnSpotSplit.shared.DEFAULT)
+    }
+}
+
+/// The height of the routes' cards, for the split to give what they leave over to the stop.
+private struct RoutesContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat?
+    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
+        value = nextValue() ?? value
     }
 }
 
@@ -262,6 +298,9 @@ private struct RoutesSection: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
     let onOpenSettings: () -> Void
+    /// The height the alternatives are counted for: the routes' share, which the section may be
+    /// shrunk below to fit what that count shows.
+    let availableHeight: CGFloat
     /// The tapped alternative, whose details are open.
     @State private var detailsTrip: TripSelection?
     @EnvironmentObject private var journeyModel: JourneyAlertsModel
@@ -287,9 +326,9 @@ private struct RoutesSection: View {
                     state.loadingTripDestinationIds.contains($0.id) ||
                     state.failedTripDestinationIds.contains($0.id)
             }
-            GeometryReader { geometry in
+            Group {
                 let autoCount = TripOptionLayoutKt.autoTripOptionCount(
-                    availableHeight: Float(geometry.size.height),
+                    availableHeight: Float(availableHeight),
                     destinationCount: Int32(destinations.count),
                     rowHeight: tripRowHeight,
                     headerHeight: destinationHeaderHeight
@@ -316,6 +355,11 @@ private struct RoutesSection: View {
                             )
                         }
                     }
+                    .background(GeometryReader {
+                        Color.clear.preference(key: RoutesContentHeightKey.self, value: $0.size.height)
+                    })
+                    // Alternatives come and go as the split or the setting changes.
+                    .animation(.easeInOut(duration: 0.3), value: count)
                 }
             }
             .sheet(item: $detailsTrip) { selection in
@@ -360,6 +404,7 @@ private struct DestinationRoutesCard: View {
                         TripOptionRow(trip: trip, isFirst: index == 0)
                             .contentShape(Rectangle())
                             .onTapGesture { onTripTap(trip) }
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
                 .padding(.vertical, 8)
@@ -452,7 +497,9 @@ private struct NearbyStopSection: View {
                         onSelect: { viewModel.selectStop(stopId: $0) },
                         onFollowNearest: { viewModel.followNearest() }
                     )
-                )
+                ),
+                // Asks for enough departures to fill the panel, as on the wall board.
+                onRowCapacity: { viewModel.setPanelRowCapacity(stopId: stop.id, rows: Int32($0)) }
             )
         } else {
             Group {
