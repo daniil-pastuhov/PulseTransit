@@ -92,6 +92,15 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
+    fun `the intro is not pending until set and the flag persists`() {
+        assertEquals(false, repo.isIntroPending())
+        repo.setIntroPending(true)
+        assertTrue(SettingsRepositoryImpl(store).isIntroPending())
+        repo.setIntroPending(false)
+        assertEquals(false, SettingsRepositoryImpl(store).isIntroPending())
+    }
+
+    @Test
     fun `an install from before modes with stops set up is a board`() {
         repo.addDestinationStation(StopPlace(id = "NSR:StopPlace:1", name = "Oslo S"))
 

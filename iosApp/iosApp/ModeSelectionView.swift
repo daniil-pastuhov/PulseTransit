@@ -1,13 +1,16 @@
 import Shared
 import SwiftUI
 
-/// Opens the app: the first-launch choice of mode until one is made, then the board.
+/// Opens the app: the first-launch choice of mode until one is made, then the intro to it, then
+/// the board.
 struct RootView: View {
     @StateObject private var model = ModeSelectionModel()
 
     var body: some View {
         if model.state.mode == nil {
             ModeSelectionView(onChoose: { model.viewModel.choose(mode: $0) })
+        } else if model.state.showsIntro {
+            IntroView(pages: model.state.intro, onFinish: { model.viewModel.finishIntro() })
         } else {
             StopBoardView()
         }

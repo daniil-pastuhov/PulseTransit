@@ -235,6 +235,25 @@
     <string name="mode_board">Wall board</string>
     <string name="mode_board_description">An always-on display for the stops you choose, with burn-in protection and screen dimming.</string>
     <string name="settings_mode">Mode</string>
+    <!-- Intro after choosing a mode -->
+    <string name="intro_skip">Skip</string>
+    <string name="intro_next">Next</string>
+    <string name="intro_done">Get started</string>
+    <string name="intro_step">Step %1$d of %2$d</string>
+    <string name="intro_nearest_stop_title">Departures from where you are</string>
+    <string name="intro_nearest_stop_body">The nearest stop’s departures show on their own and follow you as you move. Tap the stop’s name to pick another one nearby.</string>
+    <string name="intro_routes_title">Routes from right here</string>
+    <string name="intro_routes_body">Add the places you often go to in Settings, and each gets its next routes from where you stand. For a one-off trip, tap the search button.</string>
+    <string name="intro_resize_title">Make room</string>
+    <string name="intro_resize_body">Drag the bar between routes and departures to give either one more space.</string>
+    <string name="intro_choose_stops_title">Choose your stops</string>
+    <string name="intro_choose_stops_body">Open Settings to add up to 6 stops, and pick which directions of each to show. When they don’t all fit, the board takes turns showing them.</string>
+    <string name="intro_fastest_routes_title">Fastest routes</string>
+    <string name="intro_fastest_routes_body">Add up to 5 destinations in Settings to see the fastest way there from the board’s location, and choose when each one is shown, like weekday mornings.</string>
+    <string name="intro_details_title">Tap for details</string>
+    <string name="intro_details_body">Tap a departure to see its stops and later times, or to hide a line you never take. Tap a route to see every step and get alerts along the way.</string>
+    <string name="intro_screen_care_title">Made to stay on</string>
+    <string name="intro_screen_care_body">Settings has burn-in protection, dimming when no one is around, waking by camera motion and a theme that follows the light in the room.</string>
     <!-- On the spot -->
     <string name="locating_precise">Finding your location…</string>
     <string name="locating_approximate">Finding your approximate location…</string>

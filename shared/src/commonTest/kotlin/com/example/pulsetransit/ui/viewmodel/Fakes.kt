@@ -248,6 +248,14 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun getAppModeFlow(): Flow<AppMode?> = appModeFlow
 
+    var pendingIntro = false
+
+    override fun isIntroPending() = pendingIntro
+
+    override fun setIntroPending(pending: Boolean) {
+        pendingIntro = pending
+    }
+
     override fun getTripOptionsCount() = tripOptions
 
     override fun setTripOptionsCount(count: Int) {
