@@ -386,4 +386,15 @@
     <string name="widget_choose_stop">Stop to show</string>
     <string name="widget_choose_destination">Destination to show</string>
     <string name="widget_choose_none">Nothing saved yet. Add some in PulseTransit, then come back.</string>
+    <!-- Data sources (Settings) -->
+    <string name="data_sources_title">Data sources</string>
+    <string name="data_sources_row">Transport companies</string>
+    <string name="data_sources_row_hint">Which companies’ departures and routes PulseTransit can show</string>
+    <string name="data_sources_intro">Departures and routes come from Entur, the national registry of public transport in Norway. These companies share their timetables with it. If a company isn’t listed, PulseTransit can’t show its departures.</string>
+    <string name="data_sources_search">Search companies</string>
+    <string name="data_sources_count">%1$d companies</string>
+    <string name="data_sources_failed">Couldn’t load the list from Entur.</string>
+    <string name="data_sources_no_match">No company matches “%1$s”. Companies that aren’t in Entur aren’t shown in PulseTransit.</string>
+    <string name="data_sources_check">To check a particular trip, search for it at entur.no.</string>
+    <string name="data_sources_weather">Weather comes from MET Norway (yr.no).</string>
 </resources>

@@ -1,5 +1,7 @@
 package com.example.pulsetransit.di
 
+import com.example.pulsetransit.data.DataSourceRepository
+import com.example.pulsetransit.data.DataSourceRepositoryImpl
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.EnturRepositoryImpl
 import com.example.pulsetransit.data.RouteOptions
@@ -15,6 +17,7 @@ import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTracker
 import com.example.pulsetransit.data.widget.BoardWidgetSource
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
+import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -54,6 +57,7 @@ val sharedModule =
         single<EnturRepository> {
             EnturRepositoryImpl(client = get(), departureCache = get(), tripCache = get())
         }
+        single<DataSourceRepository> { DataSourceRepositoryImpl(client = get()) }
         single<WeatherRepository> { WeatherRepositoryImpl(client = get(), cache = get()) }
         single { BoardWidgetSource(enturRepository = get(), weatherRepository = get(), settingsRepository = get()) }
         single<JourneyStore> { JourneyStoreImpl(prefs = get()) }
@@ -90,6 +94,7 @@ val sharedModule =
             )
         }
         viewModel { ModeSelectionViewModel(settingsRepository = get()) }
+        viewModel { DataSourcesViewModel(repository = get(), settingsRepository = get()) }
         viewModel { JourneyAlertsViewModel(store = get(), permissions = get(), launcher = get(), openRequests = get()) }
         viewModel {
             AppUpdateViewModel(checker = get(), settingsRepository = get(), connectivityMonitor = get())

@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.pulsetransit.ui.screens.DataSourcesScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.ModeSelectionScreen
@@ -63,12 +64,19 @@ fun MainNavigation() {
                         onBack = { backStack.removeLastOrNull() },
                         onOpenRouteModes = { backStack.add(RouteModes) },
                         onOpenJourneyAlerts = { backStack.add(JourneyAlerts) },
+                        onOpenDataSources = { backStack.add(DataSources) },
                     )
                 }
                 entry<RouteModes> {
                     // Settings re-reads everything when it is shown again, so its summary of these
                     // picks the change up whether or not this is the same ViewModel instance.
                     RouteModesScreen(
+                        viewModel = koinViewModel(),
+                        onBack = { backStack.removeLastOrNull() },
+                    )
+                }
+                entry<DataSources> {
+                    DataSourcesScreen(
                         viewModel = koinViewModel(),
                         onBack = { backStack.removeLastOrNull() },
                     )

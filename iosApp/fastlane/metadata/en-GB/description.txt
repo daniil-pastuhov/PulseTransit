@@ -28,4 +28,4 @@ WALL BOARD
 WEATHER
 • Current weather and forecast for your location, from MET Norway. Can be turned off
 
-Departure data from Entur. Weather data from MET Norway (yr.no).
+Departure data from Entur, the national registry of public transport in Norway: every company that shares its timetables with Entur is covered, and Settings lists them all, so you can check the ones you travel with. Weather data from MET Norway (yr.no).

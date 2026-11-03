@@ -385,4 +385,15 @@
     <string name="widget_choose_stop">Holdeplass som vises</string>
     <string name="widget_choose_destination">Destinasjon som vises</string>
     <string name="widget_choose_none">Ingenting er lagret ennå. Legg til i PulseTransit og kom tilbake.</string>
+    <!-- Datakilder (Innstillinger) -->
+    <string name="data_sources_title">Datakilder</string>
+    <string name="data_sources_row">Transportselskaper</string>
+    <string name="data_sources_row_hint">Hvilke selskapers avganger og reiser PulseTransit kan vise</string>
+    <string name="data_sources_intro">Avganger og reiser kommer fra Entur, det nasjonale registeret for kollektivtrafikk i Norge. Disse selskapene deler rutetidene sine med Entur. Står ikke et selskap på lista, kan ikke PulseTransit vise avgangene deres.</string>
+    <string name="data_sources_search">Søk etter selskap</string>
+    <string name="data_sources_count">%1$d selskaper</string>
+    <string name="data_sources_failed">Kunne ikke hente lista fra Entur.</string>
+    <string name="data_sources_no_match">Ingen selskaper passer til «%1$s». Selskaper som ikke er i Entur, vises ikke i PulseTransit.</string>
+    <string name="data_sources_check">Vil du sjekke en bestemt reise, kan du søke på entur.no.</string>
+    <string name="data_sources_weather">Været kommer fra Meteorologisk institutt (yr.no).</string>
 </resources>

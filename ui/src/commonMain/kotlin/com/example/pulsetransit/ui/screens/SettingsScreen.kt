@@ -103,7 +103,7 @@ import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
 
 /** The single-column layout's widest, so a tablet's form rows do not stretch across the screen. */
-private val SINGLE_COLUMN_MAX_WIDTH = 640.dp
+internal val SINGLE_COLUMN_MAX_WIDTH = 640.dp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -112,6 +112,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     onOpenRouteModes: () -> Unit,
     onOpenJourneyAlerts: () -> Unit,
+    onOpenDataSources: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -801,6 +802,30 @@ fun SettingsScreen(
                                 Text(stringResource(Res.string.save_coords))
                             }
                         }
+                    }
+                }
+
+                // Section: Data sources, the companies whose timetables reach Entur, on a screen of
+                // their own; it answers "is the bus I take in here?".
+                SettingsCard(title = stringResource(Res.string.data_sources_title)) {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(role = Role.Button, onClick = onOpenDataSources)
+                                .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(Res.string.data_sources_row), style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                stringResource(Res.string.data_sources_row_hint),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
                     }
                 }
             }

@@ -37,6 +37,9 @@ struct SettingsView: View {
                 }
                 if isBoard {
                     LocationSection(state: state, viewModel: viewModel)
+                }
+                DataSourcesSection()
+                if isBoard {
                     AddStopsSection(state: state, viewModel: viewModel)
                     FavoritesSection(state: state, viewModel: viewModel)
                 }
@@ -83,6 +86,24 @@ private struct ModeSection: View {
 
 /// Journey alerts in Settings: how a followed journey is tracked and how many of its alerts are on,
 /// with the choices themselves on a screen of their own.
+/// The companies whose timetables reach Entur, on a screen of their own; it answers "is the bus
+/// I take in here?". As on Android, it comes after the settings and before the stop lists.
+private struct DataSourcesSection: View {
+    var body: some View {
+        Section(L("data_sources_title")) {
+            NavigationLink(destination: DataSourcesView()) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("data_sources_row"))
+                    Text(L("data_sources_row_hint"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .accessibilityIdentifier("settings.dataSources")
+        }
+    }
+}
+
 private struct JourneyAlertsSection: View {
     @ObservedObject var model: SettingsModel
 

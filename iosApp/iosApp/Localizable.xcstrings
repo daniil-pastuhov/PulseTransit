@@ -511,6 +511,176 @@
         }
       }
     },
+    "data_sources_check": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To check a particular trip, search for it at entur.no."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vil du sjekke en bestemt reise, kan du søke på entur.no."
+          }
+        }
+      }
+    },
+    "data_sources_count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld companies"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld selskaper"
+          }
+        }
+      }
+    },
+    "data_sources_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t load the list from Entur."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunne ikke hente lista fra Entur."
+          }
+        }
+      }
+    },
+    "data_sources_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departures and routes come from Entur, the national registry of public transport in Norway. These companies share their timetables with it. If a company isn’t listed, PulseTransit can’t show its departures."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avganger og reiser kommer fra Entur, det nasjonale registeret for kollektivtrafikk i Norge. Disse selskapene deler rutetidene sine med Entur. Står ikke et selskap på lista, kan ikke PulseTransit vise avgangene deres."
+          }
+        }
+      }
+    },
+    "data_sources_no_match": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No company matches “%1$@”. Companies that aren’t in Entur aren’t shown in PulseTransit."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen selskaper passer til «%1$@». Selskaper som ikke er i Entur, vises ikke i PulseTransit."
+          }
+        }
+      }
+    },
+    "data_sources_row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transport companies"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transportselskaper"
+          }
+        }
+      }
+    },
+    "data_sources_row_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which companies’ departures and routes PulseTransit can show"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvilke selskapers avganger og reiser PulseTransit kan vise"
+          }
+        }
+      }
+    },
+    "data_sources_search": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search companies"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Søk etter selskap"
+          }
+        }
+      }
+    },
+    "data_sources_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data sources"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datakilder"
+          }
+        }
+      }
+    },
+    "data_sources_weather": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weather comes from MET Norway (yr.no)."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Været kommer fra Meteorologisk institutt (yr.no)."
+          }
+        }
+      }
+    },
     "day_night_mode": {
       "extractionState": "manual",
       "localizations": {
