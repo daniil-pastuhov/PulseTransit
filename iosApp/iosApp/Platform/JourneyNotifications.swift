@@ -224,9 +224,8 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
             case Action.switchRoute:
                 PulseTransitIos.shared.switchToFasterRoute()
             case Action.navigate:
-                if let latitude = info["latitude"] as? Double, let longitude = info["longitude"] as? Double,
-                   let url = URL(string: "https://maps.apple.com/?daddr=\(latitude),\(longitude)&dirflg=w") {
-                    UIApplication.shared.open(url)
+                if let latitude = info["latitude"] as? Double, let longitude = info["longitude"] as? Double {
+                    WalkingDirections.open(latitude: latitude, longitude: longitude)
                 }
             case UNNotificationDismissActionIdentifier:
                 break

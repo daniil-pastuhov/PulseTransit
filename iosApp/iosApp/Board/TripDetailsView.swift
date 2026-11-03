@@ -14,7 +14,7 @@ struct TripSelection: Identifiable {
 /// distance, and waits between rides are shown. The stops each ride passes are fetched with
 /// `loadLegStops` while the sheet is open, and listed on request. Under the header is the journey
 /// alerts button, and the rationale it opens. A walk to the first stop offers walking directions to
-/// it in Maps. As on Android.
+/// it in the map app. As on Android.
 struct TripDetailsView: View {
     let trip: TripInfo
     let showDelays: Bool
@@ -102,14 +102,12 @@ struct TripDetailsView: View {
         trip.legs.indices.filter { trip.legs[$0].isShown }
     }
 
-    /// Opens Maps with walking directions to the first stop, when the leg at `index` walks there.
+    /// Opens walking directions to the first stop in the map app, when the leg at `index` walks there.
     private func showOnMap(forLeg index: Int) -> (() -> Void)? {
-        guard let target = walkToStop, Int(target.legIndex) == index,
-              let url = URL(string: "https://maps.apple.com/?daddr=\(target.latitude),\(target.longitude)&dirflg=w")
-        else { return nil }
+        guard let target = walkToStop, Int(target.legIndex) == index else { return nil }
         return {
             interactions += 1
-            UIApplication.shared.open(url)
+            WalkingDirections.open(latitude: target.latitude, longitude: target.longitude)
         }
     }
 
@@ -185,7 +183,7 @@ private struct TripHeader: View {
     }
 }
 
-/// A walk's time, distance and end; with `showOnMap`, a button that opens the walk in Maps.
+/// A walk's time, distance and end; with `showOnMap`, a button that opens the walk in the map app.
 private struct WalkRow: View {
     let leg: TripLeg
     let endName: String?
