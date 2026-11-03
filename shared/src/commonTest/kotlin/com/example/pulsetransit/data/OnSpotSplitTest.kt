@@ -60,7 +60,13 @@ class OnSpotSplitTest {
         )
         assertEquals(
             56f,
-            OnSpotSplit.fittedRoutesSize(OnSpotSplit.ROUTES_COLLAPSED, totalSize = 1000f, barSize = 56f, minSize = 120f, contentSize = 300f),
+            OnSpotSplit.fittedRoutesSize(
+                OnSpotSplit.ROUTES_COLLAPSED,
+                totalSize = 1000f,
+                barSize = 56f,
+                minSize = 120f,
+                contentSize = 300f,
+            ),
         )
     }
 

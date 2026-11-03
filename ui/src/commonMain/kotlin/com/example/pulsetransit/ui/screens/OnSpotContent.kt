@@ -144,6 +144,7 @@ private fun LocatedContent(
         val min = OnSpotSplit.minSectionSize(total, (if (isLandscape) SPLIT_MIN_SECTION_WIDTH else SPLIT_MIN_SECTION_SIZE).value)
         // How tall the routes' cards are, measured; null while they show something else.
         var routesContentHeight by remember { mutableStateOf<Float?>(null) }
+
         // The routes get no more than their cards need, the stop taking the rest.
         fun fitted(split: Float) =
             OnSpotSplit.fittedRoutesSize(
