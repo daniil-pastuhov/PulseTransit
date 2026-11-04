@@ -403,7 +403,7 @@ private struct EndpointRow: View {
         HStack(spacing: 8) {
             Text(time.map { clockText($0, nowMillis: nowMillis) } ?? "--:--")
                 .monospacedDigit()
-                .frame(width: 52, alignment: .leading)
+                .reservingWidth(of: widestClockText)
             Text(name ?? "").lineLimit(1)
             if let delayFrom {
                 Text(clockText(delayFrom, nowMillis: nowMillis))

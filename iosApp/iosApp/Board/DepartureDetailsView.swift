@@ -257,7 +257,9 @@ struct RouteStopRow: View {
                 .monospacedDigit()
                 .strikethrough(stop.isCancelled)
                 .foregroundColor(Palette.textSecondary)
-                .frame(width: 52, alignment: .leading)
+                .reservingWidth(of: widestClockText)
+                // Measured in bold on every row, so the rail stays straight past the regular ones.
+                .font(.subheadline.bold())
             // The timeline: a rail through every stop, with a larger dot at both ends.
             ZStack {
                 VStack(spacing: 0) {
@@ -288,6 +290,23 @@ func clockText(_ time: String, nowMillis: Int64) -> String {
     guard let clock = DepartureCountdownKt.departureClock(time: time, nowMillis: nowMillis) else { return "?" }
     let text = clockFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(clock.epochMillis) / 1000))
     return clock.dayOffset > 0 ? "\(text)⁺\(clock.dayOffset)" : text
+}
+
+/// The widest `clockText`, for the columns of times that line up down a list.
+let widestClockText = "00:00⁺1"
+
+extension View {
+    /// Keeps this view on one line in a column as wide as `widest`, or wider if it needs to be.
+    /// The column is measured in the font set on the result, so set the font after this call: a
+    /// width in points fits one text size only, and at a larger one "23:33" broke into "23:3" and
+    /// "3", or was cut to "23:…".
+    func reservingWidth(of widest: String, alignment: Alignment = .leading) -> some View {
+        ZStack(alignment: alignment) {
+            Text(widest).monospacedDigit().hidden()
+            lineLimit(1)
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
 }
 
 /// 24-hour, like the board, whatever the locale's default.

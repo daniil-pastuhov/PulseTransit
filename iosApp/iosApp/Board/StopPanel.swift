@@ -230,11 +230,11 @@ private enum RowLayout {
     case wide(showPlatform: Bool)
 }
 
-/// A wide row's fixed columns, so each lines up from row to row.
+/// A wide row's columns, so each lines up from row to row.
 private enum WideRow {
     static let platformWidth: CGFloat = 52
-    static let clockWidth: CGFloat = 56
-    static let delayWidth: CGFloat = 28
+    static let widestClock = "00:00"
+    static let widestDelay = "+00"
     static let primaryTimeWidth: CGFloat = 64
 }
 
@@ -283,10 +283,10 @@ private struct DepartureGroupRow: View {
                             let times = DepartureTimes(departures: visible, now: timeline.date)
                             let clock = DepartureTimes.clock(for: first.expectedTime)
                             Text(first.isCancelled || times.primary.hasPrefix(clock) ? "" : clock)
-                                .font(.body.weight(.medium))
                                 .monospacedDigit()
+                                .reservingWidth(of: WideRow.widestClock, alignment: .trailing)
+                                .font(.body.weight(.medium))
                                 .foregroundColor(Palette.textSecondary)
-                                .frame(width: WideRow.clockWidth, alignment: .trailing)
                         }
                     }
                     let delay = !first.isCancelled && showDelays && first.delayMinutes > 0 ? "+\(first.delayMinutes)" : nil
@@ -294,9 +294,9 @@ private struct DepartureGroupRow: View {
                         // A column of its own width, empty without a delay, so a delayed row's
                         // clock and platform stay in line with the others.
                         Text(delay ?? "")
+                            .reservingWidth(of: WideRow.widestDelay)
                             .font(.caption.bold())
                             .foregroundColor(Palette.error)
-                            .frame(width: WideRow.delayWidth, alignment: .leading)
                     } else if let delay {
                         Text(delay)
                             .font(.caption.bold())
