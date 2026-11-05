@@ -1,0 +1,2 @@
+• Route results no longer show a walk all the way when a ride gets you there sooner. The walk stays when nothing beats it, like for short trips or at night.
+• The board and widgets now show the ride instead of just the walk.
