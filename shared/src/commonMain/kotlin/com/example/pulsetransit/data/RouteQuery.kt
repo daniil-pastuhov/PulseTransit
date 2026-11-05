@@ -30,8 +30,8 @@ internal const val TRIP_OPTION_ARGUMENTS =
         "walkSpeed: \$walkSpeed filters: \$filters dateTime: \$dateTime arriveBy: \$arriveBy"
 
 /**
- * Fills the [TRIP_OPTION_VARIABLES] for [options], asking for [wanted] routes, or more when the
- * preset re-ranks them. [bannedLineIds] are the ids of the options' banned lines, by [LineIdLookup].
+ * Fills the [TRIP_OPTION_VARIABLES] for [options], asking for [wanted] routes and the walk Entur
+ * lists among them ([withoutBeatenWalks]), or more when the preset re-ranks them. [bannedLineIds] are the ids of the options' banned lines, by [LineIdLookup].
  */
 internal fun JsonObjectBuilder.putRouteOptions(
     options: RouteOptions,
@@ -39,7 +39,8 @@ internal fun JsonObjectBuilder.putRouteOptions(
     bannedLineIds: List<String>,
 ) {
     val reranked = options.preference != RoutePreference.FASTEST
-    put("count", if (reranked) maxOf(wanted, RouteOptions.RANKING_CANDIDATES) else wanted)
+    val routes = wanted + 1
+    put("count", if (reranked) maxOf(routes, RouteOptions.RANKING_CANDIDATES) else routes)
     when (options.preference) {
         RoutePreference.FASTEST -> Unit
         RoutePreference.FEWER_TRANSFERS -> put("transferPenalty", RouteOptions.FEWER_TRANSFERS_PENALTY)

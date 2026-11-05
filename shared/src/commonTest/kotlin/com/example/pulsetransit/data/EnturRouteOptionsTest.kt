@@ -41,7 +41,7 @@ class EnturRouteOptionsTest {
     private fun variables(body: String) = Json.parseToJsonElement(body).jsonObject["variables"]!!.jsonObject
 
     @Test
-    fun `default route options send only the route count`() =
+    fun `default route options send only the route count with room for the walk`() =
         runTest {
             val bodies = mutableListOf<String>()
             val engine =
@@ -58,7 +58,7 @@ class EnturRouteOptionsTest {
             repo.getFastestTrip(fromIds = listOf(stopId), to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen"))
 
             assertEquals(setOf("from", "to", "count"), variables(bodies.single()).keys)
-            assertEquals(1, variables(bodies.single())["count"]!!.jsonPrimitive.int)
+            assertEquals(2, variables(bodies.single())["count"]!!.jsonPrimitive.int)
         }
 
     private val fewerTransfersAvoiding31 =
@@ -288,6 +288,200 @@ class EnturRouteOptionsTest {
             assertEquals(listOf("3"), options2.data.map { it.lineName })
             val fastest = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = to, options = options)
             assertEquals("2", fastest.data?.lineName)
+        }
+
+    /** A route leaving and arriving these minutes from [now], on foot when [line] is null. */
+    private fun route(
+        now: Long,
+        startMinutes: Int,
+        endMinutes: Int,
+        line: String? = null,
+    ): String {
+        val foot = """{"mode":"foot","duration":300}"""
+        val legs = if (line == null) foot else """$foot,{"mode":"bus","duration":300,"line":{"publicCode":"$line"}}"""
+        return """{"expectedStartTime":"${isoOslo(now + startMinutes * minute)}",
+           "expectedEndTime":"${isoOslo(now + endMinutes * minute)}","duration":600,"legs":[$legs]}"""
+    }
+
+    private fun routes(vararg routes: String) = """{"data":{"trip":{"tripPatterns":[${routes.joinToString(",")}]}}}"""
+
+    private val majorstuen = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen")
+
+    @Test
+    fun `a walk that a ride beats is not offered`() =
+        runTest {
+            val now = nowMillis()
+            val body = routes(route(now, 0, 27), route(now, 7, 14, "5"), route(now, 10, 30, "23"))
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 1)
+
+            assertEquals(listOf("5"), trips.data.map { it.lineName })
+            assertEquals("5", repo.getFastestTrip(fromIds = listOf(stopId), to = majorstuen).data?.lineName)
+        }
+
+    @Test
+    fun `a walk stays when it is the only route`() =
+        runTest {
+            val body = routes(route(nowMillis(), 0, 27))
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 3)
+
+            assertEquals(listOf("?"), trips.data.map { it.lineName })
+        }
+
+    @Test
+    fun `a walk stays when it arrives no later than any ride`() =
+        runTest {
+            val now = nowMillis()
+            val body = routes(route(now, 0, 6), route(now, 2, 6, "5"), route(now, 8, 15, "23"))
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 3)
+
+            assertEquals(listOf("?", "5", "23"), trips.data.map { it.lineName })
+        }
+
+    @Test
+    fun `a walk with an unreadable arrival stays`() =
+        runTest {
+            val now = nowMillis()
+            val walk = """{"expectedStartTime":"${isoOslo(now)}","expectedEndTime":"later","duration":600,
+               "legs":[{"mode":"foot","duration":600}]}"""
+            val repo = EnturRepositoryImpl(client(jsonOk(routes(walk, route(now, 2, 6, "5")))), departureCache, tripCache)
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 2)
+
+            assertEquals(listOf("?", "5"), trips.data.map { it.lineName })
+        }
+
+    @Test
+    fun `to arrive by a time a walk gives way only to a ride leaving later`() =
+        runTest {
+            val now = nowMillis()
+            val options = RouteOptions(time = TripTime.ArriveBy(now + 40 * minute))
+
+            suspend fun lines(vararg routes: String) =
+                EnturRepositoryImpl(client(jsonOk(routes(*routes))), departureCache, tripCache)
+                    .getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 3, options = options)
+                    .data
+                    .map { it.lineName }
+
+            assertEquals(listOf("5"), lines(route(now, 10, 40), route(now, 15, 38, "5")))
+            assertEquals(listOf("?", "5"), lines(route(now, 10, 40), route(now, 5, 38, "5")))
+        }
+
+    @Test
+    fun `across origins the walk from one gives way to a ride from another`() =
+        runTest {
+            val now = nowMillis()
+            val engine =
+                MockEngine { request ->
+                    val from = variables((request.body as TextContent).text)["from"]?.jsonPrimitive?.content
+                    val body = if (from == "NSR:StopPlace:A") routes(route(now, 0, 27)) else routes(route(now, 7, 14, "5"))
+                    respond(body, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val trip = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = majorstuen)
+
+            assertEquals("5", trip.data?.lineName)
+        }
+
+    @Test
+    fun `a ride with an unreadable arrival does not beat a walk`() =
+        runTest {
+            val now = nowMillis()
+            val ride = """{"expectedStartTime":"${isoOslo(now + 2 * minute)}","expectedEndTime":"later","duration":600,
+               "legs":[{"mode":"bus","duration":600,"line":{"publicCode":"5"}}]}"""
+            val repo = EnturRepositoryImpl(client(jsonOk(routes(route(now, 0, 27), ride))), departureCache, tripCache)
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 2)
+
+            assertEquals(listOf("?", "5"), trips.data.map { it.lineName })
+        }
+
+    @Test
+    fun `a route without legs is not taken for a walk`() =
+        runTest {
+            val now = nowMillis()
+            val legless = """{"expectedStartTime":"${isoOslo(now)}","expectedEndTime":"${isoOslo(now + 27 * minute)}",
+               "duration":600,"legs":[]}"""
+            val repo = EnturRepositoryImpl(client(jsonOk(routes(legless, route(now, 7, 14, "5")))), departureCache, tripCache)
+
+            val trips = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 2)
+
+            assertEquals(listOf("?", "5"), trips.data.map { it.lineName })
+        }
+
+    @Test
+    fun `a re-ranked search for the most routes still leaves room for the walk`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val repo = EnturRepositoryImpl(client(routeOptionsEngine(bodies)), departureCache, tripCache)
+            val options = RouteOptions(preference = RoutePreference.FEWER_TRANSFERS)
+
+            repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = RouteOptions.RANKING_CANDIDATES, options = options)
+
+            assertEquals(RouteOptions.RANKING_CANDIDATES + 1, variables(bodies.single())["count"]!!.jsonPrimitive.int)
+        }
+
+    @Test
+    fun `from one origin a walk arriving with a ride stays the best route`() =
+        runTest {
+            val now = nowMillis()
+            val body = routes(route(now, 0, 6), route(now, 2, 6, "5"))
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+
+            assertEquals("?", repo.getFastestTrip(fromIds = listOf(stopId), to = majorstuen).data?.lineName)
+        }
+
+    @Test
+    fun `from one origin to arrive by a time a walk leaving last stays the best route`() =
+        runTest {
+            val now = nowMillis()
+            val body = routes(route(now, 10, 40), route(now, 5, 38, "5"))
+            val repo = EnturRepositoryImpl(client(jsonOk(body)), departureCache, tripCache)
+            val options = RouteOptions(time = TripTime.ArriveBy(now + 40 * minute))
+
+            val trip = repo.getFastestTrip(fromIds = listOf(stopId), to = majorstuen, options = options)
+
+            assertEquals("?", trip.data?.lineName)
+        }
+
+    /** Answers origin A with [fromA] and any other with [fromB]. */
+    private fun twoOrigins(
+        fromA: String,
+        fromB: String,
+    ) = MockEngine { request ->
+        val from = variables((request.body as TextContent).text)["from"]?.jsonPrimitive?.content
+        respond(routes(if (from == "NSR:StopPlace:A") fromA else fromB), HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+    }
+
+    @Test
+    fun `across origins a walk arriving before the ride from another stays`() =
+        runTest {
+            val now = nowMillis()
+            val engine = twoOrigins(fromA = route(now, 0, 14), fromB = route(now, 7, 20, "5"))
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val trip = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = majorstuen)
+
+            assertEquals("?", trip.data?.lineName)
+        }
+
+    @Test
+    fun `across origins to arrive by a time a walk leaving last stays`() =
+        runTest {
+            val now = nowMillis()
+            val engine = twoOrigins(fromA = route(now, 10, 40), fromB = route(now, 5, 38, "5"))
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+            val options = RouteOptions(time = TripTime.ArriveBy(now + 40 * minute))
+
+            val trip = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = majorstuen, options = options)
+
+            assertEquals("?", trip.data?.lineName)
         }
 
     @Test
