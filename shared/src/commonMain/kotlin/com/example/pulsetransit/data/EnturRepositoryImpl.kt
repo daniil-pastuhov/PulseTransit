@@ -734,6 +734,7 @@ class EnturRepositoryImpl(
                     .orEmpty()
                     .map(::parseTripPattern)
                     .notLeftBefore(now, options)
+                    .withoutBeatenWalks(options.time.isArriveBy)
                     .rankedBy(options.preference, options.time.isArriveBy)
                     .take(wanted)
             if (trips.isEmpty()) {
@@ -809,6 +810,7 @@ class EnturRepositoryImpl(
                         .orEmpty()
                         .map(::parseTripPattern)
                         .notLeftBefore(now, options)
+                        .withoutBeatenWalks(options.time.isArriveBy)
                         .rankedBy(options.preference, options.time.isArriveBy)
                         .firstOrNull() ?: continue
                 bestByOrigin += best
@@ -818,13 +820,15 @@ class EnturRepositoryImpl(
             }
         }
 
+        // One origin's walk may be its best, yet lose to the ride from another.
+        val candidates = bestByOrigin.withoutBeatenWalks(options.time.isArriveBy)
         val fastestTrip =
             when {
                 options.preference != RoutePreference.FASTEST ->
-                    bestByOrigin.rankedBy(options.preference, options.time.isArriveBy).firstOrNull()
+                    candidates.rankedBy(options.preference, options.time.isArriveBy).firstOrNull()
                 // To arrive by a time, the best route is the one that lets you leave latest.
-                options.time.isArriveBy -> bestByOrigin.maxByOrNull { it.expectedStartTime }
-                else -> bestByOrigin.minByOrNull { it.expectedStartTime }
+                options.time.isArriveBy -> candidates.maxByOrNull { it.expectedStartTime }
+                else -> candidates.minByOrNull { it.expectedStartTime }
             }
         if (fastestTrip == null) {
             // Only reach for the cache when the network is the reason we have nothing.

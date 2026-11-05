@@ -224,6 +224,37 @@ data class RouteOptions(
 }
 
 /**
+ * These routes without the walks all the way that a ride beats. Entur lists such a walk first,
+ * since it starts at once, however much later it arrives. A walk stays when no ride does better:
+ * then it is the answer, as for a short way or at night. Routes found to [arriveBy] a time all
+ * arrive about then, so there a ride beats the walk by leaving later.
+ */
+internal fun List<TripInfo>.withoutBeatenWalks(arriveBy: Boolean = false): List<TripInfo> {
+    val rides = filter { trip -> trip.legs.any { it.isTransit } }
+    return filterNot { trip ->
+        val walkOnly = trip.legs.isNotEmpty() && trip.legs.none { it.isTransit }
+        walkOnly &&
+            rides.any { ride ->
+                if (arriveBy) {
+                    isBefore(trip.expectedStartTime, ride.expectedStartTime)
+                } else {
+                    isBefore(ride.expectedEndTime, trip.expectedEndTime)
+                }
+            }
+    }
+}
+
+/** Whether [first] is before [second]; false when either cannot be read. */
+private fun isBefore(
+    first: String?,
+    second: String?,
+): Boolean {
+    val firstMillis = first?.let(::parseIsoToMillis) ?: return false
+    val secondMillis = second?.let(::parseIsoToMillis) ?: return false
+    return firstMillis < secondMillis
+}
+
+/**
  * These routes, best first for [preference]. [RoutePreference.FASTEST] keeps Entur's order; the
  * others sort by their own measure and then by arrival, keeping Entur's order for ties. Routes
  * found to [arriveBy] a time break ties by leaving latest instead, as Entur orders them.
