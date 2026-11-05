@@ -1,0 +1,2 @@
+• Reiseforslag viser ikke lenger gange hele veien når en tur med kollektivt er raskere fram. Gåturen blir stående når ingenting slår den, for eksempel på korte strekninger eller om natten.
+• Tavlen og widgetene viser nå kollektivreisen i stedet for bare gåturen.
