@@ -349,7 +349,8 @@ class EnturRepositoryImpl(
                         header(clientNameHeader, clientNameValue)
                         parameter("q", query)
                         // groupOfStopPlaces is left out: the trip planner can't route to one.
-                        parameter("layers", "stopPlace,address,poi,place")
+                        // street is its own layer: "address" alone finds no street by name in a query without a digit.
+                        parameter("layers", "stopPlace,address,street,poi,place")
                         parameter("limit", 15)
                         parameter("countries", NORWAY)
                         if (focusLat != null && focusLon != null) {
