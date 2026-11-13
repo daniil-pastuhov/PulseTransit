@@ -527,6 +527,14 @@ class FakeSettingsRepository : SettingsRepository {
         dynamicRefresh = enabled
     }
 
+    var recent = listOf<StopPlace>()
+
+    override fun getRecentDestinations() = recent
+
+    override fun addRecentDestination(place: StopPlace) {
+        recent = (listOf(place) + recent.filter { it.id != place.id }).take(SettingsRepository.MAX_RECENT_DESTINATIONS)
+    }
+
     override fun getDestinationStations() = destinations
 
     override fun addDestinationStation(stopPlace: StopPlace) {

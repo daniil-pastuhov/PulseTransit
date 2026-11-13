@@ -27,6 +27,7 @@ import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.directionSummary
 import com.example.pulsetransit.data.distanceMeters
+import com.example.pulsetransit.data.earliestArriving
 import com.example.pulsetransit.data.hasPassed
 import com.example.pulsetransit.data.isArrivedFrom
 import com.example.pulsetransit.data.legStops
@@ -86,6 +87,9 @@ class StopBoardViewModel(
         // While anything failed to load, try again this soon rather than waiting out the
         // (possibly stretched) normal interval, so a board recovers quickly once Entur answers.
         const val FAILURE_RETRY_SECONDS = 15
+
+        /** How far before an unmet "arrive by" the earliest-arrival search starts. */
+        const val EARLIEST_ARRIVAL_LOOKBACK_MINUTES = 90L
 
         /** Refresh intervals the data may age before the board says it is stale. */
         const val STALE_NOTICE_INTERVALS = 2
@@ -239,6 +243,13 @@ class StopBoardViewModel(
          * Automatic refreshes never set it: an unattended wall board shows no activity.
          */
         val isManualRefreshing: Boolean = false,
+        /** Places searched for in route search, newest first, offered before typing. */
+        val recentDestinations: List<StopPlace> = emptyList(),
+        /**
+         * For a destination searched with "arrive by" that no route can meet: the trip that arrives
+         * earliest after it, so route search still has an answer. By destination id.
+         */
+        val earliestArrivals: Map<String, TripInfo> = emptyMap(),
     ) {
         /**
          * Every destination routes are shown for: the temporary one first, then the saved ones
@@ -275,7 +286,8 @@ class StopBoardViewModel(
             get() = failedStopIds.isNotEmpty() || failedTripDestinationIds.isNotEmpty() || staleSinceMillis != null
     }
 
-    private val _uiState = MutableStateFlow(UiState())
+    // Recent places change only through route search here, so they are read once.
+    private val _uiState = MutableStateFlow(UiState(recentDestinations = settingsRepository.getRecentDestinations()))
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     /** Quays of favorites with picked directions, loaded once a session for their panel heads. */
@@ -1089,16 +1101,37 @@ class StopBoardViewModel(
             viewModelScope.launch {
                 for (destination in destinations) {
                     launch {
-                        val destinationOptions = if (destination.id == temporaryId) temporaryOptions else options
-                        val result = fetchTrips(destination, lat, lon, count, destinationOptions)
-                        val trips = result.data.map { it.copy(destinationName = destination.name) }
-                        ensureActive() // see fetchStopDepartures
-                        // A temporary destination may have been dismissed while its routes were on the way.
-                        if (_uiState.value.routeDestinations.none { it.id == destination.id }) return@launch
-                        showTrips(destination.id, trips, failed = result.failed, noRoute = trips.isEmpty() && !result.failed && hasOrigin)
+                        val isTemporary = destination.id == temporaryId
+                        loadTrips(destination, lat, lon, count, if (isTemporary) temporaryOptions else options, isTemporary, hasOrigin)
                     }
                 }
             }
+    }
+
+    /**
+     * Fetches and shows [destination]'s routes. A place searched for ([isTemporary]) gets
+     * alternatives to pick from, as on the spot; an "arrive by" no route meets looks for the
+     * earliest arrival instead.
+     */
+    private suspend fun loadTrips(
+        destination: StopPlace,
+        lat: Double?,
+        lon: Double?,
+        count: Int,
+        options: RouteOptions,
+        isTemporary: Boolean,
+        hasOrigin: Boolean,
+    ) {
+        val destinationCount = if (isTemporary) maxOf(count, SettingsRepository.MAX_TRIP_OPTIONS) else count
+        val result = fetchTrips(destination, lat, lon, destinationCount, options)
+        val trips = result.data.map { it.copy(destinationName = destination.name) }
+        currentCoroutineContext().ensureActive() // see fetchStopDepartures
+        // A temporary destination may have been dismissed while its routes were on the way.
+        if (_uiState.value.routeDestinations.none { it.id == destination.id }) return
+        val noRoute = trips.isEmpty() && !result.failed && hasOrigin
+        showTrips(destination.id, trips, failed = result.failed, noRoute = noRoute)
+        val arriveBy = options.time as? TripTime.ArriveBy
+        if (noRoute && arriveBy != null) findEarliestArrival(destination, lat, lon, arriveBy)
     }
 
     /**
@@ -1125,6 +1158,30 @@ class StopBoardViewModel(
         }
     }
 
+    /**
+     * Looks for the trip that arrives soonest after [arriveBy] could not be met: it searches
+     * departures from [EARLIEST_ARRIVAL_LOOKBACK_MINUTES] before that time and takes the earliest
+     * arrival. Nothing is shown when that fails too.
+     */
+    private suspend fun findEarliestArrival(
+        destination: StopPlace,
+        lat: Double?,
+        lon: Double?,
+        arriveBy: TripTime.ArriveBy,
+    ) {
+        val from = arriveBy.atMillis - EARLIEST_ARRIVAL_LOOKBACK_MINUTES * MILLIS_PER_MINUTE
+        val options = routeOptions().copy(time = TripTime.DepartAt(maxOf(from, clock.now().toEpochMilliseconds())))
+        val result = fetchTrips(destination, lat, lon, SettingsRepository.MAX_TRIP_OPTIONS, options)
+        // A newer search (another time, say) cancels this one; its answer must not land under it.
+        currentCoroutineContext().ensureActive()
+        val earliest = earliestArriving(result.data)?.copy(destinationName = destination.name) ?: return
+        val state = _uiState.value
+        val stillAsked = destination.id != state.temporaryDestination?.id || state.temporaryTripTime == arriveBy
+        if (stillAsked && state.noRouteDestinationIds.contains(destination.id)) {
+            _uiState.update { it.copy(earliestArrivals = it.earliestArrivals + (destination.id to earliest)) }
+        }
+    }
+
     /** Shows the routes found to [destinationId], or why there are none. */
     private fun showTrips(
         destinationId: String,
@@ -1144,6 +1201,7 @@ class StopBoardViewModel(
                             destinationId
                     },
                 noRouteDestinationIds = if (noRoute) it.noRouteDestinationIds + destinationId else it.noRouteDestinationIds - destinationId,
+                earliestArrivals = it.earliestArrivals - destinationId,
             )
         }
     }
@@ -1330,11 +1388,17 @@ class StopBoardViewModel(
     fun showTemporaryDestination(place: StopPlace) {
         forgetRouteSearch()
         val state = _uiState.value
-        if (place.id in state.activeDestinationIds && state.temporaryTripTime == TripTime.Now) return
+        if (place.id in state.activeDestinationIds && state.temporaryTripTime == TripTime.Now) {
+            // Already on the board, routed for now: route search shows the routes it has.
+            settingsRepository.addRecentDestination(place)
+            _uiState.update { it.copy(recentDestinations = settingsRepository.getRecentDestinations()) }
+            return
+        }
         val previous = state.temporaryDestination
         if (previous?.id == place.id) return
         if (previous != null) dropTrips(previous.id)
-        _uiState.update { it.copy(temporaryDestination = place) }
+        settingsRepository.addRecentDestination(place)
+        _uiState.update { it.copy(temporaryDestination = place, recentDestinations = settingsRepository.getRecentDestinations()) }
         refreshFastestTrip()
     }
 

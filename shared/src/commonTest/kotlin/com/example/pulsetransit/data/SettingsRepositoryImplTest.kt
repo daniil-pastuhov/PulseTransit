@@ -216,4 +216,32 @@ class SettingsRepositoryImplTest {
         repo.reorderDestinationStations(listOf(b.id, "NSR:StopPlace:gone"))
         assertEquals(listOf(b, c, a), repo.getDestinationStations())
     }
+
+    @Test
+    fun `recent destinations are kept newest first without repeats`() {
+        val (a, b) = listOf("A", "B").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+        repo.addRecentDestination(a)
+        repo.addRecentDestination(b)
+        repo.addRecentDestination(a)
+
+        assertEquals(listOf(a, b), SettingsRepositoryImpl(store).getRecentDestinations())
+    }
+
+    @Test
+    fun `only the latest recent destinations are kept`() {
+        val places = (1..SettingsRepository.MAX_RECENT_DESTINATIONS + 2).map { StopPlace(id = "NSR:StopPlace:$it", name = "$it") }
+        places.forEach(repo::addRecentDestination)
+
+        assertEquals(places.reversed().take(SettingsRepository.MAX_RECENT_DESTINATIONS), repo.getRecentDestinations())
+    }
+
+    @Test
+    fun `an unreadable recent list reads as empty and is replaced on the next search`() {
+        store.putString("recent_destinations", "not json")
+        assertEquals(emptyList(), repo.getRecentDestinations())
+
+        val a = StopPlace(id = "NSR:StopPlace:A", name = "A")
+        repo.addRecentDestination(a)
+        assertEquals(listOf(a), repo.getRecentDestinations())
+    }
 }

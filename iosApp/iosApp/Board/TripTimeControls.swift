@@ -27,8 +27,9 @@ func tripTimeLabel(_ time: TripTime) -> String {
     }
 }
 
-/// Leave now, depart at or arrive by a time of day, applied as it changes. A time earlier than
-/// now means tomorrow, which the line under the picker says. As Android's TripTimeDialog.
+/// Leave now, depart at or arrive by a time, on an explicit Today or Tomorrow, applied as it
+/// changes, with a line saying what will be searched for. Nothing rolls over by itself: a time
+/// already past today says so. As Android's TripTimeDialog.
 struct TripTimeControls: View {
     let onChange: (TripTime) -> Void
 
@@ -36,6 +37,7 @@ struct TripTimeControls: View {
 
     @State private var kind: Kind
     @State private var time: Date
+    @State private var tomorrow: Bool
     @State private var chosen: TripTime
 
     init(time initial: TripTime, onChange: @escaping (TripTime) -> Void) {
@@ -49,6 +51,7 @@ struct TripTimeControls: View {
         let start = tripTimeMillis(initial).map { Date(timeIntervalSince1970: Double($0) / 1000) }
             ?? Date(timeIntervalSince1970: (Date().timeIntervalSince1970 / 300).rounded(.up) * 300 + 15 * 60)
         _time = State(initialValue: start)
+        _tomorrow = State(initialValue: !Calendar.current.isDateInToday(start))
         _chosen = State(initialValue: initial)
     }
 
@@ -61,31 +64,51 @@ struct TripTimeControls: View {
             }
             .pickerStyle(.segmented)
             if kind != .now {
-                HStack {
-                    DatePicker(L("trip_time_title"), selection: $time, displayedComponents: .hourAndMinute)
-                        .labelsHidden()
-                    Spacer()
-                    // Says what will be searched for, so "tomorrow" is never a surprise.
-                    Text(tripTimeLabel(chosen))
-                        .font(.pulse(.subheadline))
-                        .foregroundColor(Palette.primary)
+                Picker(L("trip_time_title"), selection: $tomorrow) {
+                    Text(L("trip_time_today")).tag(false)
+                    Text(L("trip_time_tomorrow_day")).tag(true)
                 }
+                .pickerStyle(.segmented)
+                DatePicker(L("trip_time_title"), selection: $time, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
             }
+            // Says what will be searched for, so the day is never a surprise.
+            Text(help)
+                .font(.pulse(.subheadline))
+                .foregroundColor(passed ? Palette.error : Palette.textSecondary)
         }
         .padding(.vertical, 4)
         .onChange(of: kind) { _ in apply() }
         .onChange(of: time) { _ in apply() }
+        .onChange(of: tomorrow) { _ in apply() }
+    }
+
+    private var passed: Bool { chosen.hasPassed(nowMillis: nowMillis()) }
+
+    private var help: String {
+        if passed { return L("trip_time_passed") }
+        switch onEnum(of: chosen) {
+        case .now: return L("trip_time_help_now")
+        case let .departAt(departAt): return L("trip_time_help_depart", tripClockText(departAt.atMillis))
+        case let .arriveBy(arriveBy): return L("trip_time_help_arrive", tripClockText(arriveBy.atMillis))
+        }
     }
 
     private func apply() {
         let parts = Calendar.current.dateComponents([.hour, .minute], from: time)
-        let at = TripTimeKt.nextTimeOfDay(hour: Int32(parts.hour ?? 0), minute: Int32(parts.minute ?? 0), nowMillis: nowMillis())
+        let at = TripTimeKt.timeOnDay(
+            dayOffset: tomorrow ? 1 : 0,
+            hour: Int32(parts.hour ?? 0),
+            minute: Int32(parts.minute ?? 0),
+            nowMillis: nowMillis()
+        )
         switch kind {
         case .now: chosen = TripTimeNow.shared
         case .depart: chosen = TripTimeDepartAt(atMillis: at)
         case .arrive: chosen = TripTimeArriveBy(atMillis: at)
         }
-        onChange(chosen)
+        // A time already gone today searches nothing; it waits for a time still ahead.
+        if !passed { onChange(chosen) }
     }
 }
 

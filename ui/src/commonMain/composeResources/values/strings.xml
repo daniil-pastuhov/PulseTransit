@@ -465,4 +465,22 @@
     <string name="journey_time_only_title">Following live times only</string>
     <string name="journey_time_only_body">Location is off, so alerts can’t notice if you miss your ride. Turn it on for your next journey.</string>
     <string name="open_app_settings">Open settings</string>
+    <!-- Fjord route search (step 5) -->
+    <string name="route_from_board">From the board</string>
+    <string name="route_from_here">From where you are</string>
+    <string name="route_to_label">To</string>
+    <string name="route_saved_destinations">Saved destinations</string>
+    <string name="route_recent">Recent</string>
+    <string name="route_no_places_hint">Check the spelling, or try a street, a stop or a place nearby.</string>
+    <string name="route_no_route_body">Try a later time, or a place nearby.</string>
+    <string name="route_earliest_title">Earliest arrival</string>
+    <string name="route_earliest_body">The earliest you can arrive is %1$s, if you leave at %2$s.</string>
+    <string name="route_offline_body">Route search needs a connection. Your saved destinations keep showing on the board from the last update.</string>
+    <string name="route_saved">Saved</string>
+    <string name="trip_time_today">Today</string>
+    <string name="trip_time_tomorrow_day">Tomorrow</string>
+    <string name="trip_time_help_now">Routes leaving now, with live times.</string>
+    <string name="trip_time_help_depart">Routes leaving at %1$s or later.</string>
+    <string name="trip_time_help_arrive">The latest routes that still get you there by %1$s.</string>
+    <string name="trip_time_passed">That time has passed today.</string>
 </resources>

@@ -464,4 +464,22 @@
     <string name="journey_time_only_title">Følger bare sanntid</string>
     <string name="journey_time_only_body">Posisjon er av, så varslene kan ikke merke om du går glipp av turen. Slå den på før neste reise.</string>
     <string name="open_app_settings">Åpne innstillinger</string>
+    <!-- Fjord route search (step 5) -->
+    <string name="route_from_board">Fra tavla</string>
+    <string name="route_from_here">Fra der du er</string>
+    <string name="route_to_label">Til</string>
+    <string name="route_saved_destinations">Lagrede reisemål</string>
+    <string name="route_recent">Nylige</string>
+    <string name="route_no_places_hint">Sjekk stavemåten, eller prøv en gate, et stopp eller et sted i nærheten.</string>
+    <string name="route_no_route_body">Prøv et senere tidspunkt, eller et sted i nærheten.</string>
+    <string name="route_earliest_title">Tidligst fremme</string>
+    <string name="route_earliest_body">Du kan tidligst være fremme %1$s, hvis du drar %2$s.</string>
+    <string name="route_offline_body">Rutesøk trenger nett. De lagrede reisemålene dine vises fortsatt på tavla fra siste oppdatering.</string>
+    <string name="route_saved">Lagret</string>
+    <string name="trip_time_today">I dag</string>
+    <string name="trip_time_tomorrow_day">I morgen</string>
+    <string name="trip_time_help_now">Ruter som går nå, med sanntid.</string>
+    <string name="trip_time_help_depart">Ruter som går %1$s eller senere.</string>
+    <string name="trip_time_help_arrive">De seneste rutene som likevel er fremme innen %1$s.</string>
+    <string name="trip_time_passed">Det tidspunktet har passert i dag.</string>
 </resources>

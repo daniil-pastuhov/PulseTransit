@@ -4609,6 +4609,74 @@
         }
       }
     },
+    "route_earliest_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The earliest you can arrive is %1$@, if you leave at %2$@."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan tidligst være fremme %1$@, hvis du drar %2$@."
+          }
+        }
+      }
+    },
+    "route_earliest_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Earliest arrival"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tidligst fremme"
+          }
+        }
+      }
+    },
+    "route_from_board": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From the board"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fra tavla"
+          }
+        }
+      }
+    },
+    "route_from_here": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From where you are"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fra der du er"
+          }
+        }
+      }
+    },
     "route_group_boat": {
       "extractionState": "manual",
       "localizations": {
@@ -5034,6 +5102,57 @@
         }
       }
     },
+    "route_no_places_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the spelling, or try a street, a stop or a place nearby."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk stavemåten, eller prøv en gate, et stopp eller et sted i nærheten."
+          }
+        }
+      }
+    },
+    "route_no_route_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try a later time, or a place nearby."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv et senere tidspunkt, eller et sted i nærheten."
+          }
+        }
+      }
+    },
+    "route_offline_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route search needs a connection. Your saved destinations keep showing on the board from the last update."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rutesøk trenger nett. De lagrede reisemålene dine vises fortsatt på tavla fra siste oppdatering."
+          }
+        }
+      }
+    },
     "route_pref_fastest": {
       "extractionState": "manual",
       "localizations": {
@@ -5102,6 +5221,57 @@
         }
       }
     },
+    "route_recent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recent"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nylige"
+          }
+        }
+      }
+    },
+    "route_saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret"
+          }
+        }
+      }
+    },
+    "route_saved_destinations": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved destinations"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagrede reisemål"
+          }
+        }
+      }
+    },
     "route_settings_title": {
       "extractionState": "manual",
       "localizations": {
@@ -5132,6 +5302,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Til %1$@"
+          }
+        }
+      }
+    },
+    "route_to_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Til"
           }
         }
       }
@@ -6272,6 +6459,57 @@
         }
       }
     },
+    "trip_time_help_arrive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The latest routes that still get you there by %1$@."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De seneste rutene som likevel er fremme innen %1$@."
+          }
+        }
+      }
+    },
+    "trip_time_help_depart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes leaving at %1$@ or later."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruter som går %1$@ eller senere."
+          }
+        }
+      }
+    },
+    "trip_time_help_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes leaving now, with live times."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruter som går nå, med sanntid."
+          }
+        }
+      }
+    },
     "trip_time_leave_at": {
       "extractionState": "manual",
       "localizations": {
@@ -6306,6 +6544,23 @@
         }
       }
     },
+    "trip_time_passed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "That time has passed today."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det tidspunktet har passert i dag."
+          }
+        }
+      }
+    },
     "trip_time_title": {
       "extractionState": "manual",
       "localizations": {
@@ -6323,6 +6578,23 @@
         }
       }
     },
+    "trip_time_today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I dag"
+          }
+        }
+      }
+    },
     "trip_time_tomorrow": {
       "extractionState": "manual",
       "localizations": {
@@ -6336,6 +6608,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ i morgen"
+          }
+        }
+      }
+    },
+    "trip_time_tomorrow_day": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomorrow"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I morgen"
           }
         }
       }

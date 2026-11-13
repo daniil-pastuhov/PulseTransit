@@ -311,16 +311,18 @@ fun MainScreen(
 
                 if (showRouteSearch) {
                     RouteSearchSheet(
-                        query = uiState.routeSearchQuery,
-                        results = uiState.routeSearchResults,
-                        isSearching = uiState.isSearchingRoutePlaces,
-                        tripTime = uiState.temporaryTripTime,
+                        state = uiState,
+                        originLabel =
+                            stringResource(
+                                if (uiState.mode == AppMode.ON_SPOT) Res.string.route_from_here else Res.string.route_from_board,
+                            ),
                         onQueryChange = { viewModel.onRouteSearchQueryChanged(it) },
                         onTripTimeChange = { viewModel.setTripTime(it) },
-                        onPick = { place ->
-                            showRouteSearch = false
-                            viewModel.showTemporaryDestination(place)
-                        },
+                        onPick = { place -> viewModel.showTemporaryDestination(place) },
+                        onSave = { viewModel.saveTemporaryDestination() },
+                        onUndo = { viewModel.undo() },
+                        onRetry = { viewModel.refreshNow() },
+                        loadLegStops = viewModel::tripLegStops,
                         onDismiss = {
                             showRouteSearch = false
                             viewModel.clearRouteSearch()

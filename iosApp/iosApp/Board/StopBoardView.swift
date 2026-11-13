@@ -147,7 +147,7 @@ struct StopBoardView: View {
             // Its own anchor: two sheets on one view do not both present on iOS 15. Not on the
             // header, which is not there while it is in the side bar.
             .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
-                RouteSearchView(state: model.state, viewModel: viewModel)
+                RouteSearchView(state: model.state, viewModel: viewModel, journey: journeyModel)
             }
             .background(
                 Color.clear.sheet(item: $followedJourney) { selection in

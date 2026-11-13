@@ -87,3 +87,8 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
 - Step 4: iOS keeps the system sheet (an iPad form sheet) instead of a custom right-side sheet.
   "Open settings" on the time-only fallback note helps the next journey; a running one keeps its
   mode. The walk-only "faster than any ride" note waits for the planner query of step 5.
+- Step 5: route search names its origin "From the board" / "From where you are" rather than a
+  street address (no reverse geocoding call for a label). Closing the sheet keeps the searched
+  place on the board until it is dismissed or saved there, as before. "Arrive by" that can't be
+  met gets the earliest arrival in route search; the board's saved destinations always route for
+  now, so the board banner needs no such fallback.

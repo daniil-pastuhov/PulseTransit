@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,7 +20,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,8 +48,10 @@ import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.data.atMillis
 import com.example.pulsetransit.data.calendarDaysFrom
 import com.example.pulsetransit.data.clockTimeText
+import com.example.pulsetransit.data.hasPassed
 import com.example.pulsetransit.data.localTimeOfDay
 import com.example.pulsetransit.data.nextTimeOfDay
+import com.example.pulsetransit.data.timeOnDay
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -181,8 +183,9 @@ private const val MINUTES_PER_HOUR = 60
 private const val MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
 
 /**
- * Leave now, depart at or arrive by a time of day. A time earlier than now means tomorrow,
- * which the line under the picker says before it is confirmed.
+ * When to travel, as a sheet: leave now, depart at or arrive by a time, on an explicit Today or
+ * Tomorrow, with a line saying what will be searched for. Nothing rolls over by itself: a time
+ * already past today says so instead of quietly meaning tomorrow.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -200,20 +203,28 @@ fun TripTimeDialog(
             },
         )
     }
+    val nowMillis = remember { Clock.System.now().toEpochMilliseconds() }
     val start =
         remember {
             initial.atMillis?.let { localTimeOfDay(it) }?.let { it.hour * MINUTES_PER_HOUR + it.minute }
                 ?: run {
-                    val now = localTimeOfDay(Clock.System.now().toEpochMilliseconds())
+                    val now = localTimeOfDay(nowMillis)
                     val ahead = now.hour * MINUTES_PER_HOUR + now.minute + DEFAULT_LEAD_MINUTES
                     ((ahead + ROUND_TO_MINUTES - 1) / ROUND_TO_MINUTES * ROUND_TO_MINUTES) % MINUTES_PER_DAY
                 }
         }
+    // A time set before keeps its day; a fresh one starts on the day its time next comes round.
+    var tomorrow by rememberSaveable {
+        mutableStateOf(
+            initial.atMillis?.let { calendarDaysFrom(nowMillis, it) >= 1 }
+                ?: (calendarDaysFrom(nowMillis, nextTimeOfDay(start / MINUTES_PER_HOUR, start % MINUTES_PER_HOUR, nowMillis)) >= 1),
+        )
+    }
     val pickerState =
         rememberTimePickerState(initialHour = start / MINUTES_PER_HOUR, initialMinute = start % MINUTES_PER_HOUR, is24Hour = true)
 
     fun chosen(): TripTime {
-        val at = nextTimeOfDay(pickerState.hour, pickerState.minute, Clock.System.now().toEpochMilliseconds())
+        val at = timeOnDay(if (tomorrow) 1 else 0, pickerState.hour, pickerState.minute, Clock.System.now().toEpochMilliseconds())
         return when (kind) {
             TripTimeKind.NOW -> TripTime.Now
             TripTimeKind.DEPART -> TripTime.DepartAt(at)
@@ -221,58 +232,75 @@ fun TripTimeDialog(
         }
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(Res.string.trip_time_title)) },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                val kinds = TripTimeKind.entries
+    AdaptiveSheet(onDismiss = onDismiss) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(stringResource(Res.string.trip_time_title), style = MaterialTheme.typography.headlineSmall)
+            val kinds = TripTimeKind.entries
+            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                kinds.forEachIndexed { index, option ->
+                    SegmentedButton(
+                        selected = kind == option,
+                        onClick = { kind = option },
+                        shape = SegmentedButtonDefaults.itemShape(index, kinds.size),
+                        icon = {},
+                        label = {
+                            Text(
+                                stringResource(
+                                    when (option) {
+                                        TripTimeKind.NOW -> Res.string.trip_time_now
+                                        TripTimeKind.DEPART -> Res.string.trip_time_depart
+                                        TripTimeKind.ARRIVE -> Res.string.trip_time_arrive
+                                    },
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        },
+                    )
+                }
+            }
+            if (kind != TripTimeKind.NOW) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    kinds.forEachIndexed { index, option ->
+                    listOf(false, true).forEachIndexed { index, isTomorrow ->
                         SegmentedButton(
-                            selected = kind == option,
-                            onClick = { kind = option },
-                            shape = SegmentedButtonDefaults.itemShape(index, kinds.size),
+                            selected = tomorrow == isTomorrow,
+                            onClick = { tomorrow = isTomorrow },
+                            shape = SegmentedButtonDefaults.itemShape(index, 2),
                             icon = {},
                             label = {
-                                Text(
-                                    stringResource(
-                                        when (option) {
-                                            TripTimeKind.NOW -> Res.string.trip_time_now
-                                            TripTimeKind.DEPART -> Res.string.trip_time_depart
-                                            TripTimeKind.ARRIVE -> Res.string.trip_time_arrive
-                                        },
-                                    ),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
+                                Text(stringResource(if (isTomorrow) Res.string.trip_time_tomorrow_day else Res.string.trip_time_today))
                             },
                         )
                     }
                 }
-                if (kind != TripTimeKind.NOW) {
-                    TimePicker(state = pickerState)
-                    // Says what will be searched for, so "tomorrow" is never a surprise.
-                    Row {
-                        Text(
-                            text = tripTimeLabel(chosen()),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
+                TimeInput(state = pickerState, modifier = Modifier.align(Alignment.CenterHorizontally))
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(chosen()) }) { Text(stringResource(Res.string.trip_time_done)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
-        },
-    )
+            // Says what will be searched for, so the day is never a surprise.
+            val time = chosen()
+            val passed = time.hasPassed(Clock.System.now().toEpochMilliseconds())
+            Text(
+                text =
+                    when {
+                        passed -> stringResource(Res.string.trip_time_passed)
+                        time is TripTime.DepartAt -> stringResource(Res.string.trip_time_help_depart, tripClockText(time.atMillis))
+                        time is TripTime.ArriveBy -> stringResource(Res.string.trip_time_help_arrive, tripClockText(time.atMillis))
+                        else -> stringResource(Res.string.trip_time_help_now)
+                    },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (passed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
+                Button(onClick = { onConfirm(chosen()) }, enabled = !passed) { Text(stringResource(Res.string.trip_time_done)) }
+            }
+        }
+    }
 }

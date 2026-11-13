@@ -375,6 +375,20 @@ class SettingsRepositoryImpl(
         }
     }
 
+    override fun getRecentDestinations(): List<StopPlace> {
+        val jsonStr = prefs.getStringOrNull("recent_destinations") ?: return emptyList()
+        return try {
+            json.decodeFromString<List<StopPlace>>(jsonStr)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    override fun addRecentDestination(place: StopPlace) {
+        val recent = (listOf(place) + getRecentDestinations().filter { it.id != place.id }).take(SettingsRepository.MAX_RECENT_DESTINATIONS)
+        prefs.putString("recent_destinations", json.encodeToString(recent))
+    }
+
     override fun removeDestinationStation(stopId: String) {
         val current = getDestinationStations().filter { it.id != stopId }
         prefs.putString("destination_stations", json.encodeToString(current))
