@@ -45,9 +45,6 @@
     <string name="platform_label">Plattform %1$s</string>
     <string name="direction_id">Retning %1$s</string>
     <string name="delete">Slett</string>
-    <string name="last_updated">Sist oppdatert: %1$s</string>
-    <string name="no_stops_configured">Ingen stoppesteder er konfigurert.</string>
-    <string name="open_settings_to_add">Åpne innstillinger for å legge til stopp</string>
     <string name="no_departures">Ingen kommende avganger</string>
     <plurals name="no_departures_extended">
         <item quantity="one">Ingen avganger det neste %1$d døgnet</item>
@@ -132,7 +129,6 @@
     <string name="loading_fastest_route">Finner raskeste rute til %1$s…</string>
     <string name="fastest_route_to">Raskest til %1$s</string>
     <!-- %2$s er ankomsttiden, f.eks. "Raskest til Majorstuen 18:31" -->
-    <string name="fastest_route_to_arriving">Raskest til %1$s %2$s</string>
     <string name="fastest_route_info">Linje %1$s fra %2$s</string>
     <string name="leg_walk">%1$d min</string>
     <string name="leg_from">fra %1$s</string>
@@ -197,13 +193,9 @@
     <string name="sensitivity_high">Høy</string>
 
     <!-- Offline / cached data -->
-    <string name="error_no_internet">Ingen internettforbindelse</string>
-    <string name="error_entur_unreachable">Får ikke kontakt med Entur</string>
     <string name="error_retrying_automatically">Prøver igjen automatisk</string>
     <string name="retry">Prøv igjen</string>
     <string name="fastest_route_unavailable">Raskeste rute til %1$s er utilgjengelig</string>
-    <string name="offline_no_internet_stale_data">Ingen internett — dataene er %1$d min gamle</string>
-    <string name="offline_stale_data">Frakoblet — dataene er %1$d min gamle</string>
 
     <!-- Weather conditions (MET symbol codes) -->
     <string name="weather_clear">Klarvær</string>
@@ -222,7 +214,6 @@
     <string name="weather_heavy_snow">Kraftig snø</string>
     <string name="weather_and_thunder">%1$s og torden</string>
     <string name="weather_unknown">Ukjent</string>
-    <string name="weather_precipitation">%1$s mm nedbør</string>
 
     <!-- Attribution -->
     <string name="attribution_entur">Data fra Entur</string>
@@ -431,4 +422,30 @@
     <string name="trip_time_done">Ferdig</string>
     <string name="no_route_to">Fant ingen rute til %1$s</string>
     <string name="no_route_to_arriving">Ingen rute får deg til %1$s innen %2$s</string>
+    <!-- Fjord board (step 3) -->
+    <string name="route_leave">Gå</string>
+    <string name="stale_no_internet_title">Ingen internett</string>
+    <string name="stale_no_internet_body">Dataene som vises er %1$d min gamle. Oppdateres så snart du er på nett igjen.</string>
+    <string name="stale_entur_title">Får ikke kontakt med Entur</string>
+    <string name="stale_entur_body">Dataene som vises er %1$d min gamle. Prøver igjen automatisk.</string>
+    <string name="panel_failed_title">Kunne ikke laste avganger</string>
+    <string name="panel_failed_body">Prøver igjen automatisk.</string>
+    <string name="panel_offline_body">Avgangene vises så snart du er på nett.</string>
+    <string name="no_departures_body">Ingenting går de neste %1$d timene.</string>
+    <string name="board_empty_title">Velg stoppene dine</string>
+    <string name="board_empty_body">Legg til opptil 6 stopp og velg hvilke retninger som skal vises. Tavla holder avgangene oppdatert av seg selv.</string>
+    <string name="board_empty_action">Legg til stopp</string>
+    <string name="footer_updated">Oppdatert %1$s</string>
+    <string name="updating">Oppdaterer…</string>
+    <string name="line_hidden">Linje %1$s er skjult fra avgangene</string>
+    <string name="destination_saved">Lagret %1$s som reisemål</string>
+    <string name="undo">Angre</string>
+    <string name="directions_all">alle retninger</string>
+    <string name="directions_platforms">Plattform %1$s</string>
+    <string name="directions_some">%1$d av %2$d retninger</string>
+    <plurals name="directions_count">
+        <item quantity="one">%1$d retning</item>
+        <item quantity="other">%1$d retninger</item>
+    </plurals>
+    <string name="weather_now">Været nå: %1$s, %2$s</string>
 </resources>

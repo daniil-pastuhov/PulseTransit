@@ -138,28 +138,3 @@ struct TripTimeButton: View {
         }
     }
 }
-
-/// Says that Entur found no route to a destination, e.g. none arriving by the time asked for,
-/// rather than leaving a placeholder that never fills. As Android's FastestTripNone.
-struct FastestTripNone: View {
-    let destinationName: String
-    let time: TripTime
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .opacity(0.8)
-                .accessibilityHidden(true)
-            Text(
-                (time as? TripTimeArriveBy).map { L("no_route_to_arriving", destinationName, tripClockText($0.atMillis)) }
-                    ?? L("no_route_to", destinationName)
-            )
-            .font(.pulse(.subheadline, weight: .bold))
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .foregroundColor(Palette.textPrimary)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Palette.primary.opacity(0.18), ignoresSafeAreaEdges: .horizontal)
-    }
-}

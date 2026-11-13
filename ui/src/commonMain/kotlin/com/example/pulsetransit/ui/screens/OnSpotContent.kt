@@ -637,7 +637,6 @@ private fun NearbyStopSection(
         isLoadingMore = stop.id in uiState.loadingMoreStopIds,
         onFilterOut = viewModel::filterOutLine,
         onSearchFurtherAhead = { viewModel.searchFurtherAhead(stop.id) },
-        onRetry = viewModel::refreshData,
         onLoadMore = { viewModel.loadMoreDepartures(stop.id) },
         loadJourney = { departure -> viewModel.journeyStopsAhead(departure, stop.id) },
         // Asks for enough departures to fill the panel, as on the wall board.

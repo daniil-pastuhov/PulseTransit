@@ -239,6 +239,57 @@
         }
       }
     },
+    "board_empty_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add stops"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til stopp"
+          }
+        }
+      }
+    },
+    "board_empty_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add up to 6 stops and pick which directions to show. The board keeps their departures up to date on its own."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til opptil 6 stopp og velg hvilke retninger som skal vises. Tavla holder avgangene oppdatert av seg selv."
+          }
+        }
+      }
+    },
+    "board_empty_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose your stops"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg stoppene dine"
+          }
+        }
+      }
+    },
     "board_page_description": {
       "extractionState": "manual",
       "localizations": {
@@ -732,6 +783,23 @@
         }
       }
     },
+    "destination_saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved %1$@ to destinations"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret %1$@ som reisemål"
+          }
+        }
+      }
+    },
     "details_departures": {
       "extractionState": "manual",
       "localizations": {
@@ -1004,6 +1072,81 @@
         }
       }
     },
+    "directions_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "all directions"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "alle retninger"
+          }
+        }
+      }
+    },
+    "directions_count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld direction"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld directions"
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld retning"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld retninger"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "directions_platforms": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Platforms %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plattform %1$@"
+          }
+        }
+      }
+    },
     "directions_quays": {
       "extractionState": "manual",
       "localizations": {
@@ -1017,6 +1160,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retninger / plattformer:"
+          }
+        }
+      }
+    },
+    "directions_some": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %2$lld directions"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld av %2$lld retninger"
           }
         }
       }
@@ -1225,40 +1385,6 @@
         }
       }
     },
-    "error_entur_unreachable": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Can’t reach Entur"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Får ikke kontakt med Entur"
-          }
-        }
-      }
-    },
-    "error_no_internet": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No internet connection"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ingen internettforbindelse"
-          }
-        }
-      }
-    },
     "error_retrying_automatically": {
       "extractionState": "manual",
       "localizations": {
@@ -1323,23 +1449,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Raskest til %1$@"
-          }
-        }
-      }
-    },
-    "fastest_route_to_arriving": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fastest to %1$@ %2$@"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Raskest til %1$@ %2$@"
           }
         }
       }
@@ -1425,6 +1534,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skjules fra avgangene og unngås i rutesøk."
+          }
+        }
+      }
+    },
+    "footer_updated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updated %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdatert %1$@"
           }
         }
       }
@@ -2915,23 +3041,6 @@
         }
       }
     },
-    "last_updated": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Last updated: %1$@"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sist oppdatert: %1$@"
-          }
-        }
-      }
-    },
     "latitude_label": {
       "extractionState": "manual",
       "localizations": {
@@ -2996,6 +3105,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$lld min"
+          }
+        }
+      }
+    },
+    "line_hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Line %1$@ hidden from departures"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linje %1$@ er skjult fra avgangene"
           }
         }
       }
@@ -3643,6 +3769,23 @@
         }
       }
     },
+    "no_departures_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing leaves in the next %1$lld hours."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting går de neste %1$lld timene."
+          }
+        }
+      }
+    },
     "no_departures_extended": {
       "extractionState": "manual",
       "localizations": {
@@ -3769,23 +3912,6 @@
         }
       }
     },
-    "no_stops_configured": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No stops configured yet."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ingen stoppesteder er konfigurert."
-          }
-        }
-      }
-    },
     "no_stops_found": {
       "extractionState": "manual",
       "localizations": {
@@ -3850,40 +3976,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nå"
-          }
-        }
-      }
-    },
-    "offline_no_internet_stale_data": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No internet — shown data is %1$lld min old"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ingen internett — dataene er %1$lld min gamle"
-          }
-        }
-      }
-    },
-    "offline_stale_data": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Offline — shown data is %1$lld min old"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Frakoblet — dataene er %1$lld min gamle"
           }
         }
       }
@@ -3973,19 +4065,53 @@
         }
       }
     },
-    "open_settings_to_add": {
+    "panel_failed_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open Settings to Add Stops"
+            "value": "Retrying automatically."
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Åpne innstillinger for å legge til stopp"
+            "value": "Prøver igjen automatisk."
+          }
+        }
+      }
+    },
+    "panel_failed_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t load departures"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunne ikke laste avganger"
+          }
+        }
+      }
+    },
+    "panel_offline_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departures show as soon as you’re online."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avgangene vises så snart du er på nett."
           }
         }
       }
@@ -4309,6 +4435,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tog"
+          }
+        }
+      }
+    },
+    "route_leave": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leave"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gå"
           }
         }
       }
@@ -5350,6 +5493,74 @@
         }
       }
     },
+    "stale_entur_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shown data is %1$lld min old. Retrying automatically."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dataene som vises er %1$lld min gamle. Prøver igjen automatisk."
+          }
+        }
+      }
+    },
+    "stale_entur_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Can’t reach Entur"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Får ikke kontakt med Entur"
+          }
+        }
+      }
+    },
+    "stale_no_internet_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shown data is %1$lld min old. Updates as soon as you’re back online."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dataene som vises er %1$lld min gamle. Oppdateres så snart du er på nett igjen."
+          }
+        }
+      }
+    },
+    "stale_no_internet_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No internet"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen internett"
+          }
+        }
+      }
+    },
     "theme_auto": {
       "extractionState": "manual",
       "localizations": {
@@ -5891,6 +6102,23 @@
         }
       }
     },
+    "undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undo"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angre"
+          }
+        }
+      }
+    },
     "update_app": {
       "extractionState": "manual",
       "localizations": {
@@ -5921,6 +6149,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "En ny versjon av PulseTransit er tilgjengelig"
+          }
+        }
+      }
+    },
+    "updating": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updating…"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdaterer…"
           }
         }
       }
@@ -6197,6 +6442,23 @@
         }
       }
     },
+    "weather_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weather now: %1$@, %2$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Været nå: %1$@, %2$@"
+          }
+        }
+      }
+    },
     "weather_partly_cloudy": {
       "extractionState": "manual",
       "localizations": {
@@ -6210,23 +6472,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Delvis skyet"
-          }
-        }
-      }
-    },
-    "weather_precipitation": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ mm precipitation"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ mm nedbør"
           }
         }
       }

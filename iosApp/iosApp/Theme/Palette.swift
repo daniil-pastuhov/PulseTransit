@@ -41,7 +41,6 @@ enum Palette {
     static let onRoute = dynamic(FjordTokens.onRoute)
     static let routeAccent = dynamic(FjordTokens.routeAccent)
     static let onLine = dynamic(FjordTokens.onLineBus)
-    static let rain = Color(hex: 0x42A5F5)
 
     /// Line pill colour by Entur transport mode, tuned per theme so white text passes AA.
     static func transport(_ mode: String?) -> Color {
@@ -83,20 +82,6 @@ enum Palette {
         names.first { UIImage(systemName: $0) != nil } ?? names[names.count - 1]
     }
 
-    /// Temperature ramp: indigo when freezing through red when hot, as on Android.
-    static func temperature(_ celsius: Double) -> Color {
-        let stops: [(Double, UInt32)] = [
-            (-20, 0x5C6BC0), (-5, 0x42A5F5), (2, 0x26C6DA), (8, 0x9CCC65), (18, 0xFFA726), (28, 0xEF5350),
-        ]
-        guard let first = stops.first, let last = stops.last else { return .primary }
-        if celsius <= first.0 { return Color(hex: first.1) }
-        if celsius >= last.0 { return Color(hex: last.1) }
-        let upper = stops.firstIndex { celsius < $0.0 } ?? stops.count - 1
-        let (lowT, lowC) = stops[upper - 1]
-        let (highT, highC) = stops[upper]
-        return Color(hex: lowC).mix(with: Color(hex: highC), fraction: (celsius - lowT) / (highT - lowT))
-    }
-
     private static func dynamic(_ pair: (light: UInt32, dark: UInt32)) -> Color {
         Color(UIColor { traits in
             UIColor(hex: traits.userInterfaceStyle == .dark ? pair.dark : pair.light)
@@ -118,16 +103,6 @@ extension UIColor {
 extension Color {
     init(hex: UInt32) {
         self.init(UIColor(hex: hex))
-    }
-
-    /// Linear blend in RGB, like Compose's `lerp` for colours.
-    func mix(with other: Color, fraction: Double) -> Color {
-        var (r1, g1, b1, a1): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-        var (r2, g2, b2, a2): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-        UIColor(self).getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
-        UIColor(other).getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
-        let t = CGFloat(min(max(fraction, 0), 1))
-        return Color(red: r1 + (r2 - r1) * t, green: g1 + (g2 - g1) * t, blue: b1 + (b2 - b1) * t)
     }
 }
 

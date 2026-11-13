@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTheme
@@ -44,7 +45,8 @@ fun lineColor(
 
 /**
  * A line number on its mode's colour. Never truncated: a four-character line ("RE30", "FLY2") widens
- * the pill instead. The text is left to the row's accessibility label, which names the mode.
+ * the pill instead. [small] is the inline size used in route legs. The text is left to the row's
+ * accessibility label, which names the mode.
  */
 @Composable
 fun LinePill(
@@ -52,20 +54,21 @@ fun LinePill(
     mode: String?,
     modifier: Modifier = Modifier,
     cancelled: Boolean = false,
-    minWidth: Dp = FjordDimens.pillW,
+    small: Boolean = false,
+    minWidth: Dp = if (small) 0.dp else FjordDimens.pillW,
 ) {
     Box(
         modifier =
             modifier
-                .defaultMinSize(minWidth = minWidth)
+                .defaultMinSize(minWidth = minWidth, minHeight = if (small) SMALL_PILL_HEIGHT else PILL_HEIGHT)
                 .clip(RoundedCornerShape(FjordDimens.radiusSm))
                 .background(lineColor(mode, cancelled))
-                .padding(horizontal = 6.dp, vertical = 4.dp),
+                .padding(horizontal = if (small) 6.dp else 4.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text = line,
-            style = PulseTheme.type.pill,
+            style = if (small) PulseTheme.type.pill.copy(fontSize = SMALL_PILL_FONT) else PulseTheme.type.pill,
             color = PulseTheme.colors.lines.onLine,
             textDecoration = if (cancelled) TextDecoration.LineThrough else null,
             maxLines = 1,
@@ -73,6 +76,10 @@ fun LinePill(
         )
     }
 }
+
+private val PILL_HEIGHT = 28.dp
+private val SMALL_PILL_HEIGHT = 22.dp
+private val SMALL_PILL_FONT = 13.sp
 
 /** The mode's icon at text size, in the surrounding text colour; decorative. */
 @Composable

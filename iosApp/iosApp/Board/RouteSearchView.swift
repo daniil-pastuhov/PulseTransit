@@ -62,7 +62,7 @@ struct TemporaryRouteActions: View {
     let canSave: Bool
     let onSave: () -> Void
     let onDismiss: () -> Void
-    /// Beside a banner, which has its own background: fill the same colour at the banner's height.
+    /// Beside a route card: as tall as the card, so the buttons centre on it.
     var fillsBackground = false
 
     var body: some View {
@@ -86,6 +86,5 @@ struct TemporaryRouteActions: View {
         .foregroundColor(Palette.textPrimary)
         .padding(.trailing, 8)
         .frame(maxHeight: fillsBackground ? .infinity : nil)
-        .background(fillsBackground ? Palette.primary.opacity(0.18) : nil)
     }
 }

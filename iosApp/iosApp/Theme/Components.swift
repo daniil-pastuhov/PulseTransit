@@ -9,18 +9,19 @@ struct LinePill: View {
     let line: String
     let mode: String?
     var cancelled = false
-    var minWidth: CGFloat = FjordTokens.pillW
+    /// The inline size used in route legs.
+    var small = false
+    var minWidth: CGFloat?
 
     var body: some View {
         Text(line)
-            .font(.pulse(role: FjordTokens.typePill, relativeTo: .subheadline))
+            .font(small ? .pulse(size: 13, weight: .bold, relativeTo: .footnote) : .pulse(role: FjordTokens.typePill, relativeTo: .subheadline))
             .strikethrough(cancelled)
             .foregroundColor(Palette.onLine)
             .lineLimit(1)
             .fixedSize()
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .frame(minWidth: minWidth)
+            .padding(.horizontal, small ? 6 : 4)
+            .frame(minWidth: minWidth ?? (small ? 0 : FjordTokens.pillW), minHeight: small ? 22 : 28)
             .background(
                 RoundedRectangle(cornerRadius: FjordTokens.radiusSm)
                     .fill(cancelled ? Palette.outline : Palette.transport(mode))

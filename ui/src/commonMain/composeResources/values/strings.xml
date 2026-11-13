@@ -45,9 +45,6 @@
     <string name="platform_label">Platform %1$s</string>
     <string name="direction_id">Direction %1$s</string>
     <string name="delete">Delete</string>
-    <string name="last_updated">Last updated: %1$s</string>
-    <string name="no_stops_configured">No stops configured yet.</string>
-    <string name="open_settings_to_add">Open Settings to Add Stops</string>
     <string name="no_departures">No upcoming departures</string>
     <plurals name="no_departures_extended">
         <item quantity="one">No departures in the next %1$d day</item>
@@ -132,7 +129,6 @@
     <string name="loading_fastest_route">Finding fastest route to %1$s…</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
     <!-- %2$s is the arrival time, e.g. "Fastest to Majorstuen 18:31" -->
-    <string name="fastest_route_to_arriving">Fastest to %1$s %2$s</string>
     <string name="fastest_route_info">Line %1$s from %2$s</string>
     <string name="leg_walk">%1$d min</string>
     <string name="leg_from">from %1$s</string>
@@ -197,13 +193,9 @@
     <string name="sensitivity_high">High</string>
 
     <!-- Offline / cached data -->
-    <string name="error_no_internet">No internet connection</string>
-    <string name="error_entur_unreachable">Can’t reach Entur</string>
     <string name="error_retrying_automatically">Retrying automatically</string>
     <string name="retry">Retry</string>
     <string name="fastest_route_unavailable">Fastest route to %1$s unavailable</string>
-    <string name="offline_no_internet_stale_data">No internet — shown data is %1$d min old</string>
-    <string name="offline_stale_data">Offline — shown data is %1$d min old</string>
 
     <!-- Weather conditions (MET symbol codes) -->
     <string name="weather_clear">Clear</string>
@@ -222,7 +214,6 @@
     <string name="weather_heavy_snow">Heavy snow</string>
     <string name="weather_and_thunder">%1$s and thunder</string>
     <string name="weather_unknown">Unknown</string>
-    <string name="weather_precipitation">%1$s mm precipitation</string>
 
     <!-- Attribution -->
     <string name="attribution_entur">Data from Entur</string>
@@ -432,4 +423,30 @@
     <string name="trip_time_done">Done</string>
     <string name="no_route_to">No route to %1$s found</string>
     <string name="no_route_to_arriving">No route gets you to %1$s by %2$s</string>
+    <!-- Fjord board (step 3) -->
+    <string name="route_leave">Leave</string>
+    <string name="stale_no_internet_title">No internet</string>
+    <string name="stale_no_internet_body">Shown data is %1$d min old. Updates as soon as you’re back online.</string>
+    <string name="stale_entur_title">Can’t reach Entur</string>
+    <string name="stale_entur_body">Shown data is %1$d min old. Retrying automatically.</string>
+    <string name="panel_failed_title">Couldn’t load departures</string>
+    <string name="panel_failed_body">Retrying automatically.</string>
+    <string name="panel_offline_body">Departures show as soon as you’re online.</string>
+    <string name="no_departures_body">Nothing leaves in the next %1$d hours.</string>
+    <string name="board_empty_title">Choose your stops</string>
+    <string name="board_empty_body">Add up to 6 stops and pick which directions to show. The board keeps their departures up to date on its own.</string>
+    <string name="board_empty_action">Add stops</string>
+    <string name="footer_updated">Updated %1$s</string>
+    <string name="updating">Updating…</string>
+    <string name="line_hidden">Line %1$s hidden from departures</string>
+    <string name="destination_saved">Saved %1$s to destinations</string>
+    <string name="undo">Undo</string>
+    <string name="directions_all">all directions</string>
+    <string name="directions_platforms">Platforms %1$s</string>
+    <string name="directions_some">%1$d of %2$d directions</string>
+    <plurals name="directions_count">
+        <item quantity="one">%1$d direction</item>
+        <item quantity="other">%1$d directions</item>
+    </plurals>
+    <string name="weather_now">Weather now: %1$s, %2$s</string>
 </resources>
