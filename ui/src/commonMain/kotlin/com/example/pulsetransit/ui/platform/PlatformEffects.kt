@@ -12,8 +12,9 @@ import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 expect fun SystemBarsAppearance(darkTheme: Boolean)
 
 /**
- * Runs camera motion wake while the board is visible, asking for camera access first when the
- * setting is on but access was never granted. Restarts when [key] changes (e.g. the mode).
+ * Runs camera motion wake while the board is visible and camera access is granted. It never asks
+ * for access: Settings does, with its rationale, where camera wake is turned on. Restarts when
+ * [key] changes (e.g. the mode).
  */
 @Composable
 expect fun CameraMotionEffect(
@@ -26,9 +27,10 @@ expect fun CameraMotionEffect(
 expect fun rememberAppUpdateAction(): () -> Unit
 
 /**
- * Location access for on-spot mode. Asks once when shown without it; the returned action retries
- * the fix, or asks again, sending the user to the system settings once asking no longer shows a
- * prompt. [onGranted] runs when access is granted.
+ * Location access for on-spot mode's "Allow location": the returned action retries the fix, or
+ * asks for access, sending the user to the system settings once asking no longer shows a prompt.
+ * It never asks on its own; onboarding asks first, after its rationale. [onGranted] runs when
+ * access is granted.
  */
 @Composable
 expect fun rememberLocationAccess(onGranted: () -> Unit): () -> Unit
@@ -58,3 +60,32 @@ expect fun is24HourClock(): Boolean
  */
 @Composable
 expect fun rememberWalkingDirections(): (latitude: Double, longitude: Double) -> Unit
+
+/** Opens this app's page in the system settings, where a denied permission can be turned on. */
+@Composable
+expect fun rememberOpenAppSettings(): () -> Unit
+
+/** The permissions the app explains before the system prompt asks for them. */
+enum class AppPermission { LOCATION, CAMERA }
+
+/** Whether [permission] is granted, read again whenever the app comes back to the front. */
+@Composable
+expect fun rememberPermissionGranted(permission: AppPermission): Boolean
+
+/** Shows the system prompt for [permission]; [onResult] then gets whether it is granted. */
+@Composable
+expect fun rememberPermissionRequest(
+    permission: AppPermission,
+    onResult: (granted: Boolean) -> Unit,
+): () -> Unit
+
+/** Handles the system back gesture or button while [enabled]; nothing on the desktop. */
+@Composable
+expect fun SystemBackHandler(
+    enabled: Boolean = true,
+    onBack: () -> Unit,
+)
+
+/** The app's version as people see it in the store, e.g. "3.2.1". */
+@Composable
+expect fun appVersion(): String

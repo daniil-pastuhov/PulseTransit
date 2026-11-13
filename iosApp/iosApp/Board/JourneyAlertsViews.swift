@@ -2,7 +2,7 @@ import Shared
 import SwiftUI
 
 /// "Notify me about this journey" in a route's details, or "Stop following" while it is the journey
-/// being followed. Absent where notifications are denied. The counterpart of Android's
+/// being followed. With notifications denied, a note with the way to Settings instead. The counterpart of Android's
 /// `JourneyNotifyButton`; the rationale it may open is presented by `TripDetailsView`.
 struct JourneyNotifyButton: View {
     @ObservedObject var model: JourneyAlertsModel
@@ -10,14 +10,26 @@ struct JourneyNotifyButton: View {
 
     var body: some View {
         if model.state.isFollowing(trip: trip) {
-            Button {
-                model.viewModel.onStopClick()
-            } label: {
-                Label(L("journey_stop_button"), systemImage: "bell.slash")
-                    .frame(maxWidth: .infinity)
+            VStack(spacing: 8) {
+                if model.state.followingWithoutLocation {
+                    Callout(L("journey_time_only_body"), tone: .warning, title: L("journey_time_only_title"), symbol: "location.slash") {
+                        Button(L("open_app_settings"), action: openAppSettings).buttonStyle(.borderless)
+                    }
+                }
+                Button {
+                    model.viewModel.onStopClick()
+                } label: {
+                    Label(L("journey_stop_button"), systemImage: "bell.slash")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("journey.stop")
             }
-            .buttonStyle(.bordered)
-            .accessibilityIdentifier("journey.stop")
+        } else if model.state.notificationsDenied {
+            // Alerts can't be offered; say why and where to change it, rather than hiding the button.
+            Callout(L("journey_notifications_off_body"), tone: .warning, title: L("journey_notifications_off_title"), symbol: "bell.slash") {
+                Button(L("open_app_settings"), action: openAppSettings).buttonStyle(.borderless)
+            }
         } else if model.state.available {
             Button {
                 model.viewModel.onNotifyClick(trip: trip)
@@ -28,6 +40,10 @@ struct JourneyNotifyButton: View {
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("journey.notify")
         }
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
     }
 }
 
@@ -42,7 +58,7 @@ struct JourneyRationaleView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Image(systemName: "bell.badge")
-                        .font(.largeTitle)
+                        .font(.pulse(.largeTitle))
                         .foregroundColor(Palette.primary)
                         .accessibilityHidden(true)
                     Text(L("journey_rationale_body"))
@@ -55,7 +71,7 @@ struct JourneyRationaleView: View {
                         .accessibilityIdentifier("journey.mode.time")
                     // Unlike Android, iOS suspends the app, so time-only alerts stop following live times.
                     Label(L("journey_ios_time_limit"), systemImage: "info.circle")
-                        .font(.footnote)
+                        .font(.pulse(.footnote))
                         .foregroundColor(Palette.textSecondary)
                         .accessibilityIdentifier("journey.rationale.iosLimit")
                 }
@@ -80,12 +96,12 @@ struct JourneyRationaleView: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: symbol)
-                    .font(.title3)
+                    .font(.pulse(.title3))
                     .foregroundColor(Palette.primary)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L(title)).font(.headline)
-                    Text(L(detail)).font(.subheadline).foregroundColor(Palette.textSecondary)
+                    Text(L(title)).font(.pulse(.headline))
+                    Text(L(detail)).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
                 }
                 Spacer(minLength: 0)
             }
@@ -116,12 +132,12 @@ struct FollowedJourneyBar: View {
             }
             .accessibilityIdentifier("journey.bar")
             Button(L("journey_stop_button"), action: onStop)
-                .font(.subheadline.bold())
+                .font(.pulse(.subheadline, weight: .bold))
                 .foregroundColor(Palette.primary)
                 .accessibilityIdentifier("journey.bar.stop")
         }
         .buttonStyle(.borderless)
-        .font(.subheadline)
+        .font(.pulse(.subheadline))
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

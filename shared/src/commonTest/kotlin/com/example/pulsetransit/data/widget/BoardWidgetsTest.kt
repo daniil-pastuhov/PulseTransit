@@ -9,6 +9,7 @@ import com.example.pulsetransit.data.isoOslo
 import kotlinx.datetime.LocalDateTime
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -136,7 +137,7 @@ class BoardWidgetsTest {
     }
 
     @Test
-    fun `a route lists its ridden legs and the first one's boarding`() {
+    fun `a route lists its legs with walks and the first ride's boarding`() {
         val trip =
             TripInfo(
                 destinationName = "Majorstuen",
@@ -155,6 +156,8 @@ class BoardWidgetsTest {
                             platform = "2",
                             isRealtime = true,
                         ),
+                        // A change on the same platform: no walk to speak of.
+                        TripLeg(mode = "foot", durationMinutes = 0),
                         TripLeg(mode = "bus", lineName = "20"),
                     ),
             )
@@ -163,8 +166,12 @@ class BoardWidgetsTest {
         assertEquals(now + 4 * 60_000L, route.boardAtMillis)
         assertEquals(now + 20 * 60_000L, route.arriveAtMillis)
         assertEquals("2", route.platform)
-        assertEquals(listOf(WidgetRouteLeg("metro", "2"), WidgetRouteLeg("bus", "20")), route.legs)
+        assertEquals(
+            listOf(WidgetRouteLeg("foot", null, 4), WidgetRouteLeg("metro", "2"), WidgetRouteLeg("bus", "20")),
+            route.legs,
+        )
         assertTrue(route.isRealtime)
+        assertFalse(route.isWalkOnly)
     }
 
     @Test
@@ -174,6 +181,45 @@ class BoardWidgetsTest {
         assertEquals(listOf(WidgetRouteLeg(null, "2")), route.legs)
         assertNull(route.boardAtMillis)
         assertNull(route.arriveAtMillis)
+    }
+
+    @Test
+    fun `a route that is all walking is walk only`() {
+        val trip =
+            TripInfo(
+                destinationName = "Nationaltheatret",
+                expectedStartTime = isoOslo(now),
+                expectedEndTime = isoOslo(now + 14 * 60_000L),
+                lineName = "",
+                durationMinutes = 14,
+                originName = "Home",
+                legs = listOf(TripLeg(mode = "foot", durationMinutes = 14)),
+            )
+        val route = assertNotNull(widgetRoute(trip))
+        assertTrue(route.isWalkOnly)
+        assertEquals(listOf(WidgetRouteLeg("foot", null, 14)), route.legs)
+        assertNull(route.boardAtMillis)
+    }
+
+    @Test
+    fun `a ride without a line name is left out rather than drawn as a walk`() {
+        val trip =
+            TripInfo(
+                destinationName = "Majorstuen",
+                expectedStartTime = isoOslo(now),
+                expectedEndTime = isoOslo(now + 20 * 60_000L),
+                lineName = "2",
+                durationMinutes = 20,
+                originName = "Home",
+                legs =
+                    listOf(
+                        TripLeg(mode = "bus", lineName = null, durationMinutes = 6),
+                        TripLeg(mode = "metro", lineName = "2", durationMinutes = 14),
+                    ),
+            )
+        val route = assertNotNull(widgetRoute(trip))
+        assertEquals(listOf(WidgetRouteLeg("metro", "2")), route.legs)
+        assertFalse(route.isWalkOnly)
     }
 
     @Test

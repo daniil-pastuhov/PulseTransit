@@ -34,19 +34,37 @@ struct JourneyAlertsView: View {
                         Label(L("journey_ios_time_limit"), systemImage: "info.circle")
                             .accessibilityIdentifier("settings.journeyMode.iosLimit")
                     }
+                    // The privacy answer, next to the choice it is about.
+                    Label(L("journey_rationale_privacy"), systemImage: "lock.fill")
                     Text(L("settings_journey_alerts_hint"))
                 }
             }
             Section {
                 ForEach(Self.kinds, id: \.0) { kind, title in
-                    Toggle(L(title), isOn: Binding(
-                        get: { !state.disabledJourneyAlerts.contains(kind) },
+                    // A missed ride needs location, so it is off and disabled, with the reason, until then.
+                    let applies = kind.appliesTo(mode: state.journeyMode)
+                    Toggle(isOn: Binding(
+                        get: { applies && !state.disabledJourneyAlerts.contains(kind) },
                         set: { model.viewModel.updateJourneyAlert(kind: kind, enabled: $0) }
-                    ))
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L(title))
+                            if !applies {
+                                Text(L("journey_missed_needs_location")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                            }
+                        }
+                    }
+                    .disabled(!applies)
                     .accessibilityIdentifier("settings.journeyAlert.\(kind.name.lowercased())")
                 }
             } header: {
-                Text(L("journey_alert_kinds_title"))
+                let count = JourneyModelsKt.journeyAlertCount(mode: state.journeyMode, disabled: state.disabledJourneyAlerts)
+                HStack {
+                    Text(L("journey_alert_kinds_title"))
+                    Spacer()
+                    Text(count.isAll ? L("journey_alerts_all") : L("journey_alerts_count", Int(count.enabled), Int(count.total)))
+                }
+                .textCase(nil)
             }
         }
         .navigationTitle(L("journey_rationale_title"))
@@ -61,7 +79,7 @@ struct JourneyAlertsView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L(title)).foregroundColor(Palette.textPrimary)
-                    Text(L(detail)).font(.caption).foregroundColor(.secondary)
+                    Text(L(detail)).font(.pulse(.caption)).foregroundColor(.secondary)
                 }
                 Spacer(minLength: 0)
                 if selected {

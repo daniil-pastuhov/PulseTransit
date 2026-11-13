@@ -109,3 +109,10 @@ fun walkDestination(
     val longitude = ride?.fromLongitude ?: arrival.toLongitude ?: return null
     return WalkDestination(latitude, longitude)
 }
+
+/** The trip of [trips] that arrives first; null when none says when it arrives. */
+fun earliestArriving(trips: List<TripInfo>): TripInfo? =
+    trips
+        .mapNotNull { trip -> trip.expectedEndTime?.let(Instant::parseOrNull)?.let { trip to it } }
+        .minByOrNull { (_, arrival) -> arrival }
+        ?.first

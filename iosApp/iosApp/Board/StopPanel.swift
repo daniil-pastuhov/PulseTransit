@@ -1,17 +1,18 @@
 import Shared
 import SwiftUI
 
-/// One favourite stop's card: its name, then its departures, grouped by line and destination.
-/// `groups` is nil until the stop's first load finishes, which shows a blurred placeholder;
-/// `isLoading` on a stop that already has data shows a thin bar instead, so a refresh never blanks
-/// a board that is being read. `isFailed` means the empty board is unknown rather than empty, and
-/// shows why with a retry instead of "no departures". With `canLoadMore`, scrolling near the end of
-/// the list calls `onLoadMore` for the next page; `isLoadingMore` is that page in flight, shown as a
-/// spinner at the end of the list only. Tapping a row opens its line's details, which list every
-/// loaded departure the row leaves out.
+/// One favourite stop's card, as on Android (StopBoardPanel.kt): its name and which directions it
+/// shows, then a row per line and destination. `groups` is nil until the stop's first load finishes,
+/// which shows skeleton rows under the name; `isLoading` on a stop that already has data shows a thin
+/// bar instead, so a refresh never blanks a board that is being read. `isFailed` means the empty board
+/// is unknown rather than empty, and says why instead of "no departures"; it retries by itself. With
+/// `canLoadMore`, scrolling near the end of the list calls `onLoadMore` for the next page;
+/// `isLoadingMore` is that page in flight, shown as a spinner at the end of the list only. Tapping a
+/// row opens its line's details, which list every loaded departure the row leaves out.
 struct StopPanel: View {
     let stop: StopPlace
     let groups: [DepartureGroup]?
+    var directions: DirectionSummary?
     let showDelays: Bool
     let showMessages: Bool
     let isLoading: Bool
@@ -22,11 +23,10 @@ struct StopPanel: View {
     let isLoadingMore: Bool
     let onFilterOut: (String) -> Void
     let onSearchFurtherAhead: () -> Void
-    let onRetry: () -> Void
     let onLoadMore: () -> Void
     /// The stops a departure's trip has ahead of it, for its details; empty when unavailable.
     let loadJourney: (Departure) async -> [JourneyStop]
-    /// Replaces the stop's name and locality, as on-spot mode does with its stop picker.
+    /// Replaces the stop's name and directions, as on-spot mode does with its stop picker.
     var header: AnyView?
     /// Told how many rows the list shows without scrolling, so the stop asks for enough to fill it.
     var onRowCapacity: (Int) -> Void = { _ in }
@@ -36,51 +36,59 @@ struct StopPanel: View {
     /// Shows a grip in the header, where the panel can be dragged to reorder (with a long press,
     /// as iOS lifts anything it drags).
     var showsDragHandle = false
+    /// A pull on the list refreshes the board (iOS 16 and later; earlier, the board refreshes itself).
+    var onPullToRefresh: (() async -> Void)?
 
     /// Whether the end-of-list sentinel is on screen; scrolling while it is asks for a page.
     @State private var isAtEnd = false
     /// The tapped row, captured at the tap. The details follow refreshes through `departuresLike`,
     /// which gathers the line's current departures and falls back to these once they have all gone.
     @State private var detailsGroup: DepartureGroup?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let header {
-                header
-            } else {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: FjordTokens.space2) {
+                if let header {
+                    header
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: FjordTokens.space2) {
                         Text(stop.name)
-                            .font(.title3.bold())
+                            .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
+                            .foregroundColor(Palette.textPrimary)
                             .lineLimit(1)
-                        if let locality = stop.locality {
-                            Text(locality)
-                                .font(.subheadline)
+                            .layoutPriority(1)
+                        if let subtitle = stopSubtitle(locality: stop.locality, directions: directions) {
+                            Text(subtitle)
+                                .font(.pulse(.subheadline))
                                 .foregroundColor(Palette.textSecondary)
+                                .lineLimit(1)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    if showsDragHandle {
-                        Image(systemName: "line.3.horizontal")
-                            .foregroundColor(Palette.textSecondary.opacity(0.6))
-                            .padding(.top, 4)
-                            .accessibilityLabel(L("drag_to_reorder"))
-                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+                }
+                if showsDragHandle {
+                    Image(systemName: "line.3.horizontal")
+                        .foregroundColor(Palette.textSecondary)
+                        .accessibilityLabel(L("drag_to_reorder"))
                 }
             }
+            .padding(.bottom, FjordTokens.space2)
             // Same height either way, so the list below doesn't jump when a refresh starts.
             if isLoading && groups != nil {
-                RefreshBar()
+                RefreshBar().frame(height: 1)
             } else {
-                Divider().frame(height: 2)
+                Palette.outlineVariant.frame(height: 1)
             }
-            // Overlaid, not stacked, so the placeholder and the list cross-fade in place.
+            // Overlaid, not stacked, so the skeleton and the list cross-fade in place.
             ZStack(alignment: .top) {
                 if let groups = groups {
                     departures(groups)
                         .transition(.opacity)
                 } else {
-                    BlurredPlaceholder(label: L("loading_departures")) { LoadingPlaceholder() }
+                    LoadingPlaceholder()
                         .transition(.opacity)
                 }
             }
@@ -92,11 +100,20 @@ struct StopPanel: View {
             })
         }
         .animation(.easeInOut(duration: 0.3), value: groups == nil)
-        .foregroundColor(Palette.textPrimary)
-        .padding(12)
+        .padding(.horizontal, FjordTokens.space4)
+        .padding(.top, FjordTokens.space3)
+        .padding(.bottom, FjordTokens.space2)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface).shadow(color: .black.opacity(0.08), radius: 2, y: 1))
-        .padding(6)
+        // Light: a soft shadow lifts the card off the grey; dark: a hairline ring on black.
+        .background(
+            RoundedRectangle(cornerRadius: FjordTokens.radiusLg)
+                .fill(Palette.surface)
+                .shadow(color: colorScheme == .dark ? .clear : .black.opacity(0.08), radius: 2, y: 1)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: FjordTokens.radiusLg)
+                .stroke(colorScheme == .dark ? Color.white.opacity(0.06) : .clear)
+        )
         .onChange(of: detailsGroup != nil) { onDetailsOpenChange($0) }
         .sheet(isPresented: Binding(get: { detailsGroup != nil }, set: { if !$0 { detailsGroup = nil } })) {
             if let group = detailsGroup {
@@ -115,9 +132,22 @@ struct StopPanel: View {
     @ViewBuilder
     private func departures(_ groups: [DepartureGroup]) -> some View {
         if groups.isEmpty && isFailed {
-            LoadFailedMessage(isOnline: isOnline, onRetry: onRetry)
+            PanelMessage(
+                symbol: loadFailureSymbol(isOnline: isOnline),
+                title: L(isOnline ? "panel_failed_title" : "stale_no_internet_title"),
+                detail: L(isOnline ? "panel_failed_body" : "panel_offline_body")
+            )
         } else if groups.isEmpty {
-            NoDepartures(isExtended: isExtended, onSearchFurtherAhead: onSearchFurtherAhead)
+            PanelMessage(
+                symbol: "calendar.badge.exclamationmark",
+                title: isExtended
+                    ? L("no_departures_extended", Int(EnturRepositoryCompanion.shared.EXTENDED_DEPARTURE_WINDOW_DAYS))
+                    : L("no_departures"),
+                detail: isExtended
+                    ? nil
+                    : L("no_departures_body", Int(EnturRepositoryCompanion.shared.DEFAULT_DEPARTURE_WINDOW_SECONDS / 3600)),
+                action: isExtended ? nil : (L("search_further_ahead"), onSearchFurtherAhead)
+            )
         } else {
             list(groups)
         }
@@ -128,21 +158,24 @@ struct StopPanel: View {
         // never does: a single line folds every page into the same row, so it would keep fitting
         // and keep asking. Nor may a board left at its end on the wall grow on every refresh.
         GeometryReader { geometry in
-            // A wide panel gives each row columns for the platform and the clock time instead of
-            // leaving the space between destination and countdown empty.
             let isWide = BoardLayout.shared.isWideRow(panelWidthDp: Float(geometry.size.width))
-            let showPlatform = isWide && BoardLayout.shared.showsPlatform(groups: groups)
+            let showPlatform = BoardLayout.shared.showsPlatform(groups: groups)
             ScrollView {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: 0) {
                     // Identified by content, so a refresh that shifts the list gives a changed group
                     // fresh row state. Entur can return identical-looking journeys, so the index
                     // is part of the id to keep it unique, as on Android.
-                    ForEach(Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", group: $0.element) }, id: \.id) { row in
+                    ForEach(
+                        Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", index: $0.offset, group: $0.element) },
+                        id: \.id
+                    ) { row in
+                        if row.index > 0 { Palette.outlineVariant.frame(height: 1) }
                         DepartureGroupRow(
                             group: row.group,
                             showDelays: showDelays,
                             showMessages: showMessages,
-                            layout: isWide ? .wide(showPlatform: showPlatform) : .narrow,
+                            isWide: isWide,
+                            showPlatform: showPlatform,
                             onTap: { detailsGroup = row.group }
                         )
                     }
@@ -162,6 +195,7 @@ struct StopPanel: View {
                 })
             }
             .coordinateSpace(name: Self.scrollSpace)
+            .pullToRefresh(onPullToRefresh)
             // The content only moves under the user's finger (or its momentum): a refresh changes rows,
             // not where the list starts. So a move with the end in sight is a scroll to the end.
             .onPreferenceChange(ScrollOffsetKey.self) { _ in
@@ -173,6 +207,32 @@ struct StopPanel: View {
     private static let scrollSpace = "stopPanelScroll"
 }
 
+private extension View {
+    /// `refreshable` where a scroll view supports it (iOS 16); nothing before.
+    @ViewBuilder
+    func pullToRefresh(_ action: (() async -> Void)?) -> some View {
+        if #available(iOS 16, *), let action {
+            refreshable { await action() }
+        } else {
+            self
+        }
+    }
+}
+
+/// "Oslo · all directions", "Platforms 2–4" or "3 of 7 directions"; nil with nothing to say.
+private func stopSubtitle(locality: String?, directions: DirectionSummary?) -> String? {
+    guard let directions else { return locality }
+    switch onEnum(of: directions) {
+    case .all:
+        return [locality, L("directions_all")].compactMap { $0 }.joined(separator: " · ")
+    case let .platforms(platforms):
+        return platforms.count == 1 ? L("platform_label", platforms.codes) : L("directions_platforms", platforms.codes)
+    case let .some(some):
+        if let total = some.total { return L("directions_some", Int(some.count), total.intValue) }
+        return L("directions_count", Int(some.count))
+    }
+}
+
 /// Where a list's content starts within its scroll view, which changes only as it is scrolled.
 private struct ScrollOffsetKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -181,249 +241,203 @@ private struct ScrollOffsetKey: PreferenceKey {
     }
 }
 
-private struct NoDepartures: View {
-    let isExtended: Bool
-    let onSearchFurtherAhead: () -> Void
+/// A panel's own message in place of its rows: a symbol, a title, a line of explanation, an action.
+private struct PanelMessage: View {
+    let symbol: String
+    let title: String
+    var detail: String?
+    var action: (String, () -> Void)?
 
     var body: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Text(isExtended
-                ? L("no_departures_extended", Int(EnturRepositoryCompanion.shared.EXTENDED_DEPARTURE_WINDOW_DAYS))
-                : L("no_departures"))
+        VStack(spacing: FjordTokens.space2) {
+            Spacer(minLength: 0)
+            Image(systemName: symbol)
+                .font(.system(size: 28))
                 .foregroundColor(Palette.textSecondary)
+                .accessibilityHidden(true)
+            Text(title)
+                .font(.pulse(.callout, weight: .semibold))
+                .foregroundColor(Palette.textPrimary)
                 .multilineTextAlignment(.center)
-            if !isExtended {
-                Button(L("search_further_ahead"), action: onSearchFurtherAhead)
-                    .buttonStyle(.bordered)
+            if let detail {
+                Text(detail)
+                    .font(.pulse(.subheadline))
+                    .foregroundColor(Palette.textSecondary)
+                    .multilineTextAlignment(.center)
             }
-            Spacer()
+            if let action {
+                Button(action.0, action: action.1)
+                    .font(.pulse(.subheadline, weight: .semibold))
+                    .buttonStyle(.borderless)
+            }
+            Spacer(minLength: 0)
         }
+        .padding(.horizontal, FjordTokens.space4)
         .frame(maxWidth: .infinity)
     }
 }
 
+/// Skeleton rows while a stop's first departures load: no spinner, no label (the name says which).
 private struct LoadingPlaceholder: View {
     @State private var pulse = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            ForEach(0 ..< 6, id: \.self) { _ in
-                HStack(spacing: 10) {
-                    PlaceholderBlock(width: 48, height: 24, cornerRadius: 6, pulse: pulse)
-                    PlaceholderBlock(height: 20, pulse: pulse)
-                    PlaceholderBlock(width: 40, height: 20, pulse: pulse)
+        VStack(spacing: 0) {
+            ForEach(0 ..< 5, id: \.self) { index in
+                if index > 0 { Palette.outlineVariant.frame(height: 1) }
+                HStack(spacing: FjordTokens.space2) {
+                    PlaceholderBlock(width: FjordTokens.pillW, height: 28, pulse: pulse)
+                    PlaceholderBlock(height: 14, pulse: pulse)
+                    PlaceholderBlock(width: 48, height: 18, pulse: pulse)
                 }
-                .padding(8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card.opacity(0.4)))
+                .frame(height: FjordTokens.row)
             }
-            Spacer()
+            Spacer(minLength: 0)
         }
         .modifier(PlaceholderPulse(pulse: $pulse))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("loading_departures"))
     }
 }
 
-/// How a row lays out: later times on a line below either way, and in a wide panel columns for
-/// the platform and the clock time beside the countdown.
-private enum RowLayout {
-    case narrow
-    case wide(showPlatform: Bool)
-}
-
-/// A wide row's columns, so each lines up from row to row.
-private enum WideRow {
-    static let platformWidth: CGFloat = 52
-    static let widestClock = "00:00"
-    static let widestDelay = "+00"
-    static let primaryTimeWidth: CGFloat = 64
-}
-
-/// Consecutive departures of one line to one destination: the next one large, later ones beside.
+/// One line to one destination: pill, mode, destination with a detail line under it, then the delay
+/// and the time of its next departure. Later departures are in the row's details.
 private struct DepartureGroupRow: View {
     let group: DepartureGroup
     let showDelays: Bool
     let showMessages: Bool
-    var layout: RowLayout = .narrow
+    var isWide = false
+    var showPlatform = false
     let onTap: () -> Void
 
-    private var isWide: Bool {
-        if case .wide = layout { return true }
-        return false
-    }
-
     var body: some View {
-        let departures = group.departures
-        // Only the next few: a frequent line would otherwise list a timetable's worth of times.
-        let visible = group.visibleDepartures
-        let hidden = Int(group.hiddenDepartureCount)
-        if let first = departures.first {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 10) {
-                    Text(first.line)
-                        .font(.subheadline.bold())
+        if let first = group.departures.first {
+            let delayed = !first.isCancelled && showDelays && first.delayMinutes > 0
+            let notices = showMessages ? group.departures.flatMap(\.notices).uniqued() : []
+            let sub = subLines(first)
+            HStack(spacing: FjordTokens.space2) {
+                LinePill(line: first.line, mode: first.transportMode, cancelled: first.isCancelled)
+                    .opacity(first.isCancelled ? 0.55 : 1)
+                TransportIcon(mode: first.transportMode).font(.system(size: 18)).frame(width: 20)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(first.destination)
+                        .font(.pulse(size: isWide ? 19 : 16, weight: .medium, relativeTo: .body))
                         .strikethrough(first.isCancelled)
-                        .foregroundColor(.white)
+                        .foregroundColor(first.isCancelled ? Palette.textSecondary : Palette.textPrimary)
                         .lineLimit(1)
-                        .frame(width: 48)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(first.isCancelled ? Color.gray : Palette.transport(first.transportMode)))
-                    Text("\(Palette.transportEmoji(first.transportMode))  \(first.destination)")
-                        .font(.body.weight(.medium))
-                        .strikethrough(first.isCancelled)
-                        .foregroundColor(first.isCancelled ? Palette.textSecondary.opacity(0.6) : Palette.textPrimary)
-                        .lineLimit(1)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if case let .wide(showPlatform) = layout {
-                        if showPlatform {
-                            PlatformChip(platform: first.platform)
-                        }
-                        // The clock time beside the countdown; empty when the countdown already
-                        // is one (perhaps with a "⁺1" after it), or reads "cancelled".
-                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                            let times = DepartureTimes(departures: visible, now: timeline.date)
-                            let clock = DepartureTimes.clock(for: first.expectedTime)
-                            Text(first.isCancelled || times.primary.hasPrefix(clock) ? "" : clock)
-                                .monospacedDigit()
-                                .reservingWidth(of: WideRow.widestClock, alignment: .trailing)
-                                .font(.body.weight(.medium))
-                                .foregroundColor(Palette.textSecondary)
-                        }
+                    if !sub.isEmpty {
+                        Text(sub.joined(separator: " · "))
+                            .font(.pulse(.caption))
+                            .foregroundColor(Palette.textSecondary)
+                            .lineLimit(1)
                     }
-                    let delay = !first.isCancelled && showDelays && first.delayMinutes > 0 ? "+\(first.delayMinutes)" : nil
-                    if isWide {
-                        // A column of its own width, empty without a delay, so a delayed row's
-                        // clock and platform stay in line with the others.
-                        Text(delay ?? "")
-                            .reservingWidth(of: WideRow.widestDelay)
-                            .font(.caption.bold())
-                            .foregroundColor(Palette.error)
-                    } else if let delay {
-                        Text(delay)
-                            .font(.caption.bold())
-                            .foregroundColor(Palette.error)
-                    }
-                    // Ticks on its own: the shared state only changes about once a minute, and a row
-                    // whose input is the same Departure object would not be redrawn at all.
-                    TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                        let times = DepartureTimes(departures: visible, now: timeline.date)
-                        Text(times.primary)
-                            .font(.title3.weight(.heavy))
-                            .monospacedDigit()
-                            .foregroundColor(first.isCancelled ? Palette.error : (times.primaryIsNow ? Palette.primary : Palette.textPrimary))
-                            // Right-aligned in a column of its own, so "Now" and "12m" end in line.
-                            .frame(minWidth: isWide ? WideRow.primaryTimeWidth : nil, alignment: .trailing)
-                    }
-                }
-                // On a line of their own in a wide row too: beside the destination they squeezed
-                // it to "Fil…" in a tablet's half-width panel.
-                TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                    let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
-                    if !secondary.isEmpty || hidden > 0 {
-                        secondaryText(secondary, hidden: hidden)
-                            .font(.body.weight(.medium))
-                            .lineLimit(2) // a backstop: the capped times wrap at most once
-                            .padding(.leading, 58)
-                    }
-                }
-                let notices = departures.flatMap(\.notices).uniqued()
-                if showMessages && !notices.isEmpty {
                     ForEach(notices, id: \.self) { notice in
-                        HStack(spacing: 4) {
-                            Text("⚠️").font(.system(size: 10))
-                            Text(notice)
-                                .font(.system(size: 11))
-                                .foregroundColor(Palette.error)
-                                .lineLimit(2)
-                        }
+                        Label(notice, systemImage: "info.circle")
+                            .font(.pulse(.caption))
+                            .foregroundColor(Palette.textPrimary)
+                            .lineLimit(2)
                     }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                if delayed {
+                    DelayChip(minutes: Int(first.delayMinutes))
+                }
+                // Ticks on its own: the shared state only changes about once a minute, and a row
+                // whose input is the same Departure object would not be redrawn at all.
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    DepartureTimeText(departure: first, delayed: delayed, isWide: isWide, now: timeline.date)
                 }
             }
-            .padding(8)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card.opacity(first.isCancelled ? 0.2 : 0.5)))
+            .padding(.vertical, FjordTokens.space1)
+            .frame(minHeight: FjordTokens.row)
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
         }
+    }
+
+    /// "Platform 4", "Every ~8 min", "Every ~5 min · +4 more": what else to know about the row.
+    private func subLines(_ first: Departure) -> [String] {
+        var lines: [String] = []
+        if showPlatform, let platform = first.platform { lines.append(L("platform_label", platform)) }
+        if let headway = group.headwayMinutes { lines.append(L("details_every", headway.intValue)) }
+        if let more = group.moreDepartures { lines.append(L("more_departures_hidden", more.intValue)) }
+        return lines
     }
 }
 
-/// The quay's public code in an outlined box; empty but the same width when the departure has none.
-private struct PlatformChip: View {
-    let platform: String?
+/// The time column: "Now", "4 min" or "19:56"; "Cancelled"; and for a late departure shown as a
+/// clock time, the planned time struck through before the new one in the late colour.
+private struct DepartureTimeText: View {
+    let departure: Departure
+    let delayed: Bool
+    let isWide: Bool
+    let now: Date
 
     var body: some View {
-        ZStack {
-            if let platform {
-                Text(platform)
-                    .font(.subheadline.bold())
-                    .foregroundColor(Palette.textSecondary)
-                    .lineLimit(1)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Palette.textSecondary.opacity(0.4)))
-                    .accessibilityLabel(L("platform_label", platform))
+        if departure.isCancelled {
+            Text(L("cancelled"))
+                .font(.pulse(size: isWide ? 17 : 14, weight: .semibold, relativeTo: .subheadline))
+                .foregroundColor(Palette.error)
+                .lineLimit(1)
+                .fixedSize()
+        } else {
+            let nowMillis = Int64(now.timeIntervalSince1970 * 1000)
+            let countdown = DepartureCountdownKt.departureCountdown(expectedTime: departure.expectedTime, nowMillis: nowMillis)
+            let time = DepartureTimes.text(countdown)
+            let font = Font.pulse(size: isWide ? 24 : FjordTokens.typeCountdown.size, weight: .bold, relativeTo: .title3)
+            Group {
+                if delayed && countdown is DepartureCountdownClock {
+                    Text(DepartureTimes.clock(for: departure.aimedTime))
+                        .font(.pulse(.subheadline))
+                        .strikethrough()
+                        .foregroundColor(Palette.textSecondary)
+                        + Text(" ")
+                        + Text(time).font(font).foregroundColor(Palette.late)
+                } else {
+                    Text(time)
+                        .font(font)
+                        .foregroundColor(countdown is DepartureCountdownNow ? Palette.now : Palette.textPrimary)
+                }
             }
+            .lineLimit(1)
+            .fixedSize()
         }
-        .frame(width: WideRow.platformWidth)
     }
 }
 
-/// The later times, then a muted "+K" for the departures left out. Concatenated `Text`s, so they
-/// wrap as one line of text like Android's annotated string.
-private func secondaryText(_ secondary: [String], hidden: Int) -> Text {
-    var text = Text(secondary.joined(separator: "    ")).foregroundColor(Palette.textSecondary)
-    if hidden > 0 {
-        let more = Text(L("more_departures_hidden", hidden))
-            .font(.subheadline.weight(.medium))
-            .foregroundColor(Palette.textSecondary.opacity(0.6))
-        text = secondary.isEmpty ? more : text + Text(verbatim: "    ") + more
-    }
-    return text
-}
-
-/// The time column's texts for a group, de-duplicated so two departures in the same minute show once.
-private struct DepartureTimes {
-    let primary: String
-    let primaryIsNow: Bool
-    let secondary: [String]
-
-    init(departures: [Departure], now: Date) {
-        let nowMillis = Int64(now.timeIntervalSince1970 * 1000)
-        let texts = departures.map { departure in
-            departure.isCancelled ? L("cancelled") : Self.text(for: departure.expectedTime, nowMillis: nowMillis)
-        }
-        .uniqued()
-        primary = texts.first ?? "?"
-        primaryIsNow = primary == L("now")
-        secondary = Array(texts.dropFirst())
-    }
-
+/// A departure's time texts, worded like the Android board.
+enum DepartureTimes {
     /// The departure's "HH:mm", or empty when its timestamp cannot be read.
-    static func clock(for expectedTime: String) -> String {
-        guard let date = isoFormatter.date(from: expectedTime) else { return "" }
+    static func clock(for isoTime: String) -> String {
+        guard let date = isoFormatter.date(from: isoTime) else { return "" }
         return clockFormatter.string(from: date)
     }
 
-    private static let isoFormatter = ISO8601DateFormatter()
-
-    private static func text(for expectedTime: String, nowMillis: Int64) -> String {
-        switch onEnum(of: DepartureCountdownKt.departureCountdown(expectedTime: expectedTime, nowMillis: nowMillis)) {
+    /// "Now", "5 min" up to the shared cutoff, then the clock time, marked "⁺1" beyond today.
+    static func text(_ countdown: DepartureCountdown) -> String {
+        switch onEnum(of: countdown) {
         case .now:
             return L("now")
-        case let .minutes(countdown):
-            return "\(countdown.minutes)\(L("unit_minute"))"
-        case let .clock(countdown):
-            let time = clockFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(countdown.epochMillis) / 1000))
+        case let .minutes(minutes):
+            return L("countdown_minutes", Int(minutes.minutes))
+        case let .clock(clock):
+            let time = clockFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(clock.epochMillis) / 1000))
             // Beyond today only when the search was widened; marked like a printed timetable.
-            return countdown.dayOffset > 0 ? "\(time)⁺\(countdown.dayOffset)" : time
+            return clock.dayOffset > 0 ? "\(time)⁺\(clock.dayOffset)" : time
         case .unknown:
             return "?"
         }
     }
 
-    /// 24-hour, like the Android board, whatever the locale's default.
+    private static let isoFormatter = ISO8601DateFormatter()
+
+    /// 24-hour in Norway time, like the Android board, whatever the locale's default.
     private static let clockFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
+        formatter.timeZone = .norway
         return formatter
     }()
 }

@@ -57,3 +57,17 @@ fun typicalHeadwayMinutes(departures: List<Departure>): Int? {
     if (gaps.size < MIN_GAPS_FOR_HEADWAY) return null
     return gaps[gaps.size / 2].toInt().takeIf { it > 0 }
 }
+
+/**
+ * The first of [departures] after [cancelled] that runs: what a cancelled departure's details
+ * offer instead. Null when every later one is cancelled too.
+ */
+fun nextRunningDeparture(
+    departures: List<Departure>,
+    cancelled: Departure,
+): Departure? {
+    val after = Instant.parseOrNull(cancelled.expectedTime) ?: return null
+    return departures.firstOrNull { departure ->
+        !departure.isCancelled && Instant.parseOrNull(departure.expectedTime)?.let { it > after } == true
+    }
+}

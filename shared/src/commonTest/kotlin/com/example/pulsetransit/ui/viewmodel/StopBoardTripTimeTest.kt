@@ -127,6 +127,27 @@ class StopBoardTripTimeTest : BoardTestBase() {
         }
 
     @Test
+    fun `undoing the save of a timed route brings back its time and its timed routes`() =
+        boardTest {
+            entur.tripTo = { to -> Sourced.live(trip(to.name)) }
+            val vm = viewModel()
+            val arriveBy = TripTime.ArriveBy(inAnHour())
+            vm.setTripTime(arriveBy)
+            vm.showTemporaryDestination(bergen)
+            runCurrent()
+            vm.saveTemporaryDestination()
+            runCurrent()
+
+            vm.undo()
+            runCurrent()
+
+            assertTrue(settings.destinations.isEmpty())
+            assertEquals(bergen, vm.uiState.value.temporaryDestination)
+            assertEquals(arriveBy, vm.uiState.value.temporaryTripTime)
+            assertEquals(arriveBy, entur.routeOptionsTo[bergen.id]?.time)
+        }
+
+    @Test
     fun `a saved destination picked with a time stands in for the saved one`() =
         boardTest {
             settings.destinations = listOf(oslo)

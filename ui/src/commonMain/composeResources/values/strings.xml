@@ -1,53 +1,22 @@
 <resources>
     <string name="settings_title">Settings</string>
     <string name="back">Back</string>
-    <string name="theme_settings">Theme Settings</string>
     <string name="day_night_mode">Day/Night Mode</string>
-    <string name="refresh_interval">Refresh Interval</string>
-    <string name="auto_update_schedule">Auto-update schedule</string>
-    <string name="oled_screen_care">OLED Screen Care</string>
     <string name="pixel_shift_level">Pixel shift level (prevents burn-in)</string>
-    <string name="power_refresh">Power &amp; Refresh</string>
     <string name="wake_camera">Wake screen by front camera motion</string>
-    <string name="dynamic_refresh">Dynamic refresh (slower at night/empty)</string>
-    <string name="full_screen_mode">Full screen mode (hides system bars)</string>
-    <string name="always_on_display">Always on display (prevents screen timeout)</string>
-    <string name="transport_info">Transport Information</string>
     <string name="show_delays">Show delay information</string>
     <string name="show_messages">Show informational messages</string>
     <string name="show_cancelled">Show canceled departures</string>
     <string name="show_weather">Show weather forecast</string>
     <string name="filter_out_line">Filter out line %1$s</string>
-    <string name="filtered_lines">Filtered Out Lines</string>
-    <string name="no_filtered_lines">To filter out a line, tap its departure on the main screen and select the filter option.</string>
-    <string name="location_config">Location Configuration</string>
-    <string name="current_coords">Current Coordinates</string>
-    <string name="latitude_val">Lat: %1$s</string>
-    <string name="longitude_val">Lon: %1$s</string>
     <string name="not_set">Not set</string>
-    <string name="detect_location">Detect Location Automatically</string>
-    <string name="enter_manual">Enter coordinates manually:</string>
-    <string name="latitude_label">Latitude</string>
-    <string name="longitude_label">Longitude</string>
-    <string name="save_coords">Save Coordinates</string>
-    <string name="add_stop_places">Add Stop Places</string>
-    <string name="search_hint">Search by name…</string>
     <string name="search_destination_hint">Stop, address or place…</string>
-    <string name="nearby_stops">Nearby Stop Places</string>
-    <string name="search_results">Search Results</string>
     <string name="no_stops_found">No stops found</string>
     <string name="remove">Remove</string>
     <string name="add">Add</string>
-    <string name="favorite_stops">Favorite Stop Places (%1$d)</string>
-    <string name="no_favorites">No favorites added yet</string>
-    <string name="directions_quays">Directions / Quays:</string>
     <string name="showing_all_directions">Showing all directions</string>
     <string name="platform_label">Platform %1$s</string>
     <string name="direction_id">Direction %1$s</string>
-    <string name="delete">Delete</string>
-    <string name="last_updated">Last updated: %1$s</string>
-    <string name="no_stops_configured">No stops configured yet.</string>
-    <string name="open_settings_to_add">Open Settings to Add Stops</string>
     <string name="no_departures">No upcoming departures</string>
     <plurals name="no_departures_extended">
         <item quantity="one">No departures in the next %1$d day</item>
@@ -56,7 +25,7 @@
     <string name="search_further_ahead">Search further ahead</string>
     <string name="now">Now</string>
     <string name="cancelled">Cancelled</string>
-    <string name="unit_minute">m</string>
+    <string name="countdown_minutes">%1$d min</string>
     <!-- Shown after a row's times when more departures of the same line are not listed. -->
     <string name="more_departures_hidden">+%1$d more</string>
     <!-- A departure's details, opened by tapping its row. -->
@@ -68,7 +37,6 @@
     <string name="details_departures">Departures</string>
     <string name="details_route">Stops for the %1$s departure</string>
     <string name="details_ride">%1$d min to %2$s</string>
-    <string name="details_route_unavailable">No stop list for this departure</string>
     <!-- A route's details, opened by tapping a fastest route. -->
     <string name="trip_details_title">To %1$s</string>
     <string name="trip_details_direct">Direct</string>
@@ -89,24 +57,17 @@
     <string name="trip_details_hide_stops">Hide stops</string>
     <string name="refresh">Refresh</string>
 
-    <plurals name="max_favorite_stops_reached">
-        <item quantity="one">Maximum of %1$d stop place reached. Remove it to add another.</item>
-        <item quantity="other">Maximum of %1$d stop places reached. Remove one to add another.</item>
-    </plurals>
     <string name="more_actions">More actions</string>
     <string name="drag_to_reorder">Drag to reorder</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="reorder">Reorder</string>
-    <string name="reorder_done">Done</string>
     <!-- Board pages, when the stops take turns -->
     <string name="board_page_stops">Stops %1$d–%2$d of %3$d</string>
     <string name="board_page_stop">Stop %1$d of %2$d</string>
     <string name="board_page_description">Page %1$d of %2$d. The next page shows in %3$d seconds.</string>
     <string name="board_page_paused">Page %1$d of %2$d. Paused.</string>
     <!-- Fastest Route -->
-    <string name="fastest_route_destination">Fastest Route Destinations</string>
-    <string name="no_destination_set">No destinations set</string>
     <plurals name="max_destinations_reached">
         <item quantity="one">Maximum of %1$d destination reached. Remove it to add another.</item>
         <item quantity="other">Maximum of %1$d destinations reached. Remove one to add another.</item>
@@ -127,14 +88,12 @@
     <string name="schedule_edit">Change when %1$s is shown</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
-    <string name="select">Select</string>
     <string name="loading_departures">Loading departures…</string>
     <string name="loading_fastest_route">Finding fastest route to %1$s…</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
     <!-- %2$s is the arrival time, e.g. "Fastest to Majorstuen 18:31" -->
-    <string name="fastest_route_to_arriving">Fastest to %1$s %2$s</string>
     <string name="fastest_route_info">Line %1$s from %2$s</string>
-    <string name="leg_walk">🚶 %1$d min</string>
+    <string name="leg_walk">%1$d min</string>
     <string name="leg_from">from %1$s</string>
     <string name="duration_min">%1$d min</string>
     <string name="duration_hours">%1$d h</string>
@@ -155,9 +114,6 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_auto">Auto</string>
 
-    <string name="auto_theme_thresholds">Auto-theme light thresholds (lux)</string>
-    <string name="auto_theme_dark">Dark below:</string>
-    <string name="auto_theme_light">Light above:</string>
     <string name="lux_value">%1$d lux</string>
     <string name="current_lux">Current: %1$d lux</string>
 
@@ -171,18 +127,13 @@
     <string name="loc_not_requested">Not requested</string>
     <string name="loc_requesting_gps">Requesting GPS (Precise)…</string>
     <string name="loc_requesting_network">GPS failed. Requesting Network (Approximate)…</string>
-    <string name="loc_failed">Could not retrieve GPS or Network location.</string>
-    <string name="loc_denied">Location permissions denied.</string>
-    <string name="loc_error">Error retrieving location: %1$s</string>
     <string name="loc_success">Success via %1$s</string>
     <string name="gps_source">GPS</string>
     <string name="network_source">Network</string>
     <string name="loc_manual">Set manually</string>
-    <string name="loc_invalid_format">Invalid manual coordinates format.</string>
 
     <!-- Auto-dim Delay -->
-    <string name="auto_dim_delay">Auto-dim Delay</string>
-    <string name="auto_dim_hint">Time before screen dims after motion</string>
+    <string name="auto_dim_delay">Auto-dim delay</string>
     <string name="dim_15s">15 Sec</string>
     <string name="dim_30s">30 Sec</string>
     <string name="dim_1m">1 Min</string>
@@ -190,20 +141,16 @@
     <string name="dim_never">Never</string>
 
     <!-- Front camera sensitivity -->
-    <string name="camera_sensitivity">Camera Sensitivity</string>
+    <string name="camera_sensitivity">Camera sensitivity</string>
     <string name="camera_sensitivity_hint">How much motion is needed to wake the screen</string>
     <string name="sensitivity_low">Low</string>
     <string name="sensitivity_medium">Medium</string>
     <string name="sensitivity_high">High</string>
 
     <!-- Offline / cached data -->
-    <string name="error_no_internet">No internet connection</string>
-    <string name="error_entur_unreachable">Can’t reach Entur</string>
     <string name="error_retrying_automatically">Retrying automatically</string>
     <string name="retry">Retry</string>
     <string name="fastest_route_unavailable">Fastest route to %1$s unavailable</string>
-    <string name="offline_no_internet_stale_data">No internet — shown data is %1$d min old</string>
-    <string name="offline_stale_data">Offline — shown data is %1$d min old</string>
 
     <!-- Weather conditions (MET symbol codes) -->
     <string name="weather_clear">Clear</string>
@@ -222,7 +169,6 @@
     <string name="weather_heavy_snow">Heavy snow</string>
     <string name="weather_and_thunder">%1$s and thunder</string>
     <string name="weather_unknown">Unknown</string>
-    <string name="weather_precipitation">%1$s mm precipitation</string>
 
     <!-- Attribution -->
     <string name="attribution_entur">Data from Entur</string>
@@ -274,7 +220,6 @@
     <string name="dismiss_route">Close route</string>
     <string name="route_to">To %1$s</string>
     <!-- On-spot board: the handle between the routes and the stop, and the bar a section folds to. -->
-    <string name="on_spot_routes">Routes</string>
     <string name="on_spot_resize">Drag to resize</string>
     <string name="on_spot_show_routes">Show routes</string>
     <string name="on_spot_show_departures">Show departures</string>
@@ -432,4 +377,236 @@
     <string name="trip_time_done">Done</string>
     <string name="no_route_to">No route to %1$s found</string>
     <string name="no_route_to_arriving">No route gets you to %1$s by %2$s</string>
+    <!-- Fjord board (step 3) -->
+    <string name="route_leave">Leave</string>
+    <string name="stale_no_internet_title">No internet</string>
+    <string name="stale_no_internet_body">Shown data is %1$d min old. Updates as soon as you’re back online.</string>
+    <string name="stale_entur_title">Can’t reach Entur</string>
+    <string name="stale_entur_body">Shown data is %1$d min old. Retrying automatically.</string>
+    <string name="panel_failed_title">Couldn’t load departures</string>
+    <string name="panel_failed_body">Retrying automatically.</string>
+    <string name="panel_offline_body">Departures show as soon as you’re online.</string>
+    <string name="no_departures_body">Nothing leaves in the next %1$d hours.</string>
+    <string name="board_empty_title">Choose your stops</string>
+    <string name="board_empty_body">Add up to 6 stops and pick which directions to show. The board keeps their departures up to date on its own.</string>
+    <string name="board_empty_action">Add stops</string>
+    <string name="footer_updated">Updated %1$s</string>
+    <string name="updating">Updating…</string>
+    <string name="line_hidden">Line %1$s hidden from departures</string>
+    <string name="destination_saved">Saved %1$s to destinations</string>
+    <string name="undo">Undo</string>
+    <string name="directions_all">all directions</string>
+    <string name="directions_platforms">Platforms %1$s</string>
+    <string name="directions_some">%1$d of %2$d directions</string>
+    <plurals name="directions_count">
+        <item quantity="one">%1$d direction</item>
+        <item quantity="other">%1$d directions</item>
+    </plurals>
+    <string name="weather_now">Weather now: %1$s, %2$s</string>
+    <!-- Fjord detail sheets (step 4) -->
+    <string name="details_from">From %1$s</string>
+    <string name="details_board_here">you board here</string>
+    <string name="details_last_stop">Last stop</string>
+    <string name="details_stops_failed">Entur didn’t send the stops for this departure.</string>
+    <string name="try_again">Try again</string>
+    <string name="details_cancelled_title">This departure won’t run</string>
+    <string name="details_cancelled_body">The operator cancelled the %1$s. The next one leaves at %2$s, %3$s.</string>
+    <string name="details_cancelled_none">The operator cancelled the %1$s.</string>
+    <string name="details_show_departure">Show the %1$s departure</string>
+    <string name="filter_out_hint">Hidden from the departures and avoided in route searches. Show it again any time in Settings › Filtered out lines.</string>
+    <string name="journey_notifications_off_title">Notifications are off for PulseTransit</string>
+    <string name="journey_notifications_off_body">Turn them on to be told when to leave, change and get off.</string>
+    <string name="journey_time_only_title">Following live times only</string>
+    <string name="journey_time_only_body">Location is off, so alerts can’t notice if you miss your ride. Turn it on for your next journey.</string>
+    <string name="open_app_settings">Open settings</string>
+    <!-- Fjord route search (step 5) -->
+    <string name="route_from_board">From the board</string>
+    <string name="route_from_here">From where you are</string>
+    <string name="route_to_label">To</string>
+    <string name="route_saved_destinations">Saved destinations</string>
+    <string name="route_recent">Recent</string>
+    <string name="route_no_places_hint">Check the spelling, or try a street, a stop or a place nearby.</string>
+    <string name="route_no_route_body">Try a later time, or a place nearby.</string>
+    <string name="route_earliest_title">Earliest arrival</string>
+    <string name="route_earliest_body">The earliest you can arrive is %1$s, if you leave at %2$s.</string>
+    <string name="route_offline_body">Route search needs a connection. Your saved destinations keep showing on the board from the last update.</string>
+    <string name="route_saved">Saved</string>
+    <string name="trip_time_today">Today</string>
+    <string name="trip_time_tomorrow_day">Tomorrow</string>
+    <string name="trip_time_help_now">Routes leaving now, with live times.</string>
+    <string name="trip_time_help_depart">Routes leaving at %1$s or later.</string>
+    <string name="trip_time_help_arrive">The latest routes that still get you there by %1$s.</string>
+    <string name="trip_time_passed">That time has passed today.</string>
+    <!-- Fjord on the spot (step 6) -->
+    <string name="on_spot_denied_title">Location is off for PulseTransit</string>
+    <string name="on_spot_search_hint">You can still find a route with Search.</string>
+    <string name="on_spot_unavailable_body">Check that location services are on. Indoors, moving closer to a window helps.</string>
+    <string name="on_spot_approximate">Approximate location</string>
+    <string name="outside_norway_title">You’re outside Norway</string>
+    <string name="outside_norway_body">PulseTransit shows public transport in Norway. Try it as if you were standing at one of these stations.</string>
+    <string name="sample_place_try">Try it at %1$s</string>
+    <string name="sample_place_hint">Not in Norway?</string>
+    <string name="sample_place_active_title">Sample location</string>
+    <string name="sample_place_active">Showing the board as if you were at %1$s.</string>
+    <string name="sample_place_use_mine">Use my location</string>
+    <string name="norway_time">Norway time</string>
+    <string name="distance_about">About %1$s</string>
+    <string name="on_spot_no_destinations_title">No destinations yet</string>
+    <string name="on_spot_one_off_hint">For a one-off trip, tap Search.</string>
+    <string name="on_spot_no_stops_body">Routes above include the walk to the nearest stop.</string>
+    <string name="on_spot_stops_nearby">Stops within 1 km of you</string>
+    <plurals name="on_spot_destinations">
+        <item quantity="one">%1$d destination</item>
+        <item quantity="other">%1$d destinations</item>
+    </plurals>
+    <string name="not_now">Not now</string>
+    <string name="location_rationale_title">Use your location</string>
+    <string name="location_rationale_body">On the spot finds the nearest stop and plans routes from where you stand. Your position is sent only to Entur, to find stops and routes, and to MET Norway for the weather.</string>
+    <string name="location_rationale_precise">Precise location finds the nearest stop; approximate still works, less exactly.</string>
+    <string name="location_rationale_turn_off">You can turn it off at any time in your phone’s settings.</string>
+    <string name="location_needed_title">On the spot needs your location</string>
+    <string name="location_needed_body">Location access is needed to show routes and stops from where you are. Turn it on in your phone’s settings, or go on without it and search for routes yourself.</string>
+    <string name="location_continue_without">Continue without location</string>
+    <string name="use_as_board_instead">Use as a wall board instead</string>
+    <string name="camera_rationale_title">Wake the screen when someone walks by</string>
+    <string name="camera_rationale_body">While the screen is dimmed, the front camera watches for movement and wakes the board.</string>
+    <string name="camera_rationale_on_device">Frames never leave this device. Each one is compared with the last and thrown away.</string>
+    <string name="camera_rationale_nothing_kept">Nothing is recorded, saved or sent anywhere.</string>
+    <string name="camera_rationale_sensitivity">Choose how much motion wakes it in Settings, under Camera sensitivity.</string>
+    <string name="camera_allow">Allow camera</string>
+    <string name="camera_denied_title">Camera access is off</string>
+    <string name="camera_denied_body">PulseTransit can’t use the front camera, so the board won’t wake by motion. It stays at full brightness instead of dimming, and you can still touch it.</string>
+    <string name="camera_keep_off">Keep it off</string>
+    <string name="app_name_brand">PulseTransit</string>
+    <string name="location_needed_body_undecided">Location access is needed to show routes and stops from where you are. Allow it now, or use PulseTransit as a wall board, which needs none.</string>
+    <string name="set_stops_title">Stops on the board (%1$d of %2$d)</string>
+    <string name="set_stops_hint">Tap a stop to choose which directions it shows.</string>
+    <string name="set_reorder_hint">Drag a stop, or use Move up and Move down. The board shows them in this order.</string>
+    <string name="set_done">Done</string>
+    <string name="set_no_stops">No stops yet. Add the ones you want the board to show.</string>
+    <string name="set_all_directions">All directions</string>
+    <string name="set_add_stop">Add stop</string>
+    <string name="set_stops_max">You can add up to %1$d stops. Remove one to add another.</string>
+    <string name="set_destinations_board">Fastest route destinations</string>
+    <string name="set_destinations_board_hint">The board shows the fastest way to each one. Tap one to choose when it shows.</string>
+    <string name="set_destinations_spot">Destinations</string>
+    <string name="set_destinations_spot_hint">Routes to these show at the top, from wherever you are. Tap one to choose when it shows.</string>
+    <string name="set_add_destination">Add a destination</string>
+    <string name="set_destinations_limit">Up to %1$d destinations.</string>
+    <string name="set_filtered_title">Filtered out lines</string>
+    <string name="set_filtered_footer">To filter out another line, tap its departure on the board.</string>
+    <string name="set_filtered_none">No lines are filtered out. To hide one, tap its departure on the board.</string>
+    <string name="set_unfilter_line">Show line %1$s again</string>
+    <string name="set_transport_title">Transport information</string>
+    <string name="set_delays_hint">Late departures show the planned time struck through</string>
+    <string name="set_messages_hint">Disruptions and notices from the operator</string>
+    <string name="set_theme_title">Theme</string>
+    <string name="set_theme_mode">Day/night mode</string>
+    <string name="set_theme_hint">Auto follows the room’s light, using the light sensor.</string>
+    <string name="set_thresholds_title">Light thresholds</string>
+    <string name="set_thresholds_hint">Between the two, the theme stays as it is, so it doesn’t flicker at dusk.</string>
+    <string name="set_thresholds_dark">Dark below</string>
+    <string name="set_thresholds_light">Light above</string>
+    <string name="set_power_title">Power &amp; refresh</string>
+    <string name="set_refresh_title">Refresh</string>
+    <string name="set_refresh_interval">Refresh interval</string>
+    <string name="set_refresh_hint_board">How often departures update</string>
+    <string name="set_refresh_hint_spot">How often departures and routes update</string>
+    <string name="set_dynamic_refresh">Dynamic refresh</string>
+    <string name="set_dynamic_refresh_hint">Slower at night and while the screen is dimmed</string>
+    <string name="set_full_screen">Full screen</string>
+    <string name="set_full_screen_hint">Hides the system bars</string>
+    <string name="set_always_on">Always on display</string>
+    <string name="set_always_on_hint">Prevents the screen from timing out</string>
+    <string name="set_wake_title">Wake and dim</string>
+    <string name="set_camera_hint">The camera only notices movement. Nothing is recorded or sent.</string>
+    <string name="set_sensitivity_off_hint">Turn on camera wake to choose how much motion wakes the screen.</string>
+    <string name="set_auto_dim_hint">Time before the screen dims after the last motion</string>
+    <string name="set_auto_dim_off_hint">Turn on camera wake to dim the screen when no one is around.</string>
+    <string name="set_oled_title">OLED screen care</string>
+    <string name="set_pixel_shift">Pixel shift</string>
+    <string name="set_pixel_shift_hint">Moves the board a few pixels now and then so nothing burns in</string>
+    <string name="set_location_title">Location</string>
+    <string name="set_location_hint">Used for the weather and as the start of your fastest routes.</string>
+    <string name="set_current_coordinates">Current coordinates</string>
+    <string name="set_location_denied_title">Location access is off</string>
+    <string name="set_location_denied_body">Allow it in system settings, or enter coordinates below.</string>
+    <string name="set_location_failed_title">Couldn’t find your location</string>
+    <string name="set_location_failed_body">Neither GPS nor the network answered. Try again outdoors or near a window, or enter coordinates below.</string>
+    <string name="set_detect_location">Detect location automatically</string>
+    <string name="set_enter_coordinates">Or enter coordinates</string>
+    <string name="set_latitude">Latitude</string>
+    <string name="set_longitude">Longitude</string>
+    <string name="set_save_coordinates">Save coordinates</string>
+    <string name="set_coord_missing">Enter a number, like %1$s</string>
+    <string name="set_coord_not_number">Use digits and a decimal point, like %1$s</string>
+    <string name="set_latitude_range">Latitude is between -90 and 90</string>
+    <string name="set_longitude_range">Longitude is between -180 and 180</string>
+    <string name="set_about_title">Data sources and about</string>
+    <string name="set_version">Version</string>
+    <string name="set_version_hint">Weather comes from MET Norway (yr.no).</string>
+    <string name="set_journey_hint">How “Notify me about this journey” follows your trip.</string>
+    <string name="set_travel_by_hint">Routes only use the selected kinds of transport.</string>
+    <string name="set_switch_to_spot_title">Switch to on the spot?</string>
+    <string name="set_switch_to_spot_keep">Keep the wall board</string>
+    <string name="set_switch_to_spot_confirm">Switch to on the spot</string>
+    <string name="set_switch_to_board_title">Switch to the wall board?</string>
+    <string name="set_switch_to_board_keep">Stay on the spot</string>
+    <string name="set_switch_to_board_confirm">Switch to wall board</string>
+    <string name="set_switch_to_board_empty">On-spot destinations stay saved. The board starts empty: add its stops here in Settings.</string>
+    <string name="set_stop_removed">Removed %1$s</string>
+    <string name="set_stop_added">Added %1$s to the board</string>
+    <string name="add_stop_title">Add stop places</string>
+    <string name="add_stop_search">Search stops</string>
+    <string name="add_stop_nearby">Nearby stop places</string>
+    <string name="add_stop_results">Search results</string>
+    <string name="add_stop_added">Added</string>
+    <string name="add_stop_add_named">Add %1$s</string>
+    <string name="add_stop_no_results_body">Check the spelling, or try the first part of the name, like “Majo”.</string>
+    <string name="add_stop_none_nearby">No stops within 1 km.</string>
+    <string name="add_stop_none_nearby_body">Search by name to add a stop anywhere in Norway.</string>
+    <string name="add_stop_no_location">Set the board’s location in Settings to see the stops nearby, or search by name.</string>
+    <string name="add_stop_max_title">Maximum of %1$d stop places reached</string>
+    <string name="add_stop_max_body">Remove one in Settings to add another.</string>
+    <string name="add_stop_clear">Clear search</string>
+    <string name="directions_title">Directions</string>
+    <string name="directions_intro">Choose the platforms the board shows for %1$s. With none chosen, it shows every direction.</string>
+    <string name="directions_showing_some">Showing %1$d of %2$d platforms</string>
+    <string name="directions_show_all">Show all</string>
+    <string name="directions_towards">Towards %1$s</string>
+    <string name="directions_failed_title">Couldn’t load the platforms</string>
+    <string name="directions_failed_body">Entur didn’t answer. Until you choose, the board keeps showing every direction for %1$s.</string>
+    <string name="directions_none">Entur lists no platforms for %1$s, so the board shows every direction.</string>
+    <plurals name="set_switch_to_spot_body">
+        <item quantity="one">Your %1$d board stop stays saved. The app follows where you are instead, and the wall-board features (dimming, pixel shift, camera wake) turn off.</item>
+        <item quantity="other">Your %1$d board stops stay saved. The app follows where you are instead, and the wall-board features (dimming, pixel shift, camera wake) turn off.</item>
+    </plurals>
+    <plurals name="set_switch_to_board_body">
+        <item quantity="one">On-spot destinations stay saved. The board shows your %1$d favourite stop instead of the nearest one.</item>
+        <item quantity="other">On-spot destinations stay saved. The board shows your %1$d favourite stops instead of the nearest one.</item>
+    </plurals>
+    <string name="journey_missed_needs_location">Needs “Also notice if I miss my ride”</string>
+    <string name="data_sources_failed_body">Check your connection and try again. Departures on the board are not affected.</string>
+    <string name="schedule_at_set_times">At set times</string>
+    <string name="schedule_days">Days</string>
+    <string name="schedule_next_day">next day</string>
+    <string name="schedule_shows">Shows %1$s</string>
+    <string name="travel_by_group_toggle">All %1$s</string>
+    <string name="widget_no_stops_body">Tap to open the app and pick one.</string>
+    <string name="widget_no_destinations_body">Tap to open the app and add one.</string>
+    <string name="widget_unreachable_departures_body">Nothing saved to show yet. Tap refresh to try again.</string>
+    <string name="widget_unreachable_body">Tap refresh to try again.</string>
+    <string name="widget_no_route_body">Nothing runs there in the next hours. Check the trip in PulseTransit.</string>
+    <string name="widget_choose_hint">Tap one to show it on this widget. Until you do, it shows the first one.</string>
+    <string name="widget_choose_none_title">Nothing saved yet</string>
+    <string name="widget_choose_none_body">Add some in PulseTransit, then come back.</string>
+    <string name="widget_open_app">Open PulseTransit</string>
+    <!-- The iOS widget gallery's names and descriptions (Android's picker has its own, in app/src/main/res). -->
+    <string name="widget_gallery_glance">At a glance</string>
+    <string name="widget_gallery_glance_description">Clock, weather and the next departure</string>
+    <string name="widget_gallery_departures">Departures</string>
+    <string name="widget_gallery_departures_description">Next departures from a favorite stop</string>
+    <string name="widget_gallery_route">Fastest route</string>
+    <string name="widget_gallery_route_description">When to leave for a saved destination</string>
+    <string name="widget_retry_soon">Trying again in a few minutes.</string>
 </resources>

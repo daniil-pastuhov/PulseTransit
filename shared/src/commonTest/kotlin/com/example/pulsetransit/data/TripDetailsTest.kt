@@ -211,4 +211,15 @@ class TripDetailsTest {
         assertNull(walkDestination(trip(walk, metro), 0))
         assertNull(walkDestination(trip(metro, walk), 1))
     }
+
+    @Test
+    fun `the earliest arriving trip is picked by time not by text`() {
+        val base = TripInfo(destinationName = "X", expectedStartTime = "2026-07-15T08:00:00+02:00", lineName = "1", durationMinutes = 30, originName = "Y")
+        // 08:30+02:00 is 06:30Z: earlier in time, though later as text than "06:40Z".
+        val localEarlier = base.copy(expectedEndTime = "2026-07-15T08:30:00+02:00")
+        val utc = base.copy(expectedEndTime = "2026-07-15T06:40:00Z")
+        val unknown = base.copy(expectedEndTime = null)
+        assertEquals(localEarlier, earliestArriving(listOf(utc, unknown, localEarlier)))
+        assertEquals(null, earliestArriving(listOf(unknown)))
+    }
 }

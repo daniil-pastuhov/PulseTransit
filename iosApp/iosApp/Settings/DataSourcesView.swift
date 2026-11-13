@@ -31,24 +31,24 @@ struct DataSourcesView: View {
     @ViewBuilder
     private func content(_ state: DataSourcesViewModel.UiState) -> some View {
         if state.isLoading {
-            Section {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
-                }
-            }
+            // The intro is local text, so only the list is a skeleton.
+            SourcesSkeleton()
         } else if state.failed {
-            Section {
-                Text(L("data_sources_failed"))
-                Button(L("retry")) { model.viewModel.retry() }
+            // T5 in the list's place: the list is the content and nothing is cached.
+            EmptyListMessage(symbol: "icloud.slash", title: L("data_sources_failed"), detail: L("data_sources_failed_body")) {
+                Button(L("try_again")) { model.viewModel.retry() }
+                    .buttonStyle(.borderedProminent)
+                    .padding(.top, 4)
             }
         } else if state.noMatches {
-            Section {
-                Text(L("data_sources_no_match", state.query.trimmingCharacters(in: .whitespaces)))
-            }
+            // A real answer, not an error: the company isn't covered.
+            EmptyListMessage(
+                symbol: "magnifyingglass",
+                title: L("data_sources_no_match", state.query.trimmingCharacters(in: .whitespaces)),
+                detail: ""
+            )
         } else {
-            Section(header: state.query.isEmpty ? Text(L("data_sources_count", state.all.count)) : nil) {
+            Section(header: state.query.isEmpty ? Text(L("data_sources_count", state.all.count)).font(.pulse(.subheadline, weight: .semibold)).foregroundColor(Palette.primary).textCase(nil) : nil) {
                 ForEach(state.shown, id: \.name) { source in
                     row(source)
                 }
@@ -61,7 +61,7 @@ struct DataSourcesView: View {
         let label = VStack(alignment: .leading, spacing: 2) {
             Text(source.name).foregroundColor(.primary)
             Text(source.modes.map { L(Self.modeKey($0)) }.joined(separator: ", "))
-                .font(.caption)
+                .font(.pulse(.caption))
                 .foregroundColor(.secondary)
         }
         if let link = source.url.flatMap(URL.init(string:)) {
@@ -84,5 +84,23 @@ struct DataSourcesView: View {
         case .cableCar: return "route_mode_cable_car"
         case .onDemand: return "route_mode_on_demand"
         }
+    }
+}
+
+private struct SourcesSkeleton: View {
+    @State private var pulse = false
+
+    var body: some View {
+        Section {
+            ForEach(0 ..< 6, id: \.self) { _ in
+                VStack(alignment: .leading, spacing: 6) {
+                    PlaceholderBlock(width: 140, height: 14, pulse: pulse)
+                    PlaceholderBlock(width: 200, height: 11, pulse: pulse)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+        .modifier(PlaceholderPulse(pulse: $pulse))
+        .accessibilityHidden(true)
     }
 }

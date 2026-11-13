@@ -1,6 +1,7 @@
 import AVFoundation
 import Shared
 import SwiftUI
+import WidgetKit
 
 /// The departure board: the iOS counterpart of Android's MainScreen.
 struct StopBoardView: View {
@@ -38,7 +39,6 @@ struct StopBoardView: View {
             board(state: state, viewModel: viewModel, showsHeader: placement == .none)
         } actions: {
             BoardActionButtons(
-                onRefresh: { viewModel.refreshData() },
                 onSearchRoute: { showRouteSearch = true },
                 onOpenSettings: { showSettings = true },
                 shift: state.burnInLevel
@@ -79,6 +79,9 @@ struct StopBoardView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .active && !showSettings { startCameraIfAllowed() } else { viewModel.stopCameraMotion() }
             if phase == .active { viewModel.startLocationTracking() } else if phase == .background { viewModel.stopLocationTracking() }
+            // As Android refreshes its widgets when the app stops: they show what the board last
+            // saw, including where on-spot mode last found the device.
+            if phase == .background { WidgetCenter.shared.reloadAllTimelines() }
         }
         .onChange(of: showSettings) { open in
             if open { viewModel.stopCameraMotion() }
@@ -91,11 +94,17 @@ struct StopBoardView: View {
             viewModel.loadSettings()
             viewModel.startAutoRefresh()
             startCameraIfAllowed()
+            // Stops or destinations may have changed, which the widgets show.
+            WidgetCenter.shared.reloadAllTimelines()
         }) {
             SettingsView(themeMode: state.themeMode)
                 .pageSizedSheet()
         }
     }
+
+    /// A board this wide gets the one-row header, larger rows and side-by-side routes, as on Android.
+    private var isWide: Bool { boardSize.width >= 700 }
+    private var gap: CGFloat { isWide ? FjordTokens.space4 : FjordTokens.space3 }
 
     /// The board itself; `showsHeader` is false while the header sits in iPhone Duo's bar.
     @ViewBuilder
@@ -108,20 +117,23 @@ struct StopBoardView: View {
                         .onChange(of: geometry.size) { boardSize = $0 }
                 })
 
-            VStack(spacing: 0) {
+            VStack(spacing: gap) {
                 // In iPhone Duo's side bar, the header's clock, weather and buttons are there instead.
                 if showsHeader {
                     BoardHeader(
                         state: state,
+                        wide: isWide,
                         onCycleDateStyle: { viewModel.cycleDateStyle() },
-                        onRefresh: { viewModel.refreshData() },
                         onSearchRoute: { showRouteSearch = true },
                         onOpenSettings: { showSettings = true }
                     )
                 }
-                if let update = updateModel.state.update {
-                    UpdateBanner(update: update, onDismiss: { updateModel.viewModel.dismiss() })
-                }
+                BoardNoticeSlot(
+                    state: state,
+                    update: updateModel.state.update,
+                    onRetry: { viewModel.refreshNow() },
+                    onDismissUpdate: { updateModel.viewModel.dismiss() }
+                )
                 if let journey = journeyModel.state.activeJourney {
                     FollowedJourneyBar(
                         journey: journey,
@@ -136,16 +148,12 @@ struct StopBoardView: View {
                 }
                 BoardFooter(state: state)
             }
-            // With the header in iPhone Duo's top row, that row keeps the header's colour.
-            .background(alignment: .top) {
-                if !showsHeader {
-                    Palette.surface.frame(height: 0).ignoresSafeArea(edges: .top)
-                }
-            }
+            .padding(.horizontal, isWide ? FjordTokens.space6 : FjordTokens.space3)
+            .padding(.vertical, isWide ? FjordTokens.space4 : FjordTokens.space3)
             // Its own anchor: two sheets on one view do not both present on iOS 15. Not on the
             // header, which is not there while it is in the side bar.
             .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
-                RouteSearchView(state: model.state, viewModel: viewModel)
+                RouteSearchView(state: model.state, viewModel: viewModel, journey: journeyModel)
             }
             .background(
                 Color.clear.sheet(item: $followedJourney) { selection in
@@ -163,8 +171,18 @@ struct StopBoardView: View {
             .onChange(of: journeyModel.state.openJourneyRequested) { requested in
                 if requested { openFollowedJourney() }
             }
-            .opacity(state.isScreenDimmed ? 0.05 : 1)
+            // Dimmed: dark, at about half brightness, which keeps an OLED board readable across a
+            // room without lighting it.
+            .opacity(state.isScreenDimmed ? 0.55 : 1)
             .pixelShift(state.burnInLevel)
+            .overlay(alignment: .bottom) {
+                UndoToast(
+                    pending: state.pendingUndo,
+                    onUndo: { withAnimation { viewModel.undo() } },
+                    onDismiss: { withAnimation { viewModel.dismissUndo() } }
+                )
+                .animation(.easeInOut, value: state.pendingUndo?.serial)
+            }
 
             if state.isScreenDimmed {
                 Color.clear
@@ -195,9 +213,10 @@ struct StopBoardView: View {
                 state.failedTripDestinationIds.contains($0.id) ||
                 $0.id == state.temporaryDestination?.id
         }
-        VStack(spacing: 0) {
-            ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
-                if index > 0 { Divider() }
+        // Side by side on a wide board, as many as fit at 320 pt or more each.
+        let columns = isWide ? max(1, Int(boardSize.width / 320)) : 1
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: FjordTokens.space3), count: min(columns, max(1, routes.count))), spacing: FjordTokens.space2) {
+            ForEach(routes, id: \.id) { destination in
                 HStack(spacing: 0) {
                     // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
                     ZStack {
@@ -235,7 +254,6 @@ struct StopBoardView: View {
                         )
                     }
                 }
-                // The banner fills its own slot; the buttons share its colour at its height.
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -249,7 +267,7 @@ struct StopBoardView: View {
             )
         }
         if state.favorites.isEmpty {
-            EmptyBoard(onOpenSettings: { showSettings = true })
+            EmptyBoard(onAddStops: { showSettings = true })
         } else {
             // Pages by the shared rules for the space the panels have: one when every stop fits,
             // else the board takes turns. Read from the layout rather than the screen, so an iPad
@@ -261,12 +279,11 @@ struct StopBoardView: View {
                     heightDp: Float(geometry.size.height)
                 ).map(\.intValue)
                 if pageSizes.count > 1 {
-                    PagedStopPanels(state: state, viewModel: viewModel, pageSizes: pageSizes, paused: state.isScreenDimmed)
+                    PagedStopPanels(state: state, viewModel: viewModel, pageSizes: pageSizes, paused: state.isScreenDimmed, gap: gap)
                 } else {
-                    StopPanels(state: state, viewModel: viewModel, firstIndex: 0, count: state.favorites.count)
+                    StopPanels(state: state, viewModel: viewModel, firstIndex: 0, count: state.favorites.count, gap: gap)
                 }
             }
-            .padding(6)
         }
     }
 }
@@ -281,7 +298,7 @@ extension StopBoardView {
         func wait(_ seconds: Double) async { try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
         // What the mode switch in Settings saves. Set here rather than seeded by the recording
         // script, since the app's own write from the previous take would shadow a seeded value.
-        func setMode(_ mode: AppMode) { UserDefaults.standard.set(mode.name, forKey: "app_mode") }
+        func setMode(_ mode: AppMode) { appSettingsDefaults.set(mode.name, forKey: "app_mode") }
         setMode(.onSpot)
         viewModel.loadSettings()
         await wait(8)
@@ -312,40 +329,13 @@ extension StopBoardView {
 #endif
 
 extension StopBoardView {
-    /// Starts camera motion wake if the setting is on. Settings asks for camera access when the
-    /// switch is turned on; this asks only when the setting is on but access was never requested
-    /// (e.g. after a reinstall). `startCameraMotion()` itself does nothing while the setting is off.
+    /// Starts camera motion wake if the setting is on and camera access is granted. It never asks
+    /// for access: Settings does, with its rationale, where camera wake is turned on.
+    /// `startCameraMotion()` itself does nothing while the setting is off.
     private func startCameraIfAllowed() {
-        let viewModel = model.viewModel
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            viewModel.startCameraMotion()
-        case .notDetermined where viewModel.isCameraMotionEnabled():
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    if granted { viewModel.startCameraMotion() }
-                }
-            }
-        default:
-            break
+        if AVCaptureDevice.authorizationStatus(for: .video) == .authorized {
+            model.viewModel.startCameraMotion()
         }
-    }
-}
-
-private struct EmptyBoard: View {
-    let onOpenSettings: () -> Void
-
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            Text(L("no_stops_configured"))
-                .font(.title2)
-                .foregroundColor(Palette.textPrimary)
-            Button(L("open_settings_to_add"), action: onOpenSettings)
-                .buttonStyle(.borderedProminent)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
     }
 }
 
@@ -359,9 +349,11 @@ private struct PagedStopPanels: View {
     let viewModel: StopBoardViewModel
     let pageSizes: [Int]
     let paused: Bool
+    var gap: CGFloat = FjordTokens.space3
     @State private var page = 0
-    @State private var progress: CGFloat = 0
     @State private var openDetails = Set<String>()
+    /// Tapping the page dots holds the current page until they are tapped again.
+    @State private var heldByUser = false
     /// Bumped by a drag, to start the current page's interval again.
     @State private var restarts = 0
 
@@ -375,8 +367,8 @@ private struct PagedStopPanels: View {
     var body: some View {
         let starts = pageSizes.reduce(into: [0]) { $0.append($0[$0.count - 1] + $1) }
         let current = min(page, pageSizes.count - 1)
-        let isPaused = paused || !openDetails.isEmpty
-        VStack(spacing: 0) {
+        let isPaused = paused || heldByUser || !openDetails.isEmpty
+        VStack(spacing: FjordTokens.space2) {
             TabView(selection: $page) {
                 ForEach(pageSizes.indices, id: \.self) { index in
                     StopPanels(
@@ -384,6 +376,7 @@ private struct PagedStopPanels: View {
                         viewModel: viewModel,
                         firstIndex: starts[index],
                         count: pageSizes[index],
+                        gap: gap,
                         onDetailsOpenChange: { stopId, open in
                             if open { openDetails.insert(stopId) } else { openDetails.remove(stopId) }
                         },
@@ -400,30 +393,22 @@ private struct PagedStopPanels: View {
                 lastStop: starts[current] + pageSizes[current],
                 stopCount: state.favorites.count,
                 paused: isPaused,
-                progress: progress
+                onTogglePause: { heldByUser.toggle() }
             )
             .frame(height: CGFloat(BoardLayout.shared.PAGE_INDICATOR_HEIGHT_DP))
         }
         .onChange(of: pageSizes.count) { count in page = min(page, count - 1) }
         .task(id: Turn(page: current, pageCount: pageSizes.count, paused: isPaused, restarts: restarts)) {
-            var reset = Transaction()
-            reset.disablesAnimations = true
-            withTransaction(reset) { progress = 0 }
             guard !isPaused else { return }
-            // A frame at zero first, so the fill animates from the start rather than from where it was.
-            try? await Task.sleep(nanoseconds: 50_000_000)
-            guard !Task.isCancelled else { return }
-            let interval = Double(BoardLayout.shared.PAGE_INTERVAL_MS) / 1000
-            withAnimation(.linear(duration: interval)) { progress = 1 }
-            try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
+            try? await Task.sleep(nanoseconds: UInt64(BoardLayout.shared.PAGE_INTERVAL_MS) * 1_000_000)
             guard !Task.isCancelled else { return }
             withAnimation { page = (current + 1) % pageSizes.count }
         }
     }
 }
 
-/// Which stops the page shows ("Stops 3–4 of 6") beside a segment per page; the current page's
-/// segment fills over its interval, so the board reads as turning by itself, and when it will.
+/// Which stops the page shows ("Stops 3–4 of 6") beside a dot per page, the current one long. The
+/// board turns by itself every `PAGE_INTERVAL_MS`; VoiceOver hears when. Tapping pauses it.
 private struct BoardPageIndicator: View {
     let page: Int
     let pageCount: Int
@@ -431,34 +416,25 @@ private struct BoardPageIndicator: View {
     let lastStop: Int
     let stopCount: Int
     let paused: Bool
-    let progress: CGFloat
+    let onTogglePause: () -> Void
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: FjordTokens.space2) {
             Text(firstStop == lastStop ? L("board_page_stop", firstStop, stopCount) : L("board_page_stops", firstStop, lastStop, stopCount))
-                .font(.caption2)
+                .font(.pulse(.caption))
                 .foregroundColor(Palette.textSecondary)
                 .lineLimit(1)
-            HStack(spacing: 4) {
-                ForEach(0 ..< pageCount, id: \.self) { index in
-                    Capsule()
-                        .fill(Palette.textPrimary.opacity(0.15))
-                        .overlay(alignment: .leading) {
-                            if index == page {
-                                GeometryReader { geometry in
-                                    Capsule()
-                                        .fill(Palette.primary)
-                                        .frame(width: geometry.size.width * progress)
-                                }
-                            }
-                        }
-                        .frame(width: 20, height: 4)
-                        .clipShape(Capsule())
-                }
+            ForEach(0 ..< pageCount, id: \.self) { index in
+                Capsule()
+                    .fill(index == page ? Palette.primary : Palette.outlineVariant)
+                    .frame(width: index == page ? 20 : 8, height: 8)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, minHeight: 44)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTogglePause)
         .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
         .accessibilityLabel(
             paused
                 ? L("board_page_paused", page + 1, pageCount)
@@ -475,6 +451,7 @@ private struct StopPanels: View {
     let viewModel: StopBoardViewModel
     let firstIndex: Int
     let count: Int
+    var gap: CGFloat = FjordTokens.space3
     var onDetailsOpenChange: (String, Bool) -> Void = { _, _ in }
     var onDragStart: () -> Void = {}
     // Which panel a drag started from. Set afresh by every drag and only read when a drop lands
@@ -498,9 +475,9 @@ private struct StopPanels: View {
                 let first = columnSizes[..<column].reduce(0, +)
                 return Array(favorites[min(first, favorites.count) ..< min(first + columnSizes[column], favorites.count)])
             }
-            HStack(spacing: 0) {
+            HStack(spacing: gap) {
                 ForEach(columns, id: \.first?.element.id) { column in
-                    VStack(spacing: 0) {
+                    VStack(spacing: gap) {
                         ForEach(column, id: \.element.id) { index, stop in
                             panel(index: index, stop: stop)
                         }
@@ -510,10 +487,20 @@ private struct StopPanels: View {
         }
     }
 
+    /// Refreshes on a pull, and lets the pull go once the refresh has finished.
+    private func refreshNow() async {
+        viewModel.refreshNow()
+        for _ in 0 ..< 60 {
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            if !viewModel.uiState.value.isManualRefreshing { return }
+        }
+    }
+
     private func panel(index: Int, stop: StopPlace) -> some View {
         StopPanel(
             stop: stop,
             groups: state.departures.first { $0.stopId == stop.id }?.groups,
+            directions: state.directionSummaries[stop.id],
             showDelays: state.showDelays,
             showMessages: state.showMessages,
             isLoading: state.loadingStopIds.contains(stop.id),
@@ -524,14 +511,14 @@ private struct StopPanels: View {
             isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
             onFilterOut: { viewModel.filterOutLine(line: $0) },
             onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
-            onRetry: { viewModel.refreshData() },
             onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
             loadJourney: { departure in
                 (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
             },
             onRowCapacity: { viewModel.setPanelRowCapacity(stopId: stop.id, rows: Int32($0)) },
             onDetailsOpenChange: { onDetailsOpenChange(stop.id, $0) },
-            showsDragHandle: count > 1
+            showsDragHandle: count > 1,
+            onPullToRefresh: { await refreshNow() }
         )
         // A panel paged out of view cannot have its details open any more.
         .onDisappear { onDetailsOpenChange(stop.id, false) }
@@ -566,35 +553,5 @@ private struct PanelDropDelegate: DropDelegate {
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         DropProposal(operation: .move)
-    }
-}
-
-private struct BoardFooter: View {
-    let state: StopBoardViewModel.UiState
-
-    var body: some View {
-        VStack(spacing: 2) {
-            if let staleMinutes = state.staleAgeMinutes {
-                Label(
-                    L(state.isOnline ? "offline_stale_data" : "offline_no_internet_stale_data", Int(staleMinutes.intValue)),
-                    systemImage: loadFailureSymbol(isOnline: state.isOnline)
-                )
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(Palette.error)
-            }
-            Text(L("last_updated", state.lastUpdated))
-                .font(.system(size: 11))
-                .foregroundColor(Palette.textPrimary.opacity(0.3))
-            HStack(spacing: 8) {
-                Text(L("attribution_entur"))
-                if state.showWeather {
-                    Text(L("attribution_met"))
-                }
-            }
-            .font(.system(size: 9))
-            .foregroundColor(Palette.textPrimary.opacity(0.2))
-        }
-        .padding(.top, 2)
-        .padding(.bottom, 4)
     }
 }

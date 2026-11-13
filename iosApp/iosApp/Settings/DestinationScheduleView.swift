@@ -13,6 +13,8 @@ struct DestinationScheduleView: View {
     @State private var days: Set<Int32>
     @State private var startMinute: Int32
     @State private var endMinute: Int32
+    /// Save stays enabled; pressing it with no days says so at the day picker (T1).
+    @State private var showDaysError = false
 
     init(destination: StopPlace, schedule: DestinationSchedule?, onSave: @escaping (DestinationSchedule?) -> Void) {
         self.destination = destination
@@ -31,9 +33,18 @@ struct DestinationScheduleView: View {
         NavigationView {
             Form {
                 Section {
-                    Toggle(L("schedule_always"), isOn: $always)
+                    Picker(L("schedule_title"), selection: $always) {
+                        Text(L("schedule_always")).tag(true)
+                        Text(L("schedule_at_set_times")).tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
                 } header: {
-                    Text(destination.name)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(destination.name).font(.pulse(.subheadline, weight: .semibold))
+                        Text(L("schedule_hint")).font(.pulse(.footnote))
+                    }
+                    .textCase(nil)
                 }
                 if !always {
                     Section {
@@ -49,19 +60,33 @@ struct DestinationScheduleView: View {
                             }
                         }
                         .padding(.vertical, 4)
+                        if showDaysError && days.isEmpty {
+                            Label(L("schedule_no_days"), systemImage: "exclamationmark.circle")
+                                .font(.pulse(.footnote))
+                                .foregroundColor(Palette.error)
+                        }
+                    } header: {
+                        Text(L("schedule_days")).textCase(nil)
                     }
                     Section {
                         DatePicker(L("schedule_from"), selection: timeBinding($startMinute, isEnd: false), displayedComponents: .hourAndMinute)
-                        DatePicker(L("schedule_to"), selection: timeBinding($endMinute, isEnd: true), displayedComponents: .hourAndMinute)
-                    } footer: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            if days.isEmpty {
-                                Text(L("schedule_no_days")).foregroundColor(.red)
-                            } else {
-                                Text(scheduleSummary(edited)).foregroundColor(.accentColor)
+                        // An end before the start is the next day, not an error, and the label says so.
+                        DatePicker(selection: timeBinding($endMinute, isEnd: true), displayedComponents: .hourAndMinute) {
+                            HStack(spacing: 4) {
+                                Text(L("schedule_to"))
+                                if edited.endsNextDay {
+                                    Text(L("schedule_next_day")).font(.pulse(.footnote)).foregroundColor(Palette.primary)
+                                }
                             }
-                            Text(L("schedule_hint"))
                         }
+                    }
+                }
+                // What the choice comes to; nothing while no day is picked.
+                if always || !days.isEmpty {
+                    Section {
+                        Label(L("schedule_shows", scheduleSummary(always ? nil : edited)), systemImage: "clock")
+                            .font(.pulse(.subheadline))
+                            .foregroundColor(Palette.primary)
                     }
                 }
             }
@@ -73,10 +98,13 @@ struct DestinationScheduleView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L("save")) {
-                        onSave(always ? nil : edited)
-                        dismiss()
+                        if !always && days.isEmpty {
+                            showDaysError = true
+                        } else {
+                            onSave(always ? nil : edited)
+                            dismiss()
+                        }
                     }
-                    .disabled(!always && days.isEmpty)
                 }
             }
         }
@@ -85,9 +113,12 @@ struct DestinationScheduleView: View {
     }
 
     private func presetButton(_ key: String, _ preset: Set<KotlinInt>) -> some View {
-        Button(L(key)) { days = isoDays(preset) }
+        Button(L(key)) {
+            days = isoDays(preset)
+            showDaysError = false
+        }
             .buttonStyle(.bordered)
-            .font(.footnote)
+            .font(.pulse(.footnote))
             .frame(maxWidth: .infinity)
     }
 
@@ -95,14 +126,15 @@ struct DestinationScheduleView: View {
         let selected = days.contains(day)
         return Button {
             if selected { days.remove(day) } else { days.insert(day) }
+            showDaysError = false
         } label: {
             Text(shortDayName(day))
-                .font(.subheadline.weight(selected ? .semibold : .regular))
+                .font(.pulse(.subheadline, weight: selected ? .semibold : .regular))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: 36)
-                .background(RoundedRectangle(cornerRadius: 8).fill(selected ? Color.accentColor : Color.secondary.opacity(0.15)))
-                .foregroundColor(selected ? .white : .primary)
+                .background(RoundedRectangle(cornerRadius: 8).fill(selected ? Palette.primary : Palette.surfaceContainer))
+                .foregroundColor(selected ? Palette.onPrimary : Palette.textPrimary)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? .isSelected : [])

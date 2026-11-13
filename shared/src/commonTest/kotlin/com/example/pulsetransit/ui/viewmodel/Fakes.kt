@@ -12,6 +12,7 @@ import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
+import com.example.pulsetransit.data.SamplePlace
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
@@ -373,11 +374,19 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun getFavorites() = favoriteStops
 
-    override fun addFavorite(stopPlace: StopPlace) {}
+    override fun addFavorite(stopPlace: StopPlace) {
+        if (favoriteStops.none { it.id == stopPlace.id } && favoriteStops.size < SettingsRepository.MAX_FAVORITE_STOPS) {
+            favoriteStops = favoriteStops + stopPlace
+        }
+    }
 
-    override fun removeFavorite(stopId: String) {}
+    override fun removeFavorite(stopId: String) {
+        favoriteStops = favoriteStops.filter { it.id != stopId }
+    }
 
-    override fun reorderFavorites(stopIds: List<String>) {}
+    override fun reorderFavorites(stopIds: List<String>) {
+        favoriteStops = stopIds.mapNotNull { id -> favoriteStops.find { it.id == id } }
+    }
 
     override fun isFavorite(stopId: String) = favoriteStops.any { it.id == stopId }
 
@@ -468,6 +477,14 @@ class FakeSettingsRepository : SettingsRepository {
         lastDeviceFix = null
     }
 
+    var storedSamplePlace: SamplePlace? = null
+
+    override fun getSamplePlace() = storedSamplePlace
+
+    override fun setSamplePlace(place: SamplePlace?) {
+        storedSamplePlace = place
+    }
+
     override fun isShowDelays() = delaysShown
 
     override fun setShowDelays(show: Boolean) {
@@ -519,13 +536,24 @@ class FakeSettingsRepository : SettingsRepository {
         dynamicRefresh = enabled
     }
 
+    var recent = listOf<StopPlace>()
+
+    override fun getRecentDestinations() = recent
+
+    override fun addRecentDestination(place: StopPlace) {
+        recent = (listOf(place) + recent.filter { it.id != place.id }).take(SettingsRepository.MAX_RECENT_DESTINATIONS)
+    }
+
     override fun getDestinationStations() = destinations
 
     override fun addDestinationStation(stopPlace: StopPlace) {
         destinations = destinations + stopPlace
     }
 
-    override fun removeDestinationStation(stopId: String) {}
+    override fun removeDestinationStation(stopId: String) {
+        destinations = destinations.filter { it.id != stopId }
+        schedules = schedules - stopId
+    }
 
     override fun reorderDestinationStations(stopIds: List<String>) {
         val listed = stopIds.mapNotNull { id -> destinations.find { it.id == id } }

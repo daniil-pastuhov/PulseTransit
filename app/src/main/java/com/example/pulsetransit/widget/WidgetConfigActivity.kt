@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -28,10 +28,13 @@ import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
+import com.example.pulsetransit.MainActivity
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.widget.BoardWidgetSource
 import com.example.pulsetransit.data.widget.pickWidgetPlace
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.ScreenMessage
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -78,6 +81,10 @@ class WidgetConfigActivity : ComponentActivity() {
                                 finish()
                             }
                         },
+                        onOpenApp = {
+                            startActivity(Intent(this@WidgetConfigActivity, MainActivity::class.java))
+                            finish()
+                        },
                     )
                 }
             }
@@ -92,6 +99,7 @@ private fun PlacePicker(
     places: List<StopPlace>,
     selectedId: String?,
     onPick: (StopPlace) -> Unit,
+    onOpenApp: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -101,17 +109,38 @@ private fun PlacePicker(
         },
     ) { padding ->
         if (places.isEmpty()) {
-            Text(stringResource(Res.string.widget_choose_none), modifier = Modifier.padding(padding).padding(16.dp))
+            // The empty state teaches the next step, with the way there.
+            ScreenMessage(
+                title = stringResource(Res.string.widget_choose_none_title),
+                body = stringResource(Res.string.widget_choose_none_body),
+                icon = PulseIcons.AddLocationAlt,
+                modifier = Modifier.fillMaxSize().padding(padding),
+            ) { Button(onClick = onOpenApp) { Text(stringResource(Res.string.widget_open_app)) } }
             return@Scaffold
         }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
+            item(key = "hint") {
+                Text(
+                    stringResource(Res.string.widget_choose_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
             items(places, key = { it.id }) { place ->
                 ListItem(
+                    leadingContent = {
+                        Icon(
+                            if (isRoute) PulseIcons.LocationOn else PulseIcons.DirectionsBus,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    },
                     headlineContent = { Text(place.name) },
                     supportingContent = place.locality?.let { { Text(it) } },
                     trailingContent =
                         if (place.id == selectedId) {
-                            { Icon(Icons.Filled.Check, contentDescription = null) }
+                            { Icon(PulseIcons.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
                         } else {
                             null
                         },

@@ -47,3 +47,29 @@ actual fun rememberWalkingDirections(): (latitude: Double, longitude: Double) ->
         }
     }
 }
+
+/** The desktop app has no permission settings to open. */
+@Composable
+actual fun rememberOpenAppSettings(): () -> Unit = {}
+
+/** The desktop app needs no permissions: its location is fixed and it has no camera. */
+@Composable
+actual fun rememberPermissionGranted(permission: AppPermission): Boolean = permission == AppPermission.LOCATION
+
+/** Nothing to ask on the desktop; location counts as granted, the camera as refused. */
+@Composable
+actual fun rememberPermissionRequest(
+    permission: AppPermission,
+    onResult: (granted: Boolean) -> Unit,
+): () -> Unit = { onResult(permission == AppPermission.LOCATION) }
+
+/** The desktop window has no system back. */
+@Composable
+actual fun SystemBackHandler(
+    enabled: Boolean,
+    onBack: () -> Unit,
+) = Unit
+
+/** The desktop app is a development tool with no release of its own. */
+@Composable
+actual fun appVersion(): String = "dev"

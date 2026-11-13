@@ -149,6 +149,28 @@ enum class JourneyAlertKind {
     ARRIVED,
 }
 
+/** Whether this kind can be sent when a journey is followed by [mode]: a missed ride needs location. */
+fun JourneyAlertKind.appliesTo(mode: JourneyTrackingMode?): Boolean = this != JourneyAlertKind.MISSED || mode == JourneyTrackingMode.LOCATION
+
+/**
+ * Settings' "4 of 7 alerts": how many of the kinds that apply to [mode] are on, out of those that
+ * apply, so the missed-ride alert doesn't count while following by time only.
+ */
+data class JourneyAlertCount(
+    val enabled: Int,
+    val total: Int,
+) {
+    val isAll: Boolean get() = enabled == total
+}
+
+fun journeyAlertCount(
+    mode: JourneyTrackingMode?,
+    disabled: Set<JourneyAlertKind>,
+): JourneyAlertCount {
+    val applicable = JourneyAlertKind.entries.filter { it.appliesTo(mode) }
+    return JourneyAlertCount(enabled = applicable.count { it !in disabled }, total = applicable.size)
+}
+
 val JourneyAlert.kind: JourneyAlertKind
     get() =
         when (this) {

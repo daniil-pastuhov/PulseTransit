@@ -31,6 +31,7 @@ class SettingsRepositoryImpl(
         const val FILTERED_LINES = "filtered_lines_json"
         const val EXCLUDED_ROUTE_MODES = "route_excluded_modes_json"
         const val DESTINATION_SCHEDULES = "destination_schedules_json"
+        const val SAMPLE_PLACE = "sample_place"
 
         fun selectedQuays(stopId: String) = "quays_json_$stopId"
     }
@@ -299,6 +300,12 @@ class SettingsRepositoryImpl(
         deviceState?.remove(Keys.DEVICE_LON)
     }
 
+    override fun getSamplePlace(): SamplePlace? = prefs.getStringOrNull(Keys.SAMPLE_PLACE)?.let { name -> SamplePlace.entries.firstOrNull { it.name == name } }
+
+    override fun setSamplePlace(place: SamplePlace?) {
+        if (place == null) prefs.remove(Keys.SAMPLE_PLACE) else prefs.putString(Keys.SAMPLE_PLACE, place.name)
+    }
+
     private fun roundTo4(value: Double) = kotlin.math.round(value * FOUR_DECIMALS) / FOUR_DECIMALS
 
     override fun isShowDelays(): Boolean = prefs.getBoolean("show_delays", true)
@@ -373,6 +380,20 @@ class SettingsRepositoryImpl(
             current.add(stopPlace)
             prefs.putString("destination_stations", json.encodeToString(current))
         }
+    }
+
+    override fun getRecentDestinations(): List<StopPlace> {
+        val jsonStr = prefs.getStringOrNull("recent_destinations") ?: return emptyList()
+        return try {
+            json.decodeFromString<List<StopPlace>>(jsonStr)
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    override fun addRecentDestination(place: StopPlace) {
+        val recent = (listOf(place) + getRecentDestinations().filter { it.id != place.id }).take(SettingsRepository.MAX_RECENT_DESTINATIONS)
+        prefs.putString("recent_destinations", json.encodeToString(recent))
     }
 
     override fun removeDestinationStation(stopId: String) {

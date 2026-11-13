@@ -1,0 +1,100 @@
+/* Sheets: departure details, trip details, route search, travel time. Tokens only. */
+
+/* the board behind a sheet: real markup, not interactive */
+.sheet-bg { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+
+/* a slightly deeper scrim than dialogs: on the OLED-black board 40% barely dims the text */
+.sheet-overlay.side { background: color-mix(in srgb, var(--color-scrim) 55%, transparent); }
+.ps-sheet .skeleton { display: block; background: var(--color-outline-variant); }
+
+/* sheet body spacing, shared by the head, content and sticky foot */
+.ps-sheet { --ps-px: var(--space-4); --ps-pb: var(--space-6); padding: var(--space-3) var(--ps-px) var(--ps-pb); display: flex; flex-direction: column; box-shadow: var(--elevation-3); }
+.ps-sheet > * { flex: none; }
+.ps-sheet.tall { height: 92%; }
+.ps-sheet .sheet-head { align-items: center; }
+.ps-sheet .sheet-head .pill { align-self: flex-start; margin-top: 4px; }
+.ps-wrap { overflow-wrap: anywhere; }
+.ps-faded { opacity: .55; }
+.ps-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ps-hint { margin: var(--space-2) 0 0; font: var(--type-caption); color: var(--color-on-surface-variant); }
+.ps-dot { color: var(--color-on-surface-variant); }
+
+/* sticky primary action at the bottom of a sheet */
+.sheet-foot { position: sticky; bottom: calc(-1 * var(--ps-pb)); margin: auto calc(-1 * var(--ps-px)) calc(-1 * var(--ps-pb)); padding: var(--space-3) var(--ps-px) var(--ps-pb);
+  background: var(--color-surface-container-high); border-top: 1px solid var(--color-outline-variant); display: grid; gap: var(--space-2); z-index: 1; }
+.ps-sheet > .sheet-foot { margin-top: auto; }
+.ps-sheet > .timeline, .ps-sheet > .ps-summary { margin-bottom: var(--space-4); }
+.ps-line { display: block; font: var(--type-body-sm); color: var(--color-on-surface-variant); }
+.ps-line .pill { vertical-align: 1px; margin-right: 2px; }
+.tl.current .ps-line { color: var(--color-on-primary-container); }
+
+/* departure: the countdown block */
+.ps-when { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: var(--color-surface-container); }
+.ps-count { font: var(--type-countdown); font-size: 32px; line-height: 36px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ps-count.cancelled-label { font: var(--type-title); color: var(--color-error); }
+.ps-when-meta { display: grid; gap: 2px; font: var(--type-body-sm); min-width: 0; }
+.ps-when-meta .row { gap: var(--space-2); }
+.ps-ride { display: flex; align-items: center; gap: var(--space-1); margin: 0 0 var(--space-3); font: var(--type-body-sm); color: var(--color-on-surface-variant); }
+.times-row .tchip { border: 0; color: var(--color-on-surface); cursor: pointer; min-height: var(--size-touch); }
+.times-row .tchip.is-cancelled s { color: var(--color-error); }
+.ps-sheet > .callout { margin-top: var(--space-3); }
+.ps-stops .what { padding-bottom: var(--space-2); }
+
+/* trip: summary line, inline text buttons, current leg */
+.ps-legsum { margin: calc(-1 * var(--space-1)) 0 var(--space-4); }
+.btn.text.ps-inline { min-height: var(--size-touch); margin-block: calc(-1 * var(--space-3)); padding: 0 var(--space-2); gap: 2px; }
+.ps-trip { margin-top: var(--space-2); }
+.ps-trip > .tl { min-height: 56px; }
+.ps-trip .tm small { white-space: nowrap; }
+.tl.current .what { background: var(--color-primary-container); color: var(--color-on-primary-container); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3); }
+.tl.current .what > span, .tl.current .what .ps-now { color: var(--color-on-primary-container); }
+.tl.current .btn.text { --btn-fg: var(--color-on-primary-container); }
+.tl.current .rail .dot { background: var(--rail, var(--color-primary)); box-shadow: 0 0 0 3px var(--rail, var(--color-primary)), 0 0 0 7px color-mix(in srgb, var(--rail, var(--color-primary)) 30%, transparent); }
+.tl.walk.current .rail .dot { background: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary), 0 0 0 7px color-mix(in srgb, var(--color-primary) 30%, transparent); }
+.ps-now { display: flex; align-items: center; gap: var(--space-1); font: var(--type-label); }
+.tl.past .pill { opacity: .6; }
+.tl.ps-change .rail::before { background: none; border-left: 2px dashed var(--color-outline); width: 0; border-radius: 0; }
+.tl.ps-change .what > .row { color: var(--color-on-surface-variant); }
+.ps-follow { margin-bottom: var(--space-2); }
+
+/* route search */
+.ps-search { margin-bottom: var(--space-3); }
+.ps-search .control { min-height: 52px; border-radius: var(--radius-full); padding-right: var(--space-1); background: var(--color-surface); }
+.ps-search .ps-clear { width: 44px; height: 44px; }
+.ps-chips { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.ps-chips .chip { min-height: var(--size-touch); }
+.ps-places { margin: 0 calc(-1 * var(--ps-px)); }
+.ps-place { padding-inline: var(--ps-px); }
+.ps-place .text { display: grid; gap: 2px; }
+.ps-place .text > :first-child { font-weight: 500; }
+.ps-place mark { background: none; color: inherit; font-weight: 700; }
+.ps-pic { flex: none; width: 40px; height: 40px; border-radius: var(--radius-md); display: grid; place-items: center; background: var(--color-surface-container); color: var(--color-on-surface-variant); }
+.ps-res-head { margin-top: var(--space-2); }
+.ps-res-head .section-label { display: block; }
+.ps-sheet .trips .trip { padding-inline: var(--space-1); }
+.ps-sheet .trip .leg-summary { color: var(--color-on-surface); }
+.ps-empty { flex: 1; padding: var(--space-8) var(--space-2); }
+.ps-empty > [class*="material-symbols"] { font-size: 40px; }
+
+/* snackbar above a sheet */
+.snackbar-host.ps-snack { z-index: 50; }
+
+/* travel time picker */
+.ps-seg { display: flex; width: 100%; }
+.ps-seg button { flex: 1; min-height: var(--size-touch); padding: 0 var(--space-2); }
+.ps-when-pick { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+.ps-time .control { max-width: 200px; }
+.ps-time input { font: var(--type-title); }
+.ps-summary { display: flex; gap: var(--space-3); align-items: flex-start; margin-top: var(--space-4); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-surface-container); }
+.ps-summary > div { display: grid; gap: 2px; }
+.ps-summary b { font: var(--type-title-sm); }
+.ps-summary span { font: var(--type-body-sm); color: var(--color-on-surface-variant); }
+
+/* wall / fold / desktop: a right-side sheet over the board */
+@container (min-width: 700px) {
+  .sheet-overlay.side { display: flex; justify-content: flex-end; align-items: stretch; }
+  .sheet-overlay.side > .sheet { width: min(440px, 100%); height: 100%; max-height: none; border-radius: var(--radius-xl, var(--radius-lg)) 0 0 var(--radius-xl, var(--radius-lg)); }
+  .sheet-overlay.side > .ps-sheet { --ps-px: var(--space-5); --ps-pb: var(--space-5); padding-top: var(--space-5); }
+  .sheet-overlay.side > .sheet::before { display: none; }
+  .snackbar-host.ps-snack { left: auto; width: 408px; right: var(--space-4); }
+}

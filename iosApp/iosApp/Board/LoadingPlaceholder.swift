@@ -1,43 +1,17 @@
 import SwiftUI
 
-/// Blur-up placeholder, as on Android: the skeleton is drawn blurred, the way content looks before
-/// it comes into focus, with a sharp spinner and label on top so it reads unmistakably as loading.
-/// Only the label reaches VoiceOver.
-struct BlurredPlaceholder<Skeleton: View>: View {
-    let label: String
-    var tint: Color = Palette.textSecondary
-    @ViewBuilder let skeleton: () -> Skeleton
-
-    var body: some View {
-        ZStack {
-            skeleton()
-                .blur(radius: 6)
-                .accessibilityHidden(true)
-            HStack(spacing: 8) {
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .tint(tint)
-                Text(label)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(tint)
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(label)
-    }
-}
-
-/// A rounded skeleton block standing in for a piece of text or a badge.
+/// A rounded skeleton block standing in for a piece of text or a badge: a solid surface-container
+/// block that breathes (a translucent tint vanished on white cards), as on Android.
 struct PlaceholderBlock: View {
     var width: CGFloat?
     var height: CGFloat
-    var cornerRadius: CGFloat = 4
-    var color: Color = Palette.textSecondary
+    var cornerRadius: CGFloat = FjordTokens.radiusSm
+    var color: Color = Palette.surfaceContainer
     let pulse: Bool
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(color.opacity(pulse ? 0.45 : 0.15))
+            .fill(color.opacity(pulse ? 1 : 0.7))
             .frame(width: width, height: height)
     }
 }

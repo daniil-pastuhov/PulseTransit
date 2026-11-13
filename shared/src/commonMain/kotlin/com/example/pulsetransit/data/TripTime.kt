@@ -44,14 +44,14 @@ val TripTime.isArriveBy: Boolean
 fun TripTime.hasPassed(nowMillis: Long): Boolean = atMillis?.let { it <= nowMillis } ?: false
 
 /**
- * The next [hour]:[minute] at or after [nowMillis]: today if it is still ahead, else tomorrow.
+ * The next [hour]:[minute] in Norway at or after [nowMillis]: today if it is still ahead, else tomorrow.
  * A time picker offers only a time of day, and a time already past today means tomorrow's.
  */
 fun nextTimeOfDay(
     hour: Int,
     minute: Int,
     nowMillis: Long,
-): Long = nextTimeOfDay(hour, minute, nowMillis, TimeZone.currentSystemDefault())
+): Long = nextTimeOfDay(hour, minute, nowMillis, NorwayTimeZone)
 
 internal fun nextTimeOfDay(
     hour: Int,
@@ -69,19 +69,47 @@ internal fun nextTimeOfDay(
         .toEpochMilliseconds()
 }
 
-/** [atMillis] as a local time of day, to start a time picker from. */
-fun localTimeOfDay(atMillis: Long): LocalTime = localTimeOfDay(atMillis, TimeZone.currentSystemDefault())
+/**
+ * [hour]:[minute] on the day [dayOffset] days after [nowMillis]'s (0 today, 1 tomorrow): the
+ * travel-time picker's explicit Today/Tomorrow choice. Unlike [nextTimeOfDay] it never rolls over,
+ * so a time already past today stays today and reads as passed ([TripTime.hasPassed]).
+ */
+fun timeOnDay(
+    dayOffset: Int,
+    hour: Int,
+    minute: Int,
+    nowMillis: Long,
+): Long = timeOnDay(dayOffset, hour, minute, nowMillis, NorwayTimeZone)
+
+internal fun timeOnDay(
+    dayOffset: Int,
+    hour: Int,
+    minute: Int,
+    nowMillis: Long,
+    timeZone: TimeZone,
+): Long =
+    Instant
+        .fromEpochMilliseconds(nowMillis)
+        .toLocalDateTime(timeZone)
+        .date
+        .plus(dayOffset, DateTimeUnit.DAY)
+        .atTime(LocalTime(hour, minute))
+        .toInstant(timeZone)
+        .toEpochMilliseconds()
+
+/** [atMillis] as a time of day in Norway, to start a time picker from. */
+fun localTimeOfDay(atMillis: Long): LocalTime = localTimeOfDay(atMillis, NorwayTimeZone)
 
 internal fun localTimeOfDay(
     atMillis: Long,
     timeZone: TimeZone,
 ): LocalTime = Instant.fromEpochMilliseconds(atMillis).toLocalDateTime(timeZone).time
 
-/** Calendar days from [nowMillis] to [atMillis] locally: 0 today, 1 tomorrow. */
+/** Calendar days from [nowMillis] to [atMillis] in Norway: 0 today, 1 tomorrow. */
 fun calendarDaysFrom(
     nowMillis: Long,
     atMillis: Long,
-): Int = calendarDaysFrom(nowMillis, atMillis, TimeZone.currentSystemDefault())
+): Int = calendarDaysFrom(nowMillis, atMillis, NorwayTimeZone)
 
 internal fun calendarDaysFrom(
     nowMillis: Long,
@@ -93,8 +121,8 @@ internal fun calendarDaysFrom(
     return from.daysUntil(to)
 }
 
-/** "08:30", the 24-hour local time of [atMillis], as the board shows times. */
-fun clockTimeText(atMillis: Long): String = clockTimeText(atMillis, TimeZone.currentSystemDefault())
+/** "08:30", the 24-hour time of [atMillis] in Norway, as the board shows times. */
+fun clockTimeText(atMillis: Long): String = clockTimeText(atMillis, NorwayTimeZone)
 
 internal fun clockTimeText(
     atMillis: Long,

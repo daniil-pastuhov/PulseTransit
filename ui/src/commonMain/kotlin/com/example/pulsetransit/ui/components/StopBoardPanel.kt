@@ -13,29 +13,26 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -45,12 +42,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -65,72 +69,73 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.data.Departure
+import com.example.pulsetransit.data.DepartureCountdown
 import com.example.pulsetransit.data.DepartureGroup
+import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.StopPlace
-import com.example.pulsetransit.theme.ColorBus
-import com.example.pulsetransit.theme.ColorDefaultLine
-import com.example.pulsetransit.theme.ColorExpressTrain
-import com.example.pulsetransit.theme.ColorFerry
-import com.example.pulsetransit.theme.ColorMetro
-import com.example.pulsetransit.theme.ColorTrain
-import com.example.pulsetransit.theme.ColorTram
+import com.example.pulsetransit.data.clockTimeText
+import com.example.pulsetransit.data.departureClock
+import com.example.pulsetransit.data.departureCountdown
+import com.example.pulsetransit.theme.FjordDimens
+import com.example.pulsetransit.theme.PulseIcons
+import com.example.pulsetransit.theme.PulseTheme
+import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.layout.BoardLayout
 import com.example.pulsetransit.ui.resources.*
+import com.example.pulsetransit.ui.resources.cancelled
+import com.example.pulsetransit.ui.resources.details_every
+import com.example.pulsetransit.ui.resources.directions_all
+import com.example.pulsetransit.ui.resources.directions_count
+import com.example.pulsetransit.ui.resources.directions_platforms
+import com.example.pulsetransit.ui.resources.directions_some
+import com.example.pulsetransit.ui.resources.loading_departures
+import com.example.pulsetransit.ui.resources.more_departures_hidden
+import com.example.pulsetransit.ui.resources.no_departures_body
+import com.example.pulsetransit.ui.resources.now
+import com.example.pulsetransit.ui.resources.panel_failed_body
+import com.example.pulsetransit.ui.resources.panel_failed_title
+import com.example.pulsetransit.ui.resources.panel_offline_body
+import com.example.pulsetransit.ui.resources.platform_label
+import com.example.pulsetransit.ui.resources.stale_no_internet_title
 import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import kotlin.math.roundToInt
-
-private const val MILLIS_PER_SECOND = 1000L
-private const val SECONDS_PER_MINUTE = 60L
-
-/** Departures closer than this read as "now" rather than a countdown. */
-private const val DEPARTING_NOW_SECONDS = 15L
-
-/** Past this, a wall clock time is more useful than a countdown. */
-private const val RELATIVE_TIME_CUTOFF_SECONDS = 1800L
-
-// "HH:mm" within a yyyy-MM-ddTHH:mm:ss... timestamp.
-private const val ISO_HOUR_START = 11
-private const val ISO_MINUTE_END = 16
-private const val MILLIS_PER_DAY = 86_400_000.0
+import kotlin.time.Clock
 
 // Size of the "+1" next-day marker relative to the time it follows.
 private const val DAY_OFFSET_FONT_SCALE = 0.6f
 
-// Wide rows' fixed columns, so each lines up from row to row.
-private val PLATFORM_CHIP_WIDTH = 52.dp
-private val WIDE_PRIMARY_TIME_WIDTH = 64.dp
-private val WIDE_CLOCK_WIDTH = 56.dp
-private val WIDE_DELAY_WIDTH = 28.dp
-
 /** Rows from the end of the list at which the next page is requested, so it arrives before the end. */
 private const val LOAD_MORE_THRESHOLD = 3
 
+/** A row's destination and time grow on a wide panel, read from across the room. */
+private val WIDE_DESTINATION_SIZE = 19.sp
+private val WIDE_TIME_SIZE = 24.sp
+
+private val PanelShape = RoundedCornerShape(FjordDimens.radiusLg)
+
 /**
  * One favorite stop's departures. [departureGroups] is null until the stop's first load finishes,
- * which shows a blurred placeholder; [isLoading] on a stop that already has data shows a thin
- * progress bar instead, so a refresh never blanks a board that is being read. [isFailed] means the
- * empty board is unknown rather than empty, and shows why with a retry instead of "no departures".
- * With [canLoadMore], scrolling near the end of the list calls [onLoadMore] for the next page;
- * [isLoadingMore] is that page in flight, shown as a spinner at the end of the list only. Tapping a
- * row opens its line's details, which list every loaded departure the row leaves out.
- * [header] replaces the stop's name and locality, as on-spot mode does with its stop picker.
- * [onDetailsOpenChange] reports when those details open and close, so a board taking turns
- * through its stops can hold the page they were opened from. [dragHandle], where the panel can be
- * moved, shows a grip in the header with that modifier, which does the dragging.
+ * which shows skeleton rows under the stop's name; [isLoading] on a stop that already has data
+ * shows a thin progress bar instead, so a refresh never blanks a board that is being read.
+ * [isFailed] means the empty board is unknown rather than empty, and says why instead of "no
+ * departures". With [canLoadMore], scrolling near the end of the list calls [onLoadMore] for the
+ * next page; [isLoadingMore] is that page in flight, shown as a spinner at the end of the list
+ * only. Tapping a row opens its line's details, which list every loaded departure the row leaves
+ * out. [directions] says which directions the panel shows, beside the locality. [header] replaces
+ * the stop's name and that line, as on-spot mode does with its stop picker. [onDetailsOpenChange]
+ * reports when those details open and close, so a board taking turns through its stops can hold
+ * the page they were opened from. [dragHandle], where the panel can be moved, shows a grip in the
+ * header with that modifier, which does the dragging.
  */
 @Composable
 fun StopBoardPanel(
     stopPlace: StopPlace,
     departureGroups: List<DepartureGroup>?,
     modifier: Modifier = Modifier,
+    directions: DirectionSummary? = null,
     showDelays: Boolean = true,
     showMessages: Boolean = true,
     isLoading: Boolean = false,
@@ -141,7 +146,6 @@ fun StopBoardPanel(
     isLoadingMore: Boolean = false,
     onFilterOut: (String) -> Unit = {},
     onSearchFurtherAhead: () -> Unit = {},
-    onRetry: () -> Unit = {},
     onLoadMore: () -> Unit = {},
     loadJourney: suspend (Departure) -> List<JourneyStop> = { emptyList() },
     onRowCapacity: (Int) -> Unit = {},
@@ -165,65 +169,62 @@ fun StopBoardPanel(
             onDismiss = { detailsGroup = null },
         )
     }
-    Card(
-        modifier =
-            modifier
-                .fillMaxSize()
-                .padding(6.dp),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-    ) {
+    val isDark = MaterialTheme.colorScheme.background.luminance() < DARK_LUMINANCE
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
         Column(
             modifier =
-                Modifier
+                modifier
                     .fillMaxSize()
-                    .padding(12.dp),
+                    // Light: a soft shadow lifts the card off the grey; dark: a hairline ring on black.
+                    .then(
+                        if (isDark) {
+                            Modifier.border(1.dp, Color.White.copy(alpha = DARK_RING_ALPHA), PanelShape)
+                        } else {
+                            Modifier.shadow(1.dp, PanelShape)
+                        },
+                    ).clip(PanelShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(start = FjordDimens.space4, end = FjordDimens.space4, top = FjordDimens.space3, bottom = FjordDimens.space2),
         ) {
-            // Header
             Row(
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = FjordDimens.space2),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 if (header != null) {
                     header()
                 } else {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.weight(1f).semantics(mergeDescendants = true) { heading() },
+                        horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2),
+                    ) {
                         Text(
                             text = stopPlace.name,
-                            style =
-                                MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                ),
+                            style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.alignByBaseline(),
                         )
-                        stopPlace.locality?.let {
+                        stopSubtitle(stopPlace.locality, directions)?.let {
                             Text(
                                 text = it,
-                                style =
-                                    MaterialTheme.typography.bodyMedium.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                // The name is measured first and keeps its room; this takes what is left.
+                                modifier = Modifier.weight(1f, fill = false).alignByBaseline(),
                             )
                         }
                     }
                 }
                 dragHandle?.let { handle ->
                     Icon(
-                        imageVector = Icons.Default.DragIndicator,
+                        imageVector = PulseIcons.DragIndicator,
                         contentDescription = stringResource(Res.string.drag_to_reorder),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier =
                             Modifier
-                                .padding(start = 8.dp)
+                                .padding(start = FjordDimens.space2)
                                 .size(24.dp)
                                 .then(handle),
                     )
@@ -234,126 +235,107 @@ fun StopBoardPanel(
             if (isLoading && departureGroups != null) {
                 RefreshingIndicator(modifier = Modifier.fillMaxWidth().height(1.dp))
             } else {
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), thickness = 1.dp)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Departures list. Fades from the blurred placeholder into focus once the stop has
-            // loaded; keyed on loaded-ness only, so later refreshes swap the rows in place.
+            // The rows. Fades from the skeleton once the stop has loaded; keyed on loaded-ness only, so
+            // later refreshes swap the rows in place.
             val density = LocalDensity.current
             AnimatedContent(
                 targetState = departureGroups,
                 // How many rows fit, so the stop asks for enough departures to fill its panel.
                 modifier =
                     Modifier
-                        .weight(
-                            1f,
-                        ).onSizeChanged { onRowCapacity(BoardLayout.rowCapacity(with(density) { it.height.toDp().value })) },
+                        .weight(1f)
+                        .onSizeChanged { onRowCapacity(BoardLayout.rowCapacity(with(density) { it.height.toDp().value })) },
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
                 label = "departures",
                 contentKey = { it == null },
             ) { groups ->
-                if (groups == null) {
-                    BlurredPlaceholder(
-                        label = stringResource(Res.string.loading_departures),
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-                    ) {
-                        LoadingPlaceholderList()
-                    }
-                } else if (groups.isEmpty() && isFailed) {
-                    LoadFailedMessage(isOnline = isOnline, onRetry = onRetry, modifier = Modifier.fillMaxSize())
-                } else if (groups.isEmpty()) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text =
-                                    if (isExtended) {
-                                        pluralStringResource(
-                                            Res.plurals.no_departures_extended,
-                                            EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
-                                            EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
-                                        )
-                                    } else {
-                                        stringResource(Res.string.no_departures)
-                                    },
-                                style =
-                                    MaterialTheme.typography.bodyLarge.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    ),
-                                textAlign = TextAlign.Center,
-                            )
+                when {
+                    groups == null -> LoadingPlaceholderList()
+                    groups.isEmpty() && isFailed ->
+                        PanelMessage(
+                            icon = loadFailureIcon(isOnline),
+                            title =
+                                if (isOnline) stringResource(Res.string.panel_failed_title) else stringResource(Res.string.stale_no_internet_title),
+                            body =
+                                if (isOnline) stringResource(Res.string.panel_failed_body) else stringResource(Res.string.panel_offline_body),
+                        )
+                    groups.isEmpty() ->
+                        PanelMessage(
+                            icon = PulseIcons.EventBusy,
+                            title =
+                                if (isExtended) {
+                                    pluralStringResource(
+                                        Res.plurals.no_departures_extended,
+                                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
+                                        EnturRepository.EXTENDED_DEPARTURE_WINDOW_DAYS,
+                                    )
+                                } else {
+                                    stringResource(Res.string.no_departures)
+                                },
+                            body =
+                                if (isExtended) {
+                                    null
+                                } else {
+                                    stringResource(Res.string.no_departures_body, EnturRepository.DEFAULT_DEPARTURE_WINDOW_SECONDS / SECONDS_PER_HOUR)
+                                },
+                        ) {
                             if (!isExtended) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                OutlinedButton(onClick = onSearchFurtherAhead) {
-                                    Text(stringResource(Res.string.search_further_ahead))
-                                }
+                                TextButton(onClick = onSearchFurtherAhead) { Text(stringResource(Res.string.search_further_ahead)) }
                             }
                         }
-                    }
-                } else {
-                    val listState = rememberLazyListState()
-                    // Only the user's scrolling asks for a page. A list that fits the panel never
-                    // does: a single line folds every page into the same row, so it would keep
-                    // fitting and keep asking. Nor may a board left at its end on the wall grow on
-                    // every auto-refresh, which restarts this effect.
-                    LaunchedEffect(listState, canLoadMore, isLoading, isLoadingMore) {
-                        if (!canLoadMore || isLoading || isLoadingMore) return@LaunchedEffect
-                        snapshotFlow {
-                            val info = listState.layoutInfo
-                            // Empty until the list is first measured, which is not "at the end".
-                            val last = info.visibleItemsInfo.lastOrNull() ?: return@snapshotFlow false
-                            val nearEnd = last.index >= info.totalItemsCount - LOAD_MORE_THRESHOLD
-                            nearEnd && listState.isScrollInProgress
-                        }.first { it }
-                        onLoadMore()
-                    }
-                    // A wide panel gives each row columns for the platform and the clock time
-                    // instead of leaving the space between destination and time empty.
-                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                        val isWide = BoardLayout.isWideRow(maxWidth.value)
-                        val showPlatform = isWide && BoardLayout.showsPlatform(groups)
-                        LazyColumn(
-                            state = listState,
-                            modifier =
-                                Modifier
-                                    .fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            itemsIndexed(
-                                items = groups,
-                                // Entur can return several service journeys that are identical in line,
-                                // destination, time and quay (replacement buses, for one), and when two
-                                // land non-consecutively they form two groups with the same identity.
-                                // The index keeps the key unique, which Compose requires.
-                                key = { index, group ->
-                                    val first = group.departures.first()
-                                    "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
-                                },
-                            ) { _, group ->
-                                DepartureRow(
-                                    group = group,
-                                    showDelays = showDelays,
-                                    showMessages = showMessages,
-                                    isWide = isWide,
-                                    showPlatform = showPlatform,
-                                    onClick = { detailsGroup = group },
-                                )
-                            }
-                            if (isLoadingMore) {
-                                item(key = "load_more") {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    else -> {
+                        val listState = rememberLazyListState()
+                        // Only the user's scrolling asks for a page. A list that fits the panel never
+                        // does: a single line folds every page into the same row, so it would keep
+                        // fitting and keep asking. Nor may a board left at its end on the wall grow on
+                        // every auto-refresh, which restarts this effect.
+                        LaunchedEffect(listState, canLoadMore, isLoading, isLoadingMore) {
+                            if (!canLoadMore || isLoading || isLoadingMore) return@LaunchedEffect
+                            snapshotFlow {
+                                val info = listState.layoutInfo
+                                // Empty until the list is first measured, which is not "at the end".
+                                val last = info.visibleItemsInfo.lastOrNull() ?: return@snapshotFlow false
+                                val nearEnd = last.index >= info.totalItemsCount - LOAD_MORE_THRESHOLD
+                                nearEnd && listState.isScrollInProgress
+                            }.first { it }
+                            onLoadMore()
+                        }
+                        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                            val isWide = BoardLayout.isWideRow(maxWidth.value)
+                            val showPlatform = BoardLayout.showsPlatform(groups)
+                            LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+                                itemsIndexed(
+                                    items = groups,
+                                    // Entur can return several service journeys that are identical in line,
+                                    // destination, time and quay (replacement buses, for one), and when two
+                                    // land non-consecutively they form two groups with the same identity.
+                                    // The index keeps the key unique, which Compose requires.
+                                    key = { index, group ->
+                                        val first = group.departures.first()
+                                        "${index}_${first.line}_${first.destination}_${first.expectedTime}_${first.quayId ?: ""}"
+                                    },
+                                ) { index, group ->
+                                    if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+                                    DepartureRow(
+                                        group = group,
+                                        showDelays = showDelays,
+                                        showMessages = showMessages,
+                                        isWide = isWide,
+                                        showPlatform = showPlatform,
+                                        onClick = { detailsGroup = group },
+                                    )
+                                }
+                                if (isLoadingMore) {
+                                    item(key = "load_more") {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = FjordDimens.space2),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                        }
                                     }
                                 }
                             }
@@ -365,41 +347,90 @@ fun StopBoardPanel(
     }
 }
 
+private const val DARK_LUMINANCE = 0.2f
+private const val DARK_RING_ALPHA = 0.06f
+private const val SECONDS_PER_HOUR = 3600
+
+/** "Oslo · all directions", "Platforms 2–4" or "3 of 7 directions"; null with nothing to say. */
+@Composable
+private fun stopSubtitle(
+    locality: String?,
+    directions: DirectionSummary?,
+): String? {
+    val summary =
+        when (directions) {
+            null -> null
+            DirectionSummary.All -> stringResource(Res.string.directions_all)
+            is DirectionSummary.Platforms ->
+                if (directions.count == 1) {
+                    stringResource(Res.string.platform_label, directions.codes)
+                } else {
+                    stringResource(Res.string.directions_platforms, directions.codes)
+                }
+            is DirectionSummary.Some ->
+                directions.total?.let { stringResource(Res.string.directions_some, directions.count, it) }
+                    ?: pluralStringResource(Res.plurals.directions_count, directions.count, directions.count)
+        }
+    // A picked set of platforms says enough on its own; "all directions" reads with the place.
+    return when (directions) {
+        is DirectionSummary.Platforms, is DirectionSummary.Some -> summary
+        else -> listOfNotNull(locality, summary).joinToString(" · ").ifEmpty { null }
+    }
+}
+
+/** A panel's own message in place of its rows: an icon, a title, a line of explanation. */
+@Composable
+private fun PanelMessage(
+    icon: ImageVector,
+    title: String,
+    body: String?,
+    action: (@Composable () -> Unit)? = null,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = FjordDimens.space4, vertical = FjordDimens.space6)
+                .semantics(mergeDescendants = true) { liveRegion = LiveRegionMode.Polite },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(FjordDimens.space2, Alignment.CenterVertically),
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
+        Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
+        body?.let {
+            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        }
+        action?.invoke()
+    }
+}
+
+/** Skeleton rows while a stop's first departures load: no spinner, no label (the name says which). */
 @Composable
 fun LoadingPlaceholderList() {
     val alpha = rememberPlaceholderPulse()
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        repeat(6) {
-            DepartureRowPlaceholder(alpha = alpha)
+    val description = stringResource(Res.string.loading_departures)
+    Column(modifier = Modifier.fillMaxSize().clearAndSetSemantics { contentDescription = description }) {
+        repeat(SKELETON_ROWS) { index ->
+            if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth().height(FjordDimens.row),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2),
+            ) {
+                PlaceholderBlock(alpha, Modifier.width(FjordDimens.pillW).height(28.dp))
+                PlaceholderBlock(alpha, Modifier.weight(1f).height(14.dp))
+                PlaceholderBlock(alpha, Modifier.width(48.dp).height(18.dp))
+            }
         }
     }
 }
 
-@Composable
-fun DepartureRowPlaceholder(alpha: Float) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                .padding(horizontal = 8.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Line badge
-        PlaceholderBlock(alpha, Modifier.width(48.dp).height(24.dp), cornerRadius = 6.dp)
-        Spacer(modifier = Modifier.width(10.dp))
-        // Destination
-        PlaceholderBlock(alpha, Modifier.weight(1f).height(20.dp))
-        Spacer(modifier = Modifier.width(8.dp))
-        // Time
-        PlaceholderBlock(alpha, Modifier.width(40.dp).height(20.dp))
-    }
-}
+private const val SKELETON_ROWS = 5
 
+/**
+ * One line to one destination: pill, mode, destination with a detail line under it, then the delay
+ * and the time of its next departure. Later departures are in the row's details.
+ */
 @Composable
 fun DepartureRow(
     group: DepartureGroup,
@@ -409,343 +440,164 @@ fun DepartureRow(
     isWide: Boolean = false,
     showPlatform: Boolean = false,
 ) {
-    val departures = group.departures
-    val firstDeparture = departures.first()
-    val transportEmoji = getTransportEmoji(firstDeparture.transportMode)
-    val pillColor = if (firstDeparture.isCancelled) Color.Gray else getTransportColor(firstDeparture.transportMode)
-    val nowText = stringResource(Res.string.now)
-    val cancelledText = stringResource(Res.string.cancelled)
-    val minUnit = stringResource(Res.string.unit_minute)
+    val departure = group.departures.first()
+    val cancelled = departure.isCancelled
+    val delayed = !cancelled && showDelays && departure.delayMinutes > 0
+    val subLines = departureSubLines(group, showPlatform)
+    val notices = if (showMessages) group.departures.flatMap { it.notices }.distinct() else emptyList()
+    val destinationStyle =
+        MaterialTheme.typography.bodyLarge.copy(
+            fontWeight = FontWeight.Medium,
+            fontSize = if (isWide) WIDE_DESTINATION_SIZE else MaterialTheme.typography.bodyLarge.fontSize,
+        )
 
-    // Only the next few: a frequent line would otherwise list a timetable's worth of times.
-    val hiddenCount = group.hiddenDepartureCount
-    val formattedTimes =
-        group.visibleDepartures
-            .map { dep ->
-                if (dep.isCancelled) AnnotatedString(cancelledText) else formatDepartureTime(dep.expectedTime, nowText, minUnit)
-            }.distinct()
-
-    Column(
+    Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (firstDeparture.isCancelled) 0.2f else 0.5f))
+                .heightIn(min = FjordDimens.row)
                 .clickable(onClick = onClick)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .padding(vertical = FjordDimens.space1),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Line number badge
-            Box(
-                modifier =
-                    Modifier
-                        .width(48.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(pillColor)
-                        .padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
+        LinePill(
+            line = departure.line,
+            mode = departure.transportMode,
+            cancelled = cancelled,
+            modifier = Modifier.alpha(if (cancelled) CANCELLED_PILL_ALPHA else 1f),
+        )
+        TransportIcon(departure.transportMode, size = 20.dp)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = departure.destination,
+                style = destinationStyle,
+                color = if (cancelled) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                textDecoration = if (cancelled) TextDecoration.LineThrough else null,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (subLines.isNotEmpty()) {
                 Text(
-                    text = firstDeparture.line,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textDecoration = if (firstDeparture.isCancelled) TextDecoration.LineThrough else null,
-                        ),
+                    text = subLines.joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Transport Icon & Destination
-            Text(
-                text = "$transportEmoji  ${firstDeparture.destination}",
-                style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                        color =
-                            if (firstDeparture.isCancelled) {
-                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                    alpha = 0.6f,
-                                )
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            },
-                        textDecoration = if (firstDeparture.isCancelled) TextDecoration.LineThrough else null,
-                    ),
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            if (showPlatform) {
-                PlatformChip(platform = firstDeparture.platform)
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // The departure's clock time beside the countdown, in a column of its own. Left
-            // empty when the countdown already is a clock time (perhaps with a "+1" after it),
-            // or is "cancelled".
-            if (isWide) {
-                val clock = formatClock(firstDeparture.expectedTime)
-                Text(
-                    text = if (firstDeparture.isCancelled || formattedTimes.first().text.startsWith(clock)) "" else clock,
-                    style =
-                        MaterialTheme.typography.bodyLarge.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.width(WIDE_CLOCK_WIDTH),
-                    maxLines = 1,
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-
-            // Delay indicator. A wide row keeps a column of its own width for it, empty without a
-            // delay, so a delayed row's clock and platform stay in line with the others.
-            val hasDelay = (!firstDeparture.isCancelled) && showDelays && (firstDeparture.delayMinutes > 0)
-            if (hasDelay || isWide) {
-                Text(
-                    text = if (hasDelay) "+${firstDeparture.delayMinutes}" else "",
-                    style =
-                        MaterialTheme.typography.bodySmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error,
-                        ),
-                    modifier = if (isWide) Modifier.width(WIDE_DELAY_WIDTH) else Modifier.padding(end = 4.dp),
-                    maxLines = 1,
-                )
-            }
-
-            // Primary Departure Time
-            val primaryTime = formattedTimes.first()
-            val isNow = primaryTime.text == nowText
-
-            Text(
-                text = primaryTime,
-                style =
-                    MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color =
-                            when {
-                                firstDeparture.isCancelled -> MaterialTheme.colorScheme.error
-                                isNow -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.onSurface
-                            },
-                    ),
-                // Right-aligned in a column of its own width, so "Now" and "12m" end in line.
-                textAlign = TextAlign.End,
-                modifier = Modifier.widthIn(min = if (isWide) WIDE_PRIMARY_TIME_WIDTH else 0.dp).padding(end = 4.dp),
-                // Never broken over lines: in a very narrow panel "Now" wrapped to "No" over "w".
-                maxLines = 1,
-                softWrap = false,
-            )
-        }
-
-        // Secondary Departure Times, then a muted count of the ones left out. On a line of their
-        // own in a wide row too: beside the destination they squeezed it to "Fil…" in a tablet's
-        // half-width panel.
-        if (formattedTimes.size > 1 || hiddenCount > 0) {
-            Text(
-                text = laterTimesText(formattedTimes.drop(1), hiddenCount),
-                style =
-                    MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.Medium,
-                    ),
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(start = 58.dp, top = 2.dp, end = 4.dp),
-                // A backstop: the capped times wrap at most once even on a narrow panel.
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        val allNotices = departures.flatMap { it.notices }.distinct()
-        if (showMessages && allNotices.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            allNotices.forEach { notice ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "⚠️",
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(end = 4.dp),
-                    )
+            notices.forEach { notice ->
+                Row(horizontalArrangement = Arrangement.spacedBy(FjordDimens.space1), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(PulseIcons.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(14.dp))
                     Text(
                         text = notice,
-                        style =
-                            MaterialTheme.typography.labelSmall.copy(
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 10.sp,
-                            ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
+        if (delayed) DelayChip(departure.delayMinutes)
+        DepartureTime(departure = departure, delayed = delayed, isWide = isWide)
     }
 }
 
-/** The times after the next, then a muted count of the ones left out. */
+private const val CANCELLED_PILL_ALPHA = 0.55f
+
+/** "Platform 4", "Every ~8 min", "Every ~5 min · +4 more": what else to know about the row. */
 @Composable
-private fun laterTimesText(
-    laterTimes: List<AnnotatedString>,
-    hiddenCount: Int,
-): AnnotatedString {
-    val hiddenText = stringResource(Res.string.more_departures_hidden, hiddenCount)
-    val hiddenColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-    return buildAnnotatedString {
-        laterTimes.forEachIndexed { index, time ->
-            if (index > 0) append("    ")
-            append(time)
-        }
-        if (hiddenCount > 0) {
-            if (laterTimes.isNotEmpty()) append("    ")
-            withStyle(SpanStyle(color = hiddenColor, fontSize = 0.85.em)) { append(hiddenText) }
-        }
-    }
+private fun departureSubLines(
+    group: DepartureGroup,
+    showPlatform: Boolean,
+): List<String> {
+    val platform =
+        group.departures
+            .first()
+            .platform
+            ?.takeIf { showPlatform }
+    return listOfNotNull(
+        platform?.let { stringResource(Res.string.platform_label, it) },
+        group.headwayMinutes?.let { stringResource(Res.string.details_every, it) },
+        group.moreDepartures?.let { stringResource(Res.string.more_departures_hidden, it) },
+    )
 }
-
-/** The quay's public code in an outlined box; empty but the same width when the departure has none. */
-@Composable
-private fun PlatformChip(platform: String?) {
-    val label = platform?.let { stringResource(Res.string.platform_label, it) }
-    Box(
-        modifier =
-            Modifier
-                .width(PLATFORM_CHIP_WIDTH)
-                .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (platform != null) {
-            Text(
-                text = platform,
-                style =
-                    MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                modifier =
-                    Modifier
-                        .border(1.dp, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                        .clearAndSetSemantics {},
-                maxLines = 1,
-            )
-        }
-    }
-}
-
-/** A transport mode's emoji; also used by the Android widgets. */
-fun getTransportEmoji(mode: String?): String =
-    when (mode?.lowercase()) {
-        "bus" -> "🚌"
-        "tram" -> "🚃"
-        "metro" -> "🚇"
-        "rail" -> "🚆"
-        "water" -> "⛴️"
-        else -> "🚌" // fallback
-    }
-
-/** A line badge's colour by Entur transport mode; also used by the Android widgets. */
-fun getTransportColor(mode: String?): Color =
-    when (mode?.lowercase()) {
-        "bus" -> ColorBus
-        "tram" -> ColorTram
-        "metro" -> ColorMetro
-        "rail" -> ColorTrain
-        "airportrail" -> ColorExpressTrain
-        "water" -> ColorFerry
-        else -> ColorDefaultLine
-    }
-
-private fun startOfDayMillis(date: Date): Long =
-    Calendar
-        .getInstance()
-        .apply {
-            time = date
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-
-/** Calendar days from [now] to [time]; rounded so a DST shift inside the span doesn't skew it. */
-private fun daysBetween(
-    now: Date,
-    time: Date,
-): Int = ((startOfDayMillis(time) - startOfDayMillis(now)).toDouble() / MILLIS_PER_DAY).roundToInt()
 
 /**
- * Beyond today is only reachable when the user widened the search window. Such times get a small
- * raised "+1" (or "+2", …) day marker, as printed timetables do, instead of a weekday prefix.
+ * The time column: "Now", "4 min" or "19:56"; "Cancelled"; and for a late departure shown as a
+ * clock time, the planned time struck through before the new one in the late colour.
  */
-private fun formatClockTime(
-    time: Date,
-    now: Date,
-): AnnotatedString {
-    val clock = SimpleDateFormat("HH:mm", Locale.getDefault()).format(time)
-    val dayOffset = daysBetween(now, time)
-    return buildAnnotatedString {
-        append(clock)
-        if (dayOffset > 0) {
-            withStyle(SpanStyle(fontSize = DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
-                append("+$dayOffset")
-            }
-        }
+@Composable
+private fun DepartureTime(
+    departure: Departure,
+    delayed: Boolean,
+    isWide: Boolean,
+) {
+    val countdown = PulseTheme.type.countdown.let { if (isWide) it.copy(fontSize = WIDE_TIME_SIZE) else it }
+    if (departure.isCancelled) {
+        Text(
+            stringResource(Res.string.cancelled),
+            style = MaterialTheme.typography.labelLarge.copy(fontSize = if (isWide) 17.sp else MaterialTheme.typography.labelLarge.fontSize),
+            color = MaterialTheme.colorScheme.error,
+            maxLines = 1,
+            softWrap = false,
+        )
+        return
     }
+    val time = formatDepartureTime(departure.expectedTime)
+    val isNow = time.text == stringResource(Res.string.now)
+    val isClock = departureCountdown(departure.expectedTime, Clock.System.now().toEpochMilliseconds()) is DepartureCountdown.Clock
+    val planned = if (delayed && isClock) formatClock(departure.aimedTime) else null
+    Text(
+        text =
+            buildAnnotatedString {
+                if (planned != null) {
+                    withStyle(
+                        MaterialTheme.typography.bodyMedium.toSpanStyle().copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textDecoration = TextDecoration.LineThrough,
+                        ),
+                    ) { append(planned) }
+                    append(" ")
+                    withStyle(SpanStyle(color = PulseTheme.colors.late)) { append(time) }
+                } else {
+                    append(time)
+                }
+            },
+        style = countdown,
+        color = if (isNow) PulseTheme.colors.now else MaterialTheme.colorScheme.onSurface,
+        textAlign = TextAlign.End,
+        // Never broken over lines: in a very narrow panel "Now" wrapped to "No" over "w".
+        maxLines = 1,
+        softWrap = false,
+    )
 }
 
-/** [expectedTimeStr]'s "HH:mm" in the device's time zone, or empty when it cannot be read. */
-private fun formatClock(expectedTimeStr: String): String =
-    try {
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
-        val formatted = expectedTimeStr.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
-        sdf.parse(formatted)?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(it) }.orEmpty()
-    } catch (_: Exception) {
-        ""
-    }
+/** [isoTime]'s "HH:mm" in Norway time, or empty when it cannot be read. */
+private fun formatClock(isoTime: String): String =
+    departureClock(isoTime, Clock.System.now().toEpochMilliseconds())
+        ?.let { clockTimeText(it.epochMillis) }
+        .orEmpty()
 
-private fun formatDepartureTime(
-    expectedTimeStr: String,
-    nowText: String,
-    minUnit: String,
-): AnnotatedString =
-    try {
-        // Simple ISO parser for common formats
-        val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ", Locale.US)
-        val formatted = expectedTimeStr.replace("Z", "+0000").replace(Regex("([+-]\\d{2}):(\\d{2})$"), "$1$2")
-        val expectedDate = sdf.parse(formatted)
-        val now = Date()
-
-        if (expectedDate != null) {
-            val diffSeconds = (expectedDate.time - now.time) / MILLIS_PER_SECOND
-            when {
-                diffSeconds < DEPARTING_NOW_SECONDS -> AnnotatedString(nowText)
-                diffSeconds < SECONDS_PER_MINUTE -> AnnotatedString("1$minUnit")
-                diffSeconds < RELATIVE_TIME_CUTOFF_SECONDS -> AnnotatedString("${diffSeconds / SECONDS_PER_MINUTE}$minUnit")
-                else -> formatClockTime(expectedDate, now)
+/**
+ * A departure's time column: "Now", "5 min" up to [DepartureCountdown.RELATIVE_TIME_CUTOFF_SECONDS],
+ * then its clock time. Beyond today (only when the user widened the search) the clock gets a small
+ * raised "+1", as printed timetables do.
+ */
+@Composable
+private fun formatDepartureTime(expectedTime: String): AnnotatedString =
+    when (val countdown = departureCountdown(expectedTime, Clock.System.now().toEpochMilliseconds())) {
+        DepartureCountdown.Now -> AnnotatedString(stringResource(Res.string.now))
+        is DepartureCountdown.Minutes -> AnnotatedString(stringResource(Res.string.countdown_minutes, countdown.minutes))
+        is DepartureCountdown.Clock ->
+            buildAnnotatedString {
+                append(clockTimeText(countdown.epochMillis))
+                if (countdown.dayOffset > 0) {
+                    withStyle(SpanStyle(fontSize = DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
+                        append("+${countdown.dayOffset}")
+                    }
+                }
             }
-        } else {
-            AnnotatedString("?")
-        }
-    } catch (_: Exception) {
-        // Fall back to slicing "HH:mm" straight out of the ISO-8601 timestamp.
-        try {
-            AnnotatedString(expectedTimeStr.substring(ISO_HOUR_START, ISO_MINUTE_END))
-        } catch (_: Exception) {
-            AnnotatedString("?")
-        }
+        DepartureCountdown.Unknown -> AnnotatedString("?")
     }

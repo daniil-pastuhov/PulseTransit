@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -30,12 +31,18 @@ class MainActivity : ComponentActivity() {
     private val journeyLauncher: JourneyLauncher by inject()
     private val journeyOpenRequests: JourneyOpenRequests by inject()
 
+    /** A widget's request to open a screen ([EXTRA_OPEN]), until navigation has opened it. */
+    private val openRequest = mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
         // Only on a fresh start: a recreated activity (rotation) gets the same intent again.
-        if (savedInstanceState == null) handleJourneyIntent(intent)
+        if (savedInstanceState == null) {
+            handleJourneyIntent(intent)
+            handleOpenIntent(intent)
+        }
 
         // Full screen and always-on are wall-board settings; on-spot mode is a phone in the hand.
         val appMode = settingsRepository.getAppModeFlow()
@@ -65,7 +72,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             Surface(modifier = Modifier.fillMaxSize()) {
-                MainNavigation()
+                MainNavigation(openRequest = openRequest.value, onOpenHandled = { openRequest.value = null })
             }
         }
     }
@@ -73,6 +80,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleJourneyIntent(intent)
+        handleOpenIntent(intent)
     }
 
     override fun onStart() {
@@ -93,6 +101,11 @@ class MainActivity : ComponentActivity() {
         if (intent?.getBooleanExtra(EXTRA_SHOW_JOURNEY, false) == true) journeyOpenRequests.request()
     }
 
+    /** A tap on a widget that is missing a stop or destination opens where to add one. */
+    private fun handleOpenIntent(intent: Intent?) {
+        intent?.getStringExtra(EXTRA_OPEN)?.takeIf { it != "BOARD" }?.let { openRequest.value = it }
+    }
+
     private fun hideSystemBars() {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
@@ -107,5 +120,8 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_SHOW_JOURNEY = "show_journey"
+
+        /** A widget's tap target (`WidgetTarget`'s name): ADD_STOP or SETTINGS opens that screen over the board. */
+        const val EXTRA_OPEN = "open"
     }
 }

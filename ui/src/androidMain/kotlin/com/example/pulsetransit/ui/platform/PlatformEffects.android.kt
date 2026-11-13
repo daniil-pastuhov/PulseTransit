@@ -11,12 +11,12 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.text.format.DateFormat
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,7 +41,7 @@ import com.google.android.play.core.ktx.requestAppUpdateInfo
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-private val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+internal val LOCATION_PERMISSIONS = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
 
 @Composable
 actual fun SystemBarsAppearance(darkTheme: Boolean) {
@@ -61,21 +61,6 @@ actual fun CameraMotionEffect(
     key: Any?,
 ) {
     val context = LocalContext.current
-    val cameraPermissionLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { isGranted ->
-            if (isGranted) {
-                viewModel.startCameraMotion()
-            }
-        }
-
-    LaunchedEffect(Unit) {
-        if (!context.hasCameraPermission() && viewModel.isCameraMotionEnabled()) {
-            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-        }
-    }
-
     // The camera runs only while the board is visible: it is released when the app goes to the
     // background or the board leaves the screen, and reopened when it comes back.
     // Keyed on the mode so a switch made in Settings starts or stops the camera here too.
@@ -114,10 +99,6 @@ actual fun rememberLocationAccess(onGranted: () -> Unit): () -> Unit {
                 }
             }
         }
-
-    LaunchedEffect(Unit) {
-        if (!context.hasLocationPermission()) permissionLauncher.launch(LOCATION_PERMISSIONS)
-    }
 
     return {
         if (context.hasLocationPermission()) {
@@ -238,5 +219,28 @@ actual fun rememberWalkingDirections(): (latitude: Double, longitude: Double) ->
         } catch (_: ActivityNotFoundException) {
             // Neither a map app nor a browser: nothing can show it.
         }
+    }
+}
+
+@Composable
+actual fun rememberOpenAppSettings(): () -> Unit {
+    val context = LocalContext.current
+    return { context.openAppSettings() }
+}
+
+@Composable
+actual fun SystemBackHandler(
+    enabled: Boolean,
+    onBack: () -> Unit,
+) = BackHandler(enabled = enabled, onBack = onBack)
+
+@Composable
+actual fun appVersion(): String {
+    val context = LocalContext.current
+    return remember(context) {
+        context.packageManager
+            .getPackageInfo(context.packageName, 0)
+            .versionName
+            .orEmpty()
     }
 }

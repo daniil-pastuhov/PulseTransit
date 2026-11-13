@@ -17,17 +17,19 @@ import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.di.desktopPlatformModule
 import com.example.pulsetransit.di.sharedModule
+import com.example.pulsetransit.ui.screens.AddStopScreen
 import com.example.pulsetransit.ui.screens.DataSourcesScreen
-import com.example.pulsetransit.ui.screens.IntroScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
-import com.example.pulsetransit.ui.screens.ModeSelectionScreen
+import com.example.pulsetransit.ui.screens.OnboardingFlow
 import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
+import com.example.pulsetransit.ui.screens.StopDirectionsScreen
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
+import com.example.pulsetransit.ui.viewmodel.OnboardingScreen
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import org.koin.core.context.startKoin
@@ -52,20 +54,16 @@ fun main() {
 }
 
 /** The desktop app's screens, in place of the Android app's Navigation 3 back stack. */
-private enum class Screen { BOARD, SETTINGS, ROUTE_MODES, JOURNEY_ALERTS, DATA_SOURCES }
+private enum class Screen { BOARD, SETTINGS, ROUTE_MODES, JOURNEY_ALERTS, DATA_SOURCES, ADD_STOP, DIRECTIONS }
 
-/** The app as Android shows it: the mode prompt once, then the board, Settings and transport modes. */
+/** The app as Android shows it: onboarding once, then the board, Settings and transport modes. */
 @Composable
 private fun DesktopApp() {
     val koin = remember { KoinPlatform.getKoin() }
     val modeSelection = remember { koin.get<ModeSelectionViewModel>() }
     val modeState by modeSelection.uiState.collectAsState()
-    if (modeState.mode == null) {
-        ModeSelectionScreen(onChoose = modeSelection::choose)
-        return
-    }
-    if (modeState.showsIntro) {
-        IntroScreen(pages = modeState.intro, onFinish = modeSelection::finishIntro)
+    if (modeState.screen != OnboardingScreen.NONE) {
+        OnboardingFlow(viewModel = modeSelection)
         return
     }
     // Created once, for the life of the app: Koin's viewModel definitions hand out a new instance on
@@ -77,6 +75,7 @@ private fun DesktopApp() {
     // One instance for Settings and its subscreens, so Settings' summary of them agrees.
     val settingsViewModel = remember { koin.get<SettingsViewModel>() }
     var screen by remember { mutableStateOf(Screen.BOARD) }
+    var directionsStopId by remember { mutableStateOf("") }
     when (screen) {
         Screen.BOARD -> {
             // Settings are not reactive: the board re-reads them each time it is shown, as on Android.
@@ -99,8 +98,15 @@ private fun DesktopApp() {
                 onOpenRouteModes = { screen = Screen.ROUTE_MODES },
                 onOpenJourneyAlerts = { screen = Screen.JOURNEY_ALERTS },
                 onOpenDataSources = { screen = Screen.DATA_SOURCES },
+                onOpenAddStop = { screen = Screen.ADD_STOP },
+                onOpenDirections = {
+                    directionsStopId = it
+                    screen = Screen.DIRECTIONS
+                },
             )
         }
+        Screen.ADD_STOP -> AddStopScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
+        Screen.DIRECTIONS -> StopDirectionsScreen(viewModel = settingsViewModel, stopId = directionsStopId, onBack = { screen = Screen.SETTINGS })
         Screen.ROUTE_MODES -> RouteModesScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
         Screen.JOURNEY_ALERTS -> JourneyAlertsScreen(viewModel = settingsViewModel, onBack = { screen = Screen.SETTINGS })
         // Unlike the others, a new one each visit: it holds no loops, and its repository keeps the list.

@@ -2,57 +2,58 @@ import AVFoundation
 import Shared
 import SwiftUI
 
-/// Settings, the iOS counterpart of Android's SettingsScreen. Changes are saved as they are made;
-/// the board re-reads them when this sheet closes.
+/// Settings, the iOS counterpart of Android's SettingsScreen: what the board shows and how the
+/// device behaves, every change saved as it is made; the board re-reads them when this sheet
+/// closes. Only what applies to the mode is shown. In board mode on a window from 1000 pt wide
+/// (iPad), two columns: what the board shows beside how the device behaves.
 struct SettingsView: View {
     /// The board's theme setting, so the sheet opens in the same scheme the board uses.
     let themeMode: ThemeMode
     @StateObject private var model = SettingsModel()
-    /// Destinations being reordered. Move handles need the whole Form in edit mode, not one section.
-    @State private var reorderingDestinations = false
+    /// Which list is being reordered; move handles need the Form in edit mode, not one section.
+    @State private var reordering: ReorderTarget?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         let state = model.state
         let viewModel = model.viewModel
         NavigationView {
-            // Only what applies to the chosen mode is shown: the wall board's screen care, power and
-            // stop settings mean nothing to a phone following its owner.
-            let isBoard = state.appMode == .board
-            Form {
-                ModeSection(state: state, viewModel: viewModel)
-                DestinationsSection(state: state, viewModel: viewModel, reordering: $reorderingDestinations)
-                ThemeSection(state: state, viewModel: viewModel)
-                RefreshSection(state: state, viewModel: viewModel)
-                if isBoard {
-                    ScreenCareSection(state: state, viewModel: viewModel)
-                    PowerSection(state: state, viewModel: viewModel)
-                }
-                TransportSection(state: state, viewModel: viewModel)
-                FilteredLinesSection(state: state, viewModel: viewModel)
-                if !isBoard {
-                    TripOptionsSection(state: state, viewModel: viewModel)
-                }
-                RouteSearchSection(model: model)
-                if state.journeyAlertsSupported {
-                    JourneyAlertsSection(model: model)
-                }
-                if isBoard {
-                    LocationSection(state: state, viewModel: viewModel)
-                }
-                DataSourcesSection()
-                if isBoard {
-                    AddStopsSection(state: state, viewModel: viewModel)
-                    FavoritesSection(state: state, viewModel: viewModel, deleteDisabled: reorderingDestinations)
+            GeometryReader { proxy in
+                let isBoard = state.appMode == .board
+                Group {
+                    if isBoard && proxy.size.width >= 1000 {
+                        HStack(spacing: 0) {
+                            form { whatTheBoardShows }
+                            Divider()
+                            form { howTheDeviceBehaves }
+                        }
+                    } else if isBoard {
+                        form {
+                            whatTheBoardShows
+                            howTheDeviceBehaves
+                        }
+                    } else {
+                        form { onTheSpot }
+                    }
                 }
             }
-            .environment(\.editMode, .constant(reorderingDestinations ? .active : .inactive))
             .navigationTitle(L("settings_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L("back")) { dismiss() }
                 }
+            }
+            .overlay(alignment: .bottom) {
+                // Removing a stop is undone here; adding one is undone on Add stop, where it happened.
+                let removed = state.pendingUndo as? SettingsViewModelSettingsUndoStopRemoved
+                UndoBar(
+                    message: removed.map { L("set_stop_removed", $0.stop.name) },
+                    serial: removed?.serial ?? 0,
+                    onUndo: { withAnimation { viewModel.undo() } },
+                    onDismiss: { withAnimation { viewModel.dismissUndo() } }
+                )
+                .animation(.easeInOut, value: state.pendingUndo?.serial)
             }
         }
         .navigationViewStyle(.stack)
@@ -66,62 +67,402 @@ struct SettingsView: View {
             #endif
         }
     }
+
+    private func form<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        Form { content() }
+            .environment(\.editMode, .constant(reordering != nil ? .active : .inactive))
+    }
+
+    /// Board mode, left: stops, destinations, routes, lines and what departures show.
+    @ViewBuilder private var whatTheBoardShows: some View {
+        let state = model.state
+        let viewModel = model.viewModel
+        ModeSection(state: state, viewModel: viewModel)
+        StopsSection(model: model, reordering: $reordering)
+        DestinationsSection(state: state, viewModel: viewModel, isBoard: true, reordering: $reordering)
+        RouteSearchSection(model: model, showsAlternatives: false)
+        if state.journeyAlertsSupported { JourneyAlertsSection(model: model) }
+        FilteredLinesSection(state: state, viewModel: viewModel)
+        TransportSection(state: state, viewModel: viewModel)
+    }
+
+    /// Board mode, right: theme, power, waking and dimming, the screen's care, and location.
+    @ViewBuilder private var howTheDeviceBehaves: some View {
+        let state = model.state
+        let viewModel = model.viewModel
+        ThemeSection(state: state, viewModel: viewModel)
+        PowerSection(state: state, viewModel: viewModel, isBoard: true)
+        WakeAndDimSection(state: state, viewModel: viewModel)
+        OledSection(state: state, viewModel: viewModel)
+        LocationSection(state: state, viewModel: viewModel)
+        AboutSection()
+    }
+
+    /// On the spot: only what applies when following the device.
+    @ViewBuilder private var onTheSpot: some View {
+        let state = model.state
+        let viewModel = model.viewModel
+        ModeSection(state: state, viewModel: viewModel)
+        DestinationsSection(state: state, viewModel: viewModel, isBoard: false, reordering: $reordering)
+        RouteSearchSection(model: model, showsAlternatives: true)
+        if state.journeyAlertsSupported { JourneyAlertsSection(model: model) }
+        ThemeSection(state: state, viewModel: viewModel)
+        TransportSection(state: state, viewModel: viewModel)
+        FilteredLinesSection(state: state, viewModel: viewModel)
+        PowerSection(state: state, viewModel: viewModel, isBoard: false)
+        AboutSection()
+    }
+}
+
+/// The list whose rows show move handles.
+enum ReorderTarget {
+    case stops, destinations
+}
+
+/// A section's header: its title and, under it, what the section is for.
+private struct SectionHeader<Action: View>: View {
+    let title: String
+    var hint: String?
+    @ViewBuilder var action: () -> Action
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title).font(.pulse(.subheadline, weight: .semibold)).foregroundColor(Palette.primary)
+                Spacer()
+                action()
+            }
+            if let hint {
+                Text(hint).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+            }
+        }
+        .textCase(nil)
+    }
+}
+
+extension SectionHeader where Action == EmptyView {
+    init(title: String, hint: String? = nil) {
+        self.init(title: title, hint: hint) { EmptyView() }
+    }
+}
+
+/// A switch with its title and what it does.
+private struct SettingToggle: View {
+    let title: String
+    var hint: String?
+    let isOn: Bool
+    let onChange: (Bool) -> Void
+
+    var body: some View {
+        Toggle(isOn: binding(isOn, onChange)) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.pulse(.body))
+                if let hint {
+                    Text(hint).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Mode
 
+/// The mode as a two-way choice. Switching asks first (T6): it changes what the whole app does,
+/// though nothing is lost either way.
 private struct ModeSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
+    @State private var confirming: AppMode?
 
     var body: some View {
-        Section(L("settings_mode")) {
-            OptionPicker(
-                title: L("settings_mode"),
-                footnote: L(state.appMode == .board ? "mode_board_description" : "mode_on_spot_description"),
-                options: [(AppMode.onSpot, L("mode_on_spot")), (.board, L("mode_board"))],
-                selection: state.appMode,
-                onSelect: { viewModel.updateAppMode(mode: $0) }
-            )
+        Section(header: SectionHeader(title: L("settings_mode"))) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Bound to the saved mode, so the thumb stays put until the switch is confirmed.
+                Picker(L("settings_mode"), selection: Binding(get: { state.appMode }, set: { if $0 != state.appMode { confirming = $0 } })) {
+                    Text(L("mode_on_spot")).tag(AppMode.onSpot)
+                    Text(L("mode_board")).tag(AppMode.board)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                Text(L(state.appMode == .board ? "mode_board_description" : "mode_on_spot_description"))
+                    .font(.pulse(.footnote))
+                    .foregroundColor(Palette.textSecondary)
+            }
+            .padding(.vertical, 4)
+        }
+        .alert(
+            confirmingTitle,
+            isPresented: Binding(get: { confirming != nil }, set: { if !$0 { confirming = nil } }),
+            presenting: confirming
+        ) { target in
+            Button(L(target == .board ? "set_switch_to_board_confirm" : "set_switch_to_spot_confirm")) {
+                viewModel.updateAppMode(mode: target)
+            }
+            Button(L(target == .board ? "set_switch_to_board_keep" : "set_switch_to_spot_keep"), role: .cancel) {}
+        } message: { target in
+            let stops = state.favorites.count
+            if target == .board {
+                Text(stops == 0 ? L("set_switch_to_board_empty") : L("set_switch_to_board_body", stops))
+            } else {
+                Text(L("set_switch_to_spot_body", stops))
+            }
+        }
+    }
+
+    private var confirmingTitle: String {
+        L(confirming == .board ? "set_switch_to_board_title" : "set_switch_to_spot_title")
+    }
+}
+
+// MARK: - What the board shows
+
+/// The board's stops, "3 of 6": tap one for its directions, swipe to remove it (with Undo). In
+/// Reorder the rows get move handles, and VoiceOver Move up / Move down actions.
+private struct StopsSection: View {
+    @ObservedObject var model: SettingsModel
+    @Binding var reordering: ReorderTarget?
+
+    var body: some View {
+        let state = model.state
+        let viewModel = model.viewModel
+        let favorites = state.favorites
+        let max = Int(SettingsRepositoryCompanion.shared.MAX_FAVORITE_STOPS)
+        let isReordering = reordering == .stops
+        let hint = favorites.isEmpty ? L("set_no_stops") : (isReordering ? L("set_reorder_hint") : L("set_stops_hint"))
+        Section(header: SectionHeader(title: L("set_stops_title", favorites.count, max), hint: hint) {
+            if favorites.count > 1 {
+                Button(isReordering ? L("set_done") : L("reorder")) {
+                    withAnimation { reordering = isReordering ? nil : .stops }
+                }
+                .font(.pulse(.footnote, weight: .semibold))
+                .disabled(reordering == .destinations)
+            }
+        }) {
+            ForEach(Array(favorites.enumerated()), id: \.element.id) { index, stop in
+                NavigationLink(destination: StopDirectionsView(model: model, stopId: stop.id)) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(stop.name).font(.pulse(.body))
+                        Text(directionsSummary(stop: stop, state: state))
+                            .font(.pulse(.footnote))
+                            .foregroundColor(Palette.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
+                .accessibilityAction(named: L("move_up")) {
+                    if index > 0 { viewModel.moveFavorite(fromIndex: Int32(index), toIndex: Int32(index - 1)) }
+                }
+                .accessibilityAction(named: L("move_down")) {
+                    if index < favorites.count - 1 { viewModel.moveFavorite(fromIndex: Int32(index), toIndex: Int32(index + 1)) }
+                }
+                .deleteDisabled(reordering != nil)
+            }
+            .onMove { sources, destination in
+                // SwiftUI's destination counts the moved row still in place; the ViewModel wants
+                // the index it ends up at.
+                guard let from = sources.first else { return }
+                let to = destination > from ? destination - 1 : destination
+                viewModel.moveFavorite(fromIndex: Int32(from), toIndex: Int32(to))
+            }
+            .onDelete { offsets in
+                offsets.map { favorites[$0].id }.forEach { viewModel.removeFavorite(stopId: $0) }
+            }
+            // Stays visible when full, with the reason, rather than disappearing.
+            if favorites.count >= max {
+                VStack(alignment: .leading, spacing: 2) {
+                    Label(L("set_add_stop"), systemImage: "plus").foregroundColor(Palette.textSecondary)
+                    Text(L("set_stops_max", max)).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                }
+            } else {
+                NavigationLink(destination: AddStopView(model: model)) {
+                    Label(L("set_add_stop"), systemImage: "plus").foregroundColor(Palette.primary)
+                }
+                .accessibilityIdentifier("settings.addStop")
+            }
+        }
+        .onChange(of: favorites.count) { if $0 < 2 && reordering == .stops { reordering = nil } }
+    }
+}
+
+/// "All directions", or the chosen platforms: "Platform 2, Platform 4".
+func directionsSummary(stop: StopPlace, state: SettingsViewModel.UiState) -> String {
+    let selected = state.selectedQuays[stop.id] ?? []
+    if selected.isEmpty { return L("set_all_directions") }
+    guard let withQuays = state.favoriteStopsWithQuays[stop.id] else {
+        return L("directions_showing_some", selected.count, selected.count)
+    }
+    let labels = QuaySectionKt.quaySections(stop: withQuays).flatMap { section in
+        section.quays.filter { selected.contains($0.id) }.map { quayLabel($0, stopName: stop.name, sectionTitle: section.title) }
+    }
+    return labels.isEmpty ? L("directions_showing_some", selected.count, withQuays.quays.count) : labels.joined(separator: ", ")
+}
+
+/// The saved destinations: tap one for when it shows, reorder, remove; then the field to add another.
+private struct DestinationsSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+    let isBoard: Bool
+    @Binding var reordering: ReorderTarget?
+    @State private var editing: StopPlace?
+
+    var body: some View {
+        let max = Int(SettingsRepositoryCompanion.shared.MAX_DESTINATION_STATIONS)
+        let isReordering = reordering == .destinations
+        Section(header: SectionHeader(
+            title: L(isBoard ? "set_destinations_board" : "set_destinations_spot"),
+            hint: L(isBoard ? "set_destinations_board_hint" : "set_destinations_spot_hint")
+        ) {
+            if state.destinationStations.count > 1 {
+                Button(isReordering ? L("set_done") : L("reorder")) {
+                    withAnimation { reordering = isReordering ? nil : .destinations }
+                }
+                .font(.pulse(.footnote, weight: .semibold))
+                .disabled(reordering == .stops)
+                .accessibilityIdentifier("settings.destinations.reorder")
+            }
+        }) {
+            ForEach(state.destinationStations, id: \.id) { destination in
+                let schedule = state.destinationSchedules[destination.id]
+                Button { editing = destination } label: {
+                    HStack {
+                        PlaceKindIcon(kind: destination.kind)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(destination.name).font(.pulse(.body)).foregroundColor(Palette.textPrimary)
+                            // An HStack rather than a Label: inside a Form, a Label's icon gets a
+                            // fixed-width column that pushes the text away from it.
+                            HStack(spacing: 4) {
+                                Image(systemName: "clock").accessibilityHidden(true)
+                                Text(scheduleSummary(schedule))
+                            }
+                            .font(.pulse(.footnote))
+                            .foregroundColor(schedule == nil ? Palette.textSecondary : Palette.primary)
+                        }
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .accessibilityHint(L("schedule_edit", destination.name))
+                .deleteDisabled(reordering != nil)
+            }
+            .onMove { sources, destination in
+                guard let from = sources.first else { return }
+                let to = destination > from ? destination - 1 : destination
+                viewModel.moveDestinationStation(fromIndex: Int32(from), toIndex: Int32(to))
+            }
+            .onDelete { offsets in
+                offsets.map { state.destinationStations[$0].id }.forEach { viewModel.removeDestinationStation(stopId: $0) }
+            }
+            if state.destinationStations.count >= max {
+                Text(L("max_destinations_reached", max)).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+            } else {
+                HStack {
+                    Image(systemName: "magnifyingglass").foregroundColor(Palette.textSecondary).accessibilityHidden(true)
+                    TextField(L("set_add_destination"), text: binding(state.destinationQuery) { viewModel.onDestinationQueryChanged(newQuery: $0) })
+                        .disableAutocorrection(true)
+                }
+                if state.isSearchingDestination && state.destinationResults.isEmpty {
+                    ProgressView()
+                }
+                ForEach(state.destinationResults.filter { result in !state.destinationStations.contains { $0.id == result.id } }, id: \.id) { place in
+                    Button { viewModel.addDestinationStation(stopPlace: place) } label: {
+                        HStack {
+                            PlaceKindIcon(kind: place.kind)
+                            PlaceLabel(place: place)
+                            Spacer()
+                            Image(systemName: "plus.circle").foregroundColor(Palette.primary)
+                        }
+                    }
+                    .foregroundColor(Palette.textPrimary)
+                    .accessibilityHint(L("add"))
+                }
+                Text(L("set_destinations_limit", max)).font(.pulse(.caption)).foregroundColor(Palette.textSecondary)
+            }
+        }
+        .onChange(of: state.destinationStations.count) { if $0 < 2 && reordering == .destinations { reordering = nil } }
+        .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
+            if let destination = editing {
+                DestinationScheduleView(
+                    destination: destination,
+                    schedule: state.destinationSchedules[destination.id],
+                    onSave: { viewModel.setDestinationSchedule(destinationId: destination.id, schedule: $0) }
+                )
+            }
         }
     }
 }
 
-/// Journey alerts in Settings: how a followed journey is tracked and how many of its alerts are on,
-/// with the choices themselves on a screen of their own.
-/// The companies whose timetables reach Entur, on a screen of their own; it answers "is the bus
-/// I take in here?". As on Android, it comes after the settings and before the stop lists.
-private struct DataSourcesSection: View {
+/// How routes are searched: preference, transport, walking speed and, on the spot, how many.
+private struct RouteSearchSection: View {
+    @ObservedObject var model: SettingsModel
+    let showsAlternatives: Bool
+
     var body: some View {
-        Section(L("data_sources_title")) {
-            NavigationLink(destination: DataSourcesView()) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L("data_sources_row"))
-                    Text(L("data_sources_row_hint"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+        let state = model.state
+        let allowed = RouteModesView.kindCount - state.excludedRouteModes.count
+        Section(header: SectionHeader(title: L("route_settings_title"))) {
+            OptionPicker(
+                title: L("route_preference"),
+                options: [
+                    (RoutePreference.fastest, L("route_pref_fastest")),
+                    (.fewerTransfers, L("route_pref_fewer_transfers")),
+                    (.lessWalking, L("route_pref_less_walking")),
+                ],
+                selection: state.routePreference,
+                onSelect: { model.viewModel.updateRoutePreference(preference: $0) }
+            )
+            NavigationLink(destination: RouteModesView(model: model)) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("route_modes")).font(.pulse(.body))
+                        Text(L("set_travel_by_hint")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                    }
+                    Spacer()
+                    Text(state.excludedRouteModes.isEmpty ? L("route_modes_all") : L("route_modes_count", allowed, RouteModesView.kindCount))
+                        .foregroundColor(Palette.textSecondary)
                 }
             }
-            .accessibilityIdentifier("settings.dataSources")
+            OptionPicker(
+                title: L("walking_speed"),
+                options: [
+                    (WalkingSpeed.slow, L("walking_speed_slow")),
+                    (.normal, L("walking_speed_normal")),
+                    (.fast, L("walking_speed_fast")),
+                ],
+                selection: state.walkingSpeed,
+                onSelect: { model.viewModel.updateWalkingSpeed(speed: $0) }
+            )
+            if showsAlternatives {
+                OptionPicker(
+                    title: L("trip_options_title"),
+                    footnote: L("trip_options_hint"),
+                    options: (0 ... 5).map { count in
+                        (Int32(count), count == 0 ? L("trip_options_auto") : String(count))
+                    },
+                    selection: state.tripOptionsCount,
+                    onSelect: { model.viewModel.updateTripOptionsCount(count: $0) }
+                )
+            }
         }
     }
 }
 
+/// How "Notify me about this journey" follows a trip; the choices are on a screen of their own.
 private struct JourneyAlertsSection: View {
     @ObservedObject var model: SettingsModel
 
     var body: some View {
         let state = model.state
-        let total = JourneyAlertsView.kinds.count
-        Section(L("journey_rationale_title")) {
+        Section(header: SectionHeader(title: L("journey_rationale_title"), hint: L("set_journey_hint"))) {
             NavigationLink(destination: JourneyAlertsView(model: model)) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(L(Self.modeKey(state.journeyMode)))
-                    Text(state.disabledJourneyAlerts.isEmpty
-                        ? L("journey_alerts_all")
-                        : L("journey_alerts_count", total - state.disabledJourneyAlerts.count, total))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                HStack {
+                    Image(systemName: "bell.fill").foregroundColor(Palette.primary).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("journey_rationale_title")).font(.pulse(.body))
+                        Text(L(Self.modeKey(state.journeyMode))).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                    }
+                    Spacer()
+                    let count = JourneyModelsKt.journeyAlertCount(mode: state.journeyMode, disabled: state.disabledJourneyAlerts)
+                    Text(count.isAll ? L("journey_alerts_all") : L("journey_alerts_count", Int(count.enabled), Int(count.total)))
+                        .foregroundColor(Palette.textSecondary)
                 }
             }
             .accessibilityIdentifier("settings.journeyAlerts")
@@ -138,89 +479,192 @@ private struct JourneyAlertsSection: View {
     }
 }
 
-private struct TripOptionsSection: View {
+/// Lines hidden from the board, each with a way to show it again.
+private struct FilteredLinesSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
 
     var body: some View {
-        Section(L("trip_options_title")) {
-            OptionPicker(
-                title: L("trip_options_title"),
-                footnote: L("trip_options_hint"),
-                options: (0 ... 5).map { count in
-                    (Int32(count), count == 0 ? L("trip_options_auto") : String(count))
-                },
-                selection: state.tripOptionsCount,
-                onSelect: { viewModel.updateTripOptionsCount(count: $0) }
-            )
-        }
-    }
-}
-
-// MARK: - Display
-
-private struct ThemeSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
-
-    var body: some View {
-        Section(L("theme_settings")) {
-            OptionPicker(
-                title: L("day_night_mode"),
-                options: [(ThemeMode.system, L("theme_system")), (.light, L("theme_light")), (.dark, L("theme_dark")), (.auto, L("theme_auto"))],
-                selection: state.themeMode,
-                onSelect: { viewModel.updateThemeMode(mode: $0) }
-            )
-            if state.themeMode == .auto {
-                Text(L("auto_theme_thresholds")).font(.subheadline.bold())
-                OptionPicker(
-                    title: L("auto_theme_dark"),
-                    options: [Float(10), 30, 50, 100].map { ($0, L("lux_value", Int($0))) },
-                    selection: state.autoThemeDarkLux,
-                    onSelect: { viewModel.updateAutoThemeDarkLux(lux: $0) }
-                )
-                OptionPicker(
-                    title: L("auto_theme_light"),
-                    options: [Float(100), 150, 200, 250].map { ($0, L("lux_value", Int($0))) },
-                    selection: state.autoThemeLightLux,
-                    onSelect: { viewModel.updateAutoThemeLightLux(lux: $0) }
-                )
-                if let lux = state.currentLux {
-                    // iOS has no public ambient light sensor, so this is an estimate; showing it lets
-                    // the user pick thresholds that suit their room.
-                    Text(L("current_lux", Int(lux.floatValue.rounded())))
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
+        Section(
+            header: SectionHeader(title: L("set_filtered_title"), hint: L("filtered_lines_hint")),
+            footer: state.filteredLines.isEmpty ? nil : Text(L("set_filtered_footer")).font(.pulse(.footnote))
+        ) {
+            if state.filteredLines.isEmpty {
+                Text(L("set_filtered_none")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+            } else {
+                ForEach(state.filteredLines.sorted(), id: \.self) { line in
+                    HStack {
+                        Text(line).font(.pulse(.body, weight: .semibold))
+                        Spacer()
+                        Button { viewModel.removeFilteredLine(line: line) } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundColor(Palette.textSecondary)
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel(L("set_unfilter_line", line))
+                    }
                 }
             }
         }
     }
 }
 
-private struct RefreshSection: View {
+/// What departures show besides their times.
+private struct TransportSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
 
     var body: some View {
-        Section(L("refresh_interval")) {
-            OptionPicker(
-                title: L("auto_update_schedule"),
-                options: [(0, L("refresh_none")), (30, L("refresh_30s")), (60, L("refresh_1m")), (120, L("refresh_2m")), (300, L("refresh_5m"))] as [(Int32, String)],
-                selection: state.refreshIntervalSeconds,
-                onSelect: { viewModel.updateRefreshInterval(seconds: $0) }
-            )
+        Section(header: SectionHeader(title: L("set_transport_title"))) {
+            SettingToggle(title: L("show_delays"), hint: L("set_delays_hint"), isOn: state.showDelays) { viewModel.updateShowDelays(show: $0) }
+            SettingToggle(title: L("show_messages"), hint: L("set_messages_hint"), isOn: state.showMessages) { viewModel.updateShowMessages(show: $0) }
+            SettingToggle(title: L("show_cancelled"), isOn: state.showCancelledLines) { viewModel.updateShowCancelledLines(show: $0) }
+            SettingToggle(title: L("show_weather"), isOn: state.showWeather) { viewModel.updateShowWeather(show: $0) }
         }
     }
 }
 
-private struct ScreenCareSection: View {
+// MARK: - How the device behaves
+
+/// Light, dark, the system's, or by the room's light, with that mode's two thresholds.
+private struct ThemeSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
 
     var body: some View {
-        Section(L("oled_screen_care")) {
+        Section(header: SectionHeader(title: L("set_theme_title"))) {
             OptionPicker(
-                title: L("pixel_shift_level"),
+                title: L("set_theme_mode"),
+                footnote: L("set_theme_hint"),
+                options: [(ThemeMode.system, L("theme_system")), (.light, L("theme_light")), (.dark, L("theme_dark")), (.auto, L("theme_auto"))],
+                selection: state.themeMode,
+                onSelect: { viewModel.updateThemeMode(mode: $0) }
+            )
+            if state.themeMode == .auto {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L("set_thresholds_title")).font(.pulse(.body))
+                    Text(L("set_thresholds_hint")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                    if let lux = state.currentLux {
+                        // iOS has no public ambient light sensor, so this is an estimate; showing it lets
+                        // the user pick thresholds that suit their room.
+                        Label(L("current_lux", Int(lux.floatValue.rounded())), systemImage: "sun.max")
+                            .font(.pulse(.footnote))
+                            .foregroundColor(Palette.textSecondary)
+                    }
+                }
+                OptionPicker(
+                    title: L("set_thresholds_dark"),
+                    options: [Float(10), 30, 50, 100].map { ($0, L("lux_value", Int($0))) },
+                    selection: state.autoThemeDarkLux,
+                    onSelect: { viewModel.updateAutoThemeDarkLux(lux: $0) }
+                )
+                OptionPicker(
+                    title: L("set_thresholds_light"),
+                    options: [Float(100), 150, 200, 250].map { ($0, L("lux_value", Int($0))) },
+                    selection: state.autoThemeLightLux,
+                    onSelect: { viewModel.updateAutoThemeLightLux(lux: $0) }
+                )
+            }
+        }
+    }
+}
+
+/// How often things update; on the board also the power-related switches.
+private struct PowerSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+    let isBoard: Bool
+
+    var body: some View {
+        Section(header: SectionHeader(title: L(isBoard ? "set_power_title" : "set_refresh_title"))) {
+            OptionPicker(
+                title: L("set_refresh_interval"),
+                footnote: L(isBoard ? "set_refresh_hint_board" : "set_refresh_hint_spot"),
+                options: [(0, L("refresh_none")), (30, L("refresh_30s")), (60, L("refresh_1m")), (120, L("refresh_2m")), (300, L("refresh_5m"))] as [(Int32, String)],
+                selection: state.refreshIntervalSeconds,
+                onSelect: { viewModel.updateRefreshInterval(seconds: $0) }
+            )
+            if isBoard {
+                SettingToggle(title: L("set_dynamic_refresh"), hint: L("set_dynamic_refresh_hint"), isOn: state.dynamicRefresh) { viewModel.updateDynamicRefresh(enabled: $0) }
+                SettingToggle(title: L("set_full_screen"), hint: L("set_full_screen_hint"), isOn: state.isFullScreenMode) { viewModel.updateFullScreenMode(enabled: $0) }
+                SettingToggle(title: L("set_always_on"), hint: L("set_always_on_hint"), isOn: state.isAlwaysOnEnabled) { viewModel.updateAlwaysOnMode(enabled: $0) }
+            }
+        }
+    }
+}
+
+/// Camera wake, and the two settings that only matter with it on: sensitivity and auto-dim, shown
+/// disabled with the reason while it is off, so the rows don't shift. Turning it on without camera
+/// access explains first (`CameraAccessView`).
+private struct WakeAndDimSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+
+    @State private var askingCamera = false
+    @State private var cameraAuthorized = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+
+    var body: some View {
+        let on = state.cameraMotionWake
+        Section(header: SectionHeader(title: L("set_wake_title"))) {
+            SettingToggle(title: L("wake_camera"), hint: L("set_camera_hint"), isOn: on) { enabled in
+                // Turned on without camera access: why first, then the prompt, here where the user
+                // chose the feature rather than later on the board.
+                if enabled && !cameraAuthorized {
+                    askingCamera = true
+                } else {
+                    viewModel.updateCameraMotionWake(enabled: enabled)
+                }
+            }
+            .fullScreenCover(isPresented: $askingCamera) {
+                CameraAccessView(
+                    onGranted: {
+                        cameraAuthorized = true
+                        askingCamera = false
+                        viewModel.updateCameraMotionWake(enabled: true)
+                    },
+                    onDismiss: { askingCamera = false }
+                )
+            }
+            if on && !cameraAuthorized {
+                // On from before, with access since taken away: say why it does nothing (T4).
+                Callout(L("camera_denied_title"), tone: .warning, symbol: "video.slash") {
+                    Button(L("open_app_settings")) {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                    }
+                }
+            }
+            OptionPicker(
+                title: L("camera_sensitivity"),
+                footnote: L(on ? "camera_sensitivity_hint" : "set_sensitivity_off_hint"),
+                options: [(CameraSensitivity.low, L("sensitivity_low")), (.medium, L("sensitivity_medium")), (.high, L("sensitivity_high"))],
+                selection: state.cameraSensitivity,
+                enabled: on,
+                onSelect: { viewModel.updateCameraSensitivity(sensitivity: $0) }
+            )
+            OptionPicker(
+                title: L("auto_dim_delay"),
+                footnote: L(on ? "set_auto_dim_hint" : "set_auto_dim_off_hint"),
+                options: [(15, L("dim_15s")), (30, L("dim_30s")), (60, L("dim_1m")), (120, L("dim_2m")), (0, L("dim_never"))] as [(Int32, String)],
+                selection: state.autoDimSeconds,
+                enabled: on,
+                onSelect: { viewModel.updateAutoDimSeconds(seconds: $0) }
+            )
+        }
+        // Back from the Settings app, where camera access may have been turned on or off.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            cameraAuthorized = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+        }
+    }
+}
+
+private struct OledSection: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+
+    var body: some View {
+        Section(header: SectionHeader(title: L("set_oled_title"))) {
+            OptionPicker(
+                title: L("set_pixel_shift"),
+                footnote: L("set_pixel_shift_hint"),
                 options: [(BurnInProtectionLevel.off, L("burn_in_off")), (.low, L("burn_in_low")), (.medium, L("burn_in_medium")), (.high, L("burn_in_high"))],
                 selection: state.burnInLevel,
                 onSelect: { viewModel.updateBurnInLevel(level: $0) }
@@ -229,401 +673,150 @@ private struct ScreenCareSection: View {
     }
 }
 
-private struct PowerSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
-
-    var body: some View {
-        Section(L("power_refresh")) {
-            Toggle(L("wake_camera"), isOn: binding(state.cameraMotionWake) { enabled in
-                viewModel.updateCameraMotionWake(enabled: enabled)
-                // Ask for camera access here, where the user just chose the feature, rather than
-                // later on the board, where the prompt would come out of nowhere.
-                if enabled && AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-                    AVCaptureDevice.requestAccess(for: .video) { _ in }
-                }
-            })
-            Toggle(L("dynamic_refresh"), isOn: binding(state.dynamicRefresh) { viewModel.updateDynamicRefresh(enabled: $0) })
-            Toggle(L("full_screen_mode"), isOn: binding(state.isFullScreenMode) { viewModel.updateFullScreenMode(enabled: $0) })
-            Toggle(L("always_on_display"), isOn: binding(state.isAlwaysOnEnabled) { viewModel.updateAlwaysOnMode(enabled: $0) })
-            if state.cameraMotionWake {
-                OptionPicker(
-                    title: L("auto_dim_delay"),
-                    footnote: L("auto_dim_hint"),
-                    options: [(15, L("dim_15s")), (30, L("dim_30s")), (60, L("dim_1m")), (120, L("dim_2m")), (0, L("dim_never"))] as [(Int32, String)],
-                    selection: state.autoDimSeconds,
-                    onSelect: { viewModel.updateAutoDimSeconds(seconds: $0) }
-                )
-                OptionPicker(
-                    title: L("camera_sensitivity"),
-                    footnote: L("camera_sensitivity_hint"),
-                    options: [(CameraSensitivity.low, L("sensitivity_low")), (.medium, L("sensitivity_medium")), (.high, L("sensitivity_high"))],
-                    selection: state.cameraSensitivity,
-                    onSelect: { viewModel.updateCameraSensitivity(sensitivity: $0) }
-                )
-            }
-        }
-    }
-}
-
-private struct TransportSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
-
-    var body: some View {
-        Section(L("transport_info")) {
-            Toggle(L("show_delays"), isOn: binding(state.showDelays) { viewModel.updateShowDelays(show: $0) })
-            Toggle(L("show_messages"), isOn: binding(state.showMessages) { viewModel.updateShowMessages(show: $0) })
-            Toggle(L("show_cancelled"), isOn: binding(state.showCancelledLines) { viewModel.updateShowCancelledLines(show: $0) })
-            Toggle(L("show_weather"), isOn: binding(state.showWeather) { viewModel.updateShowWeather(show: $0) })
-        }
-    }
-}
-
-private struct FilteredLinesSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
-
-    var body: some View {
-        Section(header: Text(L("filtered_lines")), footer: Text(L("filtered_lines_hint"))) {
-            if state.filteredLines.isEmpty {
-                Text(L("no_filtered_lines")).font(.footnote).foregroundColor(.secondary)
-            } else {
-                ForEach(state.filteredLines.sorted(), id: \.self) { line in
-                    HStack {
-                        Text(line).bold()
-                        Spacer()
-                        Button(role: .destructive) { viewModel.removeFilteredLine(line: line) } label: {
-                            Image(systemName: "xmark.circle.fill")
-                        }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel(L("remove"))
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct RouteSearchSection: View {
-    @ObservedObject var model: SettingsModel
-
-    var body: some View {
-        let state = model.state
-        let allowed = RouteModesView.kindCount - state.excludedRouteModes.count
-        Section(L("route_settings_title")) {
-            OptionPicker(
-                title: L("route_preference"),
-                options: [
-                    (RoutePreference.fastest, L("route_pref_fastest")),
-                    (.fewerTransfers, L("route_pref_fewer_transfers")),
-                    (.lessWalking, L("route_pref_less_walking")),
-                ],
-                selection: state.routePreference,
-                onSelect: { model.viewModel.updateRoutePreference(preference: $0) }
-            )
-            OptionPicker(
-                title: L("walking_speed"),
-                options: [
-                    (WalkingSpeed.slow, L("walking_speed_slow")),
-                    (.normal, L("walking_speed_normal")),
-                    (.fast, L("walking_speed_fast")),
-                ],
-                selection: state.walkingSpeed,
-                onSelect: { model.viewModel.updateWalkingSpeed(speed: $0) }
-            )
-            NavigationLink(destination: RouteModesView(model: model)) {
-                HStack {
-                    Text(L("route_modes"))
-                    Spacer()
-                    Text(state.excludedRouteModes.isEmpty ? L("route_modes_all") : L("route_modes_count", allowed, RouteModesView.kindCount))
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Places
-
-private struct DestinationsSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
-    @State private var editing: StopPlace?
-    /// While on, the rows show their move handles; the board shows routes in this order.
-    @Binding var reordering: Bool
-
-    private var header: some View {
-        HStack {
-            Text(L("fastest_route_destination"))
-            Spacer()
-            if state.destinationStations.count > 1 {
-                Button(reordering ? L("reorder_done") : L("reorder")) {
-                    withAnimation { reordering.toggle() }
-                }
-                .font(.footnote)
-                .textCase(nil)
-                .accessibilityIdentifier("settings.destinations.reorder")
-            }
-        }
-    }
-
-    var body: some View {
-        let max = Int(SettingsRepositoryCompanion.shared.MAX_DESTINATION_STATIONS)
-        Section(header: header) {
-            if state.destinationStations.isEmpty {
-                Text(L("no_destination_set")).foregroundColor(.secondary)
-            }
-            ForEach(state.destinationStations, id: \.id) { destination in
-                let schedule = state.destinationSchedules[destination.id]
-                HStack {
-                    Button { editing = destination } label: {
-                        HStack {
-                            PlaceKindIcon(kind: destination.kind)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(destination.name).foregroundColor(.primary)
-                                // An HStack rather than a Label: inside a Form, a Label's icon gets a
-                                // fixed-width column that pushes the text away from it.
-                                HStack(spacing: 4) {
-                                    Image(systemName: "clock").accessibilityHidden(true)
-                                    Text(scheduleSummary(schedule))
-                                }
-                                .font(.caption)
-                                .foregroundColor(schedule == nil ? .secondary : .accentColor)
-                            }
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityHint(L("schedule_edit", destination.name))
-                    Button(role: .destructive) { viewModel.removeDestinationStation(stopId: destination.id) } label: {
-                        Image(systemName: "xmark.circle.fill")
-                    }
-                    .buttonStyle(.borderless)
-                    .accessibilityLabel(L("remove"))
-                }
-            }
-            .onMove { sources, destination in
-                // SwiftUI's destination counts the moved row still in place; the ViewModel wants
-                // the index it ends up at.
-                guard let from = sources.first else { return }
-                let to = destination > from ? destination - 1 : destination
-                viewModel.moveDestinationStation(fromIndex: Int32(from), toIndex: Int32(to))
-            }
-            if state.destinationStations.count >= max {
-                Text(L("max_destinations_reached", max)).font(.footnote).foregroundColor(.secondary)
-            } else {
-                TextField(L("search_destination_hint"), text: binding(state.destinationQuery) { viewModel.onDestinationQueryChanged(newQuery: $0) })
-                    .disableAutocorrection(true)
-                if state.isSearchingDestination && state.destinationResults.isEmpty {
-                    ProgressView()
-                }
-                ForEach(state.destinationResults, id: \.id) { place in
-                    HStack {
-                        PlaceKindIcon(kind: place.kind)
-                        PlaceLabel(place: place)
-                        Spacer()
-                        Button(L("select")) { viewModel.addDestinationStation(stopPlace: place) }
-                            .buttonStyle(.bordered)
-                    }
-                }
-            }
-        }
-        .onChange(of: state.destinationStations.count) { if $0 < 2 { reordering = false } }
-        .sheet(isPresented: Binding(get: { editing != nil }, set: { if !$0 { editing = nil } })) {
-            if let destination = editing {
-                DestinationScheduleView(
-                    destination: destination,
-                    schedule: state.destinationSchedules[destination.id],
-                    onSave: { viewModel.setDestinationSchedule(destinationId: destination.id, schedule: $0) }
-                )
-            }
-        }
-    }
-}
-
+/// The board's location: where it stands, finding it (with progress, T4 callouts when refused or
+/// failed) and typing it, with each field's own error (T1).
 private struct LocationSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
-    @State private var manualLatitude = ""
-    @State private var manualLongitude = ""
+    @State private var latitude = ""
+    @State private var longitude = ""
 
     var body: some View {
-        Section(L("location_config")) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L("current_coords")).font(.subheadline.bold())
-                let notSet = L("not_set")
-                Text("\(L("latitude_val", state.latitude.map { String($0.doubleValue) } ?? notSet)), \(L("longitude_val", state.longitude.map { String($0.doubleValue) } ?? notSet))")
-                Text(locationStatusText(state.locationStatus)).font(.footnote).foregroundColor(.secondary)
+        let status = onEnum(of: state.locationStatus)
+        let requesting: Bool = {
+            switch status {
+            case .requestingPrecise, .requestingApproximate: return true
+            default: return false
+            }
+        }()
+        Section(header: SectionHeader(title: L("set_location_title"), hint: L("set_location_hint"))) {
+            HStack(spacing: 12) {
+                Image(systemName: "mappin.and.ellipse").foregroundColor(Palette.primary).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("set_current_coordinates")).font(.pulse(.body))
+                    Text(coordinates).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            switch status {
+            case .denied:
+                Callout(L("set_location_denied_body"), tone: .warning, title: L("set_location_denied_title"), symbol: "location.slash") {
+                    Button(L("open_app_settings")) {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                    }
+                }
+            case .failed, .error:
+                Callout(L("set_location_failed_body"), tone: .error, title: L("set_location_failed_title"), symbol: "exclamationmark.circle") {
+                    Button(L("try_again")) { viewModel.requestLocationAndNearbyStops() }
+                }
+            default:
+                if let line = statusLine(state.locationStatus) {
+                    HStack(spacing: 8) {
+                        if requesting { ProgressView() } else { Image(systemName: line.symbol).accessibilityHidden(true) }
+                        Text(line.text)
+                    }
+                    .font(.pulse(.footnote))
+                    .foregroundColor(Palette.textSecondary)
+                }
             }
             Button {
                 viewModel.requestLocationAndNearbyStops()
             } label: {
-                Label(L("detect_location"), systemImage: "location.fill")
+                Label(L("set_detect_location"), systemImage: "location.fill")
             }
-            .disabled(state.isSearchingNearby)
-            if state.showManualCoordinatesPrompt {
-                Text(L("enter_manual")).font(.footnote)
-                TextField(L("latitude_label"), text: $manualLatitude).keyboardType(.numbersAndPunctuation)
-                TextField(L("longitude_label"), text: $manualLongitude).keyboardType(.numbersAndPunctuation)
-                Button(L("save_coords")) { viewModel.setManualCoordinates(latStr: manualLatitude, lonStr: manualLongitude) }
+            .disabled(requesting)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L("set_enter_coordinates")).font(.pulse(.body))
+                CoordinateField(label: L("set_latitude"), text: $latitude, error: state.coordinatesError?.latitude.map { errorText($0, isLatitude: true) }) {
+                    viewModel.clearCoordinatesError()
+                }
+                CoordinateField(label: L("set_longitude"), text: $longitude, error: state.coordinatesError?.longitude.map { errorText($0, isLatitude: false) }) {
+                    viewModel.clearCoordinatesError()
+                }
             }
+            .padding(.vertical, 4)
+            Button(L("set_save_coordinates")) { viewModel.setManualCoordinates(latStr: latitude, lonStr: longitude) }
         }
     }
 
-    private func locationStatusText(_ status: any SettingsViewModelLocationStatus) -> String {
+    private var coordinates: String {
+        guard let lat = state.latitude?.doubleValue, let lon = state.longitude?.doubleValue else { return L("not_set") }
+        return String(format: "%.4f, %.4f", locale: Locale(identifier: "en_US_POSIX"), lat, lon)
+    }
+
+    private func statusLine(_ status: any SettingsViewModelLocationStatus) -> (symbol: String, text: String)? {
         switch onEnum(of: status) {
-        case .notRequested: return L("loc_not_requested")
-        case .requestingPrecise: return L("loc_requesting_gps")
-        case .requestingApproximate: return L("loc_requesting_network")
-        case let .found(found): return L("loc_success", L(found.accuracy == .precise ? "gps_source" : "network_source"))
-        case .failed: return L("loc_failed")
-        case .denied: return L("loc_denied")
-        case let .error(error): return L("loc_error", error.message)
-        case .manual: return L("loc_manual")
-        case .invalidManualFormat: return L("loc_invalid_format")
+        case .notRequested: return ("info.circle", L("loc_not_requested"))
+        case .requestingPrecise: return ("", L("loc_requesting_gps"))
+        case .requestingApproximate: return ("", L("loc_requesting_network"))
+        case let .found(found): return ("checkmark.circle", L("loc_success", L(found.accuracy == .precise ? "gps_source" : "network_source")))
+        case .manual: return ("checkmark.circle", L("loc_manual"))
+        case .denied, .failed, .error: return nil
+        }
+    }
+
+    /// What a coordinate field says is wrong, with an example of what to type (T1).
+    private func errorText(_ problem: CoordinateProblem, isLatitude: Bool) -> String {
+        let example = isLatitude ? "59.9111" : "10.7528"
+        switch problem {
+        case .missing: return L("set_coord_missing", example)
+        case .notANumber: return L("set_coord_not_number", example)
+        case .outOfRange: return L(isLatitude ? "set_latitude_range" : "set_longitude_range")
         }
     }
 }
 
-private struct AddStopsSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
+/// A coordinate field, with its error under it.
+private struct CoordinateField: View {
+    let label: String
+    @Binding var text: String
+    let error: String?
+    let onEdit: () -> Void
 
     var body: some View {
-        // With no query, the list offers the stops near the saved location instead.
-        let showNearby = state.query.trimmingCharacters(in: .whitespaces).isEmpty
-        let stops = showNearby ? state.nearbyStops : state.searchResults
-        let isLoading = showNearby ? state.isSearchingNearby : state.isSearching
-        let max = Int(SettingsRepositoryCompanion.shared.MAX_FAVORITE_STOPS)
-        let canAdd = state.favorites.count < max
-        Section(L("add_stop_places")) {
-            TextField(L("search_hint"), text: binding(state.query) { viewModel.onQueryChanged(newQuery: $0) })
+        VStack(alignment: .leading, spacing: 2) {
+            TextField(label, text: $text)
+                .keyboardType(.numbersAndPunctuation)
                 .disableAutocorrection(true)
-            // Search stays open when full, since its results can still remove a stop.
-            if !canAdd {
-                Text(L("max_favorite_stops_reached", max)).font(.footnote).foregroundColor(.secondary)
-            }
-            if isLoading && stops.isEmpty {
-                ProgressView()
-            } else if !stops.isEmpty {
-                Text(L(showNearby ? "nearby_stops" : "search_results")).font(.subheadline.bold())
-                ForEach(stops, id: \.id) { stop in
-                    let isFavorite = state.favorites.contains { $0.id == stop.id }
-                    HStack {
-                        PlaceLabel(place: stop)
-                        Spacer()
-                        if isFavorite {
-                            Button(L("remove"), role: .destructive) { viewModel.removeFavorite(stopId: stop.id) }
-                                .buttonStyle(.bordered)
-                        } else {
-                            Button(L("add")) { viewModel.addFavorite(stopPlace: stop) }
-                                .buttonStyle(.borderedProminent)
-                                .disabled(!canAdd)
-                        }
-                    }
-                }
-            } else if !showNearby {
-                Text(L("no_stops_found")).foregroundColor(.secondary)
+                .padding(8)
+                .overlay(RoundedRectangle(cornerRadius: FjordTokens.radiusSm).strokeBorder(error == nil ? Palette.outline : Palette.error))
+                .onChange(of: text) { _ in onEdit() }
+                .accessibilityHint(error ?? "")
+            if let error {
+                Label(error, systemImage: "exclamationmark.circle")
+                    .font(.pulse(.caption))
+                    .foregroundColor(Palette.error)
             }
         }
     }
 }
 
-private struct FavoritesSection: View {
-    let state: SettingsViewModel.UiState
-    let viewModel: SettingsViewModel
-    /// While destinations are reordered the Form is in edit mode, which would offer to delete these.
-    var deleteDisabled = false
-
+/// Where the data comes from, and the app's version.
+private struct AboutSection: View {
     var body: some View {
-        Section(L("favorite_stops", state.favorites.count)) {
-            if state.favorites.isEmpty {
-                Text(L("no_favorites")).foregroundColor(.secondary)
-            }
-            ForEach(state.favorites, id: \.id) { stop in
-                FavoriteRow(
-                    stop: stop,
-                    sections: state.favoriteStopsWithQuays[stop.id].map { QuaySectionKt.quaySections(stop: $0) } ?? [],
-                    selected: state.selectedQuays[stop.id] ?? [],
-                    onToggleQuay: { viewModel.toggleQuay(stopId: stop.id, quayId: $0) }
-                )
-                .deleteDisabled(deleteDisabled)
-            }
-            .onDelete { offsets in
-                offsets.map { state.favorites[$0].id }.forEach { viewModel.removeFavorite(stopId: $0) }
-            }
-        }
-    }
-}
-
-private struct FavoriteRow: View {
-    let stop: StopPlace
-    let sections: [QuaySection]
-    let selected: Set<String>
-    let onToggleQuay: (String) -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            PlaceLabel(place: stop)
-            if !sections.isEmpty {
-                Text(L("directions_quays")).font(.footnote.bold())
-                ForEach(sections, id: \.self) { section in
-                    if let title = section.title {
-                        Text(title).font(.caption).foregroundColor(.secondary).padding(.top, 4)
-                    }
-                    ForEach(section.quays, id: \.id) { quay in
-                        // Nothing selected means every direction is shown.
-                        let isOn = selected.isEmpty || selected.contains(quay.id)
-                        Button { onToggleQuay(quay.id) } label: {
-                            QuayRow(quay: quay, title: title(for: quay, in: section), isOn: isOn)
-                        }
-                        .buttonStyle(.plain)
+        Section(header: SectionHeader(title: L("set_about_title"))) {
+            NavigationLink(destination: DataSourcesView()) {
+                HStack {
+                    Image(systemName: "building.2").foregroundColor(Palette.primary).accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L("data_sources_row")).font(.pulse(.body))
+                        Text(L("data_sources_row_hint")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
                     }
                 }
-                if selected.isEmpty {
-                    Text(L("showing_all_directions")).font(.caption).foregroundColor(.secondary)
-                }
             }
-        }
-        .padding(.vertical, 4)
-    }
-
-    private func title(for quay: Quay, in section: QuaySection) -> String {
-        if let platform = quay.publicCode, !platform.isEmpty { return L("platform_label", platform) }
-        if let description = quay.quayDescription, !description.isEmpty { return description }
-        // A quay named after its own stop says nothing the heading doesn't.
-        if let name = quay.name, !name.isEmpty, name != stop.name, name != section.title { return name }
-        return L("direction_id", String(quay.id.suffix(3)))
-    }
-}
-
-/** One quay in the picker: its platform, then every line it serves and where its next departures go. */
-private struct QuayRow: View {
-    let quay: Quay
-    let title: String
-    let isOn: Bool
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: isOn ? "checkmark.square.fill" : "square")
-                .foregroundColor(isOn ? .accentColor : .secondary)
-                .font(.title3)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.semibold))
-                if !quay.lines.isEmpty {
-                    Text(quay.lines.joined(separator: "  ")).font(.caption).lineLimit(2)
+            .accessibilityIdentifier("settings.dataSources")
+            HStack {
+                Image(systemName: "info.circle").foregroundColor(Palette.primary).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("set_version")).font(.pulse(.body))
+                    Text(L("set_version_hint")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
                 }
-                if !quay.destinations.isEmpty {
-                    Text("→ " + quay.destinations.joined(separator: ", "))
-                        .font(.caption).foregroundColor(.secondary).lineLimit(1)
-                }
+                Spacer()
+                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "")
+                    .foregroundColor(Palette.textSecondary)
             }
-            Spacer(minLength: 0)
+            .accessibilityElement(children: .combine)
         }
-        .contentShape(Rectangle())
-        .padding(.vertical, 2)
     }
 }
 
@@ -636,7 +829,7 @@ struct PlaceLabel: View {
         VStack(alignment: .leading) {
             Text(place.name)
             if let locality = place.locality {
-                Text(locality).font(.caption).foregroundColor(.secondary)
+                Text(locality).font(.pulse(.caption)).foregroundColor(.secondary)
             }
         }
     }
@@ -657,35 +850,45 @@ struct PlaceKindIcon: View {
     }
 }
 
-/// A labelled choice among a few options, as a segmented control.
+/// A labelled choice among a few options, as a segmented control. Disabled, it is faded and its
+/// footnote says why, keeping its place so nothing shifts when it is enabled.
 ///
 /// The control keeps its own copy of the selection. Bound straight to the ViewModel, a tap would
 /// only take effect once the new state came back through the StateFlow, after the tap's animation:
 /// the Liquid Glass thumb then vanished and reappeared on the new segment, swelling up and down,
 /// instead of sliding across to it.
-private struct OptionPicker<Value: Hashable>: View {
+struct OptionPicker<Value: Hashable>: View {
     let title: String
     var footnote: String?
     let options: [(Value, String)]
     let selection: Value
+    var enabled = true
     let onSelect: (Value) -> Void
 
     @State private var current: Value
 
-    init(title: String, footnote: String? = nil, options: [(Value, String)], selection: Value, onSelect: @escaping (Value) -> Void) {
+    init(
+        title: String,
+        footnote: String? = nil,
+        options: [(Value, String)],
+        selection: Value,
+        enabled: Bool = true,
+        onSelect: @escaping (Value) -> Void
+    ) {
         self.title = title
         self.footnote = footnote
         self.options = options
         self.selection = selection
+        self.enabled = enabled
         self.onSelect = onSelect
         _current = State(initialValue: selection)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
+            Text(title).font(.pulse(.body))
             if let footnote {
-                Text(footnote).font(.caption).foregroundColor(.secondary)
+                Text(footnote).font(.pulse(.footnote)).foregroundColor(.secondary)
             }
             Picker(title, selection: $current) {
                 ForEach(options, id: \.0) { option in
@@ -694,7 +897,10 @@ private struct OptionPicker<Value: Hashable>: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
+            .disabled(!enabled)
         }
+        .opacity(enabled ? 1 : 0.5)
+        .padding(.vertical, 4)
         // A tap moves the thumb at once and is then saved; a change made elsewhere (loadSettings)
         // moves it when the state arrives. The guards stop each from echoing the other.
         .onChange(of: current) { if $0 != selection { onSelect($0) } }
@@ -703,6 +909,6 @@ private struct OptionPicker<Value: Hashable>: View {
 }
 
 /// A binding that reads the ViewModel's state and writes through one of its update functions.
-private func binding<Value>(_ value: Value, _ update: @escaping (Value) -> Void) -> Binding<Value> {
+func binding<Value>(_ value: Value, _ update: @escaping (Value) -> Void) -> Binding<Value> {
     Binding(get: { value }, set: update)
 }

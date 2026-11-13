@@ -6,17 +6,15 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,11 +28,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
+import com.example.pulsetransit.data.journey.appliesTo
+import com.example.pulsetransit.data.journey.journeyAlertCount
+import com.example.pulsetransit.theme.FjordDimens
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -61,7 +62,7 @@ fun JourneyAlertsScreen(
                     title = { Text(stringResource(Res.string.journey_rationale_title)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
+                            Icon(imageVector = PulseIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
                         }
                     },
                     windowInsets = WindowInsets.statusBars,
@@ -76,68 +77,83 @@ fun JourneyAlertsScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                        .padding(FjordDimens.space4),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    stringResource(Res.string.settings_journey_alerts_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                // Radio and check boxes get the 48 dp square the clickable checkboxes in Settings
-                // have, so these rows line up with them.
-                SettingsCard(title = stringResource(Res.string.journey_tracking_title)) {
-                    JourneyTrackingMode.entries.forEach { mode ->
-                        val selected = uiState.journeyMode == mode
-                        Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .selectable(
-                                        selected = selected,
-                                        role = Role.RadioButton,
-                                        onClick = { viewModel.updateJourneyMode(mode) },
-                                    ),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(
-                                selected = selected,
-                                onClick = null,
-                                modifier = Modifier.padding(12.dp),
-                            )
-                            Column(modifier = Modifier.weight(1f).padding(vertical = 4.dp)) {
-                                Text(stringResource(journeyModeLabel(mode)), style = MaterialTheme.typography.bodyLarge)
-                                Text(
-                                    stringResource(journeyModeDetail(mode)),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                Column(
+                    modifier = Modifier.widthIn(max = SINGLE_COLUMN_MAX_WIDTH).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(FjordDimens.space6),
+                ) {
+                    Text(
+                        stringResource(Res.string.settings_journey_alerts_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SettingsSection(title = stringResource(Res.string.journey_tracking_title)) {
+                        JourneyTrackingMode.entries.forEachIndexed { index, mode ->
+                            if (index > 0) SettingsDivider()
+                            val selected = uiState.journeyMode == mode
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = FjordDimens.touch)
+                                        .selectable(selected = selected, role = Role.RadioButton, onClick = { viewModel.updateJourneyMode(mode) })
+                                        .padding(end = FjordDimens.space4, top = FjordDimens.space2, bottom = FjordDimens.space2),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(selected = selected, onClick = null, modifier = Modifier.padding(horizontal = FjordDimens.space3))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(stringResource(journeyModeLabel(mode)), style = MaterialTheme.typography.bodyLarge)
+                                    Text(
+                                        stringResource(journeyModeDetail(mode)),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
-                    }
-                }
-                SettingsCard(title = stringResource(Res.string.journey_alert_kinds_title)) {
-                    JourneyAlertKind.entries.forEach { kind ->
-                        val enabled = kind !in uiState.disabledJourneyAlerts
+                        SettingsDivider()
+                        // The privacy answer, next to the choice it is about.
                         Row(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .toggleable(
-                                        value = enabled,
-                                        role = Role.Checkbox,
-                                        onValueChange = { viewModel.updateJourneyAlert(kind, it) },
-                                    ),
+                            modifier = Modifier.padding(horizontal = FjordDimens.space4, vertical = FjordDimens.space3),
+                            horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Checkbox(
-                                checked = enabled,
-                                onCheckedChange = null,
-                                modifier = Modifier.padding(12.dp),
+                            Icon(PulseIcons.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                            Text(
+                                stringResource(Res.string.journey_rationale_privacy),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Text(stringResource(journeyAlertKindLabel(kind)), style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                    val count = journeyAlertCount(uiState.journeyMode, uiState.disabledJourneyAlerts)
+                    SettingsSection(
+                        title = stringResource(Res.string.journey_alert_kinds_title),
+                        action = {
+                            Text(
+                                if (count.isAll) {
+                                    stringResource(Res.string.journey_alerts_all)
+                                } else {
+                                    stringResource(Res.string.journey_alerts_count, count.enabled, count.total)
+                                },
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                    ) {
+                        JourneyAlertKind.entries.forEachIndexed { index, kind ->
+                            if (index > 0) SettingsDivider()
+                            // A missed ride needs location, so it is off and disabled, with the reason, until then.
+                            val applies = kind.appliesTo(uiState.journeyMode)
+                            SettingSwitch(
+                                title = stringResource(journeyAlertKindLabel(kind)),
+                                hint = if (applies) null else stringResource(Res.string.journey_missed_needs_location),
+                                checked = applies && kind !in uiState.disabledJourneyAlerts,
+                                onCheckedChange = { viewModel.updateJourneyAlert(kind, it) },
+                                enabled = applies,
+                            )
                         }
                     }
                 }

@@ -1,7 +1,7 @@
 import Foundation
 import Shared
 
-/// The header clock's strings in the user's locale, using the same patterns as Android.
+/// The header clock's strings in the user's locale and Norway's time, using the same patterns as Android.
 final class SystemClockFormatter: NSObject, ClockFormatter {
     private var formatters: [String: DateFormatter] = [:]
     private var localeIdentifier = ""
@@ -33,6 +33,7 @@ final class SystemClockFormatter: NSObject, ClockFormatter {
         let formatter = formatters[pattern] ?? {
             let formatter = DateFormatter()
             formatter.locale = locale
+            formatter.timeZone = .norway
             formatter.dateFormat = pattern
             formatters[pattern] = formatter
             return formatter

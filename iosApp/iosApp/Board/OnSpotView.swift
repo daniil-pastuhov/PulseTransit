@@ -23,25 +23,49 @@ struct OnSpotView: View {
     let onOpenSettings: () -> Void
 
     var body: some View {
+        if state.isOutsideNorway {
+            // Nothing near to show, and routes from abroad are no use: offer a place in Norway instead.
+            OutsideNorway { viewModel.useSamplePlace(place: $0) }
+        } else {
+            status
+        }
+    }
+
+    @ViewBuilder private var status: some View {
         switch onEnum(of: state.location) {
         case .located:
-            SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
-                .padding(6)
-        case let .locating(locating):
-            LocationStatus(
-                message: L(locating.accuracy == .precise ? "locating_precise" : "locating_approximate"),
-                failed: false
-            )
-        case .idle:
-            LocationStatus(message: L("locating_precise"), failed: false)
-        case .unavailable:
-            LocationStatus(message: L("location_unavailable"), failed: true, actionTitle: L("retry")) {
-                viewModel.retryLocation()
+            VStack(spacing: 0) {
+                if let place = state.samplePlace {
+                    SamplePlaceCallout(place: place) { viewModel.useDeviceLocation() }
+                        .padding([.horizontal, .top], 6)
+                }
+                SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
+                    .padding(6)
             }
+        case let .locating(locating):
+            Locating(approximate: locating.accuracy == .approximate, destinations: state.routeDestinations)
+        case .idle:
+            Locating(approximate: false, destinations: state.routeDestinations)
+        case .unavailable:
+            LocationStatus(
+                symbol: "location.slash",
+                title: L("location_unavailable"),
+                detail: L("on_spot_unavailable_body"),
+                actionTitle: L("try_again"),
+                prominent: false,
+                onTrySamplePlace: { viewModel.useSamplePlace(place: $0) }
+            ) { viewModel.retryLocation() }
         case .permissionDenied:
             // iOS asks only once; after a refusal, access can only be granted in the Settings app.
             // The board looks again when the app becomes active, so returning from there is enough.
-            LocationStatus(message: L("location_denied"), failed: true, actionTitle: L("location_allow")) {
+            LocationStatus(
+                symbol: "location.slash",
+                title: L("on_spot_denied_title"),
+                detail: L("location_denied"),
+                actionTitle: L("location_allow"),
+                hint: L("on_spot_search_hint"),
+                onTrySamplePlace: { viewModel.useSamplePlace(place: $0) }
+            ) {
                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
             }
         }
@@ -99,7 +123,8 @@ private struct SplitSections: View {
             let routes = Group {
                 if routesFolded {
                     FoldedSection(
-                        label: L("on_spot_routes"),
+                        // Says what it hides: "Show routes · 2 destinations".
+                        label: "\(L("on_spot_show_routes")) · \(L("on_spot_destinations", state.routeDestinations.count))",
                         systemImage: "arrow.triangle.turn.up.right.diamond.fill",
                         expandLabel: L("on_spot_show_routes"),
                         edge: isLandscape ? .leading : .top,
@@ -120,7 +145,12 @@ private struct SplitSections: View {
             let stop = Group {
                 if stopFolded {
                     FoldedSection(
-                        label: state.favorites.first?.name ?? L("details_departures"),
+                        // Says what it hides: "Show departures · Oslo S · 83 m".
+                        label: [
+                            L("on_spot_show_departures"),
+                            state.favorites.first?.name,
+                            state.nearbyStops.first { $0.stop.id == state.favorites.first?.id }?.distanceMeters.map { distanceText(Int($0.intValue)) },
+                        ].compactMap { $0 }.joined(separator: " · "),
                         systemImage: "bus.fill",
                         expandLabel: L("on_spot_show_departures"),
                         edge: isLandscape ? .trailing : .bottom,
@@ -230,7 +260,7 @@ private struct FoldedSection: View {
                 HStack(spacing: 12) {
                     Image(systemName: systemImage)
                     Text(label)
-                        .font(.headline)
+                        .font(.pulse(.headline))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: arrow)
@@ -240,7 +270,7 @@ private struct FoldedSection: View {
         }
         .foregroundColor(Palette.textPrimary)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface))
+        .background(RoundedRectangle(cornerRadius: FjordTokens.radiusLg).fill(Palette.surfaceContainer))
         .padding(6)
         .contentShape(Rectangle())
         .onTapGesture(perform: onExpand)
@@ -261,36 +291,139 @@ private struct FoldedSection: View {
     }
 }
 
-/// Finding the device, or why it could not be found, filling the board until it is.
-private struct LocationStatus: View {
-    let message: String
-    let failed: Bool
-    var actionTitle: String?
-    var action: (() -> Void)?
+/// Before a fix: what the app is doing, over the routes and stop as skeletons, so the layout
+/// doesn't jump when it comes.
+private struct Locating: View {
+    let approximate: Bool
+    let destinations: [StopPlace]
+    @State private var pulse = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            if failed {
-                Image(systemName: "location.slash")
-                    .font(.system(size: 40))
-                    .foregroundColor(Palette.error)
-                    .accessibilityHidden(true)
-            } else {
-                ProgressView()
+        VStack(alignment: .leading, spacing: 12) {
+            Label(L(approximate ? "locating_approximate" : "locating_precise"), systemImage: "location")
+                .font(.pulse(.subheadline))
+                .foregroundColor(Palette.textSecondary)
+            ForEach(destinations, id: \.id) { FastestTripPlaceholder(destinationName: $0.name) }
+            VStack(spacing: 12) {
+                ForEach(0 ..< 5, id: \.self) { _ in
+                    HStack(spacing: 8) {
+                        PlaceholderBlock(width: FjordTokens.pillW, height: 28, pulse: pulse)
+                        PlaceholderBlock(height: 14, pulse: pulse)
+                        PlaceholderBlock(width: 48, height: 18, pulse: pulse)
+                    }
+                }
+                Spacer(minLength: 0)
             }
-            Text(message)
-                .font(.headline)
+            .padding(16)
+            .frame(maxHeight: .infinity)
+            .background(RoundedRectangle(cornerRadius: FjordTokens.radiusLg).fill(Palette.surface))
+            .modifier(PlaceholderPulse(pulse: $pulse))
+        }
+        .padding(12)
+    }
+}
+
+/// Why the device could not be found (T5), with what to do; the header stays above it.
+private struct LocationStatus: View {
+    let symbol: String
+    let title: String
+    let detail: String
+    let actionTitle: String
+    var hint: String?
+    var prominent = true
+    /// Without a location the device may well be abroad (a tester, a store reviewer): offers a place in Norway.
+    var onTrySamplePlace: ((SamplePlace) -> Void)?
+    let action: () -> Void
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: symbol)
+                .font(.system(size: 40))
+                .foregroundColor(Palette.primary)
+                .accessibilityHidden(true)
+            Text(title)
+                .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
                 .multilineTextAlignment(.center)
                 .foregroundColor(Palette.textPrimary)
-            if let actionTitle, let action {
-                Button(actionTitle, action: action)
-                    .buttonStyle(.borderedProminent)
+            Text(detail)
+                .font(.pulse(.body))
+                .multilineTextAlignment(.center)
+                .foregroundColor(Palette.textSecondary)
+                .frame(maxWidth: 360)
+            if prominent {
+                Button(actionTitle, action: action).buttonStyle(.borderedProminent)
+            } else {
+                Button(actionTitle, action: action).buttonStyle(.bordered)
+            }
+            if let hint {
+                Text(hint).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary).multilineTextAlignment(.center)
+            }
+            if let onTrySamplePlace {
+                let place = samplePlaces[0]
+                Button("\(L("sample_place_hint")) \(L("sample_place_try", place.displayName))") { onTrySamplePlace(place) }
+                    .font(.pulse(.subheadline, weight: .semibold))
+                    .multilineTextAlignment(.center)
             }
             Spacer()
         }
         .padding(24)
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// The places on-spot mode can stand at instead of the device, in the order offered.
+private let samplePlaces: [SamplePlace] = [.osloS, .bergen, .trondheim]
+
+/// The device is outside Norway, where Entur has nothing: says so, and offers to try the board as
+/// if standing at one of the sample places. The counterpart of Android's OutsideNorway.
+private struct OutsideNorway: View {
+    let onTrySamplePlace: (SamplePlace) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                Image(systemName: "map")
+                    .font(.system(size: 40))
+                    .foregroundColor(Palette.primary)
+                    .accessibilityHidden(true)
+                Text(L("outside_norway_title"))
+                    .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(Palette.textPrimary)
+                Text(L("outside_norway_body"))
+                    .font(.pulse(.body))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(Palette.textSecondary)
+                    .frame(maxWidth: 360)
+                ForEach(samplePlaces, id: \.self) { place in
+                    let title = L("sample_place_try", place.displayName)
+                    if place == samplePlaces[0] {
+                        Button(title) { onTrySamplePlace(place) }.buttonStyle(.borderedProminent)
+                    } else {
+                        Button(title) { onTrySamplePlace(place) }.buttonStyle(.bordered)
+                    }
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+/// Says the board is at a sample place, not where the device is, with the way back.
+private struct SamplePlaceCallout: View {
+    let place: SamplePlace
+    let onUseDeviceLocation: () -> Void
+
+    var body: some View {
+        Callout(
+            L("sample_place_active", place.displayName),
+            title: L("sample_place_active_title"),
+            symbol: "mappin.and.ellipse"
+        ) {
+            Button(L("sample_place_use_mine"), action: onUseDeviceLocation)
+        }
     }
 }
 
@@ -307,17 +440,23 @@ private struct RoutesSection: View {
 
     var body: some View {
         if state.routeDestinations.isEmpty {
-            VStack(spacing: 16) {
+            // First use: teach the next step; the nearest stop's departures already work.
+            VStack(spacing: 12) {
+                Image(systemName: "flag").font(.system(size: 36)).foregroundColor(Palette.primary).accessibilityHidden(true)
+                Text(L("on_spot_no_destinations_title"))
+                    .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
                 Text(L("routes_add_destination"))
-                    .font(.headline)
+                    .font(.pulse(.body))
+                    .foregroundColor(Palette.textSecondary)
                     .multilineTextAlignment(.center)
                 Button(L("add_destination"), action: onOpenSettings)
                     .buttonStyle(.borderedProminent)
+                Text(L("on_spot_one_off_hint")).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
             }
             .foregroundColor(Palette.textPrimary)
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface))
+            .background(RoundedRectangle(cornerRadius: FjordTokens.radiusLg).fill(Palette.surface))
             .padding(6)
         } else {
             // A destination with no route is left out once it has loaded, as on the wall board,
@@ -337,7 +476,17 @@ private struct RoutesSection: View {
                 )
                 let count = Int(TripOptionLayoutKt.visibleTripOptionCount(setting: state.tripOptionsCount, autoCount: autoCount))
                 ScrollView {
-                    VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        if case let .located(located) = onEnum(of: state.location), located.accuracy == .approximate {
+                            // Distances and walks come from a rough fix until a precise one replaces it (T4).
+                            Label(L("on_spot_approximate"), systemImage: "location")
+                                .font(.pulse(.caption, weight: .semibold))
+                                .foregroundColor(Palette.onWarningContainer)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(RoundedRectangle(cornerRadius: FjordTokens.radiusSm).fill(Palette.warningContainer))
+                                .padding(6)
+                        }
                         ForEach(destinations, id: \.id) { destination in
                             DestinationRoutesCard(
                                 destination: destination,
@@ -399,7 +548,7 @@ private struct DestinationRoutesCard: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 0) {
                         Text(L("route_to", destination.name))
-                            .font(.headline)
+                            .font(.pulse(.headline))
                             .lineLimit(1)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 4)
@@ -415,10 +564,10 @@ private struct DestinationRoutesCard: View {
                     }
                 }
                 .padding(.vertical, 8)
-                .foregroundColor(Palette.textPrimary)
-                .background(Palette.primary.opacity(0.18), ignoresSafeAreaEdges: .horizontal)
+                .foregroundColor(Palette.onRoute)
+                .background(Palette.route)
                 .overlay(alignment: .bottom) {
-                    if isRefreshing { RefreshBar(color: Palette.textPrimary.opacity(0.6)) }
+                    if isRefreshing { RefreshBar(color: Palette.onRoute.opacity(0.6)) }
                 }
             } else {
                 HStack(spacing: 0) {
@@ -438,40 +587,49 @@ private struct DestinationRoutesCard: View {
                 .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: FjordTokens.radiusLg))
         .padding(6)
     }
 }
 
-/// One alternative: when to leave, the legs, when it arrives and how long it takes.
+/// One alternative: "19:41 in 4 min", the legs, then how long it takes and when it arrives.
 private struct TripOptionRow: View {
     let trip: TripInfo
     let isFirst: Bool
 
     var body: some View {
-        HStack(spacing: 16) {
-            Text(isoClockTime(trip.expectedStartTime))
-                .font(isFirst ? .title2.bold() : .title3)
-                .monospacedDigit()
-            VStack(alignment: .leading, spacing: 2) {
-                Text(tripRouteText(trip))
-                    .font(.subheadline)
-                    .lineLimit(2)
-                if let arrival = TripArrivalKt.tripArrival(trip: trip) {
-                    let time = arrival.dayOffset > 0 ? "\(arrival.time)⁺\(arrival.dayOffset)" : arrival.time
-                    Text(L("route_arrival", time))
-                        .font(.caption)
-                        .opacity(0.7)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(isoClockTime(trip.expectedStartTime))
+                    .font(isFirst ? .pulse(role: FjordTokens.typeCountdown, relativeTo: .title3) : .pulse(.headline))
+                    .foregroundColor(isFirst ? Palette.routeAccent : Palette.onRoute)
+                // Ticks on its own, so "in 4 min" counts down between refreshes of the trips.
+                TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                    Text(leavesInText(trip.expectedStartTime, now: timeline.date))
+                        .font(.pulse(.caption))
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Text(tripDuration(trip.durationMinutes))
-                .font(.headline)
+            TripLegs(trip: trip, color: Palette.onRoute)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(tripDuration(trip.durationMinutes)).font(.pulse(.subheadline, weight: .semibold))
+                if let arrival = TripArrivalKt.tripArrival(trip: trip) {
+                    let time = arrival.dayOffset > 0 ? "\(arrival.time)⁺\(arrival.dayOffset)" : arrival.time
+                    Text(L("route_arrival", time)).font(.pulse(.caption))
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
         .accessibilityElement(children: .combine)
     }
+}
+
+/// "Now" when it is leaving, else "in 14 min".
+private func leavesInText(_ time: String, now: Date) -> String {
+    let nowMillis = Int64(now.timeIntervalSince1970 * 1000)
+    if DepartureCountdownKt.departureCountdown(expectedTime: time, nowMillis: nowMillis) is DepartureCountdownNow { return L("now") }
+    return DepartureDetailsKt.minutesUntil(time: time, nowMillis: nowMillis).map { inTimeText($0.int64Value) } ?? ""
 }
 
 private struct NearbyStopSection: View {
@@ -493,7 +651,6 @@ private struct NearbyStopSection: View {
                 isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
                 onFilterOut: { viewModel.filterOutLine(line: $0) },
                 onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
-                onRetry: { viewModel.refreshData() },
                 onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
                 loadJourney: { departure in
                     (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
@@ -501,6 +658,11 @@ private struct NearbyStopSection: View {
                 header: AnyView(
                     StopPicker(
                         selected: stop,
+                        approximate: {
+                            if case let .located(located) = onEnum(of: state.location) { return located.accuracy == .approximate }
+                            return false
+                        }(),
+                        isSearching: state.isSearchingNearby,
                         nearbyStops: state.nearbyStops,
                         isPinned: state.isStopPinned,
                         onSelect: { viewModel.selectStop(stopId: $0) },
@@ -515,81 +677,117 @@ private struct NearbyStopSection: View {
                 if state.isSearchingNearby || !state.nearbyStops.isEmpty {
                     ProgressView()
                 } else {
-                    Text(L("no_stops_nearby")).foregroundColor(Palette.textPrimary)
+                    // Empty, not an error: routes still work, as the planner includes the walk.
+                    VStack(spacing: 8) {
+                        Image(systemName: "location.slash").font(.system(size: 28)).foregroundColor(Palette.textSecondary)
+                        Text(L("no_stops_nearby")).font(.pulse(.headline)).foregroundColor(Palette.textPrimary)
+                        Text(L("on_spot_no_stops_body")).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(16)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RoundedRectangle(cornerRadius: 12).fill(Palette.surface))
+            .background(RoundedRectangle(cornerRadius: FjordTokens.radiusLg).fill(Palette.surface))
             .padding(6)
         }
     }
 }
 
-/// The shown stop's name, opening a menu of the other stops nearby; and a way back to the nearest.
+/// The shown stop's name and distance ("83 m · Oslo", or "About 300 m" from a rough fix), opening a
+/// sheet of the stops within 1 km, nearest first; and "Back to nearest" while another is chosen.
 private struct StopPicker: View {
     let selected: StopPlace
+    let approximate: Bool
+    let isSearching: Bool
     let nearbyStops: [NearbyStop]
     let isPinned: Bool
     let onSelect: (String) -> Void
     let onFollowNearest: () -> Void
+    @State private var choosing = false
 
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
-            Menu {
-                ForEach(nearbyStops, id: \.stop.id) { nearby in
-                    Button {
-                        onSelect(nearby.stop.id)
-                    } label: {
-                        if nearby.stop.id == selected.id {
-                            Label(menuTitle(nearby), systemImage: "checkmark")
-                        } else {
-                            Text(menuTitle(nearby))
-                        }
-                    }
-                }
-            } label: {
+            Button { choosing = true } label: {
                 HStack(spacing: 4) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(selected.name)
-                            .font(.title3.bold())
+                            .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
                             .lineLimit(1)
                         Text(subtitle)
-                            .font(.subheadline)
+                            .font(.pulse(.subheadline))
                             .foregroundColor(Palette.textSecondary)
                             .lineLimit(1)
                     }
-                    if nearbyStops.count > 1 {
-                        Image(systemName: "chevron.down")
-                            .font(.subheadline.bold())
-                            .accessibilityLabel(L("choose_stop"))
-                    }
+                    Image(systemName: "chevron.down")
+                        .font(.pulse(.subheadline, weight: .bold))
                 }
                 .foregroundColor(Palette.textPrimary)
             }
-            .disabled(nearbyStops.count <= 1)
+            .buttonStyle(.plain)
+            .accessibilityHint(L("choose_stop"))
             Spacer(minLength: 0)
             if isPinned {
                 Button(action: onFollowNearest) {
                     Label(L("back_to_nearest"), systemImage: "location.fill")
-                        .font(.footnote)
+                        .font(.pulse(.footnote))
                 }
                 .buttonStyle(.bordered)
             }
         }
+        .sheet(isPresented: $choosing) {
+            NavigationView {
+                List {
+                    if nearbyStops.isEmpty && isSearching {
+                        ProgressView().frame(maxWidth: .infinity)
+                    } else if nearbyStops.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(L("no_stops_nearby")).font(.pulse(.headline))
+                            Text(L("on_spot_search_hint")).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
+                        }
+                    }
+                    ForEach(nearbyStops, id: \.stop.id) { nearby in
+                        Button {
+                            choosing = false
+                            onSelect(nearby.stop.id)
+                        } label: {
+                            HStack {
+                                PlaceLabel(place: nearby.stop)
+                                Spacer()
+                                if let meters = nearby.distanceMeters {
+                                    Text(distance(Int(meters.intValue))).font(.pulse(.subheadline, weight: .semibold)).foregroundColor(Palette.textSecondary)
+                                }
+                                if nearby.stop.id == selected.id {
+                                    Image(systemName: "checkmark").foregroundColor(Palette.primary)
+                                }
+                            }
+                        }
+                        .foregroundColor(.primary)
+                        .accessibilityAddTraits(nearby.stop.id == selected.id ? .isSelected : [])
+                    }
+                }
+                .navigationTitle(L("on_spot_stops_nearby"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button(L("back")) { choosing = false } }
+                }
+            }
+            .navigationViewStyle(.stack)
+        }
+    }
+
+    private func distance(_ meters: Int) -> String {
+        approximate ? L("distance_about", distanceText(meters)) : distanceText(meters)
     }
 
     private var subtitle: String {
-        let distance = nearbyStops.first { $0.stop.id == selected.id }?.distanceMeters.map { distanceText(Int($0.intValue)) }
+        let distance = nearbyStops.first { $0.stop.id == selected.id }?.distanceMeters.map { self.distance(Int($0.intValue)) }
         return [distance, selected.locality].compactMap { $0 }.joined(separator: " · ")
-    }
-
-    private func menuTitle(_ nearby: NearbyStop) -> String {
-        guard let meters = nearby.distanceMeters else { return nearby.stop.name }
-        return "\(nearby.stop.name) · \(distanceText(Int(meters.intValue)))"
     }
 }
 
-private func distanceText(_ meters: Int) -> String {
+/// "84 m", or "1.2 km" from a kilometre.
+func distanceText(_ meters: Int) -> String {
     if meters < 1000 { return L("distance_meters", meters) }
     return L("distance_kilometers", String(format: "%.1f", locale: Locale.current, Double(meters) / 1000))
 }

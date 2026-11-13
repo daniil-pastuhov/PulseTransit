@@ -74,4 +74,22 @@ class DepartureGroupTest {
         val current = listOf(DepartureGroup(listOf(departure("81", "Filipstad", 3))))
         assertEquals(gone.departures, gone.departuresLike(current))
     }
+
+    @Test
+    fun `a frequent line with four more departures says so`() {
+        assertEquals(4, group(5).moreDepartures)
+    }
+
+    @Test
+    fun `fewer than four more departures go unmentioned`() {
+        assertEquals(null, group(4).moreDepartures)
+        assertEquals(null, group(1).moreDepartures)
+    }
+
+    @Test
+    fun `without a headway the count is not mentioned`() {
+        val sameMinute = DepartureGroup(group(6).departures.map { it.copy(expectedTime = "2026-07-15T10:00:00+02:00") })
+        assertEquals(null, sameMinute.headwayMinutes)
+        assertEquals(null, sameMinute.moreDepartures)
+    }
 }

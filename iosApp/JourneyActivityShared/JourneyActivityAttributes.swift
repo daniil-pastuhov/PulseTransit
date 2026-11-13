@@ -19,6 +19,16 @@ struct JourneyActivityAttributes: ActivityAttributes {
         /// an activity started by an older build still decodes.
         var startAt: Date?
         var endAt: Date?
+        /// The journey leg by leg, for a bar in segments as Android 16 draws it: rides in the accent,
+        /// walks and waits muted. Optional, so an activity started by an older build still decodes.
+        var segments: [Segment]?
+    }
+
+    /// One walk, wait or ride on the bar, filling by itself between its times.
+    struct Segment: Codable, Hashable {
+        var startAt: Date
+        var endAt: Date
+        var isRide: Bool
     }
 
     /// "Journey to Home".

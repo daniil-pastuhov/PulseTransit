@@ -71,6 +71,9 @@ class JourneyAlertsViewModelTest {
     private val launcher = FakeLauncher()
     private val openRequests = JourneyOpenRequests()
     private val trip = JourneyFixtures.trip
+
+    /** Another route: the same legs on other service journeys, so another journey. */
+    private val otherTrip = trip.copy(legs = trip.legs.map { it.copy(serviceJourneyId = it.serviceJourneyId?.plus(":later")) })
     private val clock =
         object : Clock {
             override fun now() = Instant.fromEpochMilliseconds(JourneyFixtures.T0)
@@ -109,6 +112,7 @@ class JourneyAlertsViewModelTest {
     fun `with notifications denied there is no button`() =
         vmTest(FakePermissions(DENIED, GRANTED)) { vm ->
             assertFalse(vm.uiState.value.available)
+            assertTrue(vm.uiState.value.notificationsDenied, "so the details can say how to turn them on")
             vm.onNotifyClick(trip)
             assertNull(store.active.value)
             assertNull(vm.uiState.value.rationaleFor)
@@ -118,6 +122,7 @@ class JourneyAlertsViewModelTest {
     fun `never asked shows the rationale first`() =
         vmTest(FakePermissions(NOT_ASKED, NOT_ASKED)) { vm ->
             assertTrue(vm.uiState.value.available)
+            assertFalse(vm.uiState.value.notificationsDenied)
             vm.onNotifyClick(trip)
 
             assertEquals(trip, vm.uiState.value.rationaleFor)
@@ -165,6 +170,77 @@ class JourneyAlertsViewModelTest {
             vm.onPermissionsResult(notificationsGranted = true, locationGranted = false)
 
             assertEquals(JourneyTrackingMode.TIME_ONLY, followedMode)
+            assertTrue(vm.uiState.value.followingWithoutLocation)
+        }
+
+    @Test
+    fun `a journey that wanted the location but has none says so until it ends`() =
+        vmTest(FakePermissions(GRANTED, DENIED)) { vm ->
+            store.setPreferredMode(JourneyTrackingMode.LOCATION)
+            vm.onNotifyClick(trip)
+            assertTrue(vm.uiState.value.followingWithoutLocation)
+
+            vm.onStopClick()
+            runCurrent()
+
+            assertFalse(vm.uiState.value.followingWithoutLocation)
+        }
+
+    @Test
+    fun `a journey that replaces a fallen-back one starts without the note`() {
+        val permissions = FakePermissions(GRANTED, DENIED)
+        vmTest(permissions) { vm ->
+            store.setPreferredMode(JourneyTrackingMode.LOCATION)
+            vm.onNotifyClick(trip)
+            assertTrue(vm.uiState.value.followingWithoutLocation)
+
+            permissions.location = GRANTED
+            vm.onNotifyClick(otherTrip)
+            runCurrent()
+
+            assertEquals(JourneyTrackingMode.LOCATION, followedMode)
+            assertFalse(vm.uiState.value.followingWithoutLocation)
+        }
+    }
+
+    @Test
+    fun `a fallen-back journey that ends by itself takes its note with it`() =
+        vmTest(FakePermissions(GRANTED, DENIED)) { vm ->
+            store.setPreferredMode(JourneyTrackingMode.LOCATION)
+            vm.onNotifyClick(trip)
+            runCurrent()
+            assertTrue(vm.uiState.value.followingWithoutLocation)
+
+            store.finish(endedAtMillis = 0)
+            runCurrent()
+
+            assertNull(vm.uiState.value.activeJourney)
+            assertFalse(vm.uiState.value.followingWithoutLocation)
+        }
+
+    @Test
+    fun `notifications denied since the screen opened are noticed on the tap`() {
+        val permissions = FakePermissions(GRANTED, GRANTED)
+        vmTest(permissions) { vm ->
+            assertTrue(vm.uiState.value.available)
+            permissions.notifications = DENIED
+
+            vm.onNotifyClick(trip)
+
+            assertNull(store.active.value)
+            assertFalse(vm.uiState.value.available)
+            assertTrue(vm.uiState.value.notificationsDenied)
+        }
+    }
+
+    @Test
+    fun `live times chosen with location denied is not a fallback`() =
+        vmTest(FakePermissions(GRANTED, DENIED)) { vm ->
+            store.setPreferredMode(JourneyTrackingMode.TIME_ONLY)
+            vm.onNotifyClick(trip)
+
+            assertEquals(JourneyTrackingMode.TIME_ONLY, followedMode)
+            assertFalse(vm.uiState.value.followingWithoutLocation)
         }
 
     @Test
@@ -199,6 +275,7 @@ class JourneyAlertsViewModelTest {
 
             assertNull(vm.uiState.value.rationaleFor)
             assertEquals(JourneyTrackingMode.TIME_ONLY, followedMode)
+            assertFalse(vm.uiState.value.followingWithoutLocation, "no mode was chosen, so nothing fell back")
         }
 
     @Test

@@ -1,0 +1,15 @@
+/* Shell page pieces */
+.duo { display: grid; grid-template-columns: 112px minmax(0, 1fr); flex: 1; min-height: 0; }
+.duo-bar { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-2); background: var(--color-surface-container); }
+.duo-bar .icon-btn { color: var(--color-on-background); }
+.duo-clock { display: grid; justify-items: center; }
+.duo-clock .clock { font-size: 32px; line-height: 36px; }
+.duo-wx { display: grid; justify-items: center; gap: 2px; color: var(--color-on-surface-variant); }
+.duo-wx .tmp { font: var(--type-title); color: var(--color-on-background); }
+.duo-wx .wx-label { font: var(--type-caption); text-align: center; }
+.duo .board { overflow: auto; }
+.ios-sheet { max-height: 80%; }
+.shift-demo { position: relative; }
+.shift-grid { position: absolute; right: var(--space-4); bottom: var(--space-8); width: 220px; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-3); border-radius: var(--radius-lg); background: var(--color-surface-container-high); box-shadow: var(--elevation-3); font: var(--type-label); }
+.shift-grid small { font: var(--type-caption); color: var(--color-on-surface-variant); text-align: center; }
+@container (min-width: 700px) { .sheet-overlay .ios-sheet { width: 440px; margin-left: auto; height: 100%; max-height: none; border-radius: var(--radius-xl) 0 0 var(--radius-xl); } .sheet-overlay:has(.ios-sheet) { align-items: stretch; justify-items: end; } }

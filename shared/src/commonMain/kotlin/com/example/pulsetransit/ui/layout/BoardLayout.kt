@@ -34,7 +34,7 @@ object BoardLayout {
     const val PAGE_INDICATOR_HEIGHT_DP = 24f
 
     /** How long each page of stops stays up before the board turns to the next. */
-    const val PAGE_INTERVAL_MS = 15_000L
+    const val PAGE_INTERVAL_MS = 20_000L
 
     /** About how tall a departure row is with the gap below it, for [rowCapacity]. */
     const val ROW_HEIGHT_DP = 52f

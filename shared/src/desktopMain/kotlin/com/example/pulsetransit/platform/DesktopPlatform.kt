@@ -1,5 +1,6 @@
 package com.example.pulsetransit.platform
 
+import com.example.pulsetransit.data.NORWAY_TIME_ZONE_ID
 import com.example.pulsetransit.data.journey.JourneyAlert
 import com.example.pulsetransit.data.journey.JourneyProgress
 import com.example.pulsetransit.data.journey.ScheduledAlert
@@ -11,16 +12,17 @@ import kotlinx.coroutines.flow.emptyFlow
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 // The device services a desktop has no hardware or store for. Location and connectivity are real:
 // see IpLocationProvider and NetworkInterfaceConnectivityMonitor.
 
-/** [ClockFormatter] in the JVM's default locale and time zone, as Android's `SystemClockFormatter`. */
+/** [ClockFormatter] in the JVM's default locale, in Norway time, as Android's `SystemClockFormatter`. */
 class DesktopClockFormatter : ClockFormatter {
     override fun clockText(epochMillis: Long): ClockText {
         val date = Date(epochMillis)
 
-        fun format(pattern: String) = SimpleDateFormat(pattern, Locale.getDefault()).format(date)
+        fun format(pattern: String) = norwayFormat(pattern).format(date)
         return ClockText(
             time = format("HH:mm"),
             dayOfMonth = format("d"),
@@ -31,7 +33,7 @@ class DesktopClockFormatter : ClockFormatter {
         )
     }
 
-    override fun timeWithSeconds(epochMillis: Long): String = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(epochMillis))
+    override fun timeWithSeconds(epochMillis: Long): String = norwayFormat("HH:mm:ss").format(Date(epochMillis))
 }
 
 /** A desktop build is never installed from a store, so there is nothing to update to. */
@@ -86,3 +88,6 @@ class NoJourneyAlerts :
 
     override fun stop() = Unit
 }
+
+/** [pattern] in the default locale, in Norway time like every time the app shows (see `NorwayTimeZone`). */
+private fun norwayFormat(pattern: String) = SimpleDateFormat(pattern, Locale.getDefault()).apply { timeZone = TimeZone.getTimeZone(NORWAY_TIME_ZONE_ID) }

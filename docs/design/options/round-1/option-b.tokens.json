@@ -1,0 +1,368 @@
+{
+ "meta": {
+  "name": "Perrong",
+  "rationale": "Borrowed from platform signage rather than apps: condensed destinations, hairline rules instead of cards, uppercase labels and one amber flag for what leaves now. Packs the most departures into a desk-distance board.",
+  "themes": [
+   "light",
+   "dark"
+  ]
+ },
+ "primitives": {
+  "color": {
+   "graphite": {
+    "0": "#FFFFFF",
+    "50": "#F7F7F6",
+    "100": "#EDEDEB",
+    "200": "#DCDCD9",
+    "300": "#B3B3AF",
+    "400": "#8C8C88",
+    "500": "#6B6B67",
+    "600": "#51514E",
+    "700": "#3C3C3A",
+    "800": "#272726",
+    "850": "#1C1C1B",
+    "900": "#141413",
+    "950": "#0A0A0A"
+   },
+   "cobalt": {
+    "100": "#E0E7FF",
+    "200": "#C0CEFF",
+    "300": "#93ACFF",
+    "600": "#2647D6",
+    "700": "#1D37AA",
+    "800": "#172B80",
+    "900": "#0D1A52"
+   },
+   "red": {
+    "100": "#FDE4E1",
+    "300": "#FF9B8F",
+    "600": "#BE2A1D",
+    "800": "#7C1B12",
+    "900": "#4A0E08"
+   },
+   "amber": {
+    "100": "#FDF0CC",
+    "200": "#F9DB86",
+    "300": "#F2C14E",
+    "800": "#5E4206",
+    "900": "#382703"
+   },
+   "green": {
+    "100": "#DAF2E0",
+    "300": "#7FD39A",
+    "800": "#1A5230",
+    "900": "#0E311C"
+   }
+  }
+ },
+ "color": {
+  "light": {
+   "background": "{graphite.0}",
+   "on-background": "{graphite.900}",
+   "surface": "{graphite.0}",
+   "on-surface": "{graphite.900}",
+   "on-surface-variant": "{graphite.600}",
+   "surface-container": "{graphite.50}",
+   "surface-container-high": "{graphite.0}",
+   "outline": "{graphite.500}",
+   "outline-variant": "{graphite.200}",
+   "primary": "{cobalt.600}",
+   "on-primary": "{graphite.0}",
+   "primary-container": "{cobalt.100}",
+   "on-primary-container": "{cobalt.900}",
+   "error": "{red.600}",
+   "on-error": "{graphite.0}",
+   "error-container": "{red.100}",
+   "on-error-container": "{red.900}",
+   "warning-container": "{amber.100}",
+   "on-warning-container": "{amber.900}",
+   "success-container": "{green.100}",
+   "on-success-container": "{green.900}",
+   "info-container": "{cobalt.100}",
+   "on-info-container": "{cobalt.900}",
+   "inverse-surface": "{graphite.800}",
+   "on-inverse-surface": "{graphite.50}",
+   "inverse-primary": "{cobalt.300}",
+   "focus-ring": "{cobalt.700}",
+   "scrim": "{graphite.950}",
+   "late": "{red.600}",
+   "now": "{cobalt.600}",
+   "route": "{graphite.900}",
+   "on-route": "{graphite.50}",
+   "route-accent": "{amber.300}",
+   "line-bus": "#D63A2C",
+   "on-line-bus": "#ffffff",
+   "line-tram": "#7E48A2",
+   "on-line-tram": "#ffffff",
+   "line-train": "#003D82",
+   "on-line-train": "#ffffff",
+   "line-express": "#86005B",
+   "on-line-express": "#ffffff",
+   "line-metro": "#B5501C",
+   "on-line-metro": "#ffffff",
+   "line-ferry": "#0E7C68",
+   "on-line-ferry": "#ffffff",
+   "line-other": "#66706F",
+   "on-line-other": "#ffffff",
+   "flag": "{amber.300}",
+   "on-flag": "{graphite.950}"
+  },
+  "dark": {
+   "background": "#000000",
+   "on-background": "{graphite.100}",
+   "surface": "{graphite.950}",
+   "on-surface": "{graphite.100}",
+   "on-surface-variant": "{graphite.300}",
+   "surface-container": "{graphite.900}",
+   "surface-container-high": "{graphite.850}",
+   "outline": "{graphite.400}",
+   "outline-variant": "{graphite.800}",
+   "primary": "{cobalt.300}",
+   "on-primary": "{cobalt.900}",
+   "primary-container": "{cobalt.800}",
+   "on-primary-container": "{cobalt.100}",
+   "error": "{red.300}",
+   "on-error": "{red.900}",
+   "error-container": "{red.800}",
+   "on-error-container": "{red.100}",
+   "warning-container": "{amber.800}",
+   "on-warning-container": "{amber.100}",
+   "success-container": "{green.800}",
+   "on-success-container": "{green.100}",
+   "info-container": "{cobalt.800}",
+   "on-info-container": "{cobalt.100}",
+   "inverse-surface": "{graphite.100}",
+   "on-inverse-surface": "{graphite.900}",
+   "inverse-primary": "{cobalt.600}",
+   "focus-ring": "{cobalt.200}",
+   "scrim": "#000000",
+   "late": "{red.300}",
+   "now": "{cobalt.300}",
+   "route": "{graphite.850}",
+   "on-route": "{graphite.100}",
+   "route-accent": "{amber.300}",
+   "line-bus": "#D63A2C",
+   "on-line-bus": "#ffffff",
+   "line-tram": "#8A55AE",
+   "on-line-tram": "#ffffff",
+   "line-train": "#2A63B8",
+   "on-line-train": "#ffffff",
+   "line-express": "#B0287C",
+   "on-line-express": "#ffffff",
+   "line-metro": "#B5501C",
+   "on-line-metro": "#ffffff",
+   "line-ferry": "#0E7C68",
+   "on-line-ferry": "#ffffff",
+   "line-other": "#66706F",
+   "on-line-other": "#ffffff",
+   "flag": "{amber.300}",
+   "on-flag": "{graphite.950}"
+  }
+ },
+ "contrast": [
+  {
+   "fg": "on-surface-variant",
+   "bg": [
+    "surface-container",
+    "surface-container-high",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "late",
+   "bg": [
+    "surface",
+    "surface-container",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "now",
+   "bg": [
+    "surface",
+    "surface-container",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "primary",
+   "bg": [
+    "surface-container",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "route-accent",
+   "bg": "route",
+   "use": "large-text"
+  },
+  {
+   "fg": "on-line-bus",
+   "bg": "line-bus",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-tram",
+   "bg": "line-tram",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-train",
+   "bg": "line-train",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-express",
+   "bg": "line-express",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-metro",
+   "bg": "line-metro",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-ferry",
+   "bg": "line-ferry",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-other",
+   "bg": "line-other",
+   "use": "text"
+  },
+  {
+   "fg": "on-flag",
+   "bg": "flag",
+   "use": "text"
+  }
+ ],
+ "font": {
+  "display": {
+   "family": "Barlow Semi Condensed",
+   "fallback": "'Arial Narrow', sans-serif",
+   "google": "Barlow Semi Condensed:wght@500;600;700"
+  },
+  "body": {
+   "family": "Barlow",
+   "fallback": "system-ui, sans-serif",
+   "google": "Barlow:wght@400;500;600;700"
+  }
+ },
+ "type": {
+  "display": {
+   "font": "display",
+   "size": 44,
+   "line": 48,
+   "weight": 600,
+   "tracking": -0.5
+  },
+  "headline": {
+   "font": "display",
+   "size": 26,
+   "line": 32,
+   "weight": 600
+  },
+  "title": {
+   "font": "display",
+   "size": 21,
+   "line": 26,
+   "weight": 600
+  },
+  "title-sm": {
+   "font": "display",
+   "size": 18,
+   "line": 22,
+   "weight": 600
+  },
+  "body": {
+   "font": "body",
+   "size": 16,
+   "line": 22,
+   "weight": 400
+  },
+  "body-sm": {
+   "font": "body",
+   "size": 14,
+   "line": 20,
+   "weight": 400
+  },
+  "label": {
+   "font": "body",
+   "size": 13,
+   "line": 18,
+   "weight": 600,
+   "tracking": 0.8
+  },
+  "caption": {
+   "font": "body",
+   "size": 12,
+   "line": 16,
+   "weight": 500,
+   "tracking": 0.3
+  },
+  "clock": {
+   "font": "display",
+   "size": 52,
+   "line": 52,
+   "weight": 600,
+   "tracking": -0.5
+  },
+  "countdown": {
+   "font": "display",
+   "size": 22,
+   "line": 24,
+   "weight": 600
+  },
+  "pill": {
+   "font": "display",
+   "size": 16,
+   "line": 18,
+   "weight": 700
+  }
+ },
+ "space": {
+  "1": 4,
+  "2": 8,
+  "3": 12,
+  "4": 16,
+  "5": 20,
+  "6": 24,
+  "8": 32,
+  "10": 40,
+  "12": 48
+ },
+ "radius": {
+  "sm": 2,
+  "md": 4,
+  "lg": 6,
+  "xl": 10,
+  "full": 9999
+ },
+ "size": {
+  "control": 44,
+  "touch": 48,
+  "pill-w": 46,
+  "row": 44
+ },
+ "elevation": {
+  "light": {
+   "1": "0 1px 2px rgba(15,20,30,.08), 0 1px 3px rgba(15,20,30,.06)",
+   "2": "0 4px 12px rgba(15,20,30,.10)",
+   "3": "0 12px 32px rgba(15,20,30,.18)"
+  },
+  "dark": {
+   "1": "0 0 0 1px rgba(255,255,255,.06)",
+   "2": "0 0 0 1px rgba(255,255,255,.08), 0 6px 16px rgba(0,0,0,.7)",
+   "3": "0 0 0 1px rgba(255,255,255,.10), 0 12px 32px rgba(0,0,0,.8)"
+  }
+ },
+ "icons": {
+  "set": "material-symbols-sharp",
+  "stroke": 1.5
+ }
+}

@@ -3,7 +3,8 @@
 <!-- The app's Info.plist entries that build settings cannot generate; the rest come from the
      INFOPLIST_KEY_* settings (GENERATE_INFOPLIST_FILE). The location background mode lets a
      journey followed with "Also notice if I miss my ride" keep reading it with the app closed.
-     The queried scheme lets walking directions open in Google Maps when it is installed. -->
+     The queried scheme lets walking directions open in Google Maps when it is installed.
+     UIAppFonts registers the bundled Public Sans (Fonts/, see JourneyActivityShared/PulseFont.swift). -->
 <plist version="1.0">
 <dict>
 	<key>UIBackgroundModes</key>
@@ -13,6 +14,13 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
+	</array>
+	<key>UIAppFonts</key>
+	<array>
+		<string>PublicSans-Regular.ttf</string>
+		<string>PublicSans-Medium.ttf</string>
+		<string>PublicSans-SemiBold.ttf</string>
+		<string>PublicSans-Bold.ttf</string>
 	</array>
 </dict>
 </plist>

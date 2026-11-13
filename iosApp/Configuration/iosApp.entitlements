@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The App Group the app shares with its widget extension: settings and the offline cache live in
+     it (shared/src/iosMain/.../data/AppGroup.kt), so the home-screen widgets read what the board does. -->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.homieapps.pulsetransit</string>
+	</array>
+</dict>
+</plist>

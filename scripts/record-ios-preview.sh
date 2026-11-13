@@ -28,7 +28,8 @@ xcrun simctl status_bar "$SIM" override --batteryState charged --batteryLevel 10
 xcrun simctl io "$SIM" recordVideo --codec h264 --force "$RAW" 2>/dev/null &
 RECORDER=$!
 sleep 2
-xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" -PTDemo YES >/dev/null
+# -PTSeedSettings: the app keeps settings in its App Group, which defaults write cannot reach.
+xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" -PTDemo YES -PTSeedSettings YES >/dev/null
 sleep 33 # the tour lasts about 30 seconds after launch
 kill -INT $RECORDER
 wait $RECORDER 2>/dev/null || true

@@ -52,6 +52,16 @@ class JourneyAlertsViewModel(
         val permissionRequest: PermissionRequest? = null,
         /** The app was opened by a tap on an alert: open the followed journey's details. */
         val openJourneyRequested: Boolean = false,
+        /**
+         * Notifications are denied in the system settings, so alerts cannot be offered; the
+         * details say so, with the way to turn them on, instead of hiding the button silently.
+         */
+        val notificationsDenied: Boolean = false,
+        /**
+         * The followed journey wanted the location (to notice a missed ride) but location is
+         * denied, so it follows live times only. Cleared when the journey ends.
+         */
+        val followingWithoutLocation: Boolean = false,
     ) {
         fun isFollowing(trip: TripInfo): Boolean = activeJourney?.id == journeyId(trip)
     }
@@ -64,7 +74,12 @@ class JourneyAlertsViewModel(
     init {
         refreshPermissions()
         viewModelScope.launch {
-            store.active.collect { journey -> _uiState.update { it.copy(activeJourney = journey) } }
+            store.active.collect { journey ->
+                // A journey that ends by itself (arrived, expired) takes its fallback note with it.
+                _uiState.update {
+                    it.copy(activeJourney = journey, followingWithoutLocation = journey != null && it.followingWithoutLocation)
+                }
+            }
         }
         viewModelScope.launch {
             openRequests.pending.collect { pending -> _uiState.update { it.copy(openJourneyRequested = pending) } }
@@ -76,8 +91,8 @@ class JourneyAlertsViewModel(
 
     /** Re-reads the permissions, which may have changed in system settings; call when a screen shows. */
     fun refreshPermissions() {
-        val available = permissions.isSupported && permissions.notificationState() != PermissionState.DENIED
-        _uiState.update { it.copy(available = available) }
+        val denied = permissions.isSupported && permissions.notificationState() == PermissionState.DENIED
+        _uiState.update { it.copy(available = permissions.isSupported && !denied, notificationsDenied = denied) }
     }
 
     fun onNotifyClick(trip: TripInfo) {
@@ -88,7 +103,7 @@ class JourneyAlertsViewModel(
         when {
             notifications == PermissionState.DENIED -> refreshPermissions()
             notifications == PermissionState.GRANTED && location == PermissionState.DENIED ->
-                start(trip, JourneyTrackingMode.TIME_ONLY)
+                start(trip, JourneyTrackingMode.TIME_ONLY, fellBack = preferred?.usesLocation == true)
             // A mode chosen before (in the rationale or Settings) is used without asking again,
             // unless it needs the location and that was never asked.
             notifications == PermissionState.NOT_ASKED ||
@@ -146,18 +161,26 @@ class JourneyAlertsViewModel(
         refreshPermissions()
         if (trip == null || !notificationsGranted) return
         val mode = if (request.mode.usesLocation && !locationGranted) JourneyTrackingMode.TIME_ONLY else request.mode
-        start(trip, mode)
+        start(trip, mode, fellBack = mode != request.mode)
     }
 
     fun onStopClick() {
+        _uiState.update { it.copy(followingWithoutLocation = false) }
         store.finish(clock.now().toEpochMilliseconds())
         launcher.stop()
     }
 
+    /**
+     * Follows [trip] in [mode], replacing any journey followed before. [fellBack] when [mode] is
+     * time-only because the location the user wanted is denied; set for every start, so a note
+     * about one journey never carries over to the next.
+     */
     private fun start(
         trip: TripInfo,
         mode: JourneyTrackingMode,
+        fellBack: Boolean = false,
     ) {
+        _uiState.update { it.copy(followingWithoutLocation = fellBack) }
         store.start(
             TrackedJourney(
                 id = journeyId(trip),

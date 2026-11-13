@@ -93,11 +93,16 @@ fun pickWidgetDestination(
         ?: destinations.firstOrNull { schedules[it.id]?.isActive(now) ?: true }
         ?: destinations.firstOrNull()
 
-/** One ridden leg of a route, as a widget lists it: "🚇 2". */
+/** One leg of a route as a widget draws it: a ride's line pill, or a walk with its minutes. */
 data class WidgetRouteLeg(
     val mode: String?,
-    val line: String,
-)
+    /** The ridden line; null for a walk. */
+    val line: String?,
+    /** A walk's minutes; null for a ride. */
+    val walkMinutes: Int? = null,
+) {
+    val isWalk: Boolean get() = line == null
+}
 
 /** A fastest route boiled down to a widget's line: leave at, ride, arrive at. */
 data class WidgetRoute(
@@ -110,11 +115,14 @@ data class WidgetRoute(
     val platform: String?,
     val arriveAtMillis: Long?,
     val durationMinutes: Int,
-    /** The ridden legs in order; empty for a route that is all walking. */
+    /** The legs in order, walks included; zero-minute walks (quay transfers) are left out. */
     val legs: List<WidgetRouteLeg>,
     /** Whether the first ridden leg's time is from realtime data. */
     val isRealtime: Boolean,
-)
+) {
+    /** Nothing to ride: walking beats every ride. */
+    val isWalkOnly: Boolean get() = legs.none { !it.isWalk }
+}
 
 private const val FOOT = "foot"
 
@@ -128,7 +136,13 @@ fun widgetRoute(trip: TripInfo): WidgetRoute? {
             // Trips cached before legs were kept carry only the line summary.
             listOf(WidgetRouteLeg(null, trip.lineName))
         } else {
-            ridden.map { WidgetRouteLeg(it.mode, it.lineName.orEmpty()) }
+            trip.legs.mapNotNull { leg ->
+                when {
+                    leg.mode != FOOT && leg.lineName != null -> WidgetRouteLeg(leg.mode, leg.lineName)
+                    leg.mode == FOOT && leg.durationMinutes > 0 -> WidgetRouteLeg(FOOT, null, leg.durationMinutes)
+                    else -> null
+                }
+            }
         }
     return WidgetRoute(
         originName = trip.originName,
@@ -199,7 +213,7 @@ data class GlanceWidgetState(
     val next: WidgetDepartureRow? get() = upcoming.firstOrNull()
 
     companion object {
-        /** The most departures a glance widget lists. */
-        const val MAX_UPCOMING = 4
+        /** The most departures a glance widget lists: the next, and as many later ones as a 4×4 fits. */
+        const val MAX_UPCOMING = 8
     }
 }

@@ -1,0 +1,55 @@
+/* Onboarding: mode choice, intro carousel, permission rationale. Feature-only; reuses .mode-card, .step-dots, .illus from app.css. */
+
+/* let the onboarding app fill the frame so content can centre vertically */
+.v-state:has(> .app > .ob) { display: flex; flex-direction: column; }
+.v-state:has(> .app > .ob) > .app { flex: 1; }
+.ob { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: var(--space-2) var(--space-4) var(--space-6); overflow: auto; }
+.ob-top { display: flex; align-items: center; gap: var(--space-1); min-height: var(--size-touch); margin: 0 calc(-1 * var(--space-2)); }
+.ob-top .icon-btn { color: var(--color-on-background); }
+.ob-top-title { flex: 1; min-width: 0; font: var(--type-title-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ob-col { width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-3); }
+.ob-main { flex: 1; justify-content: center; padding: var(--space-4) 0; }
+.ob-title { margin: 0; font: var(--type-headline); letter-spacing: var(--type-headline-tracking); color: var(--color-on-background); text-wrap: balance; }
+.ob-text { margin: 0; color: var(--color-on-surface-variant); max-width: 52ch; }
+.ob-illus { max-width: 300px; margin-bottom: var(--space-3); }
+.ob-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* footer: dots on the left, Next on the right */
+.ob-foot { width: 100%; max-width: 560px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-2); }
+.ob-foot .step-dots { justify-content: flex-start; }
+.ob-next { padding: 0 var(--space-6); }
+.ob-next [class*="material-symbols"] { font-size: 18px; }
+.ob-actions { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+
+/* short reassurance list on permission screens */
+.ob-points { list-style: none; margin: var(--space-1) 0 0; padding: 0; display: grid; gap: var(--space-3); }
+.ob-points li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--space-3); align-items: start; font: var(--type-body-sm); color: var(--color-on-surface); }
+.ob-points [class*="material-symbols"] { font-size: 22px; color: var(--color-primary); }
+
+/* mode choice */
+.ob-mode { justify-content: center; }
+.ob-mode .ob-col { gap: var(--space-4); }
+.ob-brand { display: flex; align-items: center; gap: var(--space-2); font: var(--type-title-sm); color: var(--color-primary); }
+.ob-logo { display: grid; place-items: center; width: 40px; height: 40px; border-radius: var(--radius-md); background: var(--color-primary); color: var(--color-on-primary); }
+.ob-cards { display: grid; gap: var(--space-3); }
+.ob-cards .mode-card { position: relative; width: 100%; border: 0; text-align: left; font: inherit; min-height: 96px; padding-right: var(--space-8); }
+.ob-cards .mode-card:hover { box-shadow: inset 0 0 0 1px var(--color-outline); }
+.ob-cards .mode-card.is-selected:hover { box-shadow: inset 0 0 0 2px var(--color-primary); }
+.ob-cards .mode-card .mc-ic [class*="material-symbols"] { color: var(--color-on-primary-container); }
+.ob-cards .mode-card.is-selected .mc-ic { background: var(--color-primary); }
+.ob-cards .mode-card.is-selected .mc-ic [class*="material-symbols"] { color: var(--color-on-primary); }
+.ob-cards .mode-card .ob-check { position: absolute; top: var(--space-3); right: var(--space-3); color: var(--color-primary); font-size: 24px !important; }
+.ob-hint { margin: 0; display: flex; align-items: center; gap: var(--space-2); font: var(--type-body-sm); color: var(--color-on-surface-variant); }
+.ob-hint [class*="material-symbols"] { font-size: 18px; }
+
+@container (min-width: 700px) {
+  .ob { padding: var(--space-6) var(--space-8) var(--space-8); }
+  .ob-top { max-width: 560px; width: 100%; margin: 0 auto; }
+  .ob-illus { max-width: 440px; }
+  .ob-main { gap: var(--space-4); }
+  .ob-actions { flex-direction: row-reverse; justify-content: flex-start; flex-wrap: wrap; }
+  .ob-actions .btn.block { width: auto; }
+  .ob-cards { grid-template-columns: 1fr 1fr; }
+  .ob-cards .mode-card { grid-template-columns: minmax(0, 1fr); align-content: start; min-height: 200px; padding: var(--space-5); }
+  .ob-cards .mode-card .mc-ic { grid-row: auto; width: 56px; height: 56px; margin-bottom: var(--space-2); }
+}

@@ -1,16 +1,19 @@
 package com.example.pulsetransit.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -18,16 +21,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -43,24 +46,27 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureCountdown
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.clockTimeText
 import com.example.pulsetransit.data.departureClock
 import com.example.pulsetransit.data.departureCountdown
 import com.example.pulsetransit.data.minutesBetween
 import com.example.pulsetransit.data.minutesUntil
+import com.example.pulsetransit.data.nextRunningDeparture
 import com.example.pulsetransit.data.typicalHeadwayMinutes
+import com.example.pulsetransit.theme.FjordDimens
+import com.example.pulsetransit.theme.PulseIcons
+import com.example.pulsetransit.theme.PulseTheme
+import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.time.Duration.Companion.minutes
 
 /** How long the details stay open untouched: a wall display left showing them would never return to the board. */
@@ -110,24 +116,27 @@ fun DepartureDetailsSheet(
             value = System.currentTimeMillis()
         }
     }
-    // Null while loading. Keyed by trip, so a refresh of the same departure keeps its stops.
-    val stops by produceState<List<JourneyStop>?>(null, selected.serviceJourneyId) {
+    // Null while loading. Keyed by trip, so a refresh of the same departure keeps its stops; "Try
+    // again" bumps the attempt to ask once more.
+    var stopsAttempt by remember { mutableIntStateOf(0) }
+    val stops by produceState<List<JourneyStop>?>(null, selected.serviceJourneyId, stopsAttempt) {
         value = null
         value = loadJourney(selected)
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
+    AdaptiveSheet(onDismiss = onDismiss) {
         Column(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .padding(start = 24.dp, end = 24.dp, bottom = 16.dp),
         ) {
-            DetailsHeader(first, departures, stopName, showMessages)
-            Spacer(modifier = Modifier.height(16.dp))
+            DetailsHeader(first, selected, departures, stopName, nowMillis, showMessages)
+            if (selected.isCancelled) {
+                Spacer(modifier = Modifier.height(FjordDimens.space4))
+                CancelledCallout(selected, departures, nowMillis) { next -> selectedJourneyId = next.serviceJourneyId }
+            }
+            Spacer(modifier = Modifier.height(FjordDimens.space4))
             BoxWithConstraints(modifier = Modifier.weight(1f, fill = false)) {
                 val departuresList: @Composable (Modifier) -> Unit = { modifier ->
                     DeparturesColumn(departures, selected, nowMillis, showDelays, modifier) {
@@ -135,7 +144,7 @@ fun DepartureDetailsSheet(
                     }
                 }
                 val route: @Composable (Modifier) -> Unit = { modifier ->
-                    RouteColumn(selected, stops, nowMillis, modifier)
+                    RouteColumn(selected, stops, nowMillis, modifier, onRetry = { stopsAttempt++ })
                 }
                 if (maxWidth >= TWO_COLUMN_MIN_WIDTH) {
                     Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -150,69 +159,132 @@ fun DepartureDetailsSheet(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(8.dp))
-            TextButton(
+            Spacer(modifier = Modifier.height(FjordDimens.space4))
+            // Hiding acts at once: the sheet closes and the board offers Undo.
+            OutlinedButton(
                 onClick = {
                     onFilterOut(first.line)
                     onDismiss()
                 },
             ) {
+                Icon(PulseIcons.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(FjordDimens.space2))
                 Text(stringResource(Res.string.filter_out_line, first.line))
             }
+            Text(
+                stringResource(Res.string.filter_out_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = FjordDimens.space1),
+            )
         }
     }
 }
 
-/** Line badge and destination, then the line's full name, who runs it, the stop and how often. */
+/**
+ * Line pill and destination (wrapping: details are where cut board text is read in full), where it
+ * leaves from, then the selected departure large: its countdown, clock time, whether it is live and
+ * how often the line runs. The line's full name and operator, and any notices, follow.
+ */
 @Composable
 private fun DetailsHeader(
     first: Departure,
+    selected: Departure,
     departures: List<Departure>,
     stopName: String,
+    nowMillis: Long,
     showMessages: Boolean,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = first.line,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White),
-            maxLines = 1,
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(getTransportColor(first.transportMode))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-        )
-        Spacer(modifier = Modifier.width(12.dp))
+    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3)) {
+        LinePill(line = first.line, mode = first.transportMode, modifier = Modifier.padding(top = 2.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "${getTransportEmoji(first.transportMode)}  ${first.destination}",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            val line = listOfNotNull(first.lineName, first.authority, first.operator).distinct().joinToString(" · ")
-            if (line.isNotEmpty()) {
-                Text(
-                    text = line,
-                    style = MaterialTheme.typography.bodyMedium.copy(color = muted),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            val headway = typicalHeadwayMinutes(departures)?.let { stringResource(Res.string.details_every, it) }
-            Text(
-                text = listOfNotNull(stopName, headway).joinToString(" · "),
-                style = MaterialTheme.typography.bodyMedium.copy(color = muted),
-            )
+            Text(text = first.destination, style = MaterialTheme.typography.headlineSmall)
+            val from = stringResource(Res.string.details_from, stopName)
+            val platform = selected.platform?.let { stringResource(Res.string.details_platform, it) }
+            Text(text = listOfNotNull(from, platform).joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = muted)
         }
+    }
+    Spacer(modifier = Modifier.height(FjordDimens.space3))
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3)) {
+        val countdown =
+            when {
+                selected.isCancelled -> stringResource(Res.string.cancelled)
+                departureCountdown(selected.expectedTime, nowMillis) == DepartureCountdown.Now -> stringResource(Res.string.now)
+                else -> minutesUntil(selected.expectedTime, nowMillis)?.let { stringResource(Res.string.countdown_minutes, it.toInt()) }.orEmpty()
+            }
+        Text(
+            countdown,
+            style = PulseTheme.type.countdown.copy(fontSize = HEADER_TIME_SIZE, lineHeight = HEADER_TIME_SIZE),
+            color = if (selected.isCancelled) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+        )
+        Text(
+            clockText(selected.expectedTime, nowMillis),
+            style = MaterialTheme.typography.titleLarge,
+            color = muted,
+            textDecoration = if (selected.isCancelled) TextDecoration.LineThrough else null,
+        )
+        if (selected.isRealtime && !selected.isCancelled) LiveChip()
+        typicalHeadwayMinutes(departures)?.let {
+            Text(stringResource(Res.string.details_every, it), style = MaterialTheme.typography.bodyMedium, color = muted)
+        }
+    }
+    val line = listOfNotNull(first.lineName, first.authority, first.operator).distinct().joinToString(" · ")
+    if (line.isNotEmpty()) {
+        Text(text = line, style = MaterialTheme.typography.bodySmall, color = muted, modifier = Modifier.padding(top = FjordDimens.space1))
     }
     val notices = departures.flatMap { it.notices }.distinct()
     if (showMessages && notices.isNotEmpty()) {
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(FjordDimens.space2))
         notices.forEach { notice ->
-            Text(text = "⚠️ $notice", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
+            NoticeText(notice)
         }
+    }
+}
+
+private val HEADER_TIME_SIZE = 32.sp
+
+/** "Live", on the success colours: the time comes from the vehicle, not the timetable. */
+@Composable
+internal fun LiveChip() {
+    Text(
+        stringResource(Res.string.details_live),
+        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+        color = PulseTheme.colors.onSuccessContainer,
+        modifier =
+            Modifier
+                .clip(RoundedCornerShape(FjordDimens.radiusSm))
+                .background(PulseTheme.colors.successContainer)
+                .padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+}
+
+/** A cancelled departure says so, with a way to the next one that runs (T4). */
+@Composable
+private fun CancelledCallout(
+    selected: Departure,
+    departures: List<Departure>,
+    nowMillis: Long,
+    onShow: (Departure) -> Unit,
+) {
+    val cancelledAt = clockText(selected.expectedTime, nowMillis).text
+    val next = nextRunningDeparture(departures, selected)
+    if (next == null) {
+        Callout(
+            title = stringResource(Res.string.details_cancelled_title),
+            body = stringResource(Res.string.details_cancelled_none, cancelledAt),
+            tone = CalloutTone.ERROR,
+        )
+        return
+    }
+    val nextAt = clockText(next.expectedTime, nowMillis).text
+    val nextIn = minutesUntil(next.expectedTime, nowMillis)?.let { inTimeText(it) }.orEmpty()
+    Callout(
+        title = stringResource(Res.string.details_cancelled_title),
+        body = stringResource(Res.string.details_cancelled_body, cancelledAt, nextAt, nextIn),
+        tone = CalloutTone.ERROR,
+    ) {
+        TextButton(onClick = { onShow(next) }) { Text(stringResource(Res.string.details_show_departure, nextAt)) }
     }
 }
 
@@ -275,7 +347,7 @@ private fun DepartureDetailRow(
             Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(8.dp))
-                .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
                 .clickable(onClick = onClick)
                 .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -297,34 +369,18 @@ private fun DepartureDetailRow(
                         text = clockText(departure.aimedTime, nowMillis),
                         style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.LineThrough, color = muted),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "+${departure.delayMinutes}",
-                        style =
-                            MaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.error,
-                            ),
-                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    DelayChip(departure.delayMinutes)
                 }
             }
             // Only live ones are marked: departures further out have no live data yet, as is normal.
             val platform = departure.platform?.let { stringResource(Res.string.details_platform, it) }
             val isLive = departure.isRealtime && !departure.isCancelled
             if (platform != null || isLive) {
-                val liveText = stringResource(Res.string.details_live)
-                val liveColor = MaterialTheme.colorScheme.primary
-                Text(
-                    text =
-                        buildAnnotatedString {
-                            if (isLive) {
-                                withStyle(SpanStyle(color = liveColor, fontWeight = FontWeight.Bold)) { append("● $liveText") }
-                                if (platform != null) append(" · ")
-                            }
-                            if (platform != null) append(platform)
-                        },
-                    style = MaterialTheme.typography.bodySmall.copy(color = muted),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+                    if (isLive) LiveChip()
+                    platform?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = muted) }
+                }
             }
         }
         Text(
@@ -335,7 +391,7 @@ private fun DepartureDetailRow(
                     color =
                         when {
                             departure.isCancelled -> MaterialTheme.colorScheme.error
-                            countdown == nowText -> MaterialTheme.colorScheme.primary
+                            countdown == nowText -> PulseTheme.colors.now
                             else -> MaterialTheme.colorScheme.onSurface
                         },
                 ),
@@ -343,13 +399,18 @@ private fun DepartureDetailRow(
     }
 }
 
-/** The selected departure's stops from here to the end of the line, as a timeline. */
+/**
+ * The selected departure's stops from here to the end of the line, on a rail in the line's colour.
+ * Only this section waits for Entur: a skeleton while it loads, a note with "Try again" when Entur
+ * sends no stops (T4: the rest of the sheet is fine).
+ */
 @Composable
 private fun RouteColumn(
     departure: Departure,
     stops: List<JourneyStop>?,
     nowMillis: Long,
     modifier: Modifier,
+    onRetry: () -> Unit,
 ) {
     Column(modifier = modifier) {
         val last = stops?.lastOrNull()
@@ -361,24 +422,55 @@ private fun RouteColumn(
             }
         SectionTitle(stringResource(Res.string.details_route, clockText(departure.expectedTime, nowMillis).text), ride)
         when {
-            stops == null ->
-                Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                }
+            stops == null -> StopsSkeleton()
             stops.isEmpty() ->
-                Text(
-                    text = stringResource(Res.string.details_route_unavailable),
-                    style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                )
-            else ->
+                Callout(body = stringResource(Res.string.details_stops_failed), tone = CalloutTone.WARNING) {
+                    TextButton(onClick = onRetry) { Text(stringResource(Res.string.try_again)) }
+                }
+            else -> {
+                val rail = PulseTheme.colors.lines.forMode(departure.transportMode)
+                val boardHere =
+                    listOfNotNull(departure.platform?.let { stringResource(Res.string.details_platform, it) }, stringResource(Res.string.details_board_here))
+                        .joinToString(" · ")
+                val lastStop = stringResource(Res.string.details_last_stop)
                 LazyColumn {
                     itemsIndexed(stops) { index, stop ->
-                        RouteStopRow(stop, nowMillis, isFirst = index == 0, isLast = index == stops.lastIndex)
+                        RouteStopRow(
+                            stop,
+                            nowMillis,
+                            isFirst = index == 0,
+                            isLast = index == stops.lastIndex,
+                            railColor = rail,
+                            label =
+                                when (index) {
+                                    0 -> boardHere
+                                    stops.lastIndex -> lastStop
+                                    else -> null
+                                },
+                        )
                     }
                 }
+            }
         }
     }
 }
+
+/** Rows of the stop list while Entur sends it: a time, a dot and a name each. */
+@Composable
+private fun StopsSkeleton() {
+    val alpha = rememberPlaceholderPulse()
+    Column(verticalArrangement = Arrangement.spacedBy(FjordDimens.space3)) {
+        repeat(STOPS_SKELETON_ROWS) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3)) {
+                PlaceholderBlock(alpha, Modifier.width(40.dp).height(14.dp))
+                PlaceholderBlock(alpha, Modifier.size(10.dp), cornerRadius = 5.dp)
+                PlaceholderBlock(alpha, Modifier.weight(1f).height(14.dp))
+            }
+        }
+    }
+}
+
+private const val STOPS_SKELETON_ROWS = 5
 
 @Composable
 internal fun RouteStopRow(
@@ -386,46 +478,62 @@ internal fun RouteStopRow(
     nowMillis: Long,
     isFirst: Boolean,
     isLast: Boolean,
+    railColor: Color = MaterialTheme.colorScheme.primary,
+    label: String? = null,
 ) {
-    val lineColor = MaterialTheme.colorScheme.primary
     val isEnd = isFirst || isLast
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(32.dp)) {
+    Row(modifier = Modifier.height(IntrinsicSize.Min).heightIn(min = 36.dp)) {
         Text(
             text = clockText(stop.expectedTime, nowMillis),
             style =
                 MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (isEnd) FontWeight.Bold else FontWeight.Normal,
+                    fontWeight = if (isEnd) FontWeight.SemiBold else FontWeight.Normal,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textDecoration = if (stop.isCancelled) TextDecoration.LineThrough else null,
                 ),
-            modifier = Modifier.width(56.dp),
+            modifier = Modifier.width(56.dp).padding(top = 8.dp),
         )
         // The timeline: a rail through every stop, with a larger dot at both ends.
-        Box(modifier = Modifier.width(20.dp).fillMaxHeight(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.width(20.dp).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
             Column(modifier = Modifier.fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.width(2.dp).weight(1f).background(if (isFirst) Color.Transparent else lineColor))
-                Box(Modifier.width(2.dp).weight(1f).background(if (isLast) Color.Transparent else lineColor))
+                Box(Modifier.width(3.dp).height(14.dp).background(if (isFirst) Color.Transparent else railColor))
+                Box(Modifier.width(3.dp).weight(1f).background(if (isLast) Color.Transparent else railColor))
             }
             Box(
                 Modifier
+                    .padding(top = if (isEnd) 8.dp else 10.dp)
                     .size(if (isEnd) 12.dp else 8.dp)
                     .clip(CircleShape)
-                    .background(lineColor),
+                    .background(if (isEnd) railColor else MaterialTheme.colorScheme.surface)
+                    .border(2.dp, railColor, CircleShape),
             )
         }
         Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = stop.name,
-            style =
-                MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = if (isEnd) FontWeight.Bold else FontWeight.Normal,
-                    textDecoration = if (stop.isCancelled) TextDecoration.LineThrough else null,
-                ),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Column(modifier = Modifier.padding(vertical = 6.dp)) {
+            Text(
+                text = stop.name,
+                style =
+                    MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = if (isEnd) FontWeight.SemiBold else FontWeight.Normal,
+                        textDecoration = if (stop.isCancelled) TextDecoration.LineThrough else null,
+                    ),
+            )
+            label?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
     }
 }
+
+/** "Now" when it is leaving, else "in 14 min" / "in 1 h 5 min"; null when the time can't be read. */
+@Composable
+internal fun leavesInText(
+    time: String,
+    nowMillis: Long,
+): String? =
+    if (departureCountdown(time, nowMillis) == DepartureCountdown.Now) {
+        stringResource(Res.string.now)
+    } else {
+        minutesUntil(time, nowMillis)?.let { inTimeText(it) }
+    }
 
 /** "in 14 min", or "in 1 h 5 min" from an hour out. */
 @Composable
@@ -443,7 +551,7 @@ internal fun clockText(
 ): AnnotatedString {
     val clock = departureClock(time, nowMillis) ?: return AnnotatedString("?")
     return buildAnnotatedString {
-        append(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(clock.epochMillis)))
+        append(clockTimeText(clock.epochMillis))
         if (clock.dayOffset > 0) {
             withStyle(SpanStyle(fontSize = DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
                 append("+${clock.dayOffset}")

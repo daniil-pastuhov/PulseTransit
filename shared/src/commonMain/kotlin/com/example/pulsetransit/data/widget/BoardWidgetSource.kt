@@ -2,6 +2,7 @@ package com.example.pulsetransit.data.widget
 
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.NorwayTimeZone
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
@@ -28,7 +29,7 @@ class BoardWidgetSource(
     private val weatherRepository: WeatherRepository,
     private val settingsRepository: SettingsRepository,
     private val clock: Clock = Clock.System,
-    /** Null follows the device, read per call so a time zone change is picked up. */
+    /** The zone schedules are read in; null for Norway time, as on the board. */
     private val timeZone: TimeZone? = null,
 ) {
     /** The stops a departures widget can be set to. */
@@ -65,7 +66,7 @@ class BoardWidgetSource(
                 destinations = destinations(),
                 schedules = settingsRepository.getDestinationSchedules(),
                 configuredId = destinationId,
-                now = now.toLocalDateTime(timeZone ?: TimeZone.currentSystemDefault()),
+                now = now.toLocalDateTime(timeZone ?: NorwayTimeZone),
             ) ?: return RouteWidgetState.NoDestinations
         val options =
             RouteOptions(

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The compact widget's clock. A TextClock ticks on its own, which a Glance Text redrawn by the
      periodic refresh could not. It is 24-hour whatever the system's setting, like every time the
-     app shows. The date below it is a Glance Text: a second TextClock was cut off by the host. -->
+     app shows, and in Norway time like them. The date below it is a Glance Text: a second TextClock was cut off by the host. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -17,5 +17,6 @@
         android:maxLines="1"
         android:textColor="@color/widget_text"
         android:textSize="40sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:timeZone="Europe/Oslo" />
 </LinearLayout>

@@ -12,6 +12,9 @@ interface SettingsRepository {
         /** [getTripOptionsCount] value meaning "as many as fit the screen". */
         const val TRIP_OPTIONS_AUTO = 0
         const val MAX_TRIP_OPTIONS = 5
+
+        /** How many one-off destinations route search remembers. */
+        const val MAX_RECENT_DESTINATIONS = 5
     }
 
     /**
@@ -124,6 +127,14 @@ interface SettingsRepository {
 
     fun clearDeviceLocation()
 
+    /**
+     * The place in Norway on-spot mode pretends the device is at, so someone abroad can try it; null
+     * to follow the device. Kept until they choose their own location again.
+     */
+    fun getSamplePlace(): SamplePlace?
+
+    fun setSamplePlace(place: SamplePlace?)
+
     // New settings
     fun isShowDelays(): Boolean
 
@@ -162,6 +173,12 @@ interface SettingsRepository {
     fun isDynamicRefreshEnabled(): Boolean
 
     fun setDynamicRefreshEnabled(enabled: Boolean)
+
+    /** Places searched for in route search, newest first, at most [MAX_RECENT_DESTINATIONS]. */
+    fun getRecentDestinations(): List<StopPlace>
+
+    /** Puts [place] first among the recent destinations, dropping it from further down and the oldest past the limit. */
+    fun addRecentDestination(place: StopPlace)
 
     fun getDestinationStations(): List<StopPlace>
 

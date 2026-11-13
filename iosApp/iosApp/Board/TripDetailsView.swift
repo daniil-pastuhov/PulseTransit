@@ -138,8 +138,8 @@ struct TripDetailsView: View {
         let endName = TripDetailsKt.legEndName(trip: trip, index: Int32(index))
         VStack(alignment: .leading, spacing: 8) {
             if let wait = TripDetailsKt.waitMinutesBefore(trip: trip, index: Int32(index)) {
-                Text("⏱  \(L("trip_details_wait", wait.intValue))")
-                    .font(.subheadline)
+                Label(L("trip_details_wait", wait.intValue), systemImage: "hourglass")
+                    .font(.pulse(.subheadline))
                     .foregroundColor(Palette.textSecondary)
                     .padding(.leading, 12)
             }
@@ -171,16 +171,16 @@ private struct TripProgressCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(L("now"))
-                .font(.caption.bold())
+                .font(.pulse(.caption, weight: .bold))
                 .foregroundColor(Palette.primary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(JourneyProgressText.headline(progress))
-                    .font(.headline)
+                    .font(.pulse(.headline))
                     .lineLimit(2)
                 Spacer(minLength: 0)
                 if let minutes = progress.minutesToNext {
                     Text(L("journey_progress_in_minutes", minutes.intValue))
-                        .font(.headline)
+                        .font(.pulse(.headline))
                         .monospacedDigit()
                 }
             }
@@ -193,7 +193,7 @@ private struct TripProgressCard: View {
                 .map { JourneyProgressText.detail($0, clock: Self.clock) }
             if !facts.isEmpty {
                 Text(facts.joined(separator: " · "))
-                    .font(.subheadline)
+                    .font(.pulse(.subheadline))
                     .foregroundColor(Palette.textSecondary)
             }
         }
@@ -213,36 +213,36 @@ private struct TripHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(L("trip_details_title", trip.destinationName))
-                .font(.title3.bold())
-                .lineLimit(1)
+                .font(.pulse(role: FjordTokens.typeHeadline, relativeTo: .title2))
+                .fixedSize(horizontal: false, vertical: true)
             Text(times)
-                .font(.headline)
-                .monospacedDigit()
+                .font(.pulse(.body))
+                .foregroundColor(Palette.textSecondary)
+            TripLegs(trip: trip)
+                .padding(.top, 6)
             Text(facts)
-                .font(.subheadline)
+                .font(.pulse(.subheadline))
                 .foregroundColor(Palette.textSecondary)
         }
     }
 
     private var times: String {
-        let start = clockText(trip.expectedStartTime, nowMillis: nowMillis)
-        let span = trip.expectedEndTime.map { "\(start) → \(clockText($0, nowMillis: nowMillis))" } ?? start
-        return "\(span) · \(tripDuration(trip.durationMinutes))"
+        // "Leave 19:40 · 28 min · arr. 20:08"
+        [
+            "\(L("route_leave")) \(clockText(trip.expectedStartTime, nowMillis: nowMillis))",
+            tripDuration(trip.durationMinutes),
+            trip.expectedEndTime.map { L("route_arrival", clockText($0, nowMillis: nowMillis)) },
+        ]
+        .compactMap { $0 }
+        .joined(separator: " · ")
     }
 
     private var facts: String {
         let changes = Int(TripDetailsKt.transferCount(trip: trip))
         let walked = Int(TripDetailsKt.walkDistanceMeters(trip: trip))
-        let countdown: String?
-        if case .now = onEnum(of: DepartureCountdownKt.departureCountdown(expectedTime: trip.expectedStartTime, nowMillis: nowMillis)) {
-            countdown = L("now")
-        } else {
-            countdown = DepartureDetailsKt.minutesUntil(time: trip.expectedStartTime, nowMillis: nowMillis).map { inTimeText($0.int64Value) }
-        }
         return [
             changes == 0 ? L("trip_details_direct") : L("trip_details_changes", changes),
             walked > 0 ? L("trip_details_walk_total", walked) : nil,
-            countdown,
         ]
         .compactMap { $0 }
         .joined(separator: " · ")
@@ -261,7 +261,7 @@ private struct WalkRow: View {
             if let showOnMap {
                 Button(action: showOnMap) {
                     Label(L("trip_details_show_on_map"), systemImage: "map")
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                 }
                 .buttonStyle(.bordered)
                 .padding(.leading, 36)
@@ -274,7 +274,7 @@ private struct WalkRow: View {
 
     private var summary: some View {
         HStack(spacing: 12) {
-            Text(verbatim: "🚶").font(.headline)
+            Image(systemName: "figure.walk").font(.pulse(.headline)).foregroundColor(Palette.textSecondary).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(
                     [L("trip_details_walk", Int(leg.durationMinutes)), leg.distanceMeters > 0 ? "\(leg.distanceMeters) m" : nil]
@@ -283,7 +283,7 @@ private struct WalkRow: View {
                 )
                 if let endName {
                     Text(L("trip_details_to_place", endName))
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                         .foregroundColor(Palette.textSecondary)
                         .lineLimit(1)
                 }
@@ -308,20 +308,14 @@ private struct RideCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                Text(leg.lineName ?? "")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Palette.transport(leg.mode)))
+                LinePill(line: leg.lineName ?? "", mode: leg.mode)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(Palette.transportEmoji(leg.mode))  \(leg.destination ?? leg.lineFullName ?? leg.lineName ?? "")")
-                        .font(.headline)
+                    (Text(Image(systemName: Palette.transportSymbol(leg.mode))) + Text("  \(leg.destination ?? leg.lineFullName ?? leg.lineName ?? "")"))
+                        .font(.pulse(.headline))
                         .lineLimit(1)
                     let line = [leg.lineFullName, leg.authority].compactMap { $0 }.uniqued().joined(separator: " · ")
                     if !line.isEmpty {
-                        Text(line).font(.caption).foregroundColor(Palette.textSecondary).lineLimit(1)
+                        Text(line).font(.pulse(.caption)).foregroundColor(Palette.textSecondary).lineLimit(1)
                     }
                 }
             }
@@ -329,7 +323,7 @@ private struct RideCard: View {
             Spacer().frame(height: 8)
             if expanded, let stops, !stops.isEmpty {
                 ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
-                    RouteStopRow(stop: stop, nowMillis: nowMillis, isFirst: index == 0, isLast: index == stops.count - 1)
+                    RouteStopRow(stop: stop, nowMillis: nowMillis, isFirst: index == 0, isLast: index == stops.count - 1, railColor: Palette.transport(leg.mode))
                 }
             } else {
                 let isDelayed = showDelays && TripDetailsKt.legDelayMinutes(leg: leg) > 0
@@ -339,13 +333,17 @@ private struct RideCard: View {
             stopsToggle
             if showMessages {
                 ForEach(leg.notices, id: \.self) { notice in
-                    Text("⚠️ \(notice)").font(.footnote).foregroundColor(Palette.error)
+                    NoticeText(notice: notice)
                 }
             }
         }
-        .padding(12)
+        .padding(.vertical, 8)
+        .padding(.leading, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Palette.primary.opacity(0.08)))
+        // A ride sits on a rail in its line's colour, as the stop lists do.
+        .overlay(alignment: .leading) {
+            RoundedRectangle(cornerRadius: 2).fill(Palette.transport(leg.mode)).frame(width: 4).padding(.leading, 2)
+        }
     }
 
     /// "● Live · Platform 2", or whichever of the two the leg has.
@@ -353,12 +351,11 @@ private struct RideCard: View {
     private var facts: some View {
         let platform = leg.platform.map { L("details_platform", $0) }
         if platform != nil || leg.isRealtime {
-            let live = leg.isRealtime ? Text("● \(L("details_live"))").bold().foregroundColor(Palette.primary) : Text(verbatim: "")
-            let separator = leg.isRealtime && platform != nil ? Text(verbatim: " · ") : Text(verbatim: "")
-            (live + separator + Text(platform ?? ""))
-                .font(.caption)
-                .foregroundColor(Palette.textSecondary)
-                .padding(.top, 4)
+            HStack(spacing: 8) {
+                if leg.isRealtime { LiveChip() }
+                if let platform { Text(platform).font(.pulse(.caption)).foregroundColor(Palette.textSecondary) }
+            }
+            .padding(.top, 4)
         }
     }
 
@@ -383,7 +380,7 @@ private struct RideCard: View {
                         .accessibilityLabel(L(expanded ? "trip_details_hide_stops" : "trip_details_show_stops"))
                 }
             }
-            .font(.subheadline)
+            .font(.pulse(.subheadline))
             .foregroundColor(Palette.textSecondary)
             .padding(.vertical, 4)
         }
@@ -407,13 +404,13 @@ private struct EndpointRow: View {
             Text(name ?? "").lineLimit(1)
             if let delayFrom {
                 Text(clockText(delayFrom, nowMillis: nowMillis))
-                    .font(.caption)
+                    .font(.pulse(.caption))
                     .monospacedDigit()
                     .strikethrough()
                     .foregroundColor(Palette.textSecondary)
             }
         }
-        .font(.body.bold())
+        .font(.pulse(.body, weight: .bold))
         .frame(height: 32)
     }
 }

@@ -6,6 +6,9 @@ struct PulseTransitApp: App {
     init() {
         // Before launch finishes, so a notification action that launched the app reaches it.
         JourneyNotifications.shared.register()
+        #if DEBUG
+        seedSettingsFromOwnDefaults()
+        #endif
         PulseTransitIos.shared.start(
             crashReporting: CrashReporting.start(),
             clockFormatter: SystemClockFormatter(),
