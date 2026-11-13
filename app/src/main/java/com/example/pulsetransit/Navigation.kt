@@ -7,12 +7,14 @@ import androidx.compose.runtime.getValue
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.example.pulsetransit.ui.screens.AddStopScreen
 import com.example.pulsetransit.ui.screens.DataSourcesScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
 import com.example.pulsetransit.ui.screens.OnboardingFlow
 import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
+import com.example.pulsetransit.ui.screens.StopDirectionsScreen
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
 import com.example.pulsetransit.ui.viewmodel.OnboardingScreen
@@ -69,7 +71,16 @@ fun MainNavigation() {
                         onOpenRouteModes = { backStack.add(RouteModes) },
                         onOpenJourneyAlerts = { backStack.add(JourneyAlerts) },
                         onOpenDataSources = { backStack.add(DataSources) },
+                        onOpenAddStop = { backStack.add(AddStop) },
+                        onOpenDirections = { backStack.add(StopDirections(it)) },
                     )
+                }
+                entry<AddStop> {
+                    // Its own ViewModel reads the settings fresh; Settings re-reads them on return.
+                    AddStopScreen(viewModel = koinViewModel(), onBack = { backStack.removeLastOrNull() })
+                }
+                entry<StopDirections> { key ->
+                    StopDirectionsScreen(viewModel = koinViewModel(), stopId = key.stopId, onBack = { backStack.removeLastOrNull() })
                 }
                 entry<RouteModes> {
                     // Settings re-reads everything when it is shown again, so its summary of these

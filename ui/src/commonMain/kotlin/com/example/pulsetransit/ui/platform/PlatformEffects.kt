@@ -85,3 +85,7 @@ expect fun SystemBackHandler(
     enabled: Boolean = true,
     onBack: () -> Unit,
 )
+
+/** The app's version as people see it in the store, e.g. "3.2.1". */
+@Composable
+expect fun appVersion(): String

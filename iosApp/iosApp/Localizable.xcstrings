@@ -35,6 +35,176 @@
         }
       }
     },
+    "add_stop_add_named": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til %1$@"
+          }
+        }
+      }
+    },
+    "add_stop_added": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagt til"
+          }
+        }
+      }
+    },
+    "add_stop_clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear search"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tøm søket"
+          }
+        }
+      }
+    },
+    "add_stop_max_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove one in Settings to add another."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern en i Innstillinger for å legge til en annen."
+          }
+        }
+      }
+    },
+    "add_stop_max_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maximum of %1$lld stop places reached"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maks %1$lld holdeplasser nådd"
+          }
+        }
+      }
+    },
+    "add_stop_nearby": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nearby stop places"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Holdeplasser i nærheten"
+          }
+        }
+      }
+    },
+    "add_stop_no_location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set the board’s location in Settings to see the stops nearby, or search by name."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Angi tavlens posisjon i Innstillinger for å se holdeplasser i nærheten, eller søk på navn."
+          }
+        }
+      }
+    },
+    "add_stop_no_results_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the spelling, or try the first part of the name, like “Majo”."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk stavemåten, eller prøv starten av navnet, som «Majo»."
+          }
+        }
+      }
+    },
+    "add_stop_none_nearby": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No stops within 1 km."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen holdeplasser innen 1 km."
+          }
+        }
+      }
+    },
+    "add_stop_none_nearby_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search by name to add a stop anywhere in Norway."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Søk på navn for å legge til en holdeplass hvor som helst i Norge."
+          }
+        }
+      }
+    },
     "add_stop_places": {
       "extractionState": "manual",
       "localizations": {
@@ -48,6 +218,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Legg til stoppesteder"
+          }
+        }
+      }
+    },
+    "add_stop_results": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search results"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Søkeresultater"
+          }
+        }
+      }
+    },
+    "add_stop_search": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search stops"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Søk etter holdeplasser"
+          }
+        }
+      }
+    },
+    "add_stop_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add stop places"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til holdeplasser"
           }
         }
       }
@@ -126,7 +347,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto-dim Delay"
+            "value": "Auto-dim delay"
           }
         },
         "nb": {
@@ -568,7 +789,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choose how much motion wakes it in Settings, under Camera Sensitivity."
+            "value": "Choose how much motion wakes it in Settings, under Camera sensitivity."
           }
         },
         "nb": {
@@ -602,7 +823,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Camera Sensitivity"
+            "value": "Camera sensitivity"
           }
         },
         "nb": {
@@ -1436,6 +1657,74 @@
         }
       }
     },
+    "directions_failed_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur didn’t answer. Until you choose, the board keeps showing every direction for %1$@."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur svarte ikke. Inntil du velger, viser tavlen alle retninger for %1$@."
+          }
+        }
+      }
+    },
+    "directions_failed_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t load the platforms"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunne ikke laste plattformene"
+          }
+        }
+      }
+    },
+    "directions_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose the platforms the board shows for %1$@. With none chosen, it shows every direction."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg plattformene tavlen viser for %1$@. Uten valg viser den alle retninger."
+          }
+        }
+      }
+    },
+    "directions_none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur lists no platforms for %1$@, so the board shows every direction."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur oppgir ingen plattformer for %1$@, så tavlen viser alle retninger."
+          }
+        }
+      }
+    },
     "directions_platforms": {
       "extractionState": "manual",
       "localizations": {
@@ -1470,6 +1759,40 @@
         }
       }
     },
+    "directions_show_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis alle"
+          }
+        }
+      }
+    },
+    "directions_showing_some": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Showing %1$lld of %2$lld platforms"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viser %1$lld av %2$lld plattformer"
+          }
+        }
+      }
+    },
     "directions_some": {
       "extractionState": "manual",
       "localizations": {
@@ -1483,6 +1806,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$lld av %2$lld retninger"
+          }
+        }
+      }
+    },
+    "directions_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Directions"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retninger"
+          }
+        }
+      }
+    },
+    "directions_towards": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Towards %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mot %1$@"
           }
         }
       }
@@ -6295,6 +6652,1397 @@
           "stringUnit": {
             "state": "translated",
             "value": "Middels"
+          }
+        }
+      }
+    },
+    "set_about_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data sources and about"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datakilder og om"
+          }
+        }
+      }
+    },
+    "set_add_destination": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a destination"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til et reisemål"
+          }
+        }
+      }
+    },
+    "set_add_stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add stop"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til holdeplass"
+          }
+        }
+      }
+    },
+    "set_all_directions": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All directions"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle retninger"
+          }
+        }
+      }
+    },
+    "set_always_on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Always on display"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alltid på"
+          }
+        }
+      }
+    },
+    "set_always_on_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prevents the screen from timing out"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hindrer at skjermen slår seg av"
+          }
+        }
+      }
+    },
+    "set_auto_dim_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time before the screen dims after the last motion"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tid før skjermen dempes etter siste bevegelse"
+          }
+        }
+      }
+    },
+    "set_auto_dim_off_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on camera wake to dim the screen when no one is around."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå på kameravekking for å dempe skjermen når ingen er i nærheten."
+          }
+        }
+      }
+    },
+    "set_camera_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The camera only notices movement. Nothing is recorded or sent."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameraet merker bare bevegelse. Ingenting tas opp eller sendes."
+          }
+        }
+      }
+    },
+    "set_coord_missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a number, like %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriv inn et tall, som %1$@"
+          }
+        }
+      }
+    },
+    "set_coord_not_number": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use digits and a decimal point, like %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk sifre og desimaltegn, som %1$@"
+          }
+        }
+      }
+    },
+    "set_current_coordinates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current coordinates"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nåværende koordinater"
+          }
+        }
+      }
+    },
+    "set_delays_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Late departures show the planned time struck through"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forsinkede avganger viser rutetiden overstreket"
+          }
+        }
+      }
+    },
+    "set_destinations_board": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fastest route destinations"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reisemål for raskeste reise"
+          }
+        }
+      }
+    },
+    "set_destinations_board_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The board shows the fastest way to each one. Tap one to choose when it shows."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tavlen viser raskeste vei til hvert av dem. Trykk på et for å velge når det vises."
+          }
+        }
+      }
+    },
+    "set_destinations_limit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Up to %1$lld destinations."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opptil %1$lld reisemål."
+          }
+        }
+      }
+    },
+    "set_destinations_spot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Destinations"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reisemål"
+          }
+        }
+      }
+    },
+    "set_destinations_spot_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes to these show at the top, from wherever you are. Tap one to choose when it shows."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reiser hit vises øverst, fra der du er. Trykk på et for å velge når det vises."
+          }
+        }
+      }
+    },
+    "set_detect_location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detect location automatically"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finn posisjon automatisk"
+          }
+        }
+      }
+    },
+    "set_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ferdig"
+          }
+        }
+      }
+    },
+    "set_dynamic_refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamic refresh"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamisk oppdatering"
+          }
+        }
+      }
+    },
+    "set_dynamic_refresh_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slower at night and while the screen is dimmed"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjeldnere om natten og mens skjermen er dempet"
+          }
+        }
+      }
+    },
+    "set_enter_coordinates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Or enter coordinates"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eller skriv inn koordinater"
+          }
+        }
+      }
+    },
+    "set_filtered_footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To filter out another line, tap its departure on the board."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For å skjule en annen linje, trykk på avgangen på tavlen."
+          }
+        }
+      }
+    },
+    "set_filtered_none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No lines are filtered out. To hide one, tap its departure on the board."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen linjer er skjult. For å skjule en, trykk på avgangen på tavlen."
+          }
+        }
+      }
+    },
+    "set_filtered_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtered out lines"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skjulte linjer"
+          }
+        }
+      }
+    },
+    "set_full_screen": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full screen"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fullskjerm"
+          }
+        }
+      }
+    },
+    "set_full_screen_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hides the system bars"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skjuler systemlinjene"
+          }
+        }
+      }
+    },
+    "set_journey_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How “Notify me about this journey” follows your trip."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvordan «Varsle meg om denne reisen» følger turen din."
+          }
+        }
+      }
+    },
+    "set_latitude": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latitude"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breddegrad"
+          }
+        }
+      }
+    },
+    "set_latitude_range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latitude is between -90 and 90"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Breddegrad er mellom -90 og 90"
+          }
+        }
+      }
+    },
+    "set_location_denied_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow it in system settings, or enter coordinates below."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tillat det i systeminnstillingene, eller skriv inn koordinater nedenfor."
+          }
+        }
+      }
+    },
+    "set_location_denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access is off"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjonstilgang er av"
+          }
+        }
+      }
+    },
+    "set_location_failed_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neither GPS nor the network answered. Try again outdoors or near a window, or enter coordinates below."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verken GPS eller nettverket svarte. Prøv igjen utendørs eller ved et vindu, eller skriv inn koordinater nedenfor."
+          }
+        }
+      }
+    },
+    "set_location_failed_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t find your location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ikke posisjonen din"
+          }
+        }
+      }
+    },
+    "set_location_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Used for the weather and as the start of your fastest routes."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brukes for været og som start for de raskeste reisene."
+          }
+        }
+      }
+    },
+    "set_location_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjon"
+          }
+        }
+      }
+    },
+    "set_longitude": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longitude"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lengdegrad"
+          }
+        }
+      }
+    },
+    "set_longitude_range": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longitude is between -180 and 180"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lengdegrad er mellom -180 og 180"
+          }
+        }
+      }
+    },
+    "set_messages_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disruptions and notices from the operator"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avvik og meldinger fra operatøren"
+          }
+        }
+      }
+    },
+    "set_no_stops": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No stops yet. Add the ones you want the board to show."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen holdeplasser ennå. Legg til dem du vil at tavlen skal vise."
+          }
+        }
+      }
+    },
+    "set_oled_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OLED screen care"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skjermpleie for OLED"
+          }
+        }
+      }
+    },
+    "set_pixel_shift": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pixel shift"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pikselforskyvning"
+          }
+        }
+      }
+    },
+    "set_pixel_shift_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moves the board a few pixels now and then so nothing burns in"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytter tavlen noen piksler nå og da så ingenting brenner seg fast"
+          }
+        }
+      }
+    },
+    "set_power_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Power & refresh"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strøm og oppdatering"
+          }
+        }
+      }
+    },
+    "set_refresh_hint_board": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How often departures update"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvor ofte avgangene oppdateres"
+          }
+        }
+      }
+    },
+    "set_refresh_hint_spot": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How often departures and routes update"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvor ofte avganger og reiser oppdateres"
+          }
+        }
+      }
+    },
+    "set_refresh_interval": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh interval"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdateringsintervall"
+          }
+        }
+      }
+    },
+    "set_refresh_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oppdatering"
+          }
+        }
+      }
+    },
+    "set_reorder_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag a stop, or use Move up and Move down. The board shows them in this order."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra en holdeplass, eller bruk Flytt opp og Flytt ned. Tavlen viser dem i denne rekkefølgen."
+          }
+        }
+      }
+    },
+    "set_save_coordinates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save coordinates"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagre koordinater"
+          }
+        }
+      }
+    },
+    "set_sensitivity_off_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on camera wake to choose how much motion wakes the screen."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå på kameravekking for å velge hvor mye bevegelse som vekker skjermen."
+          }
+        }
+      }
+    },
+    "set_stop_added": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added %1$@ to the board"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La til %1$@ på tavlen"
+          }
+        }
+      }
+    },
+    "set_stop_removed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjernet %1$@"
+          }
+        }
+      }
+    },
+    "set_stops_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap a stop to choose which directions it shows."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk på en holdeplass for å velge hvilke retninger den viser."
+          }
+        }
+      }
+    },
+    "set_stops_max": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can add up to %1$lld stops. Remove one to add another."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan legge til opptil %1$lld holdeplasser. Fjern en for å legge til en annen."
+          }
+        }
+      }
+    },
+    "set_stops_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops on the board (%1$lld of %2$lld)"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Holdeplasser på tavlen (%1$lld av %2$lld)"
+          }
+        }
+      }
+    },
+    "set_switch_to_board_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "On-spot destinations stay saved. The board shows your %1$lld favourite stop instead of the nearest one."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "On-spot destinations stay saved. The board shows your %1$lld favourite stops instead of the nearest one."
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Reisemålene beholdes. Tavlen viser den %1$lld favorittholdeplassen din i stedet for den nærmeste."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Reisemålene beholdes. Tavlen viser de %1$lld favorittholdeplassene dine i stedet for den nærmeste."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "set_switch_to_board_confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to wall board"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bytt til veggtavle"
+          }
+        }
+      }
+    },
+    "set_switch_to_board_empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On-spot destinations stay saved. The board starts empty: add its stops here in Settings."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reisemålene beholdes. Tavlen starter tom: legg til holdeplassene her i Innstillinger."
+          }
+        }
+      }
+    },
+    "set_switch_to_board_keep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stay on the spot"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bli på Der du er"
+          }
+        }
+      }
+    },
+    "set_switch_to_board_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to the wall board?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bytte til veggtavle?"
+          }
+        }
+      }
+    },
+    "set_switch_to_spot_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Your %1$lld board stop stays saved. The app follows where you are instead, and the wall-board features (dimming, pixel shift, camera wake) turn off."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Your %1$lld board stops stay saved. The app follows where you are instead, and the wall-board features (dimming, pixel shift, camera wake) turn off."
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Den %1$lld holdeplassen på tavlen beholdes. Appen følger deg i stedet, og veggtavlefunksjonene (demping, pikselforskyvning, kameravekking) slås av."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "De %1$lld holdeplassene på tavlen beholdes. Appen følger deg i stedet, og veggtavlefunksjonene (demping, pikselforskyvning, kameravekking) slås av."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "set_switch_to_spot_confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to on the spot"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bytt til Der du er"
+          }
+        }
+      }
+    },
+    "set_switch_to_spot_keep": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep the wall board"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behold veggtavlen"
+          }
+        }
+      }
+    },
+    "set_switch_to_spot_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switch to on the spot?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bytte til Der du er?"
+          }
+        }
+      }
+    },
+    "set_theme_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto follows the room’s light, using the light sensor."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto følger lyset i rommet, med lyssensoren."
+          }
+        }
+      }
+    },
+    "set_theme_mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day/night mode"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dag/natt-modus"
+          }
+        }
+      }
+    },
+    "set_theme_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tema"
+          }
+        }
+      }
+    },
+    "set_thresholds_dark": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark below"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mørkt under"
+          }
+        }
+      }
+    },
+    "set_thresholds_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Between the two, the theme stays as it is, so it doesn’t flicker at dusk."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellom de to beholdes temaet, så det ikke blinker i skumringen."
+          }
+        }
+      }
+    },
+    "set_thresholds_light": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light above"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyst over"
+          }
+        }
+      }
+    },
+    "set_thresholds_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light thresholds"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lysgrenser"
+          }
+        }
+      }
+    },
+    "set_transport_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transport information"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trafikkinformasjon"
+          }
+        }
+      }
+    },
+    "set_travel_by_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes only use the selected kinds of transport."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reiser bruker bare de valgte transportmidlene."
+          }
+        }
+      }
+    },
+    "set_unfilter_line": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show line %1$@ again"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis linje %1$@ igjen"
+          }
+        }
+      }
+    },
+    "set_version": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versjon"
+          }
+        }
+      }
+    },
+    "set_version_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weather comes from MET Norway (yr.no)."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Været kommer fra Meteorologisk institutt (yr.no)."
+          }
+        }
+      }
+    },
+    "set_wake_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake and dim"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vekking og demping"
           }
         }
       }

@@ -13,6 +13,14 @@ import kotlinx.serialization.Serializable
 /** Settings' journey alerts: how a followed journey is tracked and which alerts it sends. */
 @Serializable data object JourneyAlerts : NavKey
 
+/** Settings' "Add stop": nearby stops and a search, to add one to the board. */
+@Serializable data object AddStop : NavKey
+
+/** Settings' directions of one board stop: which of its platforms the board shows. */
+@Serializable data class StopDirections(
+    val stopId: String,
+) : NavKey
+
 /** Settings' data sources: the transport companies whose timetables reach Entur. */
 @Serializable data object DataSources : NavKey
 

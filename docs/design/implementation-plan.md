@@ -105,3 +105,9 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
   board asks for the camera on its own any more, and on Android the on-spot board no longer asks
   for location (it shows "Allow location"). On iOS it still does while access is undecided, e.g.
   after switching to on the spot in Settings, since its location source asks the first time.
+- Step 8: typed coordinates accept a decimal comma (Norwegian keyboards type one) instead of the
+  design's "use a dot" error; the field errors are for empty, not a number and out of range. Add
+  stop shows a generic stop icon, as the geocoder's nearby search returns no transport modes. On
+  iOS stops and destinations are removed by swipe (the platform's idiom) and the iPad's two
+  columns are two Forms side by side. A tick in Directions now means "only these" with none ticked
+  meaning all, as the design draws it (before, every box showed ticked when all were shown).

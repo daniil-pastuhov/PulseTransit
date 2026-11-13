@@ -106,9 +106,29 @@ struct UndoToast: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        if let pending {
+        UndoBar(message: pending.map(message), serial: pending?.serial ?? 0, onUndo: onUndo, onDismiss: onDismiss)
+    }
+
+    private func message(_ undo: BoardUndo) -> String {
+        switch onEnum(of: undo) {
+        case let .lineHidden(hidden): return L("line_hidden", hidden.line)
+        case let .destinationSaved(saved): return L("destination_saved", saved.place.name)
+        }
+    }
+}
+
+/// A change made at once, said in a toast with Undo (T3), as Android's snackbar; it closes itself
+/// after 8 s. Nothing shows while `message` is nil; a new `serial` starts the time again.
+struct UndoBar: View {
+    let message: String?
+    let serial: Int64
+    let onUndo: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        if let message {
             HStack(spacing: FjordTokens.space3) {
-                Text(message(pending))
+                Text(message)
                     .font(.pulse(.subheadline))
                     .foregroundColor(Palette.onInverseSurface)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -123,19 +143,12 @@ struct UndoToast: View {
             .background(RoundedRectangle(cornerRadius: FjordTokens.radiusSm).fill(Palette.inverseSurface))
             .padding(FjordTokens.space4)
             .transition(.move(edge: .bottom).combined(with: .opacity))
-            .task(id: pending.serial) {
+            .task(id: serial) {
                 try? await Task.sleep(nanoseconds: 8_000_000_000)
                 guard !Task.isCancelled else { return }
                 onDismiss()
             }
-            .onAppear { UIAccessibility.post(notification: .announcement, argument: message(pending)) }
-        }
-    }
-
-    private func message(_ undo: BoardUndo) -> String {
-        switch onEnum(of: undo) {
-        case let .lineHidden(hidden): return L("line_hidden", hidden.line)
-        case let .destinationSaved(saved): return L("destination_saved", saved.place.name)
+            .onAppear { UIAccessibility.post(notification: .announcement, argument: message) }
         }
     }
 }

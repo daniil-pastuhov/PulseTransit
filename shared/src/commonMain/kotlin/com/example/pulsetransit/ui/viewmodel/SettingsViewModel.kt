@@ -12,10 +12,13 @@ import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.TypedCoordinates
 import com.example.pulsetransit.data.WalkingSpeed
+import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
+import com.example.pulsetransit.data.parseTypedCoordinates
 import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationProvider
@@ -29,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 class SettingsViewModel(
     private val enturRepository: EnturRepository,
@@ -60,8 +64,6 @@ class SettingsViewModel(
         ) : LocationStatus
 
         data object Manual : LocationStatus
-
-        data object InvalidManualFormat : LocationStatus
     }
 
     data class UiState(
@@ -80,18 +82,23 @@ class SettingsViewModel(
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
-        val nearbyStops: List<StopPlace> = emptyList(),
+        /** Stops within 1 km of the saved location, nearest first. */
+        val nearbyStops: List<NearbyStop> = emptyList(),
         val isSearchingNearby: Boolean = false,
         val latitude: Double? = null,
         val longitude: Double? = null,
         val locationStatus: LocationStatus = LocationStatus.NotRequested,
         val showManualCoordinatesPrompt: Boolean = false,
+        /** What is wrong with the coordinates last typed, field by field; null once they are fine. */
+        val coordinatesError: TypedCoordinates.Invalid? = null,
         val themeMode: ThemeMode = ThemeMode.SYSTEM,
         val burnInLevel: BurnInProtectionLevel = BurnInProtectionLevel.MEDIUM,
         val refreshIntervalSeconds: Int = 60,
         val autoDimSeconds: Int = 30,
         val favorites: List<StopPlace> = emptyList(),
         val favoriteStopsWithQuays: Map<String, StopPlace> = emptyMap(),
+        /** Stops whose platforms Entur did not return, for Directions to say so and retry. */
+        val quaysFailed: Set<String> = emptySet(),
         val selectedQuays: Map<String, Set<String>> = emptyMap(),
         val showDelays: Boolean = true,
         val showMessages: Boolean = true,
@@ -203,51 +210,66 @@ class SettingsViewModel(
     }
 
     private fun fetchQuaysForStop(stopId: String) {
+        _uiState.update { it.copy(quaysFailed = it.quaysFailed - stopId) }
         viewModelScope.launch {
+            // The repository answers null when Entur fails, rather than throwing.
             val stopWithQuays = enturRepository.getStopPlaceWithQuays(stopId)
-            if (stopWithQuays != null) {
-                _uiState.update {
+            _uiState.update {
+                if (stopWithQuays != null) {
                     it.copy(favoriteStopsWithQuays = it.favoriteStopsWithQuays + (stopId to stopWithQuays))
+                } else {
+                    it.copy(quaysFailed = it.quaysFailed + stopId)
                 }
             }
         }
     }
 
+    /** Asks Entur again for a stop's platforms, after [UiState.quaysFailed] said it failed. */
+    fun retryQuays(stopId: String) = fetchQuaysForStop(stopId)
+
+    /** Clears a stop's platform choice, so the board shows every direction again. */
+    fun showAllQuays(stopId: String) {
+        settingsRepository.setSelectedQuays(stopId, null)
+        _uiState.update { it.copy(selectedQuays = it.selectedQuays + (stopId to emptySet())) }
+    }
+
+    /** Moves the stop at [fromIndex] to [toIndex]; the board shows its stops in this order. */
+    fun moveFavorite(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        val ids =
+            _uiState.value.favorites
+                .map { it.id }
+                .toMutableList()
+        if (fromIndex !in ids.indices || toIndex !in ids.indices || fromIndex == toIndex) return
+        ids.add(toIndex, ids.removeAt(fromIndex))
+        settingsRepository.reorderFavorites(ids)
+        _uiState.update { it.copy(favorites = settingsRepository.getFavorites()) }
+    }
+
+    /**
+     * Ticks or unticks one of a stop's platforms. None ticked means every direction is shown, so
+     * the first tick chooses just that platform, and unticking the last goes back to all.
+     */
     fun toggleQuay(
         stopId: String,
         quayId: String,
     ) {
-        val allQuayIds =
+        val listed =
             _uiState.value.favoriteStopsWithQuays[stopId]
                 ?.quays
-                ?.asSequence()
                 ?.map { it.id }
-                ?.toSet() ?: emptySet()
+                ?.toSet()
         // A selection can hold a quay the picker no longer lists (it stopped serving any line), and
-        // it could never be unticked; drop it so it doesn't skew the "everything selected" check.
+        // it could never be unticked; drop it so it doesn't linger in the choice.
         val saved = _uiState.value.selectedQuays[stopId] ?: emptySet()
-        val current = if (allQuayIds.isEmpty()) saved else saved intersect allQuayIds
+        val current = if (listed.isNullOrEmpty()) saved else saved intersect listed
+        val next = if (quayId in current) current - quayId else current + quayId
 
-        val next =
-            // Keyed on the saved set, as the rows' ticks are: a selection of only unlisted quays
-            // shows every row unticked, so a tap there must tick one, not untick it.
-            if (saved.isEmpty() && allQuayIds.isNotEmpty()) {
-                // When none are explicitly selected, they are all active by default.
-                // Clicking one should deselect it, meaning we select all others.
-                allQuayIds - quayId
-            } else if (current.contains(quayId)) {
-                current - quayId
-            } else {
-                current + quayId
-            }
-
-        // Normalize: if everything or nothing is selected, treat it as "All" (empty set in UI, null in DB)
-        val isAll = next.isEmpty() || (allQuayIds.isNotEmpty() && next.size == allQuayIds.size)
-        val finalNext = if (isAll) emptySet() else next
-
-        settingsRepository.setSelectedQuays(stopId, finalNext.ifEmpty { null })
+        settingsRepository.setSelectedQuays(stopId, next.ifEmpty { null })
         _uiState.update {
-            it.copy(selectedQuays = it.selectedQuays + (stopId to finalNext))
+            it.copy(selectedQuays = it.selectedQuays + (stopId to next))
         }
     }
 
@@ -428,28 +450,32 @@ class SettingsViewModel(
         }
     }
 
+    /** Saves typed coordinates, or says per field what is wrong with them ([UiState.coordinatesError]). */
     fun setManualCoordinates(
         latStr: String,
         lonStr: String,
     ) {
-        val lat = latStr.toDoubleOrNull()
-        val lon = lonStr.toDoubleOrNull()
-        if (lat != null && lon != null) {
-            settingsRepository.setSavedLocation(lat, lon)
-            _uiState.update {
-                it.copy(
-                    latitude = lat,
-                    longitude = lon,
-                    locationStatus = LocationStatus.Manual,
-                    showManualCoordinatesPrompt = false,
-                )
+        when (val typed = parseTypedCoordinates(latStr, lonStr)) {
+            is TypedCoordinates.Valid -> {
+                settingsRepository.setSavedLocation(typed.latitude, typed.longitude)
+                _uiState.update {
+                    it.copy(
+                        latitude = typed.latitude,
+                        longitude = typed.longitude,
+                        locationStatus = LocationStatus.Manual,
+                        showManualCoordinatesPrompt = false,
+                        coordinatesError = null,
+                    )
+                }
+                fetchNearbyStops(typed.latitude, typed.longitude)
             }
-            fetchNearbyStops(lat, lon)
-        } else {
-            _uiState.update {
-                it.copy(locationStatus = LocationStatus.InvalidManualFormat)
-            }
+            is TypedCoordinates.Invalid -> _uiState.update { it.copy(coordinatesError = typed) }
         }
+    }
+
+    /** The user is correcting the coordinates, so the old errors no longer apply. */
+    fun clearCoordinatesError() {
+        _uiState.update { it.copy(coordinatesError = null) }
     }
 
     private fun fetchNearbyStops(
@@ -458,7 +484,18 @@ class SettingsViewModel(
     ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSearchingNearby = true) }
-            val stops = enturRepository.getNearbyStopPlaces(lat, lon, radiusKm = 1.0)
+            val stops =
+                enturRepository
+                    .getNearbyStopPlaces(lat, lon, radiusKm = 1.0)
+                    .map { stop ->
+                        val distance =
+                            if (stop.latitude != null && stop.longitude != null) {
+                                distanceMeters(lat, lon, stop.latitude, stop.longitude).roundToInt()
+                            } else {
+                                null
+                            }
+                        NearbyStop(stop, distance)
+                    }.sortedBy { it.distanceMeters ?: Int.MAX_VALUE }
             _uiState.update { it.copy(nearbyStops = stops, isSearchingNearby = false) }
         }
     }

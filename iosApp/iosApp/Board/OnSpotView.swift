@@ -706,7 +706,8 @@ private struct StopPicker: View {
     }
 }
 
-private func distanceText(_ meters: Int) -> String {
+/// "84 m", or "1.2 km" from a kilometre.
+func distanceText(_ meters: Int) -> String {
     if meters < 1000 { return L("distance_meters", meters) }
     return L("distance_kilometers", String(format: "%.1f", locale: Locale.current, Double(meters) / 1000))
 }

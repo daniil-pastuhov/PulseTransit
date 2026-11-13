@@ -233,3 +233,14 @@ actual fun SystemBackHandler(
     enabled: Boolean,
     onBack: () -> Unit,
 ) = BackHandler(enabled = enabled, onBack = onBack)
+
+@Composable
+actual fun appVersion(): String {
+    val context = LocalContext.current
+    return remember(context) {
+        context.packageManager
+            .getPackageInfo(context.packageName, 0)
+            .versionName
+            .orEmpty()
+    }
+}

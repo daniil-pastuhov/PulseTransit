@@ -1,9 +1,11 @@
 package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.data.CoordinateProblem
 import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.TypedCoordinates
 import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
@@ -264,14 +266,98 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `manual coordinates are validated`() =
+    fun `manual coordinates are validated field by field`() =
         settingsTest { vm ->
+            val before = settings.getSavedLatitude()
             vm.setManualCoordinates("north", "10.7")
-            assertEquals(LocationStatus.InvalidManualFormat, vm.uiState.value.locationStatus)
+            assertEquals(
+                TypedCoordinates.Invalid(CoordinateProblem.NOT_A_NUMBER, null),
+                vm.uiState.value.coordinatesError,
+            )
+            // Nothing is saved while either field is wrong.
+            assertEquals(before, settings.getSavedLatitude())
 
-            vm.setManualCoordinates("59.9", "10.7")
+            vm.setManualCoordinates("59,9", "10.7")
             assertEquals(LocationStatus.Manual, vm.uiState.value.locationStatus)
+            assertNull(vm.uiState.value.coordinatesError)
             assertEquals(59.9, settings.getSavedLatitude()!!, absoluteTolerance = 0.0)
+        }
+
+    @Test
+    fun `editing a coordinate clears its error`() =
+        settingsTest { vm ->
+            vm.setManualCoordinates("", "10.7")
+            vm.clearCoordinatesError()
+            assertNull(vm.uiState.value.coordinatesError)
+        }
+
+    @Test
+    fun `nearby stops come nearest first with their distances`() =
+        settingsTest { vm ->
+            val far = StopPlace(id = "NSR:StopPlace:F", name = "Far", latitude = 59.9200, longitude = 10.7528)
+            val near = StopPlace(id = "NSR:StopPlace:N", name = "Near", latitude = 59.9116, longitude = 10.7528)
+            val unplaced = StopPlace(id = "NSR:StopPlace:U", name = "Unplaced")
+            entur.nearby = listOf(far, unplaced, near)
+
+            vm.setManualCoordinates("59.9111", "10.7528")
+            runCurrent()
+
+            val nearby = vm.uiState.value.nearbyStops
+            assertEquals(listOf(near.id, far.id, unplaced.id), nearby.map { it.stop.id })
+            assertEquals(56, nearby[0].distanceMeters)
+            assertNull(nearby[2].distanceMeters)
+        }
+
+    @Test
+    fun `a stop whose platforms failed to load can be retried`() =
+        settingsTest { vm ->
+            val a = StopPlace(id = "NSR:StopPlace:A", name = "A")
+            vm.addFavorite(a)
+            runCurrent()
+            assertTrue(a.id in vm.uiState.value.quaysFailed)
+
+            val withQuays = a.copy(quays = listOf(Quay(id = "NSR:Quay:1", publicCode = "1")))
+            entur.stopsWithQuays = mapOf(a.id to withQuays)
+            vm.retryQuays(a.id)
+            // Loading again, not failed, while the answer is on its way.
+            assertFalse(a.id in vm.uiState.value.quaysFailed)
+            runCurrent()
+
+            assertFalse(a.id in vm.uiState.value.quaysFailed)
+            assertEquals(withQuays, vm.uiState.value.favoriteStopsWithQuays[a.id])
+        }
+
+    @Test
+    fun `show all clears a stop's platform choice`() =
+        settingsTest { vm ->
+            withQuays(saved = setOf("A"))
+            vm.loadSettings()
+            runCurrent()
+
+            vm.showAllQuays("S")
+
+            assertEquals(emptySet(), vm.uiState.value.selectedQuays["S"])
+            assertNull(settings.getSelectedQuays("S"))
+        }
+
+    @Test
+    fun `stops can be moved and the board order is saved`() =
+        settingsTest { vm ->
+            val (a, b, c) = listOf("A", "B", "C").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+            settings.favoriteStops = listOf(a, b, c)
+            vm.loadSettings()
+
+            vm.moveFavorite(0, 2)
+            assertEquals(listOf(b, c, a), settings.favoriteStops)
+            assertEquals(listOf(b, c, a), vm.uiState.value.favorites)
+
+            vm.moveFavorite(2, 1)
+            assertEquals(listOf(b, a, c), settings.favoriteStops)
+
+            // Out of range: nothing moves.
+            vm.moveFavorite(0, 3)
+            vm.moveFavorite(-1, 0)
+            assertEquals(listOf(b, a, c), settings.favoriteStops)
         }
 
     /** A favourite with quays A, B and C, saved with [saved] as its quay selection. */
@@ -283,13 +369,13 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun `unticking a quay while all are shown selects the others`() =
+    fun `ticking a quay while all are shown chooses just that one`() =
         withQuays(saved = null).let {
             settingsTest { vm ->
                 vm.toggleQuay("S", "A")
 
-                assertEquals(setOf("B", "C"), vm.uiState.value.selectedQuays["S"])
-                assertEquals(setOf("B", "C"), settings.getSelectedQuays("S"))
+                assertEquals(setOf("A"), vm.uiState.value.selectedQuays["S"])
+                assertEquals(setOf("A"), settings.getSelectedQuays("S"))
             }
         }
 
@@ -304,7 +390,7 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `with only unlisted quays saved a tap ticks the quay rather than all the others`() =
+    fun `with only unlisted quays saved a tap ticks just that quay`() =
         withQuays(saved = setOf("gone")).let {
             settingsTest { vm ->
                 vm.toggleQuay("S", "B")
@@ -314,13 +400,24 @@ class SettingsViewModelTest {
         }
 
     @Test
-    fun `ticking the last unticked quay goes back to showing all`() =
+    fun `unticking the last chosen quay goes back to showing all`() =
+        withQuays(saved = setOf("A")).let {
+            settingsTest { vm ->
+                vm.toggleQuay("S", "A")
+
+                assertEquals(emptySet(), vm.uiState.value.selectedQuays["S"])
+                assertEquals(null, settings.getSelectedQuays("S"))
+            }
+        }
+
+    @Test
+    fun `ticking every quay keeps them chosen`() =
         withQuays(saved = setOf("A", "B")).let {
             settingsTest { vm ->
                 vm.toggleQuay("S", "C")
 
-                assertEquals(emptySet(), vm.uiState.value.selectedQuays["S"])
-                assertEquals(null, settings.getSelectedQuays("S"))
+                // Ticked as the user sees them, not turned back into "all" under their finger.
+                assertEquals(setOf("A", "B", "C"), vm.uiState.value.selectedQuays["S"])
             }
         }
 

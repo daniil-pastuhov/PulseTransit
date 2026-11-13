@@ -69,3 +69,7 @@ actual fun SystemBackHandler(
     enabled: Boolean,
     onBack: () -> Unit,
 ) = Unit
+
+/** The desktop app is a development tool with no release of its own. */
+@Composable
+actual fun appVersion(): String = "dev"

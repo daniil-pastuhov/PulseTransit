@@ -853,7 +853,7 @@ private fun StopChooserSheet(
 }
 
 @Composable
-private fun distanceText(meters: Int): String =
+internal fun distanceText(meters: Int): String =
     if (meters < METRES_PER_KILOMETRE) {
         stringResource(Res.string.distance_meters, meters)
     } else {
