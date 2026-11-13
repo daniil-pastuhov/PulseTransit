@@ -162,7 +162,9 @@ struct EmptyListMessage<Action: View>: View {
         VStack(spacing: 8) {
             Image(systemName: symbol).font(.system(size: 32)).foregroundColor(Palette.textSecondary).accessibilityHidden(true)
             Text(title).font(.pulse(.headline)).multilineTextAlignment(.center)
-            Text(detail).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary).multilineTextAlignment(.center)
+            if !detail.isEmpty {
+                Text(detail).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary).multilineTextAlignment(.center)
+            }
             action()
         }
         .frame(maxWidth: .infinity)

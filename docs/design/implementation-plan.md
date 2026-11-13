@@ -111,3 +111,6 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
   iOS stops and destinations are removed by swipe (the platform's idiom) and the iPad's two
   columns are two Forms side by side. A tick in Directions now means "only these" with none ticked
   meaning all, as the design draws it (before, every box showed ticked when all were shown).
+  The destination schedule stays a sheet (a dialog on wide screens) over Settings rather than a
+  screen of its own; Save is always enabled and explains "Pick at least one day" (T1). Unused
+  strings left by the old Settings were removed.

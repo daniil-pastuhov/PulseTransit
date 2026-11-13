@@ -1,5 +1,6 @@
 package com.example.pulsetransit.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,20 +9,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -37,8 +40,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.DataSource
 import com.example.pulsetransit.data.DataSourceMode
+import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.PlaceholderBlock
+import com.example.pulsetransit.ui.components.ScreenMessage
+import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
 import org.jetbrains.compose.resources.StringResource
@@ -78,7 +85,7 @@ fun DataSourcesScreen(
                 LazyColumn(
                     modifier = Modifier.widthIn(max = SINGLE_COLUMN_MAX_WIDTH).fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
                     item(key = "intro") {
                         Text(
@@ -99,46 +106,46 @@ fun DataSourcesScreen(
                         )
                     }
                     when {
+                        // The intro is local text, so only the list is a skeleton.
                         uiState.isLoading ->
-                            item(key = "loading") {
-                                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator()
-                                }
-                            }
+                            item(key = "loading") { SourcesSkeleton() }
+                        // T5 in the list's place: the list is the content and nothing is cached.
                         uiState.failed ->
                             item(key = "failed") {
-                                Column(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                                ) {
-                                    Text(stringResource(Res.string.data_sources_failed), style = MaterialTheme.typography.bodyLarge)
-                                    OutlinedButton(onClick = viewModel::retry) { Text(stringResource(Res.string.retry)) }
-                                }
+                                ScreenMessage(
+                                    title = stringResource(Res.string.data_sources_failed),
+                                    body = stringResource(Res.string.data_sources_failed_body),
+                                    icon = PulseIcons.CloudOff,
+                                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) { Button(onClick = viewModel::retry) { Text(stringResource(Res.string.try_again)) } }
+                            }
+                        // A real answer, not an error: the company isn't covered.
+                        uiState.noMatches ->
+                            item(key = "noMatch") {
+                                ScreenMessage(
+                                    title = stringResource(Res.string.data_sources_no_match, uiState.query.trim()),
+                                    icon = PulseIcons.SearchOff,
+                                    iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                         else -> {
                             if (uiState.query.isBlank()) {
                                 item(key = "count") {
                                     Text(
                                         stringResource(Res.string.data_sources_count, uiState.all.size),
-                                        style = MaterialTheme.typography.labelLarge,
+                                        style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(vertical = 4.dp),
+                                        modifier = Modifier.padding(vertical = FjordDimens.space2),
                                     )
                                 }
                             }
-                            if (uiState.noMatches) {
-                                item(key = "noMatch") {
-                                    Text(
-                                        stringResource(Res.string.data_sources_no_match, uiState.query.trim()),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        modifier = Modifier.padding(vertical = 16.dp),
-                                    )
-                                }
-                            }
-                            items(uiState.shown, key = { it.name }) { source ->
+                            itemsIndexed(uiState.shown, key = { _, source -> source.name }) { index, source ->
                                 DataSourceRow(
                                     source = source,
+                                    first = index == 0,
+                                    last = index == uiState.shown.lastIndex,
                                     onOpen = source.url?.let { url -> { runCatching { uriHandler.openUri(url) } } },
                                     modifier = Modifier.animateItem(),
                                 )
@@ -166,25 +173,59 @@ fun DataSourcesScreen(
     }
 }
 
+/** One company and what it runs, from Entur; a card's row, the first and last rounding its corners. */
 @Composable
 private fun DataSourceRow(
     source: DataSource,
+    first: Boolean,
+    last: Boolean,
     onOpen: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val modes = source.modes.map { stringResource(it.labelId()) }.joinToString(", ")
+    val corner = FjordDimens.radiusLg
+    val shape =
+        RoundedCornerShape(
+            topStart = if (first) corner else 0.dp,
+            topEnd = if (first) corner else 0.dp,
+            bottomStart = if (last) corner else 0.dp,
+            bottomEnd = if (last) corner else 0.dp,
+        )
     Column(
         modifier =
             modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .then(if (onOpen != null) Modifier.clickable(role = Role.Button, onClick = onOpen) else Modifier)
-                .padding(horizontal = 8.dp, vertical = 10.dp),
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surface)
+                .then(if (onOpen != null) Modifier.clickable(role = Role.Button, onClick = onOpen) else Modifier),
     ) {
-        Text(source.name, style = MaterialTheme.typography.bodyLarge)
-        Text(modes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(modifier = Modifier.heightIn(min = FjordDimens.touch).padding(horizontal = FjordDimens.space4, vertical = FjordDimens.space3)) {
+            Text(source.name, style = MaterialTheme.typography.bodyLarge)
+            if (modes.isNotEmpty()) {
+                Text(modes, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        if (!last) SettingsDivider()
     }
 }
+
+@Composable
+private fun SourcesSkeleton() {
+    val alpha = rememberPlaceholderPulse()
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = FjordDimens.space2),
+        verticalArrangement = Arrangement.spacedBy(FjordDimens.space4),
+    ) {
+        repeat(SKELETON_ROWS) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                PlaceholderBlock(alpha, Modifier.width(140.dp).height(14.dp))
+                PlaceholderBlock(alpha, Modifier.width(200.dp).height(12.dp))
+            }
+        }
+    }
+}
+
+private const val SKELETON_ROWS = 6
 
 private fun DataSourceMode.labelId(): StringResource =
     when (this) {

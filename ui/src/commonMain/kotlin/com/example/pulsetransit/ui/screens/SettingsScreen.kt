@@ -71,7 +71,7 @@ import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.WalkingSpeed
-import com.example.pulsetransit.data.journey.JourneyAlertKind
+import com.example.pulsetransit.data.journey.journeyAlertCount
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
@@ -622,16 +622,16 @@ private fun JourneyAlertsSection(
     onOpenJourneyAlerts: () -> Unit,
 ) {
     SettingsSection(title = stringResource(Res.string.journey_rationale_title), hint = stringResource(Res.string.set_journey_hint)) {
-        val total = JourneyAlertKind.entries.size
+        val count = journeyAlertCount(state.journeyMode, state.disabledJourneyAlerts)
         SettingLink(
             icon = PulseIcons.Notifications,
             title = stringResource(Res.string.journey_rationale_title),
             hint = stringResource(state.journeyMode?.let(::journeyModeLabel) ?: Res.string.not_set),
             value =
-                if (state.disabledJourneyAlerts.isEmpty()) {
+                if (count.isAll) {
                     stringResource(Res.string.journey_alerts_all)
                 } else {
-                    stringResource(Res.string.journey_alerts_count, total - state.disabledJourneyAlerts.size, total)
+                    stringResource(Res.string.journey_alerts_count, count.enabled, count.total)
                 },
             onClick = onOpenJourneyAlerts,
         )

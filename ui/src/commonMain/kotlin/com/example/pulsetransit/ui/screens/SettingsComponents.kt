@@ -199,26 +199,5 @@ internal fun SettingLink(
     }
 }
 
-/** The old card the remaining sub-screens still use, until they move to [SettingsSection]. */
-@Composable
-fun SettingsCard(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    androidx.compose.material3.Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors =
-            androidx.compose.material3.CardDefaults
-                .cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title, style = MaterialTheme.typography.titleMedium)
-            androidx.compose.foundation.layout
-                .Spacer(modifier = Modifier.padding(top = 12.dp))
-            content()
-        }
-    }
-}
-
 /** How faded a disabled row's text is. */
 internal const val DISABLED_ALPHA = 0.5f

@@ -1,50 +1,22 @@
 <resources>
     <string name="settings_title">Settings</string>
     <string name="back">Back</string>
-    <string name="theme_settings">Theme Settings</string>
     <string name="day_night_mode">Day/Night Mode</string>
-    <string name="refresh_interval">Refresh Interval</string>
-    <string name="auto_update_schedule">Auto-update schedule</string>
-    <string name="oled_screen_care">OLED Screen Care</string>
     <string name="pixel_shift_level">Pixel shift level (prevents burn-in)</string>
-    <string name="power_refresh">Power &amp; Refresh</string>
     <string name="wake_camera">Wake screen by front camera motion</string>
-    <string name="dynamic_refresh">Dynamic refresh (slower at night/empty)</string>
-    <string name="full_screen_mode">Full screen mode (hides system bars)</string>
-    <string name="always_on_display">Always on display (prevents screen timeout)</string>
-    <string name="transport_info">Transport Information</string>
     <string name="show_delays">Show delay information</string>
     <string name="show_messages">Show informational messages</string>
     <string name="show_cancelled">Show canceled departures</string>
     <string name="show_weather">Show weather forecast</string>
     <string name="filter_out_line">Filter out line %1$s</string>
-    <string name="filtered_lines">Filtered Out Lines</string>
-    <string name="no_filtered_lines">To filter out a line, tap its departure on the main screen and select the filter option.</string>
-    <string name="location_config">Location Configuration</string>
-    <string name="current_coords">Current Coordinates</string>
-    <string name="latitude_val">Lat: %1$s</string>
-    <string name="longitude_val">Lon: %1$s</string>
     <string name="not_set">Not set</string>
-    <string name="detect_location">Detect Location Automatically</string>
-    <string name="enter_manual">Enter coordinates manually:</string>
-    <string name="latitude_label">Latitude</string>
-    <string name="longitude_label">Longitude</string>
-    <string name="save_coords">Save Coordinates</string>
-    <string name="add_stop_places">Add Stop Places</string>
-    <string name="search_hint">Search by name…</string>
     <string name="search_destination_hint">Stop, address or place…</string>
-    <string name="nearby_stops">Nearby Stop Places</string>
-    <string name="search_results">Search Results</string>
     <string name="no_stops_found">No stops found</string>
     <string name="remove">Remove</string>
     <string name="add">Add</string>
-    <string name="favorite_stops">Favorite Stop Places (%1$d)</string>
-    <string name="no_favorites">No favorites added yet</string>
-    <string name="directions_quays">Directions / Quays:</string>
     <string name="showing_all_directions">Showing all directions</string>
     <string name="platform_label">Platform %1$s</string>
     <string name="direction_id">Direction %1$s</string>
-    <string name="delete">Delete</string>
     <string name="no_departures">No upcoming departures</string>
     <plurals name="no_departures_extended">
         <item quantity="one">No departures in the next %1$d day</item>
@@ -65,7 +37,6 @@
     <string name="details_departures">Departures</string>
     <string name="details_route">Stops for the %1$s departure</string>
     <string name="details_ride">%1$d min to %2$s</string>
-    <string name="details_route_unavailable">No stop list for this departure</string>
     <!-- A route's details, opened by tapping a fastest route. -->
     <string name="trip_details_title">To %1$s</string>
     <string name="trip_details_direct">Direct</string>
@@ -86,24 +57,17 @@
     <string name="trip_details_hide_stops">Hide stops</string>
     <string name="refresh">Refresh</string>
 
-    <plurals name="max_favorite_stops_reached">
-        <item quantity="one">Maximum of %1$d stop place reached. Remove it to add another.</item>
-        <item quantity="other">Maximum of %1$d stop places reached. Remove one to add another.</item>
-    </plurals>
     <string name="more_actions">More actions</string>
     <string name="drag_to_reorder">Drag to reorder</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="reorder">Reorder</string>
-    <string name="reorder_done">Done</string>
     <!-- Board pages, when the stops take turns -->
     <string name="board_page_stops">Stops %1$d–%2$d of %3$d</string>
     <string name="board_page_stop">Stop %1$d of %2$d</string>
     <string name="board_page_description">Page %1$d of %2$d. The next page shows in %3$d seconds.</string>
     <string name="board_page_paused">Page %1$d of %2$d. Paused.</string>
     <!-- Fastest Route -->
-    <string name="fastest_route_destination">Fastest Route Destinations</string>
-    <string name="no_destination_set">No destinations set</string>
     <plurals name="max_destinations_reached">
         <item quantity="one">Maximum of %1$d destination reached. Remove it to add another.</item>
         <item quantity="other">Maximum of %1$d destinations reached. Remove one to add another.</item>
@@ -124,7 +88,6 @@
     <string name="schedule_edit">Change when %1$s is shown</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
-    <string name="select">Select</string>
     <string name="loading_departures">Loading departures…</string>
     <string name="loading_fastest_route">Finding fastest route to %1$s…</string>
     <string name="fastest_route_to">Fastest to %1$s</string>
@@ -151,9 +114,6 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_auto">Auto</string>
 
-    <string name="auto_theme_thresholds">Auto-theme light thresholds (lux)</string>
-    <string name="auto_theme_dark">Dark below:</string>
-    <string name="auto_theme_light">Light above:</string>
     <string name="lux_value">%1$d lux</string>
     <string name="current_lux">Current: %1$d lux</string>
 
@@ -167,18 +127,13 @@
     <string name="loc_not_requested">Not requested</string>
     <string name="loc_requesting_gps">Requesting GPS (Precise)…</string>
     <string name="loc_requesting_network">GPS failed. Requesting Network (Approximate)…</string>
-    <string name="loc_failed">Could not retrieve GPS or Network location.</string>
-    <string name="loc_denied">Location permissions denied.</string>
-    <string name="loc_error">Error retrieving location: %1$s</string>
     <string name="loc_success">Success via %1$s</string>
     <string name="gps_source">GPS</string>
     <string name="network_source">Network</string>
     <string name="loc_manual">Set manually</string>
-    <string name="loc_invalid_format">Invalid manual coordinates format.</string>
 
     <!-- Auto-dim Delay -->
     <string name="auto_dim_delay">Auto-dim delay</string>
-    <string name="auto_dim_hint">Time before screen dims after motion</string>
     <string name="dim_15s">15 Sec</string>
     <string name="dim_30s">30 Sec</string>
     <string name="dim_1m">1 Min</string>
@@ -265,7 +220,6 @@
     <string name="dismiss_route">Close route</string>
     <string name="route_to">To %1$s</string>
     <!-- On-spot board: the handle between the routes and the stop, and the bar a section folds to. -->
-    <string name="on_spot_routes">Routes</string>
     <string name="on_spot_resize">Drag to resize</string>
     <string name="on_spot_show_routes">Show routes</string>
     <string name="on_spot_show_departures">Show departures</string>
@@ -623,4 +577,11 @@
         <item quantity="one">On-spot destinations stay saved. The board shows your %1$d favourite stop instead of the nearest one.</item>
         <item quantity="other">On-spot destinations stay saved. The board shows your %1$d favourite stops instead of the nearest one.</item>
     </plurals>
+    <string name="journey_missed_needs_location">Needs “Also notice if I miss my ride”</string>
+    <string name="data_sources_failed_body">Check your connection and try again. Departures on the board are not affected.</string>
+    <string name="schedule_at_set_times">At set times</string>
+    <string name="schedule_days">Days</string>
+    <string name="schedule_next_day">next day</string>
+    <string name="schedule_shows">Shows %1$s</string>
+    <string name="travel_by_group_toggle">All %1$s</string>
 </resources>

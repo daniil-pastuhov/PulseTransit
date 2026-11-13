@@ -1,50 +1,22 @@
 <resources>
     <string name="settings_title">Innstillinger</string>
     <string name="back">Tilbake</string>
-    <string name="theme_settings">Tema</string>
     <string name="day_night_mode">Dag/natt-modus</string>
-    <string name="refresh_interval">Oppdateringsintervall</string>
-    <string name="auto_update_schedule">Automatisk oppdateringsplan</string>
-    <string name="oled_screen_care">OLED-skjermbeskyttelse</string>
     <string name="pixel_shift_level">Pikselforskyvning (hindrer innbrenning)</string>
-    <string name="power_refresh">Strøm og oppdatering</string>
     <string name="wake_camera">Vekk skjerm med bevegelse (frontkamera)</string>
-    <string name="dynamic_refresh">Dynamisk oppdatering (tregere om natten/når tom)</string>
-    <string name="full_screen_mode">Fullskjermmodus (skjuler systemlinjer)</string>
-    <string name="always_on_display">Alltid på (forhindrer at skjermen slår seg av)</string>
-    <string name="transport_info">Transportinformasjon</string>
     <string name="show_delays">Vis forsinkelser</string>
     <string name="show_messages">Vis informasjonsmeldinger</string>
     <string name="show_cancelled">Vis kansellerte avganger</string>
     <string name="show_weather">Vis værmelding</string>
     <string name="filter_out_line">Filtrer bort linje %1$s</string>
-    <string name="filtered_lines">Filtrerte linjer</string>
-    <string name="no_filtered_lines">For å filtrere bort en linje, trykk på en avgang på hovedskjermen og velg filtreringsvalget.</string>
-    <string name="location_config">Posisjonsinnstillinger</string>
-    <string name="current_coords">Nåværende koordinater</string>
-    <string name="latitude_val">Breddegrad: %1$s</string>
-    <string name="longitude_val">Lengdegrad: %1$s</string>
     <string name="not_set">Ikke satt</string>
-    <string name="detect_location">Hent posisjon automatisk</string>
-    <string name="enter_manual">Skriv inn koordinater manuelt:</string>
-    <string name="latitude_label">Breddegrad</string>
-    <string name="longitude_label">Lengdegrad</string>
-    <string name="save_coords">Lagre koordinater</string>
-    <string name="add_stop_places">Legg til stoppesteder</string>
-    <string name="search_hint">Søk på navn…</string>
     <string name="search_destination_hint">Holdeplass, adresse eller sted…</string>
-    <string name="nearby_stops">Stoppesteder i nærheten</string>
-    <string name="search_results">Søkeresultater</string>
     <string name="no_stops_found">Ingen stoppesteder funnet</string>
     <string name="remove">Fjern</string>
     <string name="add">Legg til</string>
-    <string name="favorite_stops">Favoritter (%1$d)</string>
-    <string name="no_favorites">Ingen favoritter lagt til ennå</string>
-    <string name="directions_quays">Retninger / plattformer:</string>
     <string name="showing_all_directions">Viser alle retninger</string>
     <string name="platform_label">Plattform %1$s</string>
     <string name="direction_id">Retning %1$s</string>
-    <string name="delete">Slett</string>
     <string name="no_departures">Ingen kommende avganger</string>
     <plurals name="no_departures_extended">
         <item quantity="one">Ingen avganger det neste %1$d døgnet</item>
@@ -65,7 +37,6 @@
     <string name="details_departures">Avganger</string>
     <string name="details_route">Stopp for avgangen %1$s</string>
     <string name="details_ride">%1$d min til %2$s</string>
-    <string name="details_route_unavailable">Ingen stoppliste for denne avgangen</string>
     <!-- A route's details, opened by tapping a fastest route. -->
     <string name="trip_details_title">Til %1$s</string>
     <string name="trip_details_direct">Direkte</string>
@@ -86,24 +57,17 @@
     <string name="trip_details_hide_stops">Skjul stopp</string>
     <string name="refresh">Oppdater</string>
 
-    <plurals name="max_favorite_stops_reached">
-        <item quantity="one">Maksimalt %1$d stoppested nådd. Fjern det for å legge til et nytt.</item>
-        <item quantity="other">Maksimalt %1$d stoppesteder nådd. Fjern ett for å legge til et nytt.</item>
-    </plurals>
     <string name="more_actions">Flere handlinger</string>
     <string name="drag_to_reorder">Dra for å endre rekkefølgen</string>
     <string name="move_up">Flytt opp</string>
     <string name="move_down">Flytt ned</string>
     <string name="reorder">Endre rekkefølge</string>
-    <string name="reorder_done">Ferdig</string>
     <!-- Board pages, when the stops take turns -->
     <string name="board_page_stops">Stopp %1$d–%2$d av %3$d</string>
     <string name="board_page_stop">Stopp %1$d av %2$d</string>
     <string name="board_page_description">Side %1$d av %2$d. Neste side vises om %3$d sekunder.</string>
     <string name="board_page_paused">Side %1$d av %2$d. På pause.</string>
     <!-- Fastest Route -->
-    <string name="fastest_route_destination">Reisemål for raskeste rute</string>
-    <string name="no_destination_set">Ingen destinasjoner valgt</string>
     <plurals name="max_destinations_reached">
         <item quantity="one">Maksimalt %1$d destinasjon nådd. Fjern den for å legge til en ny.</item>
         <item quantity="other">Maksimalt %1$d destinasjoner nådd. Fjern én for å legge til en ny.</item>
@@ -124,7 +88,6 @@
     <string name="schedule_edit">Endre når %1$s vises</string>
     <string name="save">Lagre</string>
     <string name="cancel">Avbryt</string>
-    <string name="select">Velg</string>
     <string name="loading_departures">Henter avganger…</string>
     <string name="loading_fastest_route">Finner raskeste rute til %1$s…</string>
     <string name="fastest_route_to">Raskest til %1$s</string>
@@ -151,9 +114,6 @@
     <string name="theme_dark">Mørk</string>
     <string name="theme_auto">Auto</string>
 
-    <string name="auto_theme_thresholds">Lysnivå for automatisk tema (lux)</string>
-    <string name="auto_theme_dark">Mørkt under:</string>
-    <string name="auto_theme_light">Lyst over:</string>
     <string name="lux_value">%1$d lux</string>
     <string name="current_lux">Nå: %1$d lux</string>
 
@@ -167,18 +127,13 @@
     <string name="loc_not_requested">Ikke forespurt</string>
     <string name="loc_requesting_gps">Forespør GPS (nøyaktig)…</string>
     <string name="loc_requesting_network">GPS feilet. Forespør nettverk (omtrentlig)…</string>
-    <string name="loc_failed">Kunne ikke hente posisjon.</string>
-    <string name="loc_denied">Posisjonstilgang avslått.</string>
-    <string name="loc_error">Feil ved henting av posisjon: %1$s</string>
     <string name="loc_success">Suksess via %1$s</string>
     <string name="gps_source">GPS</string>
     <string name="network_source">Nettverk</string>
     <string name="loc_manual">Satt manuelt</string>
-    <string name="loc_invalid_format">Ugyldig format for manuelle koordinater.</string>
 
     <!-- Auto-dim Delay -->
     <string name="auto_dim_delay">Tid før autodimming</string>
-    <string name="auto_dim_hint">Tid før skjermen dimmes etter bevegelse</string>
     <string name="dim_15s">15 sek</string>
     <string name="dim_30s">30 sek</string>
     <string name="dim_1m">1 min</string>
@@ -264,7 +219,6 @@
     <string name="save_destination">Lagre reisemål</string>
     <string name="dismiss_route">Lukk reisen</string>
     <string name="route_to">Til %1$s</string>
-    <string name="on_spot_routes">Reiser</string>
     <string name="on_spot_resize">Dra for å endre størrelse</string>
     <string name="on_spot_show_routes">Vis reiser</string>
     <string name="on_spot_show_departures">Vis avganger</string>
@@ -622,4 +576,11 @@
         <item quantity="one">Reisemålene beholdes. Tavlen viser den %1$d favorittholdeplassen din i stedet for den nærmeste.</item>
         <item quantity="other">Reisemålene beholdes. Tavlen viser de %1$d favorittholdeplassene dine i stedet for den nærmeste.</item>
     </plurals>
+    <string name="journey_missed_needs_location">Krever «Merk også om jeg går glipp av avgangen»</string>
+    <string name="data_sources_failed_body">Sjekk tilkoblingen og prøv igjen. Avgangene på tavlen påvirkes ikke.</string>
+    <string name="schedule_at_set_times">Til faste tider</string>
+    <string name="schedule_days">Dager</string>
+    <string name="schedule_next_day">neste dag</string>
+    <string name="schedule_shows">Vises %1$s</string>
+    <string name="travel_by_group_toggle">Alle: %1$s</string>
 </resources>

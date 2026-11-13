@@ -7,6 +7,7 @@ import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DestinationSchedule
 import com.example.pulsetransit.data.EnturRepository
+import com.example.pulsetransit.data.RouteModeGroup
 import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.SettingsRepository
@@ -318,6 +319,19 @@ class SettingsViewModel(
     fun toggleRouteMode(mode: RouteTransportMode) {
         val current = _uiState.value.excludedRouteModes
         val next = if (mode in current) current - mode else current + mode
+        if (next.size >= RouteTransportMode.entries.size) return
+        settingsRepository.setExcludedRouteModes(next)
+        _uiState.update { it.copy(excludedRouteModes = next) }
+    }
+
+    /**
+     * Travel by's group box: allows the whole group when any of it is off, else excludes it all.
+     * Excluding it all is refused when it would leave no kind allowed anywhere.
+     */
+    fun toggleRouteModeGroup(group: RouteModeGroup) {
+        val modes = RouteTransportMode.entries.filter { it.group == group }.toSet()
+        val current = _uiState.value.excludedRouteModes
+        val next = if ((current intersect modes).isEmpty()) current + modes else current - modes
         if (next.size >= RouteTransportMode.entries.size) return
         settingsRepository.setExcludedRouteModes(next)
         _uiState.update { it.copy(excludedRouteModes = next) }

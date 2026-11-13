@@ -7,22 +7,24 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -44,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.example.pulsetransit.data.DestinationSchedule
 import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.platform.is24HourClock
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.StringResource
@@ -110,6 +113,8 @@ private fun ScheduleContent(
     var startMinute by remember { mutableIntStateOf(schedule?.startMinute ?: DEFAULT_START_MINUTE) }
     var endMinute by remember { mutableIntStateOf(schedule?.endMinute ?: DEFAULT_END_MINUTE) }
     var picking by remember { mutableStateOf<TimeField?>(null) }
+    // Save stays enabled; pressing it with no days says so at the day picker (T1).
+    var showDaysError by remember { mutableStateOf(false) }
     val edited = DestinationSchedule(days, startMinute, endMinute)
 
     Column(
@@ -119,67 +124,93 @@ private fun ScheduleContent(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(top = 8.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(stringResource(Res.string.schedule_title), style = MaterialTheme.typography.titleLarge)
-        Text(
-            destination.name,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Spacer(Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(Res.string.schedule_always), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-            Switch(checked = always, onCheckedChange = { always = it })
+        Column {
+            Text(stringResource(Res.string.schedule_title), style = MaterialTheme.typography.titleLarge)
+            Text(
+                destination.name,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(stringResource(Res.string.schedule_hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            listOf(true to Res.string.schedule_always, false to Res.string.schedule_at_set_times).forEachIndexed { index, (value, label) ->
+                SegmentedButton(
+                    selected = always == value,
+                    onClick = { always = value },
+                    shape = SegmentedButtonDefaults.itemShape(index, 2),
+                    icon = {},
+                    label = { Text(stringResource(label)) },
+                )
+            }
         }
 
         if (!always) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            Text(stringResource(Res.string.schedule_days), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(
-                    onClick = { days = DestinationSchedule.ALL_DAYS },
-                    label = { Text(stringResource(Res.string.schedule_every_day)) },
-                )
-                AssistChip(
-                    onClick = { days = DestinationSchedule.WEEKDAYS },
-                    label = { Text(stringResource(Res.string.schedule_weekdays)) },
-                )
-                AssistChip(onClick = { days = DestinationSchedule.WEEKEND }, label = { Text(stringResource(Res.string.schedule_weekend)) })
+                listOf(
+                    DestinationSchedule.ALL_DAYS to Res.string.schedule_every_day,
+                    DestinationSchedule.WEEKDAYS to Res.string.schedule_weekdays,
+                    DestinationSchedule.WEEKEND to Res.string.schedule_weekend,
+                ).forEach { (preset, label) ->
+                    FilterChip(
+                        selected = days == preset,
+                        onClick = {
+                            days = preset
+                            showDaysError = false
+                        },
+                        label = { Text(stringResource(label)) },
+                    )
+                }
             }
-            Spacer(Modifier.height(8.dp))
             // One row of seven equal cells, so the week reads as a week at any width.
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 for (day in DestinationSchedule.ALL_DAYS) {
                     DayToggle(dayName(day), selected = day in days, modifier = Modifier.weight(1f)) {
                         days = if (day in days) days - day else days + day
+                        showDaysError = false
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                TimeButton(Res.string.schedule_from, startMinute, Modifier.weight(1f)) { picking = TimeField.START }
-                TimeButton(Res.string.schedule_to, endMinute, Modifier.weight(1f)) { picking = TimeField.END }
+            if (showDaysError && days.isEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(PulseIcons.Error, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(16.dp))
+                    Text(stringResource(Res.string.schedule_no_days), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                }
             }
-            Spacer(Modifier.height(12.dp))
-            Text(
-                if (days.isEmpty()) stringResource(Res.string.schedule_no_days) else scheduleSummary(edited),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (days.isEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                stringResource(Res.string.schedule_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                TimeButton(Res.string.schedule_from, startMinute, null, Modifier.weight(1f)) { picking = TimeField.START }
+                // An end before the start is the next day, not an error, and the label says so.
+                TimeButton(
+                    Res.string.schedule_to,
+                    endMinute,
+                    if (edited.endsNextDay) stringResource(Res.string.schedule_next_day) else null,
+                    Modifier.weight(1f),
+                ) { picking = TimeField.END }
+            }
+        }
+        // What the choice comes to, e.g. "Shows Fri, Sat · 22:00–02:00 next day"; nothing while no day is picked.
+        if (always || days.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(PulseIcons.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                Text(
+                    stringResource(Res.string.schedule_shows, scheduleSummary(if (always) null else edited)),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
 
-        Spacer(Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
             TextButton(
-                onClick = { onSave(if (always) null else edited) },
-                enabled = always || days.isNotEmpty(),
+                onClick = {
+                    if (!always && days.isEmpty()) showDaysError = true else onSave(if (always) null else edited)
+                },
             ) { Text(stringResource(Res.string.save)) }
         }
     }
@@ -234,11 +265,15 @@ private fun DayToggle(
 private fun TimeButton(
     label: StringResource,
     minute: Int,
+    note: String?,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
     Column(modifier = modifier) {
-        Text(stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(label), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            note?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary) }
+        }
         OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
             Text(timeText(minute), style = MaterialTheme.typography.titleMedium)
         }

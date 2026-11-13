@@ -3,6 +3,7 @@ package com.example.pulsetransit.ui.viewmodel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.CoordinateProblem
 import com.example.pulsetransit.data.Quay
+import com.example.pulsetransit.data.RouteModeGroup
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TypedCoordinates
@@ -419,6 +420,44 @@ class SettingsViewModelTest {
                 // Ticked as the user sees them, not turned back into "all" under their finger.
                 assertEquals(setOf("A", "B", "C"), vm.uiState.value.selectedQuays["S"])
             }
+        }
+
+    @Test
+    fun `a group box allows the whole group when any of it is off and excludes it all otherwise`() =
+        settingsTest { vm ->
+            val bus = RouteTransportMode.entries.filter { it.group == RouteModeGroup.BUS }.toSet()
+            vm.toggleRouteModeGroup(RouteModeGroup.BUS)
+            assertEquals(bus, settings.excludedModes)
+
+            // Partly off (mixed): the box allows them all again.
+            vm.toggleRouteMode(RouteTransportMode.LOCAL_BUS)
+            vm.toggleRouteModeGroup(RouteModeGroup.BUS)
+            assertEquals(emptySet(), vm.uiState.value.excludedRouteModes)
+            assertEquals(emptySet(), settings.excludedModes)
+        }
+
+    @Test
+    fun `a group box leaves the other groups as they are`() =
+        settingsTest { vm ->
+            vm.toggleRouteMode(RouteTransportMode.REGIONAL_TRAIN)
+            vm.toggleRouteMode(RouteTransportMode.LOCAL_BUS)
+
+            // Mixed bus box: allows the buses, and the regional train stays off.
+            vm.toggleRouteModeGroup(RouteModeGroup.BUS)
+
+            assertEquals(setOf(RouteTransportMode.REGIONAL_TRAIN), settings.excludedModes)
+        }
+
+    @Test
+    fun `a group box cannot exclude the last allowed kinds`() =
+        settingsTest { vm ->
+            listOf(RouteModeGroup.BUS, RouteModeGroup.TRAIN, RouteModeGroup.BOAT).forEach(vm::toggleRouteModeGroup)
+            val before = settings.excludedModes
+
+            vm.toggleRouteModeGroup(RouteModeGroup.OTHER)
+
+            assertEquals(before, settings.excludedModes)
+            assertTrue(RouteTransportMode.entries.any { it !in vm.uiState.value.excludedRouteModes })
         }
 
     @Test

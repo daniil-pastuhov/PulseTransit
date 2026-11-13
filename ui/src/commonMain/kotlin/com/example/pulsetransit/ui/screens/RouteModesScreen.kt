@@ -1,16 +1,20 @@
 package com.example.pulsetransit.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
@@ -19,18 +23,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.RouteModeGroup
 import com.example.pulsetransit.data.RouteTransportMode
+import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.resources.*
@@ -70,23 +81,89 @@ fun RouteModesScreen(
                         .fillMaxSize()
                         .padding(innerPadding)
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                        .padding(FjordDimens.space4),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    stringResource(Res.string.route_modes_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                RouteTransportMode.entries.groupBy { it.group }.forEach { (group, modes) ->
-                    SettingsCard(title = stringResource(group.labelId())) {
-                        // The ViewModel refuses to exclude the last allowed kind, so that box stays ticked.
-                        modes.forEach { mode ->
-                            RouteModeRow(
-                                label = stringResource(mode.labelId()),
-                                allowed = mode !in uiState.excludedRouteModes,
-                                onToggle = { viewModel.toggleRouteMode(mode) },
-                            )
+                Column(
+                    modifier = Modifier.widthIn(max = SINGLE_COLUMN_MAX_WIDTH).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(FjordDimens.space4),
+                ) {
+                    Text(
+                        stringResource(Res.string.route_modes_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    RouteTransportMode.entries.groupBy { it.group }.forEach { (group, modes) ->
+                        val allowed = modes.count { it !in uiState.excludedRouteModes }
+                        // Excluding this group would leave nothing allowed, which the ViewModel refuses: locked instead.
+                        val onlyGroupLeft = allowed == modes.size && uiState.excludedRouteModes.size == RouteTransportMode.entries.size - modes.size
+                        val groupName = stringResource(group.labelId())
+                        Surface(
+                            shape = RoundedCornerShape(FjordDimens.radiusLg),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(modifier = Modifier.padding(vertical = FjordDimens.space1)) {
+                                // The group's box: ticked, mixed with "3 of 4", or clear; it sets them all.
+                                val toggleLabel = stringResource(Res.string.travel_by_group_toggle, groupName)
+                                Row(
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(min = FjordDimens.touch)
+                                            .triStateToggleable(
+                                                state =
+                                                    when (allowed) {
+                                                        modes.size -> ToggleableState.On
+                                                        0 -> ToggleableState.Off
+                                                        else -> ToggleableState.Indeterminate
+                                                    },
+                                                enabled = !onlyGroupLeft,
+                                                role = Role.Checkbox,
+                                                onClick = { viewModel.toggleRouteModeGroup(group) },
+                                            ).semantics { contentDescription = toggleLabel }
+                                            .padding(start = FjordDimens.space4, end = FjordDimens.space1),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3),
+                                ) {
+                                    Icon(group.icon(), contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        groupName,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.weight(1f).semantics { heading() },
+                                    )
+                                    Text(
+                                        if (allowed == modes.size) {
+                                            stringResource(Res.string.route_modes_all)
+                                        } else {
+                                            stringResource(Res.string.route_modes_count, allowed, modes.size)
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    TriStateCheckbox(
+                                        state =
+                                            when (allowed) {
+                                                modes.size -> ToggleableState.On
+                                                0 -> ToggleableState.Off
+                                                else -> ToggleableState.Indeterminate
+                                            },
+                                        onClick = null,
+                                        enabled = !onlyGroupLeft,
+                                        modifier = Modifier.padding(FjordDimens.space2),
+                                    )
+                                }
+                                SettingsDivider()
+                                // The ViewModel refuses to exclude the last allowed kind, so that box stays ticked.
+                                modes.forEach { mode ->
+                                    RouteModeRow(
+                                        label = stringResource(mode.labelId()),
+                                        allowed = mode !in uiState.excludedRouteModes,
+                                        onToggle = { viewModel.toggleRouteMode(mode) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -105,14 +182,23 @@ private fun RouteModeRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .toggleable(value = allowed, role = Role.Checkbox, onValueChange = { onToggle() }),
+                .heightIn(min = FjordDimens.touch)
+                .toggleable(value = allowed, role = Role.Checkbox, onValueChange = { onToggle() })
+                .padding(start = 52.dp, end = FjordDimens.space1),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = allowed, onCheckedChange = null, modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Checkbox(checked = allowed, onCheckedChange = null, modifier = Modifier.padding(FjordDimens.space2))
     }
 }
+
+private fun RouteModeGroup.icon(): ImageVector =
+    when (this) {
+        RouteModeGroup.BUS -> PulseIcons.DirectionsBus
+        RouteModeGroup.TRAIN -> PulseIcons.Train
+        RouteModeGroup.BOAT -> PulseIcons.DirectionsBoat
+        RouteModeGroup.OTHER -> PulseIcons.Tram
+    }
 
 private fun RouteModeGroup.labelId(): StringResource =
     when (this) {

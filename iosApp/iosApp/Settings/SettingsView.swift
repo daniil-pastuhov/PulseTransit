@@ -451,7 +451,6 @@ private struct JourneyAlertsSection: View {
 
     var body: some View {
         let state = model.state
-        let total = JourneyAlertsView.kinds.count
         Section(header: SectionHeader(title: L("journey_rationale_title"), hint: L("set_journey_hint"))) {
             NavigationLink(destination: JourneyAlertsView(model: model)) {
                 HStack {
@@ -461,9 +460,8 @@ private struct JourneyAlertsSection: View {
                         Text(L(Self.modeKey(state.journeyMode))).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
                     }
                     Spacer()
-                    Text(state.disabledJourneyAlerts.isEmpty
-                        ? L("journey_alerts_all")
-                        : L("journey_alerts_count", total - state.disabledJourneyAlerts.count, total))
+                    let count = JourneyModelsKt.journeyAlertCount(mode: state.journeyMode, disabled: state.disabledJourneyAlerts)
+                    Text(count.isAll ? L("journey_alerts_all") : L("journey_alerts_count", Int(count.enabled), Int(count.total)))
                         .foregroundColor(Palette.textSecondary)
                 }
             }
