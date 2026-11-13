@@ -1,0 +1,5 @@
+• Nytt utseende: en tydeligere tavle, avrundede stoppkort og været i toppen
+• Rutesøket viser rutene med en gang, med nylige steder og opptil fem alternativer
+• Nedtellingen viser klokkeslett etter 15 min, som på stasjonsskiltene, og alle tider er norsk tid
+• Nye innstillinger og widgets; dra for å endre rekkefølgen på stopp og angre endringer
+• Stedssøket finner nå gater etter navn
