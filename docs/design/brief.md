@@ -121,6 +121,12 @@ Tiers per references/error-framework.md. ⚑ = judgment call, all three confirme
 
 - 2026-11-13 · Shared fixes: skeletons use surface-container (invisible on white cards before); scrim 60% + outlined sheets/dialogs (40% black vanished over OLED black); lock screen uses route colours
 
+- 2026-11-13 · Implementation: auto-dim stays tied to camera wake (no dimming without it); in "Wake and dim" sensitivity and auto-dim are shown disabled until camera wake is on, and camera-denied copy must not promise dimming · user choice
+- 2026-11-13 · Implementation: Route search settings stay in both modes (the design showed them in on-spot only) · user choice
+- 2026-11-13 · Implementation: no Refresh button; pull-to-refresh on phones, auto-refresh on the wall · user choice
+- 2026-11-13 · Implementation: Data sources show only what Entur's API returns (name, modes); no hand-written region subtitles · user choice
+- 2026-11-13 · Implementation: the whole design ships in one release; work lands on the `design/fjord` branch, not main · user choice
+
 ## Options history
 - Round 1 (2026-11-12): A Fjord (cool slate + blue, Public Sans, Material Symbols Rounded, medium radii), B Perrong (graphite, Barlow Semi Condensed/Barlow, hairline rules, uppercase labels, amber "Now" flag, sharp), C Kveld (warm stone + app-icon indigo, Atkinson Hyperlegible Next + Mono for times, Lucide, large radii) → **A Fjord chosen** (2026-11-12), copied to tokens.json
 - Shared across options: tuned line colours (bus #D63A2C, tram #7E48A2/#8A55AE dark, train #003D82/#2A63B8 dark, express #86005B/#B0287C dark, metro #B5501C, ferry #0E7C68, other #66706F), all with white text ≥4.5:1; OLED black dark background; `route` roles keep the route banner dark on the wall at night.
