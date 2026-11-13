@@ -1,3 +1,4 @@
+import CoreText
 import SwiftUI
 
 /// Public Sans, bundled (Fonts/, registered by UIAppFonts) so the app matches Android and the
@@ -25,6 +26,15 @@ extension Font {
         relativeTo style: Font.TextStyle = .body
     ) -> Font {
         pulse(size: role.size, weight: PulseFace.weight(role.weight), relativeTo: style)
+    }
+}
+
+/// Registers the bundled faces for this process. The app has them through UIAppFonts; the widget
+/// extension reads them from the app's bundle (`appBundle`) and calls this once at start.
+func registerPulseFonts() {
+    for name in ["PublicSans-Regular", "PublicSans-Medium", "PublicSans-SemiBold", "PublicSans-Bold"] {
+        guard let url = appBundle.url(forResource: name, withExtension: "ttf") else { continue }
+        CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
     }
 }
 

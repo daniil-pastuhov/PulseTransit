@@ -1,6 +1,7 @@
 import AVFoundation
 import Shared
 import SwiftUI
+import WidgetKit
 
 /// The departure board: the iOS counterpart of Android's MainScreen.
 struct StopBoardView: View {
@@ -78,6 +79,9 @@ struct StopBoardView: View {
         .onChange(of: scenePhase) { phase in
             if phase == .active && !showSettings { startCameraIfAllowed() } else { viewModel.stopCameraMotion() }
             if phase == .active { viewModel.startLocationTracking() } else if phase == .background { viewModel.stopLocationTracking() }
+            // As Android refreshes its widgets when the app stops: they show what the board last
+            // saw, including where on-spot mode last found the device.
+            if phase == .background { WidgetCenter.shared.reloadAllTimelines() }
         }
         .onChange(of: showSettings) { open in
             if open { viewModel.stopCameraMotion() }
@@ -90,6 +94,8 @@ struct StopBoardView: View {
             viewModel.loadSettings()
             viewModel.startAutoRefresh()
             startCameraIfAllowed()
+            // Stops or destinations may have changed, which the widgets show.
+            WidgetCenter.shared.reloadAllTimelines()
         }) {
             SettingsView(themeMode: state.themeMode)
                 .pageSizedSheet()
@@ -292,7 +298,7 @@ extension StopBoardView {
         func wait(_ seconds: Double) async { try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000)) }
         // What the mode switch in Settings saves. Set here rather than seeded by the recording
         // script, since the app's own write from the previous take would shadow a seeded value.
-        func setMode(_ mode: AppMode) { UserDefaults.standard.set(mode.name, forKey: "app_mode") }
+        func setMode(_ mode: AppMode) { appSettingsDefaults.set(mode.name, forKey: "app_mode") }
         setMode(.onSpot)
         viewModel.loadSettings()
         await wait(8)

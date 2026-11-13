@@ -93,9 +93,10 @@ jobs:
               - 'scripts/sync-ios-strings.py'
               - 'scripts/stage-release-notes.sh'
               - 'iosApp/iosApp/Localizable.xcstrings'
+              - 'iosApp/JourneyActivity/Localizable.xcstrings'
               - 'scripts/gen-design-tokens.py'
               - 'docs/design/tokens.json'
-              - 'iosApp/iosApp/Theme/FjordTokens.swift'
+              - 'iosApp/JourneyActivityShared/FjordTokens.swift'
             android_code:
               - 'app/src/main/java/**'
               - 'app/src/main/res/**'

@@ -6,6 +6,10 @@ desktop apps through Compose Multiplatform resources) stay the single source of 
 then run this script and commit the regenerated iosApp/iosApp/Localizable.xcstrings. Keys are the
 Android resource names; Swift looks them up with L("key", args...).
 
+The widget extension gets a catalog of its own with the widget_* strings,
+iosApp/JourneyActivity/Localizable.xcstrings: the system reads a widget's configuration titles (App
+Intents) from the extension's bundle. Everything the widgets draw goes through L(), from the app's.
+
     scripts/sync-ios-strings.py          # rewrite the catalog
     scripts/sync-ios-strings.py --check  # exit 1 if the catalog is out of date (for CI)
 """
@@ -18,7 +22,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "ui/src/commonMain/composeResources"
-OUTPUT = ROOT / "iosApp/iosApp/Localizable.xcstrings"
+# Each catalog, with which keys it holds.
+OUTPUTS = [
+    (ROOT / "iosApp/iosApp/Localizable.xcstrings", lambda name: True),
+    (ROOT / "iosApp/JourneyActivity/Localizable.xcstrings", lambda name: name.startswith("widget_")),
+]
 # Android resource qualifier -> Apple language code. English is the development language.
 LANGUAGES = {"values": "en", "values-nb": "nb"}
 
@@ -51,10 +59,12 @@ def read(qualifier):
     return entries
 
 
-def build():
+def build(keep):
     strings = {}
     for qualifier, language in LANGUAGES.items():
         for name, localization in read(qualifier).items():
+            if not keep(name):
+                continue
             entry = strings.setdefault(name, {"extractionState": "manual", "localizations": {}})
             entry["localizations"][language] = localization
     catalog = {"sourceLanguage": "en", "strings": dict(sorted(strings.items())), "version": "1.0"}
@@ -62,13 +72,14 @@ def build():
 
 
 def main():
-    generated = build()
-    if "--check" in sys.argv:
-        if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != generated:
-            sys.exit(f"{OUTPUT.relative_to(ROOT)} is out of date; run scripts/sync-ios-strings.py")
-        return
-    OUTPUT.write_text(generated, encoding="utf-8")
-    print(f"Wrote {OUTPUT.relative_to(ROOT)}")
+    for output, keep in OUTPUTS:
+        generated = build(keep)
+        if "--check" in sys.argv:
+            if not output.exists() or output.read_text(encoding="utf-8") != generated:
+                sys.exit(f"{output.relative_to(ROOT)} is out of date; run scripts/sync-ios-strings.py")
+            continue
+        output.write_text(generated, encoding="utf-8")
+        print(f"Wrote {output.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

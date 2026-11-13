@@ -9040,6 +9040,108 @@
         }
       }
     },
+    "widget_gallery_departures": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Departures"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avganger"
+          }
+        }
+      }
+    },
+    "widget_gallery_departures_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next departures from a favorite stop"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste avganger fra en favorittholdeplass"
+          }
+        }
+      }
+    },
+    "widget_gallery_glance": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At a glance"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kort oversikt"
+          }
+        }
+      }
+    },
+    "widget_gallery_glance_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clock, weather and the next departure"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klokke, vær og neste avgang"
+          }
+        }
+      }
+    },
+    "widget_gallery_route": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fastest route"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raskeste reise"
+          }
+        }
+      }
+    },
+    "widget_gallery_route_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When to leave for a saved destination"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Når du må gå til en lagret destinasjon"
+          }
+        }
+      }
+    },
     "widget_leave_at": {
       "extractionState": "manual",
       "localizations": {
@@ -9223,6 +9325,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sanntid"
+          }
+        }
+      }
+    },
+    "widget_retry_soon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying again in a few minutes."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøver igjen om noen minutter."
           }
         }
       }

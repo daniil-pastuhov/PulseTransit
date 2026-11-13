@@ -57,7 +57,8 @@ shot() { # name, mode, extra launch args...
   # preview's tour, or by using the app in that simulator).
   # A JSON value is passed as a quoted plist string, or the argument domain drops it.
   local name=$1 mode=$2; shift 2
-  xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" -app_mode "$mode" \
+  # -PTSeedSettings copies what seed() wrote into the App Group, where the app keeps its settings.
+  xcrun simctl launch "$SIM" "$BUNDLE" -AppleLanguages "$LANGS" -AppleLocale "$REGION" -PTSeedSettings YES -app_mode "$mode" \
     -favorites "$(plist_string "$FAVORITES")" -destination_stations "$(plist_string "$DESTINATIONS")" "$@" >/dev/null
   sleep 12 # departures, weather and the fastest route arrive from the network
   local file="$OUT/$LOCALE/${DEVICE}_$name${POSE:+-$POSE}.png"

@@ -600,4 +600,12 @@
     <string name="widget_choose_none_title">Ingenting lagret ennå</string>
     <string name="widget_choose_none_body">Legg til noen i PulseTransit, og kom så tilbake.</string>
     <string name="widget_open_app">Åpne PulseTransit</string>
+    <!-- iOS-widgetgalleriets navn og beskrivelser (Androids velger har sine egne, i app/src/main/res). -->
+    <string name="widget_gallery_glance">Kort oversikt</string>
+    <string name="widget_gallery_glance_description">Klokke, vær og neste avgang</string>
+    <string name="widget_gallery_departures">Avganger</string>
+    <string name="widget_gallery_departures_description">Neste avganger fra en favorittholdeplass</string>
+    <string name="widget_gallery_route">Raskeste reise</string>
+    <string name="widget_gallery_route_description">Når du må gå til en lagret destinasjon</string>
+    <string name="widget_retry_soon">Prøver igjen om noen minutter.</string>
 </resources>

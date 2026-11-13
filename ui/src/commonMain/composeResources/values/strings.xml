@@ -601,4 +601,12 @@
     <string name="widget_choose_none_title">Nothing saved yet</string>
     <string name="widget_choose_none_body">Add some in PulseTransit, then come back.</string>
     <string name="widget_open_app">Open PulseTransit</string>
+    <!-- The iOS widget gallery's names and descriptions (Android's picker has its own, in app/src/main/res). -->
+    <string name="widget_gallery_glance">At a glance</string>
+    <string name="widget_gallery_glance_description">Clock, weather and the next departure</string>
+    <string name="widget_gallery_departures">Departures</string>
+    <string name="widget_gallery_departures_description">Next departures from a favorite stop</string>
+    <string name="widget_gallery_route">Fastest route</string>
+    <string name="widget_gallery_route_description">When to leave for a saved destination</string>
+    <string name="widget_retry_soon">Trying again in a few minutes.</string>
 </resources>

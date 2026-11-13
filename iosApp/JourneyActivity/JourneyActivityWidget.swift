@@ -1,13 +1,30 @@
 import ActivityKit
+import Shared
 import SwiftUI
 import WidgetKit
 
 /// The JourneyActivity extension: the Live Activity of a followed journey, on the Lock Screen and
-/// in the Dynamic Island. Content comes from the app (`JourneyLiveActivity`).
+/// in the Dynamic Island (content from the app, `JourneyLiveActivity`), and the home-screen widgets
+/// (`HomeWidgets.swift`), which load their own data through the shared code.
 @main
 struct JourneyActivityBundle: WidgetBundle {
+    init() {
+        registerPulseFonts()
+        // Before any timeline is asked for, so the widgets never race to start Koin.
+        PulseTransitWidgets.shared.start()
+    }
+
     var body: some Widget {
         JourneyActivityWidget()
+        AtAGlanceWidget()
+        // From iOS 17 the system's edit sheet sets the stop or destination. A bundle cannot choose
+        // between two widgets, so the iOS 16 ones are always listed but offer no sizes from 17.
+        DeparturesWidget()
+        RouteWidget()
+        if #available(iOS 17.0, *) {
+            ConfigurableDeparturesWidget()
+            ConfigurableRouteWidget()
+        }
     }
 }
 
