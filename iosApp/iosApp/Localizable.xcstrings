@@ -1351,6 +1351,23 @@
         }
       }
     },
+    "distance_about": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ca. %1$@"
+          }
+        }
+      }
+    },
     "distance_kilometers": {
       "extractionState": "manual",
       "localizations": {
@@ -4218,6 +4235,132 @@
         }
       }
     },
+    "on_spot_approximate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approximate location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omtrentlig posisjon"
+          }
+        }
+      }
+    },
+    "on_spot_denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is off for PulseTransit"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjon er slått av for PulseTransit"
+          }
+        }
+      }
+    },
+    "on_spot_destinations": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld destination"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld destinations"
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld reisemål"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld reisemål"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "on_spot_no_destinations_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No destinations yet"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen reisemål ennå"
+          }
+        }
+      }
+    },
+    "on_spot_no_stops_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routes above include the walk to the nearest stop."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rutene over tar med gangen til nærmeste stopp."
+          }
+        }
+      }
+    },
+    "on_spot_one_off_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For a one-off trip, tap Search."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For en enkelt tur, trykk på Søk."
+          }
+        }
+      }
+    },
     "on_spot_resize": {
       "extractionState": "manual",
       "localizations": {
@@ -4252,6 +4395,23 @@
         }
       }
     },
+    "on_spot_search_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can still find a route with Search."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan fortsatt finne en rute med Søk."
+          }
+        }
+      }
+    },
     "on_spot_show_departures": {
       "extractionState": "manual",
       "localizations": {
@@ -4282,6 +4442,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vis reiser"
+          }
+        }
+      }
+    },
+    "on_spot_stops_nearby": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stops within 1 km of you"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp innen 1 km fra deg"
+          }
+        }
+      }
+    },
+    "on_spot_unavailable_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check that location services are on. Indoors, moving closer to a window helps."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sjekk at posisjonstjenester er på. Innendørs hjelper det å gå nærmere et vindu."
           }
         }
       }

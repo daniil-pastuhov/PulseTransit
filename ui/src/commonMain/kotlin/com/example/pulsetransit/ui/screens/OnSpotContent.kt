@@ -14,29 +14,28 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -44,16 +43,21 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,21 +74,31 @@ import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.tripArrival
 import com.example.pulsetransit.data.visibleTripOptionCount
 import com.example.pulsetransit.platform.LocationAccuracy
+import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
+import com.example.pulsetransit.theme.PulseTheme
+import com.example.pulsetransit.theme.type
+import com.example.pulsetransit.ui.components.AdaptiveSheet
+import com.example.pulsetransit.ui.components.LoadingPlaceholderList
 import com.example.pulsetransit.ui.components.RefreshingIndicator
+import com.example.pulsetransit.ui.components.ScreenMessage
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
-import com.example.pulsetransit.ui.components.TripRouteText
+import com.example.pulsetransit.ui.components.TripLegs
+import com.example.pulsetransit.ui.components.leavesInText
 import com.example.pulsetransit.ui.components.tripDurationText
 import com.example.pulsetransit.ui.platform.rememberLocationAccess
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
 import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import java.util.Locale
+import kotlin.time.Clock
 
 // Heights the auto route count is worked out from: one alternative's row, and a destination
 // card's title and padding. Both grow with the font scale.
@@ -118,7 +132,7 @@ fun OnSpotContent(
 
     when (val location = uiState.location) {
         is OnSpotLocation.Located -> LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, modifier)
-        else -> LocationStatus(location, onRetry = onRetryLocation, modifier = modifier)
+        else -> LocationStatus(location, uiState.routeDestinations, onRetry = onRetryLocation, modifier = modifier)
     }
 }
 
@@ -198,7 +212,12 @@ private fun LocatedContent(
                 Crossfade(targetState = routesFolded, label = "routesFolded") { folded ->
                     if (folded) {
                         FoldedSection(
-                            label = stringResource(Res.string.on_spot_routes),
+                            // Says what it hides: "Show routes · 2 destinations".
+                            label =
+                                listOf(
+                                    stringResource(Res.string.on_spot_show_routes),
+                                    pluralStringResource(Res.plurals.on_spot_destinations, uiState.routeDestinations.size, uiState.routeDestinations.size),
+                                ).joinToString(" · "),
                             icon = PulseIcons.Directions,
                             expandLabel = stringResource(Res.string.on_spot_show_routes),
                             edge = if (isLandscape) FoldedEdge.START else FoldedEdge.TOP,
@@ -222,8 +241,16 @@ private fun LocatedContent(
             Box(modifier = sectionModifier.then(drag(enabled = stopFolded))) {
                 Crossfade(targetState = stopFolded, label = "stopFolded") { folded ->
                     if (folded) {
+                        val shown = uiState.favorites.firstOrNull()
+                        val distance = uiState.nearbyStops.firstOrNull { it.stop.id == shown?.id }?.distanceMeters
                         FoldedSection(
-                            label = uiState.favorites.firstOrNull()?.name ?: stringResource(Res.string.details_departures),
+                            // Says what it hides: "Show departures · Oslo S · 83 m".
+                            label =
+                                listOfNotNull(
+                                    stringResource(Res.string.on_spot_show_departures),
+                                    shown?.name,
+                                    distance?.let { distanceText(it) },
+                                ).joinToString(" · "),
                             icon = PulseIcons.DirectionsBus,
                             expandLabel = stringResource(Res.string.on_spot_show_departures),
                             edge = if (isLandscape) FoldedEdge.END else FoldedEdge.BOTTOM,
@@ -292,10 +319,11 @@ private fun FoldedSection(
             FoldedEdge.START -> PulseIcons.ChevronRight
             FoldedEdge.END -> PulseIcons.ChevronLeft
         }
-    Card(
+    Box(
         modifier =
             modifier
-                .padding(6.dp)
+                .clip(RoundedCornerShape(FjordDimens.radiusLg))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .clickable(onClickLabel = expandLabel, onClick = onExpand),
     ) {
         if (edge == FoldedEdge.START || edge == FoldedEdge.END) {
@@ -327,55 +355,67 @@ private fun FoldedSection(
     }
 }
 
-/** Finding the device, or why it could not be found, filling the board until it is. */
+/**
+ * Before a fix: "Finding your location…" over the routes and stop as skeletons, so the layout
+ * doesn't jump when it comes. Without one: why (denied, T5, or unavailable, T5 with Try again),
+ * leaving the header so search and Settings stay in reach.
+ */
 @Composable
 private fun LocationStatus(
     location: OnSpotLocation,
+    destinations: List<StopPlace>,
     onRetry: () -> Unit,
     modifier: Modifier,
 ) {
-    Box(modifier = modifier.padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            val failed = location is OnSpotLocation.Unavailable || location is OnSpotLocation.PermissionDenied
-            if (failed) {
-                Icon(
-                    imageVector = PulseIcons.LocationOff,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(40.dp),
-                )
-            } else {
-                CircularProgressIndicator()
+    when (location) {
+        OnSpotLocation.PermissionDenied ->
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                ScreenMessage(
+                    title = stringResource(Res.string.on_spot_denied_title),
+                    body = stringResource(Res.string.location_denied),
+                    icon = PulseIcons.LocationOff,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+                        Button(onClick = onRetry) { Text(stringResource(Res.string.location_allow)) }
+                        Text(
+                            stringResource(Res.string.on_spot_search_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
             }
-            Text(
-                text =
-                    stringResource(
-                        when (location) {
-                            OnSpotLocation.PermissionDenied -> Res.string.location_denied
-                            OnSpotLocation.Unavailable -> Res.string.location_unavailable
-                            is OnSpotLocation.Locating ->
-                                if (location.accuracy == LocationAccuracy.PRECISE) {
-                                    Res.string.locating_precise
-                                } else {
-                                    Res.string.locating_approximate
-                                }
-                            else -> Res.string.locating_precise
-                        },
-                    ),
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
-            if (failed) {
-                Button(onClick = onRetry) {
+        OnSpotLocation.Unavailable ->
+            Box(modifier = modifier, contentAlignment = Alignment.Center) {
+                ScreenMessage(
+                    title = stringResource(Res.string.location_unavailable),
+                    body = stringResource(Res.string.on_spot_unavailable_body),
+                    icon = PulseIcons.WrongLocation,
+                ) { OutlinedButton(onClick = onRetry) { Text(stringResource(Res.string.try_again)) } }
+            }
+        else -> {
+            val approximate = (location as? OnSpotLocation.Locating)?.accuracy == LocationAccuracy.APPROXIMATE
+            Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(FjordDimens.space3)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+                    Icon(PulseIcons.MyLocation, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                     Text(
-                        stringResource(
-                            if (location is OnSpotLocation.PermissionDenied) Res.string.location_allow else Res.string.retry,
-                        ),
+                        stringResource(if (approximate) Res.string.locating_approximate else Res.string.locating_precise),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                     )
                 }
+                destinations.forEach { FastestTripPlaceholder(destinationName = it.name) }
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(FjordDimens.radiusLg))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(FjordDimens.space4),
+                ) { LoadingPlaceholderList() }
             }
         }
     }
@@ -397,18 +437,27 @@ private fun RoutesSection(
     DisposableEffect(Unit) { onDispose { onContentHeight(null) } }
     if (uiState.routeDestinations.isEmpty()) {
         LaunchedEffect(Unit) { onContentHeight(null) }
-        Card(modifier = modifier.padding(6.dp)) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        // First use: teach the next step; the nearest stop's departures already work.
+        Box(
+            modifier =
+                modifier
+                    .clip(RoundedCornerShape(FjordDimens.radiusLg))
+                    .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            ScreenMessage(
+                title = stringResource(Res.string.on_spot_no_destinations_title),
+                body = stringResource(Res.string.routes_add_destination),
+                icon = PulseIcons.Flag,
             ) {
-                Text(
-                    text = stringResource(Res.string.routes_add_destination),
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
-                )
-                Button(onClick = onNavigateToSettings) { Text(stringResource(Res.string.add_destination)) }
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+                    Button(onClick = onNavigateToSettings) { Text(stringResource(Res.string.add_destination)) }
+                    Text(
+                        stringResource(Res.string.on_spot_one_off_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
         return
@@ -453,6 +502,10 @@ private fun RoutesSection(
                     .wrapContentHeight(Alignment.Top)
                     .onSizeChanged { onContentHeight(with(density) { it.height.toDp().value }) },
         ) {
+            if ((uiState.location as? OnSpotLocation.Located)?.accuracy == LocationAccuracy.APPROXIMATE) {
+                // Distances and walks come from a rough fix until a precise one replaces it (T4).
+                ApproximateTag(modifier = Modifier.padding(bottom = FjordDimens.space2))
+            }
             destinations.forEach { destination ->
                 key(destination.id) {
                     DestinationRoutesCard(
@@ -499,9 +552,13 @@ private fun DestinationRoutesCard(
     onTripClick: (TripInfo) -> Unit,
     actions: (@Composable () -> Unit)? = null,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(6.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = FjordDimens.space2)
+                .clip(RoundedCornerShape(FjordDimens.radiusLg))
+                .background(if (trips == null) MaterialTheme.colorScheme.surfaceContainer else PulseTheme.colors.route),
     ) {
         when {
             trips == null ->
@@ -523,8 +580,8 @@ private fun DestinationRoutesCard(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = stringResource(Res.string.route_to, destination.name),
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = PulseTheme.colors.onRoute,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 4.dp),
@@ -538,7 +595,7 @@ private fun DestinationRoutesCard(
                                     if (index > 0) {
                                         HorizontalDivider(
                                             modifier = Modifier.padding(horizontal = 16.dp),
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.15f),
+                                            color = PulseTheme.colors.onRoute.copy(alpha = 0.15f),
                                         )
                                     }
                                     TripOptionRow(trip = trip, isFirst = index == 0, onClick = { onTripClick(trip) })
@@ -549,7 +606,7 @@ private fun DestinationRoutesCard(
                     if (isRefreshing) {
                         RefreshingIndicator(
                             modifier = Modifier.fillMaxWidth().height(2.dp).align(Alignment.BottomCenter),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f),
+                            color = PulseTheme.colors.onRoute.copy(alpha = 0.6f),
                         )
                     }
                 }
@@ -558,50 +615,61 @@ private fun DestinationRoutesCard(
     }
 }
 
-/** One alternative: when to leave, the legs, when it arrives and how long it takes. */
+/** One alternative: "19:41 in 4 min", the legs, then how long it takes and when it arrives. */
 @Composable
 private fun TripOptionRow(
     trip: TripInfo,
     isFirst: Boolean,
     onClick: () -> Unit,
 ) {
-    val onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+    val onRoute = PulseTheme.colors.onRoute
+    // Ticks on its own, so "in 4 min" counts down between refreshes of the trips.
+    val nowMillis by produceState(Clock.System.now().toEpochMilliseconds()) {
+        while (true) {
+            delay(TRIP_ROW_CLOCK_TICK_MILLIS)
+            value = Clock.System.now().toEpochMilliseconds()
+        }
+    }
     Row(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3),
     ) {
-        Text(
-            text = trip.expectedStartTime.takeIf { it.length >= 16 }?.substring(11, 16) ?: "--:--",
-            style =
-                if (isFirst) {
-                    MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
-                } else {
-                    MaterialTheme.typography.titleLarge
-                },
-            color = onContainer,
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            TripRouteText(
-                trip = trip,
-                style = MaterialTheme.typography.bodyMedium,
-                color = onContainer,
-                maxLines = 2,
+        Column {
+            Text(
+                text = trip.expectedStartTime.takeIf { it.length >= 16 }?.substring(11, 16) ?: "--:--",
+                style = if (isFirst) PulseTheme.type.countdown else MaterialTheme.typography.titleMedium,
+                color = if (isFirst) PulseTheme.colors.routeAccent else onRoute,
             )
-            tripArrival(trip)?.let { arrival ->
-                val time = if (arrival.dayOffset > 0) "${arrival.time} +${arrival.dayOffset}" else arrival.time
-                Text(
-                    text = stringResource(Res.string.route_arrival, time),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = onContainer.copy(alpha = 0.7f),
-                )
+            leavesInText(trip.expectedStartTime, nowMillis)?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = onRoute)
             }
         }
-        Text(
-            text = tripDurationText(trip.durationMinutes),
-            style = MaterialTheme.typography.titleMedium,
-            color = onContainer,
-        )
+        TripLegs(trip = trip, color = onRoute, maxLines = 2, modifier = Modifier.weight(1f))
+        Column(horizontalAlignment = Alignment.End) {
+            Text(tripDurationText(trip.durationMinutes), style = MaterialTheme.typography.labelLarge, color = onRoute)
+            tripArrival(trip)?.let { arrival ->
+                val time = if (arrival.dayOffset > 0) "${arrival.time} +${arrival.dayOffset}" else arrival.time
+                Text(stringResource(Res.string.route_arrival, time), style = MaterialTheme.typography.labelSmall, color = onRoute)
+            }
+        }
+    }
+}
+
+/** "Approximate location": distances and walks are from a rough fix for now. */
+@Composable
+private fun ApproximateTag(modifier: Modifier = Modifier) {
+    Row(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(FjordDimens.radiusSm))
+                .background(PulseTheme.colors.warningContainer)
+                .padding(horizontal = FjordDimens.space2, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FjordDimens.space1),
+    ) {
+        Icon(PulseIcons.NearMe, contentDescription = null, tint = PulseTheme.colors.onWarningContainer, modifier = Modifier.size(14.dp))
+        Text(stringResource(Res.string.on_spot_approximate), style = MaterialTheme.typography.labelSmall, color = PulseTheme.colors.onWarningContainer)
     }
 }
 
@@ -613,13 +681,23 @@ private fun NearbyStopSection(
 ) {
     val stop = uiState.favorites.firstOrNull()
     if (stop == null) {
-        Card(modifier = modifier.padding(6.dp)) {
-            Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
-                if (uiState.isSearchingNearby || uiState.nearbyStops.isNotEmpty()) {
-                    CircularProgressIndicator()
-                } else {
-                    Text(stringResource(Res.string.no_stops_nearby), style = MaterialTheme.typography.bodyLarge)
-                }
+        Box(
+            modifier =
+                modifier
+                    .clip(RoundedCornerShape(FjordDimens.radiusLg))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(FjordDimens.space4),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (uiState.isSearchingNearby || uiState.nearbyStops.isNotEmpty()) {
+                LoadingPlaceholderList()
+            } else {
+                // Empty, not an error: routes still work, as the planner includes the walk.
+                ScreenMessage(
+                    title = stringResource(Res.string.no_stops_nearby),
+                    body = stringResource(Res.string.on_spot_no_stops_body),
+                    icon = PulseIcons.NearMeDisabled,
+                )
             }
         }
         return
@@ -645,6 +723,8 @@ private fun NearbyStopSection(
         header = {
             StopPicker(
                 selected = stop,
+                approximate = (uiState.location as? OnSpotLocation.Located)?.accuracy == LocationAccuracy.APPROXIMATE,
+                isSearching = uiState.isSearchingNearby,
                 nearbyStops = uiState.nearbyStops,
                 isPinned = uiState.isStopPinned,
                 onSelect = viewModel::selectStop,
@@ -654,70 +734,41 @@ private fun NearbyStopSection(
     )
 }
 
-/** The shown stop's name, opening a menu of the other stops nearby; and a way back to the nearest. */
+/**
+ * The shown stop's name and distance ("83 m · Oslo", or "About 300 m" from a rough fix), opening a
+ * sheet of the stops within 1 km, nearest first; and "Back to nearest" while another is chosen.
+ */
 @Composable
 private fun RowScope.StopPicker(
     selected: StopPlace,
+    approximate: Boolean,
+    isSearching: Boolean,
     nearbyStops: List<NearbyStop>,
     isPinned: Boolean,
     onSelect: (String) -> Unit,
     onFollowNearest: () -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var choosing by remember { mutableStateOf(false) }
     val distance = nearbyStops.firstOrNull { it.stop.id == selected.id }?.distanceMeters
-    Box(modifier = Modifier.weight(1f)) {
-        Row(
-            modifier = Modifier.clickable(enabled = nearbyStops.size > 1) { expanded = true },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f, fill = false)) {
-                Text(
-                    text = selected.name,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = listOfNotNull(distance?.let { distanceText(it) }, selected.locality).joinToString(" · "),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-            }
-            if (nearbyStops.size > 1) {
-                Icon(PulseIcons.ArrowDropDown, contentDescription = stringResource(Res.string.choose_stop))
-            }
+    val distanceLabel = distance?.let { distanceText(it) }?.let { if (approximate) stringResource(Res.string.distance_about, it) else it }
+    Row(
+        modifier =
+            Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(FjordDimens.radiusSm))
+                .clickable(onClickLabel = stringResource(Res.string.choose_stop)) { choosing = true },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f, fill = false)) {
+            Text(text = selected.name, style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                text = listOfNotNull(distanceLabel, selected.locality).joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
         }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.widthIn(min = 280.dp),
-        ) {
-            nearbyStops.forEach { nearby ->
-                DropdownMenuItem(
-                    text = {
-                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(
-                                text = nearby.stop.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = if (nearby.stop.id == selected.id) FontWeight.Bold else FontWeight.Normal,
-                            )
-                            nearby.distanceMeters?.let {
-                                Text(
-                                    text = distanceText(it),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                        }
-                    },
-                    onClick = {
-                        expanded = false
-                        onSelect(nearby.stop.id)
-                    },
-                )
-            }
-        }
+        Icon(PulseIcons.ExpandMore, contentDescription = null)
     }
     if (isPinned) {
         AssistChip(
@@ -725,6 +776,79 @@ private fun RowScope.StopPicker(
             label = { Text(stringResource(Res.string.back_to_nearest)) },
             leadingIcon = { Icon(PulseIcons.MyLocation, contentDescription = null, Modifier.size(AssistChipDefaults.IconSize)) },
         )
+    }
+    if (choosing) {
+        StopChooserSheet(
+            selectedId = selected.id,
+            nearbyStops = nearbyStops,
+            isSearching = isSearching,
+            approximate = approximate,
+            onSelect = {
+                choosing = false
+                onSelect(it)
+            },
+            onDismiss = { choosing = false },
+        )
+    }
+}
+
+/** The stops within 1 km, nearest first with a comparable distance; the shown one checked. */
+@Composable
+private fun StopChooserSheet(
+    selectedId: String,
+    nearbyStops: List<NearbyStop>,
+    isSearching: Boolean,
+    approximate: Boolean,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AdaptiveSheet(onDismiss = onDismiss) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp)) {
+            Text(stringResource(Res.string.on_spot_stops_nearby), style = MaterialTheme.typography.headlineSmall)
+            Spacer(modifier = Modifier.height(FjordDimens.space3))
+            when {
+                nearbyStops.isEmpty() && isSearching -> LoadingPlaceholderList()
+                nearbyStops.isEmpty() ->
+                    ScreenMessage(
+                        title = stringResource(Res.string.no_stops_nearby),
+                        body = stringResource(Res.string.on_spot_search_hint),
+                        icon = PulseIcons.NearMeDisabled,
+                    )
+                else ->
+                    LazyColumn {
+                        items(nearbyStops, key = { it.stop.id }) { nearby ->
+                            val selected = nearby.stop.id == selectedId
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = FjordDimens.touch)
+                                        .clickable { onSelect(nearby.stop.id) }
+                                        .semantics { this.selected = selected }
+                                        .padding(vertical = FjordDimens.space2),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3),
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(nearby.stop.name, style = MaterialTheme.typography.bodyLarge)
+                                    nearby.stop.locality?.let {
+                                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                nearby.distanceMeters?.let {
+                                    val text = distanceText(it)
+                                    Text(
+                                        if (approximate) stringResource(Res.string.distance_about, text) else text,
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                if (selected) Icon(PulseIcons.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+            }
+        }
     }
 }
 
@@ -736,3 +860,5 @@ private fun distanceText(meters: Int): String =
         val kilometres = meters / METRES_PER_KILOMETRE.toFloat()
         stringResource(Res.string.distance_kilometers, String.format(Locale.getDefault(), "%.1f", kilometres))
     }
+
+private const val TRIP_ROW_CLOCK_TICK_MILLIS = 1_000L

@@ -92,3 +92,6 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
   place on the board until it is dismissed or saved there, as before. "Arrive by" that can't be
   met gets the earliest arrival in route search; the board's saved destinations always route for
   now, so the board banner needs no such fallback.
+- Step 6: the stop chooser is an adaptive sheet on Android (bottom, or a side sheet from 700 dp)
+  and the system sheet on iOS, as in step 4. "Allow location" on iOS opens the Settings app, since
+  iOS asks only once.

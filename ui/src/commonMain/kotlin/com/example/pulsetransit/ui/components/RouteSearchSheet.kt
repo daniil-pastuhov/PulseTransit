@@ -54,7 +54,6 @@ import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.TripTime
-import com.example.pulsetransit.data.minutesUntil
 import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.resources.*
@@ -392,8 +391,8 @@ private fun TripOptionRow(
     ) {
         Column {
             Text(clockText(trip.expectedStartTime, nowMillis), style = MaterialTheme.typography.titleMedium)
-            minutesUntil(trip.expectedStartTime, nowMillis)?.let {
-                Text(inTimeText(it), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            leavesInText(trip.expectedStartTime, nowMillis)?.let {
+                Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         TripLegs(trip = trip, color = MaterialTheme.colorScheme.onSurface, maxLines = 2, modifier = Modifier.weight(1f))

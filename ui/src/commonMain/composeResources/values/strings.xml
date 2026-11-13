@@ -483,4 +483,18 @@
     <string name="trip_time_help_depart">Routes leaving at %1$s or later.</string>
     <string name="trip_time_help_arrive">The latest routes that still get you there by %1$s.</string>
     <string name="trip_time_passed">That time has passed today.</string>
+    <!-- Fjord on the spot (step 6) -->
+    <string name="on_spot_denied_title">Location is off for PulseTransit</string>
+    <string name="on_spot_search_hint">You can still find a route with Search.</string>
+    <string name="on_spot_unavailable_body">Check that location services are on. Indoors, moving closer to a window helps.</string>
+    <string name="on_spot_approximate">Approximate location</string>
+    <string name="distance_about">About %1$s</string>
+    <string name="on_spot_no_destinations_title">No destinations yet</string>
+    <string name="on_spot_one_off_hint">For a one-off trip, tap Search.</string>
+    <string name="on_spot_no_stops_body">Routes above include the walk to the nearest stop.</string>
+    <string name="on_spot_stops_nearby">Stops within 1 km of you</string>
+    <plurals name="on_spot_destinations">
+        <item quantity="one">%1$d destination</item>
+        <item quantity="other">%1$d destinations</item>
+    </plurals>
 </resources>

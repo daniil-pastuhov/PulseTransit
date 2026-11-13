@@ -482,4 +482,18 @@
     <string name="trip_time_help_depart">Ruter som går %1$s eller senere.</string>
     <string name="trip_time_help_arrive">De seneste rutene som likevel er fremme innen %1$s.</string>
     <string name="trip_time_passed">Det tidspunktet har passert i dag.</string>
+    <!-- Fjord on the spot (step 6) -->
+    <string name="on_spot_denied_title">Posisjon er slått av for PulseTransit</string>
+    <string name="on_spot_search_hint">Du kan fortsatt finne en rute med Søk.</string>
+    <string name="on_spot_unavailable_body">Sjekk at posisjonstjenester er på. Innendørs hjelper det å gå nærmere et vindu.</string>
+    <string name="on_spot_approximate">Omtrentlig posisjon</string>
+    <string name="distance_about">Ca. %1$s</string>
+    <string name="on_spot_no_destinations_title">Ingen reisemål ennå</string>
+    <string name="on_spot_one_off_hint">For en enkelt tur, trykk på Søk.</string>
+    <string name="on_spot_no_stops_body">Rutene over tar med gangen til nærmeste stopp.</string>
+    <string name="on_spot_stops_nearby">Stopp innen 1 km fra deg</string>
+    <plurals name="on_spot_destinations">
+        <item quantity="one">%1$d reisemål</item>
+        <item quantity="other">%1$d reisemål</item>
+    </plurals>
 </resources>

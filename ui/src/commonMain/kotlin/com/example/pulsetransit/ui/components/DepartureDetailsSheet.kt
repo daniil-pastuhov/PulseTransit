@@ -525,6 +525,18 @@ internal fun RouteStopRow(
     }
 }
 
+/** "Now" when it is leaving, else "in 14 min" / "in 1 h 5 min"; null when the time can't be read. */
+@Composable
+internal fun leavesInText(
+    time: String,
+    nowMillis: Long,
+): String? =
+    if (departureCountdown(time, nowMillis) == DepartureCountdown.Now) {
+        stringResource(Res.string.now)
+    } else {
+        minutesUntil(time, nowMillis)?.let { inTimeText(it) }
+    }
+
 /** "in 14 min", or "in 1 h 5 min" from an hour out. */
 @Composable
 internal fun inTimeText(minutes: Long): String =

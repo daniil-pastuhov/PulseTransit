@@ -154,21 +154,6 @@ struct TripLegs: View {
     }
 }
 
-/// A trip's legs as one line of text with the mode symbols inline, for where pills don't fit.
-func tripRouteText(_ trip: TripInfo) -> Text {
-    guard !trip.legs.isEmpty else { return Text(L("fastest_route_info", trip.lineName, trip.originName)) }
-    let parts = trip.legs.compactMap { leg -> Text? in
-        if let line = leg.lineName {
-            let from = leg.fromName.map { " \(L("leg_from", $0))" } ?? ""
-            return Text(Image(systemName: Palette.transportSymbol(leg.mode))) + Text(" \(line)\(from)")
-        }
-        // Zero-minute foot legs are quay transfers, not worth a mention.
-        guard leg.durationMinutes > 0 else { return nil }
-        return Text(Image(systemName: "figure.walk")) + Text(" \(L("leg_walk", Int(leg.durationMinutes)))")
-    }
-    return parts.dropFirst().reduce(parts.first ?? Text("")) { $0 + Text("  →  ") + $1 }
-}
-
 /// "HH:mm" straight out of an ISO timestamp, which is already in local Oslo time.
 func isoClockTime(_ iso: String) -> String {
     guard iso.count >= 16 else { return "--:--" }
