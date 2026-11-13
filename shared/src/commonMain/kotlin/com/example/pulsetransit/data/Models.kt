@@ -103,6 +103,9 @@ data class DepartureGroup(
     /** How many of [departures] [visibleDepartures] leaves out, shown as "+K" after the times. */
     val hiddenDepartureCount: Int get() = (departures.size - MAX_VISIBLE_DEPARTURES).coerceAtLeast(0)
 
+    /** How often this row's line leaves, "every ~8 min", or null with too few departures to tell. */
+    val headwayMinutes: Int? get() = typicalHeadwayMinutes(departures)
+
     /**
      * Every departure in [groups] of this group's line to its destination, in board order: what the
      * row's details list. At a stop served by several lines one line splits into many groups, so

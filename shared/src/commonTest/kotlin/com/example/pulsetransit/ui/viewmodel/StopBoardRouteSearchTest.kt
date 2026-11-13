@@ -114,6 +114,29 @@ class StopBoardRouteSearchTest : BoardTestBase() {
         }
 
     @Test
+    fun `undoing a save takes the destination off the list and shows it as a one-off again`() =
+        boardTest {
+            settings.destinations = listOf(oslo)
+            entur.tripTo = { to -> Sourced.live(trip(to.name)) }
+            val vm = viewModel()
+            vm.showTemporaryDestination(bergen)
+            runCurrent()
+            vm.saveTemporaryDestination()
+            runCurrent()
+            assertTrue(vm.uiState.value.pendingUndo is BoardUndo.DestinationSaved)
+
+            vm.undo()
+            runCurrent()
+
+            val state = vm.uiState.value
+            assertEquals(listOf(oslo), settings.destinations)
+            assertEquals(listOf(oslo), state.destinationStations)
+            assertEquals(bergen, state.temporaryDestination)
+            assertTrue(bergen.id in state.fastestTrips)
+            assertNull(state.pendingUndo)
+        }
+
+    @Test
     fun `the temporary destination cannot be saved once the destinations are full`() =
         boardTest {
             settings.destinations = List(SettingsRepository.MAX_DESTINATION_STATIONS) { StopPlace("NSR:StopPlace:x$it", "X$it") }

@@ -112,7 +112,26 @@ class SettingsViewModel(
         val destinationQuery: String = "",
         val destinationResults: List<StopPlace> = emptyList(),
         val isSearchingDestination: Boolean = false,
+        /** The last change that can still be taken back, shown with Undo; null when there is none. */
+        val pendingUndo: SettingsUndo? = null,
     )
+
+    /** A change made at once, without asking, that [undo] reverses. [serial] tells repeats apart. */
+    sealed interface SettingsUndo {
+        val serial: Long
+
+        /** [stop] was removed from position [index] on the board. */
+        data class StopRemoved(
+            val stop: StopPlace,
+            val index: Int,
+            override val serial: Long,
+        ) : SettingsUndo
+
+        data class StopAdded(
+            val stop: StopPlace,
+            override val serial: Long,
+        ) : SettingsUndo
+    }
 
     private companion object {
         const val SEARCH_DEBOUNCE_MS = 300L
@@ -445,22 +464,84 @@ class SettingsViewModel(
     }
 
     fun addFavorite(stopPlace: StopPlace) {
+        val wasThere = settingsRepository.isFavorite(stopPlace.id)
         settingsRepository.addFavorite(stopPlace)
         val currentFavs = settingsRepository.getFavorites()
-        _uiState.update { it.copy(favorites = currentFavs) }
-        if (currentFavs.any { it.id == stopPlace.id }) fetchQuaysForStop(stopPlace.id)
+        val added = !wasThere && currentFavs.any { it.id == stopPlace.id }
+        _uiState.update {
+            it.copy(
+                favorites = currentFavs,
+                pendingUndo = if (added) SettingsUndo.StopAdded(stopPlace, nextUndoSerial()) else it.pendingUndo,
+            )
+        }
+        if (added) fetchQuaysForStop(stopPlace.id)
     }
 
+    /**
+     * Removes the stop at once; [undo] puts it back in its place. Its chosen directions stay saved
+     * (only the board's list forgets the stop), so Undo restores those too.
+     */
     fun removeFavorite(stopId: String) {
+        val favorites = settingsRepository.getFavorites()
+        val index = favorites.indexOfFirst { it.id == stopId }
         settingsRepository.removeFavorite(stopId)
         _uiState.update {
             it.copy(
                 favorites = it.favorites.filter { f -> f.id != stopId },
-                favoriteStopsWithQuays = it.favoriteStopsWithQuays - stopId,
                 selectedQuays = it.selectedQuays - stopId,
+                pendingUndo =
+                    if (index >= 0) SettingsUndo.StopRemoved(favorites[index], index, nextUndoSerial()) else it.pendingUndo,
             )
         }
     }
+
+    /** Reverses [UiState.pendingUndo], if any. */
+    fun undo() {
+        when (val pending = _uiState.value.pendingUndo) {
+            is SettingsUndo.StopRemoved -> restoreFavorite(pending)
+            is SettingsUndo.StopAdded -> {
+                settingsRepository.removeFavorite(pending.stop.id)
+                _uiState.update {
+                    it.copy(
+                        favorites = it.favorites.filter { f -> f.id != pending.stop.id },
+                        favoriteStopsWithQuays = it.favoriteStopsWithQuays - pending.stop.id,
+                        selectedQuays = it.selectedQuays - pending.stop.id,
+                    )
+                }
+            }
+            null -> return
+        }
+        _uiState.update { it.copy(pendingUndo = null) }
+    }
+
+    /** The Undo offer timed out or was closed. */
+    fun dismissUndo() {
+        _uiState.update { it.copy(pendingUndo = null) }
+    }
+
+    private fun restoreFavorite(removed: SettingsUndo.StopRemoved) {
+        settingsRepository.addFavorite(removed.stop)
+        val ids =
+            settingsRepository
+                .getFavorites()
+                .map { it.id }
+                .filter { it != removed.stop.id }
+                .toMutableList()
+        ids.add(removed.index.coerceAtMost(ids.size), removed.stop.id)
+        settingsRepository.reorderFavorites(ids)
+        val favorites = settingsRepository.getFavorites()
+        _uiState.update {
+            it.copy(
+                favorites = favorites,
+                selectedQuays = it.selectedQuays + (removed.stop.id to (settingsRepository.getSelectedQuays(removed.stop.id) ?: emptySet())),
+            )
+        }
+        if (removed.stop.id !in _uiState.value.favoriteStopsWithQuays) fetchQuaysForStop(removed.stop.id)
+    }
+
+    private var undoSerial = 0L
+
+    private fun nextUndoSerial() = ++undoSerial
 
     fun updateThemeMode(mode: ThemeMode) {
         settingsRepository.setThemeMode(mode)

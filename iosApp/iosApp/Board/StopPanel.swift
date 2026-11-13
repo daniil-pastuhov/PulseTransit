@@ -399,7 +399,7 @@ private struct DepartureTimes {
         case .now:
             return L("now")
         case let .minutes(countdown):
-            return "\(countdown.minutes)\(L("unit_minute"))"
+            return L("countdown_minutes", Int(countdown.minutes))
         case let .clock(countdown):
             let time = clockFormatter.string(from: Date(timeIntervalSince1970: TimeInterval(countdown.epochMillis) / 1000))
             // Beyond today only when the search was widened; marked like a printed timetable.

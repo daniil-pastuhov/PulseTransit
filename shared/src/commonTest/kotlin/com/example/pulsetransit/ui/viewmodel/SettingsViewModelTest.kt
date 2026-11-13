@@ -27,6 +27,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** The location lookup and the per-stop quay selection. */
@@ -67,6 +68,102 @@ class SettingsViewModelTest {
             } finally {
                 vm.viewModelScope.cancel()
             }
+        }
+
+    @Test
+    fun `removing a stop offers Undo which puts it back in its place with its directions`() =
+        settingsTest { vm ->
+            val (a, b, c) = listOf("A", "B", "C").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+            settings.favoriteStops = listOf(a, b, c)
+            settings.selectedQuays = mapOf(b.id to setOf("NSR:Quay:1"))
+            vm.loadSettings()
+            runCurrent()
+
+            vm.removeFavorite(b.id)
+            assertEquals(listOf(a, c), settings.favoriteStops)
+            assertEquals(b, (vm.uiState.value.pendingUndo as SettingsViewModel.SettingsUndo.StopRemoved).stop)
+
+            vm.undo()
+            runCurrent()
+
+            assertEquals(listOf(a, b, c), settings.favoriteStops)
+            assertEquals(listOf(a, b, c), vm.uiState.value.favorites)
+            assertEquals(setOf("NSR:Quay:1"), vm.uiState.value.selectedQuays[b.id])
+            assertNull(vm.uiState.value.pendingUndo)
+        }
+
+    @Test
+    fun `adding a stop offers Undo which removes it again`() =
+        settingsTest { vm ->
+            val (a, b) = listOf("A", "B").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+            settings.favoriteStops = listOf(a)
+            vm.loadSettings()
+            runCurrent()
+
+            vm.addFavorite(b)
+            runCurrent()
+            assertTrue(vm.uiState.value.pendingUndo is SettingsViewModel.SettingsUndo.StopAdded)
+
+            vm.undo()
+
+            assertEquals(listOf(a), settings.favoriteStops)
+            assertEquals(listOf(a), vm.uiState.value.favorites)
+        }
+
+    @Test
+    fun `undoing the removal of the first stop puts it back first`() =
+        settingsTest { vm ->
+            val (a, b) = listOf("A", "B").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+            settings.favoriteStops = listOf(a, b)
+            vm.loadSettings()
+            runCurrent()
+
+            vm.removeFavorite(a.id)
+            vm.undo()
+
+            assertEquals(listOf(a, b), settings.favoriteStops)
+        }
+
+    @Test
+    fun `adding a stop loads its directions to choose from`() =
+        settingsTest { vm ->
+            val a = StopPlace(id = "NSR:StopPlace:A", name = "A")
+            val withQuays = a.copy(quays = listOf(Quay(id = "NSR:Quay:1", publicCode = "1")))
+            entur.stopsWithQuays = mapOf(a.id to withQuays)
+
+            vm.addFavorite(a)
+            runCurrent()
+
+            assertEquals(withQuays, vm.uiState.value.favoriteStopsWithQuays[a.id])
+        }
+
+    @Test
+    fun `adding a stop already on the board offers no Undo`() =
+        settingsTest { vm ->
+            val a = StopPlace(id = "NSR:StopPlace:A", name = "A")
+            settings.favoriteStops = listOf(a)
+            vm.loadSettings()
+            runCurrent()
+
+            vm.addFavorite(a)
+
+            assertNull(vm.uiState.value.pendingUndo)
+        }
+
+    @Test
+    fun `dismissing Undo keeps the change`() =
+        settingsTest { vm ->
+            val (a, b) = listOf("A", "B").map { StopPlace(id = "NSR:StopPlace:$it", name = it) }
+            settings.favoriteStops = listOf(a, b)
+            vm.loadSettings()
+            runCurrent()
+
+            vm.removeFavorite(a.id)
+            vm.dismissUndo()
+            vm.undo()
+
+            assertEquals(listOf(b), settings.favoriteStops)
+            assertNull(vm.uiState.value.pendingUndo)
         }
 
     @Test

@@ -25,11 +25,11 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
 
 ## 2. Shared behaviour (commonMain, tested)
 - `RELATIVE_TIME_CUTOFF_SECONDS` 30 → 15 min; "min" unit string (iOS shows "5m" today).
-- `isStale` in `StopBoardViewModel.UiState`: only once data is older than 2 × the effective refresh
-  interval (night/dim multipliers included).
-- One-shot event channel in `StopBoardViewModel` and `SettingsViewModel` for T3 + Undo:
-  filter out line (undo = `removeFilteredLine`), remove stop (restore position + selected quays),
-  save temporary destination.
+- `showStaleNotice` in `StopBoardViewModel.UiState`: only once data is older than 2 × the effective
+  refresh interval (night/dim multipliers included).
+- Undo as state, not events (keeps one `UiState` per ViewModel, easy for SwiftUI): `pendingUndo`
+  plus `undo()`/`dismissUndo()` in `StopBoardViewModel` (line hidden, destination saved) and
+  `SettingsViewModel` (stop removed with position + directions, stop added).
 - Rows carry the group's `typicalHeadwayMinutes`; panel head carries a direction summary.
 - `PAGE_INTERVAL_MS` 15 → 20 s; `manualRefreshing` flag; explicit today/tomorrow `TripTime` builder.
 

@@ -56,7 +56,7 @@
     <string name="search_further_ahead">Search further ahead</string>
     <string name="now">Now</string>
     <string name="cancelled">Cancelled</string>
-    <string name="unit_minute">m</string>
+    <string name="countdown_minutes">%1$d min</string>
     <!-- Shown after a row's times when more departures of the same line are not listed. -->
     <string name="more_departures_hidden">+%1$d more</string>
     <!-- A departure's details, opened by tapping its row. -->

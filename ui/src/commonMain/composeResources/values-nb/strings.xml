@@ -56,7 +56,7 @@
     <string name="search_further_ahead">Søk lenger frem</string>
     <string name="now">Nå</string>
     <string name="cancelled">Kansellert</string>
-    <string name="unit_minute">min</string>
+    <string name="countdown_minutes">%1$d min</string>
     <!-- Shown after a row's times when more departures of the same line are not listed. -->
     <string name="more_departures_hidden">+%1$d til</string>
     <!-- A departure's details, opened by tapping its row. -->

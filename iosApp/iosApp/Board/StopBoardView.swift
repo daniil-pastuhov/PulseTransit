@@ -38,7 +38,7 @@ struct StopBoardView: View {
             board(state: state, viewModel: viewModel, showsHeader: placement == .none)
         } actions: {
             BoardActionButtons(
-                onRefresh: { viewModel.refreshData() },
+                onRefresh: { viewModel.refreshNow() },
                 onSearchRoute: { showRouteSearch = true },
                 onOpenSettings: { showSettings = true },
                 shift: state.burnInLevel
@@ -114,7 +114,7 @@ struct StopBoardView: View {
                     BoardHeader(
                         state: state,
                         onCycleDateStyle: { viewModel.cycleDateStyle() },
-                        onRefresh: { viewModel.refreshData() },
+                        onRefresh: { viewModel.refreshNow() },
                         onSearchRoute: { showRouteSearch = true },
                         onOpenSettings: { showSettings = true }
                     )
@@ -524,7 +524,7 @@ private struct StopPanels: View {
             isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
             onFilterOut: { viewModel.filterOutLine(line: $0) },
             onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
-            onRetry: { viewModel.refreshData() },
+            onRetry: { viewModel.refreshNow() },
             onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
             loadJourney: { departure in
                 (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []
@@ -574,7 +574,7 @@ private struct BoardFooter: View {
 
     var body: some View {
         VStack(spacing: 2) {
-            if let staleMinutes = state.staleAgeMinutes {
+            if state.showStaleNotice, let staleMinutes = state.staleAgeMinutes {
                 Label(
                     L(state.isOnline ? "offline_stale_data" : "offline_no_internet_stale_data", Int(staleMinutes.intValue)),
                     systemImage: loadFailureSymbol(isOnline: state.isOnline)

@@ -477,6 +477,23 @@
         }
       }
     },
+    "countdown_minutes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld min"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld min"
+          }
+        }
+      }
+    },
     "current_coords": {
       "extractionState": "manual",
       "localizations": {
@@ -5870,23 +5887,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ i morgen"
-          }
-        }
-      }
-    },
-    "unit_minute": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "m"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "min"
           }
         }
       }

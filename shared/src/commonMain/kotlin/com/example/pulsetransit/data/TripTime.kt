@@ -69,6 +69,34 @@ internal fun nextTimeOfDay(
         .toEpochMilliseconds()
 }
 
+/**
+ * [hour]:[minute] on the day [dayOffset] days after [nowMillis]'s (0 today, 1 tomorrow): the
+ * travel-time picker's explicit Today/Tomorrow choice. Unlike [nextTimeOfDay] it never rolls over,
+ * so a time already past today stays today and reads as passed ([TripTime.hasPassed]).
+ */
+fun timeOnDay(
+    dayOffset: Int,
+    hour: Int,
+    minute: Int,
+    nowMillis: Long,
+): Long = timeOnDay(dayOffset, hour, minute, nowMillis, TimeZone.currentSystemDefault())
+
+internal fun timeOnDay(
+    dayOffset: Int,
+    hour: Int,
+    minute: Int,
+    nowMillis: Long,
+    timeZone: TimeZone,
+): Long =
+    Instant
+        .fromEpochMilliseconds(nowMillis)
+        .toLocalDateTime(timeZone)
+        .date
+        .plus(dayOffset, DateTimeUnit.DAY)
+        .atTime(LocalTime(hour, minute))
+        .toInstant(timeZone)
+        .toEpochMilliseconds()
+
 /** [atMillis] as a local time of day, to start a time picker from. */
 fun localTimeOfDay(atMillis: Long): LocalTime = localTimeOfDay(atMillis, TimeZone.currentSystemDefault())
 

@@ -34,6 +34,17 @@ class TripTimeTest {
     }
 
     @Test
+    fun `an explicit day keeps a time that has passed on that day`() {
+        assertEquals(at(3, 8, 0), timeOnDay(0, 8, 0, at(3, 17, 0), oslo))
+        assertEquals(at(4, 8, 0), timeOnDay(1, 8, 0, at(3, 17, 0), oslo))
+    }
+
+    @Test
+    fun `tomorrow late in the evening is the next calendar day`() {
+        assertEquals(at(4, 0, 30), timeOnDay(1, 0, 30, at(3, 23, 50), oslo))
+    }
+
+    @Test
     fun `days are counted by the local calendar`() {
         assertEquals(0, calendarDaysFrom(at(3, 0, 5), at(3, 23, 55), oslo))
         assertEquals(1, calendarDaysFrom(at(3, 23, 55), at(4, 0, 5), oslo))
@@ -70,5 +81,6 @@ class TripTimeTest {
         assertEquals(clockTimeText(now, zone), clockTimeText(now))
         assertEquals(calendarDaysFrom(now, now + 12 * 3_600_000L, zone), calendarDaysFrom(now, now + 12 * 3_600_000L))
         assertEquals(localTimeOfDay(now, zone), localTimeOfDay(now))
+        assertEquals(timeOnDay(1, 8, 0, now, zone), timeOnDay(1, 8, 0, now))
     }
 }

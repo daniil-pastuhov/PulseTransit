@@ -493,7 +493,7 @@ private struct NearbyStopSection: View {
                 isLoadingMore: state.loadingMoreStopIds.contains(stop.id),
                 onFilterOut: { viewModel.filterOutLine(line: $0) },
                 onSearchFurtherAhead: { viewModel.searchFurtherAhead(stopId: stop.id) },
-                onRetry: { viewModel.refreshData() },
+                onRetry: { viewModel.refreshNow() },
                 onLoadMore: { viewModel.loadMoreDepartures(stopId: stop.id) },
                 loadJourney: { departure in
                     (try? await viewModel.journeyStopsAhead(departure: departure, stopPlaceId: stop.id)) ?? []

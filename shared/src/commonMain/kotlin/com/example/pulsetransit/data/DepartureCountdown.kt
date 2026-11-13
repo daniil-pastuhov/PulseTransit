@@ -10,7 +10,7 @@ sealed interface DepartureCountdown {
     /** Leaving within [DepartureCountdown.DEPARTING_NOW_SECONDS]. */
     data object Now : DepartureCountdown
 
-    /** Within the next half hour: shown as "5m". */
+    /** Within the next quarter hour: shown as "5 min". */
     data class Minutes(
         val minutes: Long,
     ) : DepartureCountdown
@@ -29,7 +29,9 @@ sealed interface DepartureCountdown {
 
     companion object {
         const val DEPARTING_NOW_SECONDS = 15L
-        const val RELATIVE_TIME_CUTOFF_SECONDS = 30 * 60L
+
+        /** Past this, a clock time reads better than a countdown, as on Norwegian signage. */
+        const val RELATIVE_TIME_CUTOFF_SECONDS = 15 * 60L
     }
 }
 

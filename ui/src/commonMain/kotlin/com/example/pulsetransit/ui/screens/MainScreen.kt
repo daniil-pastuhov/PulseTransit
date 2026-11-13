@@ -274,7 +274,7 @@ fun MainScreen(
                             HeaderActions(
                                 collapsed = collapseActions,
                                 onSearchRoute = { showRouteSearch = true },
-                                onRefresh = { viewModel.refreshData() },
+                                onRefresh = { viewModel.refreshNow() },
                                 onOpenSettings = onNavigateToSettings,
                             )
                         }
@@ -422,7 +422,7 @@ fun MainScreen(
                                 failedStopIds = uiState.failedStopIds,
                                 isOnline = uiState.isOnline,
                                 onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
-                                onRetry = { viewModel.refreshData() },
+                                onRetry = { viewModel.refreshNow() },
                                 canLoadMoreStopIds = uiState.canLoadMoreStopIds,
                                 loadingMoreStopIds = uiState.loadingMoreStopIds,
                                 onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
@@ -448,7 +448,7 @@ fun MainScreen(
                                 ).padding(top = 2.dp, bottom = 4.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        uiState.staleAgeMinutes?.let { ageMinutes ->
+                        uiState.staleAgeMinutes?.takeIf { uiState.showStaleNotice }?.let { ageMinutes ->
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 verticalAlignment = Alignment.CenterVertically,

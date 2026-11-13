@@ -26,14 +26,14 @@ class DepartureCountdownTest {
     }
 
     @Test
-    fun `whole minutes until the half-hour cutoff`() {
+    fun `whole minutes until the quarter-hour cutoff`() {
         assertEquals(DepartureCountdown.Minutes(5), departureCountdown(at(5 * minute + 30_000), now, oslo))
-        assertEquals(DepartureCountdown.Minutes(29), departureCountdown(at(30 * minute - 1_000), now, oslo))
+        assertEquals(DepartureCountdown.Minutes(14), departureCountdown(at(15 * minute - 1_000), now, oslo))
     }
 
     @Test
-    fun `from half an hour out it is a clock time with a day offset`() {
-        assertEquals(DepartureCountdown.Clock(now + 30 * minute, 0), departureCountdown(at(30 * minute), now, oslo))
+    fun `from a quarter of an hour out it is a clock time with a day offset`() {
+        assertEquals(DepartureCountdown.Clock(now + 15 * minute, 0), departureCountdown(at(15 * minute), now, oslo))
         // 10:00 + 15 h is 01:00 the next day in Oslo.
         assertEquals(DepartureCountdown.Clock(now + 15 * 60 * minute, 1), departureCountdown(at(15 * 60 * minute), now, oslo))
     }

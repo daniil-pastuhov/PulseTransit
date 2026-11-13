@@ -9,9 +9,11 @@ import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.DestinationSchedule
+import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.OnSpotSplit
+import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
@@ -23,6 +25,7 @@ import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.data.directionSummary
 import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.hasPassed
 import com.example.pulsetransit.data.isArrivedFrom
@@ -83,6 +86,9 @@ class StopBoardViewModel(
         // While anything failed to load, try again this soon rather than waiting out the
         // (possibly stretched) normal interval, so a board recovers quickly once Entur answers.
         const val FAILURE_RETRY_SECONDS = 15
+
+        /** Refresh intervals the data may age before the board says it is stale. */
+        const val STALE_NOTICE_INTERVALS = 2
 
         // A stop's board starts with one page of departures and grows by a page each time the
         // user scrolls to its end, up to the cap, so an endless scroll can't grow the request
@@ -189,6 +195,13 @@ class StopBoardViewModel(
         /** [staleSinceMillis] as whole minutes, recomputed on each clock tick. */
         val staleAgeMinutes: Int? = null,
         /**
+         * Whether to tell the user the board is stale. A wall board is unattended, so a refresh
+         * that failed while the data is still fresh says nothing; only once the data is older than
+         * [STALE_NOTICE_INTERVALS] refresh intervals (stretched at night and while dimmed) does it
+         * show. Recomputed on each clock tick.
+         */
+        val showStaleNotice: Boolean = false,
+        /**
          * Stops the user asked to search further ahead for, because nothing departs within the
          * default window. Kept for the session so the next auto-refresh doesn't empty them again.
          */
@@ -217,6 +230,15 @@ class StopBoardViewModel(
         val noRouteDestinationIds: Set<String> = emptySet(),
         /** Whether the device has a working connection; explains failures, never gates requests. */
         val isOnline: Boolean = true,
+        /** The last change that can still be taken back, shown with Undo; null when there is none. */
+        val pendingUndo: BoardUndo? = null,
+        /** What each favorite's panel head says about its directions, by stop id. */
+        val directionSummaries: Map<String, DirectionSummary> = emptyMap(),
+        /**
+         * True while a refresh the user asked for (pull to refresh) runs, for its progress bar.
+         * Automatic refreshes never set it: an unattended wall board shows no activity.
+         */
+        val isManualRefreshing: Boolean = false,
     ) {
         /**
          * Every destination routes are shown for: the temporary one first, then the saved ones
@@ -255,6 +277,12 @@ class StopBoardViewModel(
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+
+    /** Quays of favorites with picked directions, loaded once a session for their panel heads. */
+    private var stopQuays: Map<String, List<Quay>> = emptyMap()
+    private var quayLookups: Set<String> = emptySet()
+
+    private var undoSerial = 0L
 
     private var refreshJob: Job? = null
     private var lightSensorJob: Job? = null
@@ -479,6 +507,34 @@ class StopBoardViewModel(
 
         applyWeatherSetting(showWeather, weatherTurnedOn)
         setupSensors()
+        updateDirectionSummaries(favs)
+    }
+
+    /**
+     * Summarises each favorite's picked directions, and looks up the quays of those that have a
+     * selection but whose quays aren't known yet. A failed lookup leaves the count without a total.
+     */
+    private fun updateDirectionSummaries(favorites: List<StopPlace>) {
+        val selections = favorites.associate { it.id to settingsRepository.getSelectedQuays(it.id) }
+        _uiState.update {
+            it.copy(directionSummaries = selections.mapValues { (id, picked) -> directionSummary(picked, stopQuays[id].orEmpty()) })
+        }
+        selections
+            .filter { (id, picked) -> !picked.isNullOrEmpty() && id !in stopQuays && id !in quayLookups }
+            .keys
+            .forEach { id ->
+                quayLookups = quayLookups + id
+                viewModelScope.launch {
+                    val quays = enturRepository.getStopPlaceWithQuays(id)?.quays.orEmpty()
+                    if (quays.isEmpty()) return@launch
+                    stopQuays = stopQuays + (id to quays)
+                    // Read the selection now: it may have changed in Settings while the lookup ran.
+                    val picked = settingsRepository.getSelectedQuays(id)
+                    _uiState.update {
+                        it.copy(directionSummaries = it.directionSummaries + (id to directionSummary(picked, quays)))
+                    }
+                }
+            }
     }
 
     private fun applyWeatherSetting(
@@ -647,6 +703,7 @@ class StopBoardViewModel(
                             it.staleSinceMillis?.let { since ->
                                 ((now - since) / MILLIS_PER_MINUTE).toInt()
                             },
+                        showStaleNotice = isStaleNoticeDue(it.staleSinceMillis, now),
                     )
                 }
                 updateActiveDestinations()
@@ -718,6 +775,31 @@ class StopBoardViewModel(
         if (_uiState.value.isScreenDimmed) multiplier *= DIMMED_REFRESH_MULTIPLIER
 
         return (base * multiplier).toInt()
+    }
+
+    /**
+     * Whether data fetched at [staleSinceMillis] is old enough to call stale: more than
+     * [STALE_NOTICE_INTERVALS] of the current refresh interval. With auto-refresh off there is no
+     * interval to wait for, so any cached data is stale.
+     */
+    private fun isStaleNoticeDue(
+        staleSinceMillis: Long?,
+        nowMillis: Long,
+    ): Boolean {
+        val since = staleSinceMillis ?: return false
+        val interval = calculateNextRefreshInterval()
+        return interval <= 0 || nowMillis - since > STALE_NOTICE_INTERVALS * interval * MILLIS_PER_SECOND
+    }
+
+    /** A refresh the user asked for, shown by [UiState.isManualRefreshing] until it finishes. */
+    fun refreshNow() {
+        refreshData()
+        _uiState.update { it.copy(isManualRefreshing = true) }
+        viewModelScope.launch {
+            awaitLatest { departuresJob }
+            awaitLatest { tripsJob }
+            _uiState.update { it.copy(isManualRefreshing = false) }
+        }
     }
 
     fun refreshData() {
@@ -824,7 +906,11 @@ class StopBoardViewModel(
         currentCoroutineContext().ensureActive()
         publishStopDepartures(stopId, limit, result)
         updateGroupedDepartures()
-        _uiState.update { it.withFreshness(stopFetchedAt, clock.now().toEpochMilliseconds(), clockFormatter) }
+        val now = clock.now().toEpochMilliseconds()
+        _uiState.update {
+            val fresh = it.withFreshness(stopFetchedAt, now, clockFormatter)
+            fresh.copy(showStaleNotice = isStaleNoticeDue(fresh.staleSinceMillis, now))
+        }
     }
 
     /** Records one stop's answer: its departures, freshness, failure and whether it can grow. */
@@ -1150,9 +1236,47 @@ class StopBoardViewModel(
         settingsRepository.reorderFavorites(currentList.map { it.id })
     }
 
+    /** Hides [line] at once; [undo] shows it again, as does Settings › Filtered out lines. */
     fun filterOutLine(line: String) {
+        if (line in settingsRepository.getFilteredLines()) return
         settingsRepository.addFilteredLine(line)
+        _uiState.update { it.copy(pendingUndo = BoardUndo.LineHidden(line, nextUndoSerial())) }
     }
+
+    /** Reverses [UiState.pendingUndo], if any. */
+    fun undo() {
+        when (val pending = _uiState.value.pendingUndo) {
+            is BoardUndo.LineHidden -> settingsRepository.removeFilteredLine(pending.line)
+            is BoardUndo.DestinationSaved -> unsaveDestination(pending)
+            null -> return
+        }
+        _uiState.update { it.copy(pendingUndo = null) }
+    }
+
+    /** The Undo offer timed out or was closed. */
+    fun dismissUndo() {
+        _uiState.update { it.copy(pendingUndo = null) }
+    }
+
+    /** Takes a just-saved destination off the list and shows it as the one-off search it was. */
+    private fun unsaveDestination(saved: BoardUndo.DestinationSaved) {
+        settingsRepository.removeDestinationStation(saved.place.id)
+        val destinations = settingsRepository.getDestinationStations()
+        _uiState.update {
+            it.copy(
+                destinationStations = destinations,
+                activeDestinationIds = activeDestinationIds(destinations, it.destinationSchedules),
+                temporaryDestination = saved.place,
+                temporaryTripTime = saved.tripTime,
+            )
+        }
+        if (saved.tripTime != TripTime.Now) {
+            dropTrips(saved.place.id)
+            refreshFastestTrip()
+        }
+    }
+
+    private fun nextUndoSerial() = ++undoSerial
 
     /** Keeps the on-spot board's split where the user left it, across launches; see [OnSpotSplit]. */
     fun setOnSpotSplit(split: Float) {
@@ -1254,6 +1378,7 @@ class StopBoardViewModel(
                 activeDestinationIds = activeDestinationIds(destinations, it.destinationSchedules),
                 temporaryDestination = null,
                 temporaryTripTime = TripTime.Now,
+                pendingUndo = BoardUndo.DestinationSaved(temporary, state.temporaryTripTime, nextUndoSerial()),
             )
         }
         if (wasTimed) {
@@ -1448,4 +1573,22 @@ private fun groupDepartures(
         result.add(DepartureGroup(currentList))
     }
     return result
+}
+
+/** A board change made at once, without asking, that [StopBoardViewModel.undo] reverses. [serial] tells repeats apart. */
+sealed interface BoardUndo {
+    val serial: Long
+
+    /** [line] was filtered out of the departures. */
+    data class LineHidden(
+        val line: String,
+        override val serial: Long,
+    ) : BoardUndo
+
+    /** The one-off destination [place], searched for at [tripTime], was saved to the destinations. */
+    data class DestinationSaved(
+        val place: StopPlace,
+        val tripTime: TripTime,
+        override val serial: Long,
+    ) : BoardUndo
 }
