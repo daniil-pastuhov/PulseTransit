@@ -139,7 +139,7 @@ struct TripDetailsView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let wait = TripDetailsKt.waitMinutesBefore(trip: trip, index: Int32(index)) {
                 Text("⏱  \(L("trip_details_wait", wait.intValue))")
-                    .font(.subheadline)
+                    .font(.pulse(.subheadline))
                     .foregroundColor(Palette.textSecondary)
                     .padding(.leading, 12)
             }
@@ -171,16 +171,16 @@ private struct TripProgressCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(L("now"))
-                .font(.caption.bold())
+                .font(.pulse(.caption, weight: .bold))
                 .foregroundColor(Palette.primary)
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(JourneyProgressText.headline(progress))
-                    .font(.headline)
+                    .font(.pulse(.headline))
                     .lineLimit(2)
                 Spacer(minLength: 0)
                 if let minutes = progress.minutesToNext {
                     Text(L("journey_progress_in_minutes", minutes.intValue))
-                        .font(.headline)
+                        .font(.pulse(.headline))
                         .monospacedDigit()
                 }
             }
@@ -193,7 +193,7 @@ private struct TripProgressCard: View {
                 .map { JourneyProgressText.detail($0, clock: Self.clock) }
             if !facts.isEmpty {
                 Text(facts.joined(separator: " · "))
-                    .font(.subheadline)
+                    .font(.pulse(.subheadline))
                     .foregroundColor(Palette.textSecondary)
             }
         }
@@ -213,13 +213,13 @@ private struct TripHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(L("trip_details_title", trip.destinationName))
-                .font(.title3.bold())
+                .font(.pulse(.title3, weight: .bold))
                 .lineLimit(1)
             Text(times)
-                .font(.headline)
+                .font(.pulse(.headline))
                 .monospacedDigit()
             Text(facts)
-                .font(.subheadline)
+                .font(.pulse(.subheadline))
                 .foregroundColor(Palette.textSecondary)
         }
     }
@@ -261,7 +261,7 @@ private struct WalkRow: View {
             if let showOnMap {
                 Button(action: showOnMap) {
                     Label(L("trip_details_show_on_map"), systemImage: "map")
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                 }
                 .buttonStyle(.bordered)
                 .padding(.leading, 36)
@@ -274,7 +274,7 @@ private struct WalkRow: View {
 
     private var summary: some View {
         HStack(spacing: 12) {
-            Text(verbatim: "🚶").font(.headline)
+            Image(systemName: "figure.walk").font(.pulse(.headline)).foregroundColor(Palette.textSecondary).accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(
                     [L("trip_details_walk", Int(leg.durationMinutes)), leg.distanceMeters > 0 ? "\(leg.distanceMeters) m" : nil]
@@ -283,7 +283,7 @@ private struct WalkRow: View {
                 )
                 if let endName {
                     Text(L("trip_details_to_place", endName))
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                         .foregroundColor(Palette.textSecondary)
                         .lineLimit(1)
                 }
@@ -308,20 +308,14 @@ private struct RideCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
-                Text(leg.lineName ?? "")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Palette.transport(leg.mode)))
+                LinePill(line: leg.lineName ?? "", mode: leg.mode)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(Palette.transportEmoji(leg.mode))  \(leg.destination ?? leg.lineFullName ?? leg.lineName ?? "")")
-                        .font(.headline)
+                    (Text(Image(systemName: Palette.transportSymbol(leg.mode))) + Text("  \(leg.destination ?? leg.lineFullName ?? leg.lineName ?? "")"))
+                        .font(.pulse(.headline))
                         .lineLimit(1)
                     let line = [leg.lineFullName, leg.authority].compactMap { $0 }.uniqued().joined(separator: " · ")
                     if !line.isEmpty {
-                        Text(line).font(.caption).foregroundColor(Palette.textSecondary).lineLimit(1)
+                        Text(line).font(.pulse(.caption)).foregroundColor(Palette.textSecondary).lineLimit(1)
                     }
                 }
             }
@@ -339,7 +333,7 @@ private struct RideCard: View {
             stopsToggle
             if showMessages {
                 ForEach(leg.notices, id: \.self) { notice in
-                    Text("⚠️ \(notice)").font(.footnote).foregroundColor(Palette.error)
+                    NoticeText(notice: notice)
                 }
             }
         }
@@ -356,7 +350,7 @@ private struct RideCard: View {
             let live = leg.isRealtime ? Text("● \(L("details_live"))").bold().foregroundColor(Palette.primary) : Text(verbatim: "")
             let separator = leg.isRealtime && platform != nil ? Text(verbatim: " · ") : Text(verbatim: "")
             (live + separator + Text(platform ?? ""))
-                .font(.caption)
+                .font(.pulse(.caption))
                 .foregroundColor(Palette.textSecondary)
                 .padding(.top, 4)
         }
@@ -383,7 +377,7 @@ private struct RideCard: View {
                         .accessibilityLabel(L(expanded ? "trip_details_hide_stops" : "trip_details_show_stops"))
                 }
             }
-            .font(.subheadline)
+            .font(.pulse(.subheadline))
             .foregroundColor(Palette.textSecondary)
             .padding(.vertical, 4)
         }
@@ -407,13 +401,13 @@ private struct EndpointRow: View {
             Text(name ?? "").lineLimit(1)
             if let delayFrom {
                 Text(clockText(delayFrom, nowMillis: nowMillis))
-                    .font(.caption)
+                    .font(.pulse(.caption))
                     .monospacedDigit()
                     .strikethrough()
                     .foregroundColor(Palette.textSecondary)
             }
         }
-        .font(.body.bold())
+        .font(.pulse(.body, weight: .bold))
         .frame(height: 32)
     }
 }

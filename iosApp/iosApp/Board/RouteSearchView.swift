@@ -82,7 +82,7 @@ struct TemporaryRouteActions: View {
             .accessibilityLabel(L("dismiss_route"))
         }
         .buttonStyle(.borderless)
-        .font(.title3)
+        .font(.pulse(.title3))
         .foregroundColor(Palette.textPrimary)
         .padding(.trailing, 8)
         .frame(maxHeight: fillsBackground ? .infinity : nil)

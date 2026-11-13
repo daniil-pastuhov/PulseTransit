@@ -12,24 +12,24 @@ struct FastestTripBanner: View {
 
     private var timeText: some View {
         Text(departureTime)
-            .font(.title2.bold())
+            .font(.pulse(.title2, weight: .bold))
             .monospacedDigit()
             .lineLimit(1)
     }
 
     private var durationText: some View {
         Text(tripDuration(trip.durationMinutes))
-            .font(.headline)
+            .font(.pulse(.headline))
             .lineLimit(1)
     }
 
     private var titleAndRoute: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.headline)
+                .font(.pulse(.headline))
                 .lineLimit(2)
-            Text(routeText)
-                .font(.subheadline)
+            tripRouteText(trip)
+                .font(.pulse(.subheadline))
                 .opacity(0.8)
                 .lineLimit(1)
         }
@@ -90,21 +90,22 @@ struct FastestTripBanner: View {
         return L("fastest_route_to_arriving", trip.destinationName, time)
     }
 
-    private var routeText: String { tripRouteText(trip) }
 }
 
-/// A trip's legs as "🚇 2 from Oslo S  →  🚶 4 min", or its first line and origin if Entur sent no legs.
-func tripRouteText(_ trip: TripInfo) -> String {
-    guard !trip.legs.isEmpty else { return L("fastest_route_info", trip.lineName, trip.originName) }
-    return trip.legs.compactMap { leg -> String? in
+/// A trip's legs as "[metro] 2 from Oslo S  →  [walk] 4 min", with the mode symbols inline, or
+/// its first line and origin if Entur sent no legs.
+func tripRouteText(_ trip: TripInfo) -> Text {
+    guard !trip.legs.isEmpty else { return Text(L("fastest_route_info", trip.lineName, trip.originName)) }
+    let parts = trip.legs.compactMap { leg -> Text? in
         if let line = leg.lineName {
-            let prefix = "\(Palette.transportEmoji(leg.mode)) \(line)"
-            return leg.fromName.map { "\(prefix) \(L("leg_from", $0))" } ?? prefix
+            let from = leg.fromName.map { " \(L("leg_from", $0))" } ?? ""
+            return Text(Image(systemName: Palette.transportSymbol(leg.mode))) + Text(" \(line)\(from)")
         }
         // Zero-minute foot legs are quay transfers, not worth a mention.
-        return leg.durationMinutes > 0 ? L("leg_walk", Int(leg.durationMinutes)) : nil
+        guard leg.durationMinutes > 0 else { return nil }
+        return Text(Image(systemName: "figure.walk")) + Text(" \(L("leg_walk", Int(leg.durationMinutes)))")
     }
-    .joined(separator: "  →  ")
+    return parts.dropFirst().reduce(parts.first ?? Text("")) { $0 + Text("  →  ") + $1 }
 }
 
 /// "HH:mm" straight out of an ISO timestamp, which is already in local Oslo time.

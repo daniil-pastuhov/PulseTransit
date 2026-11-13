@@ -38,7 +38,6 @@ kotlin {
             api(libs.compose.mp.ui)
             api(libs.compose.mp.material3)
             api(libs.compose.mp.resources)
-            implementation(libs.compose.mp.material.icons.extended)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
             implementation(libs.kotlinx.datetime)

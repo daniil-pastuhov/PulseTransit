@@ -15,13 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -31,15 +24,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.IntroPage
-import com.example.pulsetransit.theme.ColorTrain
-import com.example.pulsetransit.theme.ColorTram
+import com.example.pulsetransit.theme.PulseIcons
+import com.example.pulsetransit.ui.components.LinePill
+import com.example.pulsetransit.ui.components.TransportIcon
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -154,9 +147,9 @@ private fun MockHeader(
             modifier = Modifier.spot(spot),
         )
         Spacer(Modifier.weight(1f))
-        HeaderIcon(Icons.Default.Search, if (focus == HeaderButton.SEARCH) Spot.FOCUS else spot)
-        HeaderIcon(Icons.Default.Refresh, spot)
-        HeaderIcon(Icons.Default.Settings, if (focus == HeaderButton.SETTINGS) Spot.FOCUS else spot)
+        HeaderIcon(PulseIcons.Search, if (focus == HeaderButton.SEARCH) Spot.FOCUS else spot)
+        HeaderIcon(PulseIcons.Refresh, spot)
+        HeaderIcon(PulseIcons.Settings, if (focus == HeaderButton.SETTINGS) Spot.FOCUS else spot)
     }
 }
 
@@ -174,7 +167,7 @@ private fun HeaderIcon(
 @Composable
 private fun TapHint(modifier: Modifier = Modifier) {
     Icon(
-        Icons.Default.TouchApp,
+        PulseIcons.TouchApp,
         contentDescription = null,
         modifier = modifier.size(22.dp),
         tint = MaterialTheme.colorScheme.primary,
@@ -198,7 +191,7 @@ private fun MockStopCard(
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(name, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
-                    if (pickable) Icon(Icons.Default.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp))
+                    if (pickable) Icon(PulseIcons.ArrowDropDown, contentDescription = null, modifier = Modifier.size(20.dp))
                 }
                 Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -206,11 +199,11 @@ private fun MockStopCard(
         }
         val departures =
             if (train) {
-                listOf(Triple("R13", ColorTrain, "🚆  Dal"), Triple("RE20", ColorTrain, "🚆  Halden"))
+                listOf(Triple("R13", "rail", "Dal"), Triple("RE20", "rail", "Halden"))
             } else {
-                listOf(Triple("19", ColorTram, "🚃  Majorstuen"), Triple("17", ColorTram, "🚃  Sinsen"))
+                listOf(Triple("19", "tram", "Majorstuen"), Triple("17", "tram", "Sinsen"))
             }
-        departures.take(rows).forEachIndexed { index, (line, color, destination) ->
+        departures.take(rows).forEachIndexed { index, (line, mode, destination) ->
             val rowSpot =
                 if (focusRow == index) {
                     Spot.FOCUS
@@ -220,7 +213,7 @@ private fun MockStopCard(
                     rowsSpot
                 }
             Box {
-                MockDepartureRow(line, color, destination, "${3 + index * 4}m", Modifier.spot(rowSpot))
+                MockDepartureRow(line, mode, destination, "${3 + index * 4}m", Modifier.spot(rowSpot))
                 if (focusRow == index) TapHint(Modifier.align(Alignment.BottomEnd).offset(x = (-24).dp, y = 14.dp))
             }
         }
@@ -230,7 +223,7 @@ private fun MockStopCard(
 @Composable
 private fun MockDepartureRow(
     line: String,
-    color: Color,
+    mode: String,
     destination: String,
     time: String,
     modifier: Modifier = Modifier,
@@ -244,18 +237,10 @@ private fun MockDepartureRow(
                 .padding(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .width(40.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(color)
-                    .padding(vertical = 2.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(line, style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold), color = Color.White)
-        }
+        LinePill(line = line, mode = mode, minWidth = 40.dp)
         Spacer(Modifier.width(8.dp))
+        TransportIcon(mode, size = 16.dp)
+        Spacer(Modifier.width(4.dp))
         Text(
             destination,
             style = MaterialTheme.typography.bodyMedium,
@@ -278,7 +263,12 @@ private fun MockRouteCard(spot: Spot) {
             Text("08:14", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(stringResource(Res.string.leg_walk, 2) + "  →  🚃 19", style = MaterialTheme.typography.bodySmall)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(PulseIcons.DirectionsWalk, contentDescription = null, modifier = Modifier.size(14.dp))
+                    Text(stringResource(Res.string.leg_walk, 2) + "  →", style = MaterialTheme.typography.bodySmall)
+                    TransportIcon(mode = "tram", size = 14.dp, tint = MaterialTheme.colorScheme.onSurface)
+                    Text("19", style = MaterialTheme.typography.bodySmall)
+                }
                 Text(
                     stringResource(Res.string.route_arrival, "08:29"),
                     style = MaterialTheme.typography.labelSmall,
@@ -304,7 +294,7 @@ private fun MockResizeHandle() {
                 .background(MaterialTheme.colorScheme.onSurfaceVariant),
         )
         Icon(
-            Icons.Default.UnfoldMore,
+            PulseIcons.UnfoldMore,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.align(Alignment.CenterEnd).padding(end = 12.dp),

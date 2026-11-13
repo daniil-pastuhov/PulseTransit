@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CloudOff
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -18,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -28,7 +26,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun loadFailureReason(isOnline: Boolean): String = stringResource(if (isOnline) Res.string.error_entur_unreachable else Res.string.error_no_internet)
 
-fun loadFailureIcon(isOnline: Boolean): ImageVector = if (isOnline) Icons.Default.CloudOff else Icons.Default.WifiOff
+fun loadFailureIcon(isOnline: Boolean): ImageVector = if (isOnline) PulseIcons.CloudOff else PulseIcons.WifiOff
 
 /**
  * Stands in for a board whose data failed to load with nothing cached. It replaces "no

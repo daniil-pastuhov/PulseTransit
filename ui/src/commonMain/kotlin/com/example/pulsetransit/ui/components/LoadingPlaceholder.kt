@@ -50,21 +50,29 @@ fun rememberPlaceholderPulse(): Float {
     return alpha
 }
 
-/** A rounded skeleton block standing in for a piece of text or a badge. */
+/**
+ * A rounded skeleton block standing in for a piece of text or a badge. By default it is a solid
+ * surface-container block that breathes with [alpha] (a translucent tint vanished on white cards);
+ * pass [color] to tint it instead, e.g. on a coloured banner.
+ */
 @Composable
 fun PlaceholderBlock(
     alpha: Float,
     modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    cornerRadius: Dp = 4.dp,
+    color: Color? = null,
+    cornerRadius: Dp = 6.dp,
 ) {
+    val fill = color?.copy(alpha = alpha) ?: MaterialTheme.colorScheme.surfaceContainer.copy(alpha = SOLID_BASE_ALPHA + alpha)
     Box(
         modifier =
             modifier
                 .clip(RoundedCornerShape(cornerRadius))
-                .background(color.copy(alpha = alpha)),
+                .background(fill),
     )
 }
+
+/** With the pulse's 0.15–0.45 added, a default block breathes between 70% and 100%. */
+private const val SOLID_BASE_ALPHA = 0.55f
 
 /**
  * Blur-up placeholder: [skeleton] is drawn blurred, the way content looks before it comes into

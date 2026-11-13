@@ -26,7 +26,7 @@ struct ModeSelectionView: View {
         ScrollView {
             VStack(spacing: 16) {
                 Text(L("mode_choose_title"))
-                    .font(.title2.bold())
+                    .font(.pulse(.title2, weight: .bold))
                     .multilineTextAlignment(.center)
                 ModeCard(
                     symbol: "location.fill",
@@ -41,7 +41,7 @@ struct ModeSelectionView: View {
                     action: { onChoose(.board) }
                 )
                 Text(L("mode_choose_hint"))
-                    .font(.subheadline)
+                    .font(.pulse(.subheadline))
                     .foregroundColor(Palette.textSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -69,9 +69,9 @@ private struct ModeCard: View {
                     .frame(width: 36)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.title3.bold())
+                    Text(title).font(.pulse(.title3, weight: .bold))
                     Text(description)
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                         .multilineTextAlignment(.leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -18,7 +18,7 @@ struct BlurredPlaceholder<Skeleton: View>: View {
                     .progressViewStyle(.circular)
                     .tint(tint)
                 Text(label)
-                    .font(.subheadline.weight(.medium))
+                    .font(.pulse(.subheadline, weight: .medium))
                     .foregroundColor(tint)
             }
         }

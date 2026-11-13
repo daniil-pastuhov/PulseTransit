@@ -339,7 +339,7 @@ private struct EmptyBoard: View {
         VStack(spacing: 16) {
             Spacer()
             Text(L("no_stops_configured"))
-                .font(.title2)
+                .font(.pulse(.title2))
                 .foregroundColor(Palette.textPrimary)
             Button(L("open_settings_to_add"), action: onOpenSettings)
                 .buttonStyle(.borderedProminent)
@@ -436,7 +436,7 @@ private struct BoardPageIndicator: View {
     var body: some View {
         HStack(spacing: 8) {
             Text(firstStop == lastStop ? L("board_page_stop", firstStop, stopCount) : L("board_page_stops", firstStop, lastStop, stopCount))
-                .font(.caption2)
+                .font(.pulse(.caption2))
                 .foregroundColor(Palette.textSecondary)
                 .lineLimit(1)
             HStack(spacing: 4) {
@@ -579,11 +579,11 @@ private struct BoardFooter: View {
                     L(state.isOnline ? "offline_stale_data" : "offline_no_internet_stale_data", Int(staleMinutes.intValue)),
                     systemImage: loadFailureSymbol(isOnline: state.isOnline)
                 )
-                    .font(.system(size: 11, weight: .bold))
+                    .font(.pulse(fixedSize: 11, weight: .bold))
                     .foregroundColor(Palette.error)
             }
             Text(L("last_updated", state.lastUpdated))
-                .font(.system(size: 11))
+                .font(.pulse(fixedSize: 11))
                 .foregroundColor(Palette.textPrimary.opacity(0.3))
             HStack(spacing: 8) {
                 Text(L("attribution_entur"))
@@ -591,7 +591,7 @@ private struct BoardFooter: View {
                     Text(L("attribution_met"))
                 }
             }
-            .font(.system(size: 9))
+            .font(.pulse(fixedSize: 9))
             .foregroundColor(Palette.textPrimary.opacity(0.2))
         }
         .padding(.top, 2)

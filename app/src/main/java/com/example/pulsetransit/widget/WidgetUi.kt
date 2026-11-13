@@ -17,6 +17,7 @@ import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -39,9 +40,10 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.example.pulsetransit.MainActivity
 import com.example.pulsetransit.R
+import com.example.pulsetransit.theme.DarkLineColors
+import com.example.pulsetransit.theme.LightLineColors
 import com.example.pulsetransit.theme.PulseDarkColorScheme
 import com.example.pulsetransit.theme.PulseLightColorScheme
-import com.example.pulsetransit.ui.components.getTransportColor
 
 /** Material You's colours from Android 12, where the launcher provides them; the app's own before. */
 private val fallbackColors = ColorProviders(light = PulseLightColorScheme, dark = PulseDarkColorScheme)
@@ -136,8 +138,13 @@ fun LineBadge(
         modifier =
             GlanceModifier
                 .cornerRadius(6.dp)
-                .background(ColorProvider(if (cancelled) Color.Gray else getTransportColor(transportMode)))
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+                .background(
+                    if (cancelled) {
+                        ColorProvider(Color.Gray)
+                    } else {
+                        ColorProvider(day = LightLineColors.forMode(transportMode), night = DarkLineColors.forMode(transportMode))
+                    },
+                ).padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(
             text = line,

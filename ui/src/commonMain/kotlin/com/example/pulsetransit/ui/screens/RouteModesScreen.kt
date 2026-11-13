@@ -13,8 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,6 +31,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.RouteModeGroup
 import com.example.pulsetransit.data.RouteTransportMode
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
@@ -56,7 +55,7 @@ fun RouteModesScreen(
                     title = { Text(stringResource(Res.string.route_modes)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
+                            Icon(imageVector = PulseIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
                         }
                     },
                     windowInsets = WindowInsets.statusBars,

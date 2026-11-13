@@ -61,7 +61,7 @@ struct DataSourcesView: View {
         let label = VStack(alignment: .leading, spacing: 2) {
             Text(source.name).foregroundColor(.primary)
             Text(source.modes.map { L(Self.modeKey($0)) }.joined(separator: ", "))
-                .font(.caption)
+                .font(.pulse(.caption))
                 .foregroundColor(.secondary)
         }
         if let link = source.url.flatMap(URL.init(string:)) {

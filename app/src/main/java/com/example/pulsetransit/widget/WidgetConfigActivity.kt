@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +29,7 @@ import androidx.lifecycle.lifecycleScope
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.widget.BoardWidgetSource
 import com.example.pulsetransit.data.widget.pickWidgetPlace
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.launch
@@ -111,7 +110,7 @@ private fun PlacePicker(
                     supportingContent = place.locality?.let { { Text(it) } },
                     trailingContent =
                         if (place.id == selectedId) {
-                            { Icon(Icons.Filled.Check, contentDescription = null) }
+                            { Icon(PulseIcons.Check, contentDescription = null) }
                         } else {
                             null
                         },

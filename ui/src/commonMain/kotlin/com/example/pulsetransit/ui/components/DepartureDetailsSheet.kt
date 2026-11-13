@@ -173,24 +173,19 @@ private fun DetailsHeader(
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            text = first.line,
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White),
-            maxLines = 1,
-            modifier =
-                Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(getTransportColor(first.transportMode))
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-        )
+        LinePill(line = first.line, mode = first.transportMode)
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "${getTransportEmoji(first.transportMode)}  ${first.destination}",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TransportIcon(first.transportMode, size = 22.dp, tint = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = first.destination,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             val line = listOfNotNull(first.lineName, first.authority, first.operator).distinct().joinToString(" · ")
             if (line.isNotEmpty()) {
                 Text(
@@ -211,7 +206,7 @@ private fun DetailsHeader(
     if (showMessages && notices.isNotEmpty()) {
         Spacer(modifier = Modifier.height(8.dp))
         notices.forEach { notice ->
-            Text(text = "⚠️ $notice", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
+            NoticeText(notice)
         }
     }
 }

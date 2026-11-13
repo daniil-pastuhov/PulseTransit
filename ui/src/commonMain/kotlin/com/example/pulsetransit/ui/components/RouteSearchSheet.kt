@@ -16,13 +16,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -49,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.PlaceKind
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripTime
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -158,11 +152,11 @@ fun TemporaryRouteActions(
         TripTimeButton(time = time, onTimeChange = onTimeChange, tint = tint)
         if (canSave) {
             IconButton(onClick = onSave) {
-                Icon(Icons.Default.BookmarkAdd, contentDescription = stringResource(Res.string.save_destination), tint = tint)
+                Icon(PulseIcons.BookmarkAdd, contentDescription = stringResource(Res.string.save_destination), tint = tint)
             }
         }
         IconButton(onClick = onDismiss) {
-            Icon(Icons.Default.Close, contentDescription = stringResource(Res.string.dismiss_route), tint = tint)
+            Icon(PulseIcons.Close, contentDescription = stringResource(Res.string.dismiss_route), tint = tint)
         }
     }
 }
@@ -173,10 +167,10 @@ fun PlaceKindIcon(kind: PlaceKind) {
     Icon(
         imageVector =
             when (kind) {
-                PlaceKind.STOP -> Icons.Default.DirectionsBus
-                PlaceKind.ADDRESS -> Icons.Default.Home
-                PlaceKind.POI -> Icons.Default.Place
-                PlaceKind.PLACE -> Icons.Default.Map
+                PlaceKind.STOP -> PulseIcons.DirectionsBus
+                PlaceKind.ADDRESS -> PulseIcons.Home
+                PlaceKind.POI -> PulseIcons.LocationOn
+                PlaceKind.PLACE -> PulseIcons.Map
             },
         contentDescription = null,
         tint = MaterialTheme.colorScheme.onSurfaceVariant,

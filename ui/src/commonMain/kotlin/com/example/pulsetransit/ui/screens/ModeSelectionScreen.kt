@@ -13,9 +13,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.AppMode
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -57,13 +55,13 @@ fun ModeSelectionScreen(
                     textAlign = TextAlign.Center,
                 )
                 ModeCard(
-                    icon = Icons.Default.MyLocation,
+                    icon = PulseIcons.MyLocation,
                     title = stringResource(Res.string.mode_on_spot),
                     description = stringResource(Res.string.mode_on_spot_description),
                     onClick = { onChoose(AppMode.ON_SPOT) },
                 )
                 ModeCard(
-                    icon = Icons.Default.Tv,
+                    icon = PulseIcons.Tv,
                     title = stringResource(Res.string.mode_board),
                     description = stringResource(Res.string.mode_board_description),
                     onClick = { onChoose(AppMode.BOARD) },

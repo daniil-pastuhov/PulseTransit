@@ -38,7 +38,7 @@ struct IntroIllustration: View {
             MockStopCard(name: "Jernbanetorget", subtitle: "Oslo", nameSpot: .focus, rowsSpot: .plain, rows: 1)
             MockStopCard(name: "Oslo S", subtitle: "Oslo", nameSpot: .focus, rowsSpot: .plain, rows: 1, train: true)
             Text(L("board_page_stops", 1, 2, 5))
-                .font(.caption2)
+                .font(.pulse(.caption2))
                 .foregroundColor(Palette.textSecondary)
                 .frame(maxWidth: .infinity)
         case .fastestRoutes:
@@ -89,7 +89,7 @@ private struct MockHeader: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Text("08:12").font(.title2.bold()).foregroundColor(Palette.primary).spot(spot)
+            Text("08:12").font(.pulse(.title2, weight: .bold)).foregroundColor(Palette.primary).spot(spot)
             Spacer()
             icon("magnifyingglass", focus == .search ? .focus : spot)
             icon("arrow.clockwise", spot)
@@ -123,10 +123,10 @@ private struct MockStopCard: View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 2) {
-                    Text(name).font(.headline)
-                    if pickable { Image(systemName: "chevron.down").font(.caption.bold()) }
+                    Text(name).font(.pulse(.headline))
+                    if pickable { Image(systemName: "chevron.down").font(.pulse(.caption, weight: .bold)) }
                 }
-                Text(subtitle).font(.caption2).foregroundColor(Palette.textSecondary)
+                Text(subtitle).font(.pulse(.caption2)).foregroundColor(Palette.textSecondary)
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -163,15 +163,11 @@ private struct MockDepartureRow: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(line)
-                .font(.subheadline.bold())
-                .foregroundColor(.white)
-                .frame(width: 40)
-                .padding(.vertical, 2)
-                .background(RoundedRectangle(cornerRadius: 6).fill(Palette.transport(mode)))
-            Text("\(Palette.transportEmoji(mode))  \(destination)").font(.subheadline).lineLimit(1)
+            LinePill(line: line, mode: mode, minWidth: 40)
+            TransportIcon(mode: mode).font(.pulse(.subheadline))
+            Text(destination).font(.pulse(.subheadline)).lineLimit(1)
             Spacer()
-            Text(time).font(.headline)
+            Text(time).font(.pulse(.headline))
         }
         .padding(6)
         .background(RoundedRectangle(cornerRadius: 8).fill(Palette.textSecondary.opacity(0.12)))
@@ -181,15 +177,17 @@ private struct MockDepartureRow: View {
 private struct MockRouteCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(L("route_to", "Oslo S")).font(.subheadline.bold())
+            Text(L("route_to", "Oslo S")).font(.pulse(.subheadline, weight: .bold))
             HStack(spacing: 10) {
-                Text("08:14").font(.headline)
+                Text("08:14").font(.pulse(.headline))
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(L("leg_walk", 2) + "  →  🚃 19").font(.caption)
-                    Text(L("route_arrival", "08:29")).font(.caption2).foregroundColor(Palette.textSecondary)
+                    (Text(Image(systemName: "figure.walk")) + Text(" \(L("leg_walk", 2))  →  ")
+                        + Text(Image(systemName: Palette.transportSymbol("tram"))) + Text(" 19"))
+                        .font(.pulse(.caption))
+                    Text(L("route_arrival", "08:29")).font(.pulse(.caption2)).foregroundColor(Palette.textSecondary)
                 }
                 Spacer()
-                Text(L("duration_min", 15)).font(.subheadline.bold())
+                Text(L("duration_min", 15)).font(.pulse(.subheadline, weight: .bold))
             }
         }
         .mockCard()
@@ -203,7 +201,7 @@ private struct MockResizeHandle: View {
             HStack {
                 Spacer()
                 Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption.bold())
+                    .font(.pulse(.caption, weight: .bold))
                     .foregroundColor(Palette.primary)
                     .padding(.trailing, 12)
             }
@@ -218,10 +216,10 @@ private struct MockFastestBanner: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(L("fastest_route_to", "Lillestrøm")).font(.subheadline.bold())
+                Text(L("fastest_route_to", "Lillestrøm")).font(.pulse(.subheadline, weight: .bold))
                 HStack(spacing: 10) {
-                    Text("08:23").font(.headline)
-                    Text(L("fastest_route_info", "RE10", "Oslo S")).font(.caption)
+                    Text("08:23").font(.pulse(.headline))
+                    Text(L("fastest_route_info", "RE10", "Oslo S")).font(.pulse(.caption))
                 }
             }
             .foregroundColor(.white)
@@ -229,7 +227,7 @@ private struct MockFastestBanner: View {
             .padding(10)
             .background(RoundedRectangle(cornerRadius: 8).fill(Palette.primary))
             Text(L("schedule_summary", L("schedule_weekdays"), "07:00", "09:00"))
-                .font(.caption.weight(.medium))
+                .font(.pulse(.caption, weight: .medium))
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
                 .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card))
@@ -243,9 +241,9 @@ private struct MockDetailsSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Capsule().fill(Palette.textSecondary).frame(width: 32, height: 4).frame(maxWidth: .infinity)
-            Text(L("details_departures")).font(.subheadline.bold())
-            Text("08:15 · 08:25 · 08:35").font(.caption).foregroundColor(Palette.textSecondary)
-            Text(L("filter_out_line", "19")).font(.subheadline).foregroundColor(Palette.primary)
+            Text(L("details_departures")).font(.pulse(.subheadline, weight: .bold))
+            Text("08:15 · 08:25 · 08:35").font(.pulse(.caption)).foregroundColor(Palette.textSecondary)
+            Text(L("filter_out_line", "19")).font(.pulse(.subheadline)).foregroundColor(Palette.primary)
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -266,9 +264,9 @@ private struct MockScreenCareSettings: View {
 
     private func row(_ label: String, _ value: String?) -> some View {
         HStack(spacing: 8) {
-            Text(label).font(.caption).frame(maxWidth: .infinity, alignment: .leading)
+            Text(label).font(.pulse(.caption)).frame(maxWidth: .infinity, alignment: .leading)
             if let value {
-                Text(value).font(.caption.bold()).foregroundColor(Palette.primary)
+                Text(value).font(.pulse(.caption, weight: .bold)).foregroundColor(Palette.primary)
             } else {
                 Capsule().fill(Palette.primary).frame(width: 36, height: 22)
                     .overlay(Circle().fill(.white).padding(3), alignment: .trailing)

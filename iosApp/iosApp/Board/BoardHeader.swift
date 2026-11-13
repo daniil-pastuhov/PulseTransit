@@ -47,7 +47,7 @@ struct BoardHeader: View {
                     }
                 }
             }
-            .font(.title2)
+            .font(.pulse(.title2))
             .foregroundColor(Palette.textPrimary)
             .fixedSize()
             .layoutPriority(2)
@@ -134,7 +134,7 @@ enum BarHeader {
                 items.append(AnyView(
                     Button(action: onCycleDateStyle) {
                         Text(state.currentTime)
-                            .font(.system(size: 17, weight: .bold))
+                            .font(.pulse(fixedSize: 17, weight: .bold))
                             .foregroundColor(Palette.primary)
                             .monospacedDigit()
                             .lineLimit(1)
@@ -173,13 +173,13 @@ enum BarHeader {
                         .foregroundColor(Palette.textSecondary)
                 } else {
                     let weekday = Text(state.currentWeekday)
-                        .font(.caption2)
+                        .font(.pulse(.caption2))
                         .foregroundColor(Palette.textSecondary)
                     let day = Text(state.currentDayOfMonth)
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.pulse(fixedSize: 18, weight: .bold))
                         .foregroundColor(Palette.textPrimary)
                     let month = Text(state.currentMonth)
-                        .font(.caption2)
+                        .font(.pulse(.caption2))
                         .foregroundColor(Palette.textSecondary)
                     Group {
                         if axis == .vertical {
@@ -205,14 +205,14 @@ private struct HeaderClock: View {
 
     private func timeText(_ size: CGFloat) -> some View {
         Text(state.currentTime)
-            .font(.system(size: size, weight: .bold))
+            .font(.pulse(fixedSize: size, weight: .bold))
             .foregroundColor(Palette.primary)
             .monospacedDigit()
     }
 
     private func dayText(size: CGFloat) -> some View {
         Text(state.currentDayOfMonth)
-            .font(.system(size: size, weight: .bold))
+            .font(.pulse(fixedSize: size, weight: .bold))
             .foregroundColor(Palette.textPrimary)
     }
 
@@ -245,16 +245,16 @@ private struct HeaderClock: View {
                     Text(state.currentWeekday)
                     Text(state.currentMonth)
                 }
-                .font(.caption)
+                .font(.pulse(.caption))
                 .foregroundColor(Palette.textSecondary)
             }
         case .stacked:
             VStack(alignment: .leading, spacing: 0) {
                 timeText(timeSize)
                 (Text(state.currentWeekday + " ")
-                    + Text(state.currentDayOfMonth).font(.system(size: 18, weight: .bold)).foregroundColor(Palette.textPrimary)
+                    + Text(state.currentDayOfMonth).font(.pulse(fixedSize: 18, weight: .bold)).foregroundColor(Palette.textPrimary)
                     + Text(" " + state.currentMonth))
-                    .font(.subheadline)
+                    .font(.pulse(.subheadline))
                     .foregroundColor(Palette.textSecondary)
             }
         case .tile:
@@ -262,7 +262,7 @@ private struct HeaderClock: View {
                 timeText(timeSize)
                 VStack(spacing: 0) {
                     Text(state.currentMonth.uppercased())
-                        .font(.caption2.bold())
+                        .font(.pulse(.caption2, weight: .bold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .background(Palette.primary)
@@ -276,12 +276,12 @@ private struct HeaderClock: View {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 timeText(timeSize)
                 Text(state.currentWeekdayLong)
-                    .font(.headline)
+                    .font(.pulse(.headline))
                     .foregroundColor(Palette.textSecondary)
                     .padding(.leading, 10)
                 dayText(size: 26)
                 Text(state.currentMonthLong)
-                    .font(.headline)
+                    .font(.pulse(.headline))
                     .foregroundColor(Palette.textSecondary)
             }
         }

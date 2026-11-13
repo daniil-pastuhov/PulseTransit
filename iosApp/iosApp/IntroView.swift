@@ -41,7 +41,7 @@ struct IntroView: View {
                 }
             } label: {
                 Text(L(isLast ? "intro_done" : "intro_next"))
-                    .font(.headline)
+                    .font(.pulse(.headline))
                     .foregroundColor(.white)
                     .frame(maxWidth: 480)
                     .frame(maxWidth: .infinity)
@@ -74,10 +74,10 @@ private struct IntroPageView: View {
         VStack(spacing: 20) {
             IntroIllustration(page: page)
             Text(L(content.title))
-                .font(.title2.bold())
+                .font(.pulse(.title2, weight: .bold))
                 .multilineTextAlignment(.center)
             Text(L(content.body))
-                .font(.body)
+                .font(.pulse(.body))
                 .foregroundColor(Palette.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 480)

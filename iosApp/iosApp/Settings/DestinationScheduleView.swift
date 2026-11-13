@@ -87,7 +87,7 @@ struct DestinationScheduleView: View {
     private func presetButton(_ key: String, _ preset: Set<KotlinInt>) -> some View {
         Button(L(key)) { days = isoDays(preset) }
             .buttonStyle(.bordered)
-            .font(.footnote)
+            .font(.pulse(.footnote))
             .frame(maxWidth: .infinity)
     }
 
@@ -97,7 +97,7 @@ struct DestinationScheduleView: View {
             if selected { days.remove(day) } else { days.insert(day) }
         } label: {
             Text(shortDayName(day))
-                .font(.subheadline.weight(selected ? .semibold : .regular))
+                .font(.pulse(.subheadline, weight: selected ? .semibold : .regular))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity, minHeight: 36)

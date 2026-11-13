@@ -61,7 +61,7 @@ struct JourneyAlertsView: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L(title)).foregroundColor(Palette.textPrimary)
-                    Text(L(detail)).font(.caption).foregroundColor(.secondary)
+                    Text(L(detail)).font(.pulse(.caption)).foregroundColor(.secondary)
                 }
                 Spacer(minLength: 0)
                 if selected {

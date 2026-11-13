@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -44,11 +40,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
@@ -72,6 +66,7 @@ import com.example.pulsetransit.data.tripKey
 import com.example.pulsetransit.data.waitMinutesBefore
 import com.example.pulsetransit.data.walkDestination
 import com.example.pulsetransit.data.walkDistanceMeters
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.platform.rememberWalkingDirections
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.delay
@@ -364,10 +359,10 @@ private fun WalkRow(
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "🚶",
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
+            Icon(
+                PulseIcons.DirectionsWalk,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(WALK_ICON_WIDTH),
             )
             Spacer(modifier = Modifier.width(WALK_ICON_GAP))
@@ -396,7 +391,7 @@ private fun WalkRow(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                 modifier = Modifier.padding(start = WALK_ICON_WIDTH + WALK_ICON_GAP, top = 6.dp).height(36.dp),
             ) {
-                Icon(imageVector = Icons.Default.Map, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(imageVector = PulseIcons.Map, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(text = stringResource(Res.string.trip_details_show_on_map), maxLines = 1)
             }
@@ -437,24 +432,19 @@ private fun RideCard(
                 .padding(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = leg.lineName.orEmpty(),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White),
-                maxLines = 1,
-                modifier =
-                    Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(getTransportColor(leg.mode))
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
-            )
+            LinePill(line = leg.lineName.orEmpty(), mode = leg.mode)
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${getTransportEmoji(leg.mode)}  ${leg.destination ?: leg.lineFullName ?: leg.lineName.orEmpty()}",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TransportIcon(leg.mode, tint = MaterialTheme.colorScheme.onSurface)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = leg.destination ?: leg.lineFullName ?: leg.lineName.orEmpty(),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 val line = listOfNotNull(leg.lineFullName, leg.authority).distinct().joinToString(" · ")
                 if (line.isNotEmpty()) {
                     Text(
@@ -491,7 +481,7 @@ private fun RideCard(
         }
         if (showMessages) {
             leg.notices.forEach { notice ->
-                Text(text = "⚠️ $notice", style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.error))
+                NoticeText(notice)
             }
         }
     }
@@ -584,7 +574,7 @@ private fun StopsToggle(
                 CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
             canExpand ->
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    imageVector = if (expanded) PulseIcons.ExpandLess else PulseIcons.ExpandMore,
                     contentDescription =
                         stringResource(
                             if (expanded) Res.string.trip_details_hide_stops else Res.string.trip_details_show_stops,

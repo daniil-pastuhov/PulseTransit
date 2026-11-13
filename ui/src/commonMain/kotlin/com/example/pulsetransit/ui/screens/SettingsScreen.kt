@@ -33,14 +33,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DragIndicator
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -93,6 +85,7 @@ import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
@@ -134,7 +127,7 @@ fun SettingsScreen(
                     title = { Text(stringResource(Res.string.settings_title)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
+                            Icon(imageVector = PulseIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
                         }
                     },
                     windowInsets = WindowInsets.statusBars,
@@ -220,7 +213,7 @@ fun SettingsScreen(
                                     if (destinations.size > 1) {
                                         Box(modifier = dragHandle.size(40.dp), contentAlignment = Alignment.Center) {
                                             Icon(
-                                                imageVector = Icons.Default.DragIndicator,
+                                                imageVector = PulseIcons.DragIndicator,
                                                 contentDescription = stringResource(Res.string.drag_to_reorder),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
@@ -239,7 +232,7 @@ fun SettingsScreen(
                                         }
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(
-                                                imageVector = Icons.Default.Schedule,
+                                                imageVector = PulseIcons.Schedule,
                                                 contentDescription = null,
                                                 modifier = Modifier.size(14.dp),
                                                 tint = scheduleColor,
@@ -254,7 +247,7 @@ fun SettingsScreen(
                                     }
                                     IconButton(onClick = { viewModel.removeDestinationStation(destination.id) }) {
                                         Icon(
-                                            imageVector = Icons.Default.Delete,
+                                            imageVector = PulseIcons.Delete,
                                             contentDescription = stringResource(Res.string.remove),
                                             tint = MaterialTheme.colorScheme.error,
                                         )
@@ -629,7 +622,7 @@ fun SettingsScreen(
                                             modifier = Modifier.size(32.dp),
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.Close,
+                                                imageVector = PulseIcons.Close,
                                                 contentDescription = stringResource(Res.string.remove),
                                                 modifier = Modifier.size(18.dp),
                                             )
@@ -724,7 +717,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                        Icon(imageVector = PulseIcons.ChevronRight, contentDescription = null)
                     }
                 }
 
@@ -757,7 +750,7 @@ fun SettingsScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
-                            Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                            Icon(imageVector = PulseIcons.ChevronRight, contentDescription = null)
                         }
                     }
                 }
@@ -785,7 +778,7 @@ fun SettingsScreen(
                             onClick = requestLocation,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Icon(imageVector = Icons.Default.LocationOn, contentDescription = null)
+                            Icon(imageVector = PulseIcons.LocationOn, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(Res.string.detect_location))
                         }
@@ -847,7 +840,7 @@ fun SettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+                        Icon(imageVector = PulseIcons.ChevronRight, contentDescription = null)
                     }
                 }
             }
@@ -1217,7 +1210,7 @@ fun FavoriteStopRow(
             }
             IconButton(onClick = onRemove) {
                 Icon(
-                    imageVector = Icons.Default.Delete,
+                    imageVector = PulseIcons.Delete,
                     contentDescription = stringResource(Res.string.delete),
                     tint = MaterialTheme.colorScheme.error,
                 )

@@ -98,7 +98,7 @@ private struct DataSourcesSection: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(L("data_sources_row"))
                     Text(L("data_sources_row_hint"))
-                        .font(.caption)
+                        .font(.pulse(.caption))
                         .foregroundColor(.secondary)
                 }
             }
@@ -120,7 +120,7 @@ private struct JourneyAlertsSection: View {
                     Text(state.disabledJourneyAlerts.isEmpty
                         ? L("journey_alerts_all")
                         : L("journey_alerts_count", total - state.disabledJourneyAlerts.count, total))
-                        .font(.caption)
+                        .font(.pulse(.caption))
                         .foregroundColor(.secondary)
                 }
             }
@@ -172,7 +172,7 @@ private struct ThemeSection: View {
                 onSelect: { viewModel.updateThemeMode(mode: $0) }
             )
             if state.themeMode == .auto {
-                Text(L("auto_theme_thresholds")).font(.subheadline.bold())
+                Text(L("auto_theme_thresholds")).font(.pulse(.subheadline, weight: .bold))
                 OptionPicker(
                     title: L("auto_theme_dark"),
                     options: [Float(10), 30, 50, 100].map { ($0, L("lux_value", Int($0))) },
@@ -189,7 +189,7 @@ private struct ThemeSection: View {
                     // iOS has no public ambient light sensor, so this is an estimate; showing it lets
                     // the user pick thresholds that suit their room.
                     Text(L("current_lux", Int(lux.floatValue.rounded())))
-                        .font(.footnote)
+                        .font(.pulse(.footnote))
                         .foregroundColor(.secondary)
                 }
             }
@@ -287,7 +287,7 @@ private struct FilteredLinesSection: View {
     var body: some View {
         Section(header: Text(L("filtered_lines")), footer: Text(L("filtered_lines_hint"))) {
             if state.filteredLines.isEmpty {
-                Text(L("no_filtered_lines")).font(.footnote).foregroundColor(.secondary)
+                Text(L("no_filtered_lines")).font(.pulse(.footnote)).foregroundColor(.secondary)
             } else {
                 ForEach(state.filteredLines.sorted(), id: \.self) { line in
                     HStack {
@@ -361,7 +361,7 @@ private struct DestinationsSection: View {
                 Button(reordering ? L("reorder_done") : L("reorder")) {
                     withAnimation { reordering.toggle() }
                 }
-                .font(.footnote)
+                .font(.pulse(.footnote))
                 .textCase(nil)
                 .accessibilityIdentifier("settings.destinations.reorder")
             }
@@ -388,7 +388,7 @@ private struct DestinationsSection: View {
                                     Image(systemName: "clock").accessibilityHidden(true)
                                     Text(scheduleSummary(schedule))
                                 }
-                                .font(.caption)
+                                .font(.pulse(.caption))
                                 .foregroundColor(schedule == nil ? .secondary : .accentColor)
                             }
                             Spacer()
@@ -412,7 +412,7 @@ private struct DestinationsSection: View {
                 viewModel.moveDestinationStation(fromIndex: Int32(from), toIndex: Int32(to))
             }
             if state.destinationStations.count >= max {
-                Text(L("max_destinations_reached", max)).font(.footnote).foregroundColor(.secondary)
+                Text(L("max_destinations_reached", max)).font(.pulse(.footnote)).foregroundColor(.secondary)
             } else {
                 TextField(L("search_destination_hint"), text: binding(state.destinationQuery) { viewModel.onDestinationQueryChanged(newQuery: $0) })
                     .disableAutocorrection(true)
@@ -452,10 +452,10 @@ private struct LocationSection: View {
     var body: some View {
         Section(L("location_config")) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(L("current_coords")).font(.subheadline.bold())
+                Text(L("current_coords")).font(.pulse(.subheadline, weight: .bold))
                 let notSet = L("not_set")
                 Text("\(L("latitude_val", state.latitude.map { String($0.doubleValue) } ?? notSet)), \(L("longitude_val", state.longitude.map { String($0.doubleValue) } ?? notSet))")
-                Text(locationStatusText(state.locationStatus)).font(.footnote).foregroundColor(.secondary)
+                Text(locationStatusText(state.locationStatus)).font(.pulse(.footnote)).foregroundColor(.secondary)
             }
             Button {
                 viewModel.requestLocationAndNearbyStops()
@@ -464,7 +464,7 @@ private struct LocationSection: View {
             }
             .disabled(state.isSearchingNearby)
             if state.showManualCoordinatesPrompt {
-                Text(L("enter_manual")).font(.footnote)
+                Text(L("enter_manual")).font(.pulse(.footnote))
                 TextField(L("latitude_label"), text: $manualLatitude).keyboardType(.numbersAndPunctuation)
                 TextField(L("longitude_label"), text: $manualLongitude).keyboardType(.numbersAndPunctuation)
                 Button(L("save_coords")) { viewModel.setManualCoordinates(latStr: manualLatitude, lonStr: manualLongitude) }
@@ -503,12 +503,12 @@ private struct AddStopsSection: View {
                 .disableAutocorrection(true)
             // Search stays open when full, since its results can still remove a stop.
             if !canAdd {
-                Text(L("max_favorite_stops_reached", max)).font(.footnote).foregroundColor(.secondary)
+                Text(L("max_favorite_stops_reached", max)).font(.pulse(.footnote)).foregroundColor(.secondary)
             }
             if isLoading && stops.isEmpty {
                 ProgressView()
             } else if !stops.isEmpty {
-                Text(L(showNearby ? "nearby_stops" : "search_results")).font(.subheadline.bold())
+                Text(L(showNearby ? "nearby_stops" : "search_results")).font(.pulse(.subheadline, weight: .bold))
                 ForEach(stops, id: \.id) { stop in
                     let isFavorite = state.favorites.contains { $0.id == stop.id }
                     HStack {
@@ -568,10 +568,10 @@ private struct FavoriteRow: View {
         VStack(alignment: .leading, spacing: 6) {
             PlaceLabel(place: stop)
             if !sections.isEmpty {
-                Text(L("directions_quays")).font(.footnote.bold())
+                Text(L("directions_quays")).font(.pulse(.footnote, weight: .bold))
                 ForEach(sections, id: \.self) { section in
                     if let title = section.title {
-                        Text(title).font(.caption).foregroundColor(.secondary).padding(.top, 4)
+                        Text(title).font(.pulse(.caption)).foregroundColor(.secondary).padding(.top, 4)
                     }
                     ForEach(section.quays, id: \.id) { quay in
                         // Nothing selected means every direction is shown.
@@ -583,7 +583,7 @@ private struct FavoriteRow: View {
                     }
                 }
                 if selected.isEmpty {
-                    Text(L("showing_all_directions")).font(.caption).foregroundColor(.secondary)
+                    Text(L("showing_all_directions")).font(.pulse(.caption)).foregroundColor(.secondary)
                 }
             }
         }
@@ -609,15 +609,15 @@ private struct QuayRow: View {
         HStack(spacing: 12) {
             Image(systemName: isOn ? "checkmark.square.fill" : "square")
                 .foregroundColor(isOn ? .accentColor : .secondary)
-                .font(.title3)
+                .font(.pulse(.title3))
             VStack(alignment: .leading, spacing: 2) {
-                Text(title).font(.subheadline.weight(.semibold))
+                Text(title).font(.pulse(.subheadline, weight: .semibold))
                 if !quay.lines.isEmpty {
-                    Text(quay.lines.joined(separator: "  ")).font(.caption).lineLimit(2)
+                    Text(quay.lines.joined(separator: "  ")).font(.pulse(.caption)).lineLimit(2)
                 }
                 if !quay.destinations.isEmpty {
                     Text("→ " + quay.destinations.joined(separator: ", "))
-                        .font(.caption).foregroundColor(.secondary).lineLimit(1)
+                        .font(.pulse(.caption)).foregroundColor(.secondary).lineLimit(1)
                 }
             }
             Spacer(minLength: 0)
@@ -636,7 +636,7 @@ struct PlaceLabel: View {
         VStack(alignment: .leading) {
             Text(place.name)
             if let locality = place.locality {
-                Text(locality).font(.caption).foregroundColor(.secondary)
+                Text(locality).font(.pulse(.caption)).foregroundColor(.secondary)
             }
         }
     }
@@ -685,7 +685,7 @@ private struct OptionPicker<Value: Hashable>: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
             if let footnote {
-                Text(footnote).font(.caption).foregroundColor(.secondary)
+                Text(footnote).font(.pulse(.caption)).foregroundColor(.secondary)
             }
             Picker(title, selection: $current) {
                 ForEach(options, id: \.0) { option in

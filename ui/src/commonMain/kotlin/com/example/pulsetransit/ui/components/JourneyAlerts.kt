@@ -8,12 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -35,6 +29,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.data.journey.TrackedJourney
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.platform.rememberJourneyPermissionRequest
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
@@ -54,12 +49,12 @@ fun JourneyNotifyButton(
 ) {
     if (state.isFollowing(trip)) {
         OutlinedButton(onClick = onStop, modifier = modifier.fillMaxWidth()) {
-            Icon(Icons.Default.NotificationsOff, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(PulseIcons.NotificationsOff, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(stringResource(Res.string.journey_stop_button), modifier = Modifier.padding(start = 8.dp))
         }
     } else if (state.available) {
         FilledTonalButton(onClick = onNotify, modifier = modifier.fillMaxWidth()) {
-            Icon(Icons.Default.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))
+            Icon(PulseIcons.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))
             Text(stringResource(Res.string.journey_notify_button), modifier = Modifier.padding(start = 8.dp))
         }
     }
@@ -77,14 +72,14 @@ fun JourneyRationaleDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Default.NotificationsActive, contentDescription = null) },
+        icon = { Icon(PulseIcons.NotificationsActive, contentDescription = null) },
         title = { Text(stringResource(Res.string.journey_rationale_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(Res.string.journey_rationale_body), style = MaterialTheme.typography.bodyMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Shield,
+                        PulseIcons.Shield,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(18.dp),
@@ -96,13 +91,13 @@ fun JourneyRationaleDialog(
                     )
                 }
                 ModeChoice(
-                    icon = Icons.Default.LocationOn,
+                    icon = PulseIcons.LocationOn,
                     title = stringResource(Res.string.journey_mode_location),
                     detail = stringResource(Res.string.journey_mode_location_detail),
                     onClick = { onChoice(JourneyTrackingMode.LOCATION) },
                 )
                 ModeChoice(
-                    icon = Icons.Default.Schedule,
+                    icon = PulseIcons.Schedule,
                     title = stringResource(Res.string.journey_mode_time),
                     detail = stringResource(Res.string.journey_mode_time_detail),
                     onClick = { onChoice(JourneyTrackingMode.TIME_ONLY) },
@@ -162,7 +157,7 @@ fun FollowedJourneyBar(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+        Icon(PulseIcons.NotificationsActive, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
         Text(
             text = stringResource(Res.string.journey_following, journey.trip.destinationName),
             style = MaterialTheme.typography.bodyMedium,

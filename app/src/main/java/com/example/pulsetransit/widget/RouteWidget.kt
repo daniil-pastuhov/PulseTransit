@@ -14,7 +14,6 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.example.pulsetransit.data.widget.RouteWidgetState
 import com.example.pulsetransit.data.widget.WidgetRoute
-import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.components.tripDurationString
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.getString
@@ -78,7 +77,7 @@ class RouteWidget : BoardWidget<RouteView>() {
                 if (legs.isEmpty()) {
                     getString(Res.string.widget_walk_only)
                 } else {
-                    legs.joinToString("  ›  ") { leg -> "${getTransportEmoji(leg.mode)} ${leg.line}" }
+                    legs.joinToString("  ›  ") { leg -> leg.line }
                 },
             boarding =
                 when {

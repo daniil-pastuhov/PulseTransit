@@ -67,7 +67,7 @@ struct TripTimeControls: View {
                     Spacer()
                     // Says what will be searched for, so "tomorrow" is never a surprise.
                     Text(tripTimeLabel(chosen))
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                         .foregroundColor(Palette.primary)
                 }
             }
@@ -102,14 +102,14 @@ struct TripTimeButton: View {
             if let atMillis = tripTimeMillis(time) {
                 VStack(spacing: 0) {
                     Text(L(time is TripTimeArriveBy ? "trip_time_arrive" : "trip_time_depart"))
-                        .font(.caption2)
+                        .font(.pulse(.caption2))
                         .opacity(0.8)
                     HStack(alignment: .firstTextBaseline, spacing: 1) {
-                        Text(TripTimeKt.clockTimeText(atMillis: atMillis)).font(.subheadline.bold())
+                        Text(TripTimeKt.clockTimeText(atMillis: atMillis)).font(.pulse(.subheadline, weight: .bold))
                         let days = TripTimeKt.calendarDaysFrom(nowMillis: nowMillis(), atMillis: atMillis)
                         // The board's next-day marker, narrower than "tomorrow".
                         if days >= 1 {
-                            Text("+\(days)").font(.caption2).baselineOffset(6)
+                            Text("+\(days)").font(.pulse(.caption2)).baselineOffset(6)
                         }
                     }
                 }
@@ -154,7 +154,7 @@ struct FastestTripNone: View {
                 (time as? TripTimeArriveBy).map { L("no_route_to_arriving", destinationName, tripClockText($0.atMillis)) }
                     ?? L("no_route_to", destinationName)
             )
-            .font(.subheadline.bold())
+            .font(.pulse(.subheadline, weight: .bold))
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .foregroundColor(Palette.textPrimary)

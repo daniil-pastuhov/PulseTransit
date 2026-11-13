@@ -12,18 +12,18 @@ struct UpdateBanner: View {
             Image(systemName: "arrow.down.app")
                 .accessibilityHidden(true)
             Text(L("update_available"))
-                .font(.subheadline)
+                .font(.pulse(.subheadline))
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button(L("dismiss_update"), action: onDismiss)
                 .foregroundColor(Palette.textPrimary)
             if let url = update.storeUrl.flatMap(URL.init(string:)) {
                 Button(L("update_app")) { UIApplication.shared.open(url) }
-                    .font(.subheadline.bold())
+                    .font(.pulse(.subheadline, weight: .bold))
                     .foregroundColor(Palette.primary)
             }
         }
         .buttonStyle(.borderless)
-        .font(.subheadline)
+        .font(.pulse(.subheadline))
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

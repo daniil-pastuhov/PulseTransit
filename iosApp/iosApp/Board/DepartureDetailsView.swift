@@ -91,7 +91,7 @@ struct DepartureDetailsView: View {
 
     private func departuresColumn(selected: Departure, nowMillis: Int64) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(L("details_departures")).font(.subheadline.bold()).padding(.bottom, 6)
+            Text(L("details_departures")).font(.pulse(.subheadline, weight: .bold)).padding(.bottom, 6)
             ForEach(Array(departures.enumerated()), id: \.offset) { _, departure in
                 DepartureDetailRow(departure: departure, isSelected: departure === selected, nowMillis: nowMillis, showDelays: showDelays)
                     .contentShape(Rectangle())
@@ -112,31 +112,25 @@ private struct DetailsHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
-                Text(first.line)
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .lineLimit(1)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(Palette.transport(first.transportMode)))
+                LinePill(line: first.line, mode: first.transportMode)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(Palette.transportEmoji(first.transportMode))  \(first.destination)")
-                        .font(.title3.bold())
+                    (Text(Image(systemName: Palette.transportSymbol(first.transportMode))) + Text("  \(first.destination)"))
+                        .font(.pulse(.title3, weight: .bold))
                         .lineLimit(1)
                     let line = [first.lineName, first.authority, first.operator].compactMap { $0 }.uniqued().joined(separator: " · ")
                     if !line.isEmpty {
-                        Text(line).font(.subheadline).foregroundColor(Palette.textSecondary).lineLimit(1)
+                        Text(line).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary).lineLimit(1)
                     }
                     let headway = DepartureDetailsKt.typicalHeadwayMinutes(departures: departures).map { L("details_every", $0.intValue) }
                     Text([stopName, headway].compactMap { $0 }.joined(separator: " · "))
-                        .font(.subheadline)
+                        .font(.pulse(.subheadline))
                         .foregroundColor(Palette.textSecondary)
                 }
             }
             let notices = departures.flatMap(\.notices).uniqued()
             if showMessages {
                 ForEach(notices, id: \.self) { notice in
-                    Text("⚠️ \(notice)").font(.footnote).foregroundColor(Palette.error)
+                    NoticeText(notice: notice)
                 }
             }
         }
@@ -155,18 +149,18 @@ private struct DepartureDetailRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(clockText(departure.expectedTime, nowMillis: nowMillis))
-                        .font(.headline)
+                        .font(.pulse(.headline))
                         .monospacedDigit()
                         .strikethrough(departure.isCancelled)
                         .foregroundColor(departure.isCancelled ? Palette.textSecondary : Palette.textPrimary)
                     if isDelayed {
                         Text(clockText(departure.aimedTime, nowMillis: nowMillis))
-                            .font(.subheadline)
+                            .font(.pulse(.subheadline))
                             .monospacedDigit()
                             .strikethrough()
                             .foregroundColor(Palette.textSecondary)
                         Text("+\(departure.delayMinutes)")
-                            .font(.caption.bold())
+                            .font(.pulse(.caption, weight: .bold))
                             .foregroundColor(Palette.error)
                     }
                 }
@@ -189,7 +183,7 @@ private struct DepartureDetailRow: View {
             let live = isLive ? Text("● \(L("details_live"))").bold().foregroundColor(Palette.primary) : Text(verbatim: "")
             let separator = isLive && platform != nil ? Text(verbatim: " · ") : Text(verbatim: "")
             (live + separator + Text(platform ?? ""))
-                .font(.caption)
+                .font(.pulse(.caption))
                 .foregroundColor(Palette.textSecondary)
         }
     }
@@ -197,11 +191,11 @@ private struct DepartureDetailRow: View {
     @ViewBuilder
     private var countdown: some View {
         if departure.isCancelled {
-            Text(L("cancelled")).font(.subheadline.bold()).foregroundColor(Palette.error)
+            Text(L("cancelled")).font(.pulse(.subheadline, weight: .bold)).foregroundColor(Palette.error)
         } else if case .now = onEnum(of: DepartureCountdownKt.departureCountdown(expectedTime: departure.expectedTime, nowMillis: nowMillis)) {
-            Text(L("now")).font(.subheadline.bold()).foregroundColor(Palette.primary)
+            Text(L("now")).font(.pulse(.subheadline, weight: .bold)).foregroundColor(Palette.primary)
         } else if let minutes = DepartureDetailsKt.minutesUntil(time: departure.expectedTime, nowMillis: nowMillis) {
-            Text(inTimeText(minutes.int64Value)).font(.subheadline.bold()).monospacedDigit()
+            Text(inTimeText(minutes.int64Value)).font(.pulse(.subheadline, weight: .bold)).monospacedDigit()
         }
     }
 }
@@ -215,14 +209,14 @@ private struct RouteColumn: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(L("details_route", clockText(departure.expectedTime, nowMillis: nowMillis)))
-                .font(.subheadline.bold())
+                .font(.pulse(.subheadline, weight: .bold))
             if let ride = ride {
-                Text(ride).font(.caption).foregroundColor(Palette.textSecondary)
+                Text(ride).font(.pulse(.caption)).foregroundColor(Palette.textSecondary)
             }
             Spacer().frame(height: 8)
             if let stops = stops {
                 if stops.isEmpty {
-                    Text(L("details_route_unavailable")).font(.subheadline).foregroundColor(Palette.textSecondary)
+                    Text(L("details_route_unavailable")).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
                 } else {
                     ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
                         RouteStopRow(stop: stop, nowMillis: nowMillis, isFirst: index == 0, isLast: index == stops.count - 1)
@@ -253,13 +247,13 @@ struct RouteStopRow: View {
         let isEnd = isFirst || isLast
         HStack(spacing: 8) {
             Text(clockText(stop.expectedTime, nowMillis: nowMillis))
-                .font(.subheadline.weight(isEnd ? .bold : .regular))
+                .font(.pulse(.subheadline, weight: isEnd ? .bold : .regular))
                 .monospacedDigit()
                 .strikethrough(stop.isCancelled)
                 .foregroundColor(Palette.textSecondary)
                 .reservingWidth(of: widestClockText)
                 // Measured in bold on every row, so the rail stays straight past the regular ones.
-                .font(.subheadline.bold())
+                .font(.pulse(.subheadline, weight: .bold))
             // The timeline: a rail through every stop, with a larger dot at both ends.
             ZStack {
                 VStack(spacing: 0) {
@@ -270,7 +264,7 @@ struct RouteStopRow: View {
             }
             .frame(width: 20)
             Text(stop.name)
-                .font(.subheadline.weight(isEnd ? .bold : .regular))
+                .font(.pulse(.subheadline, weight: isEnd ? .bold : .regular))
                 .strikethrough(stop.isCancelled)
                 .lineLimit(1)
         }

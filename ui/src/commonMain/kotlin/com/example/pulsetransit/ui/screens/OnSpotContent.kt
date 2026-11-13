@@ -26,16 +26,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Directions
-import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.LocationOff
-import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
@@ -80,10 +70,12 @@ import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.tripArrival
 import com.example.pulsetransit.data.visibleTripOptionCount
 import com.example.pulsetransit.platform.LocationAccuracy
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
+import com.example.pulsetransit.ui.components.TripRouteText
 import com.example.pulsetransit.ui.components.tripDurationText
 import com.example.pulsetransit.ui.platform.rememberLocationAccess
 import com.example.pulsetransit.ui.resources.*
@@ -207,7 +199,7 @@ private fun LocatedContent(
                     if (folded) {
                         FoldedSection(
                             label = stringResource(Res.string.on_spot_routes),
-                            icon = Icons.Default.Directions,
+                            icon = PulseIcons.Directions,
                             expandLabel = stringResource(Res.string.on_spot_show_routes),
                             edge = if (isLandscape) FoldedEdge.START else FoldedEdge.TOP,
                             onExpand = onExpand,
@@ -232,7 +224,7 @@ private fun LocatedContent(
                     if (folded) {
                         FoldedSection(
                             label = uiState.favorites.firstOrNull()?.name ?: stringResource(Res.string.details_departures),
-                            icon = Icons.Default.DirectionsBus,
+                            icon = PulseIcons.DirectionsBus,
                             expandLabel = stringResource(Res.string.on_spot_show_departures),
                             edge = if (isLandscape) FoldedEdge.END else FoldedEdge.BOTTOM,
                             onExpand = onExpand,
@@ -295,10 +287,10 @@ private fun FoldedSection(
 ) {
     val arrow =
         when (edge) {
-            FoldedEdge.TOP -> Icons.Default.KeyboardArrowDown
-            FoldedEdge.BOTTOM -> Icons.Default.KeyboardArrowUp
-            FoldedEdge.START -> Icons.AutoMirrored.Filled.KeyboardArrowRight
-            FoldedEdge.END -> Icons.AutoMirrored.Filled.KeyboardArrowLeft
+            FoldedEdge.TOP -> PulseIcons.KeyboardArrowDown
+            FoldedEdge.BOTTOM -> PulseIcons.KeyboardArrowUp
+            FoldedEdge.START -> PulseIcons.ChevronRight
+            FoldedEdge.END -> PulseIcons.ChevronLeft
         }
     Card(
         modifier =
@@ -350,7 +342,7 @@ private fun LocationStatus(
             val failed = location is OnSpotLocation.Unavailable || location is OnSpotLocation.PermissionDenied
             if (failed) {
                 Icon(
-                    imageVector = Icons.Default.LocationOff,
+                    imageVector = PulseIcons.LocationOff,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(40.dp),
@@ -590,12 +582,11 @@ private fun TripOptionRow(
             color = onContainer,
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = tripRouteText(trip),
+            TripRouteText(
+                trip = trip,
                 style = MaterialTheme.typography.bodyMedium,
                 color = onContainer,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
             )
             tripArrival(trip)?.let { arrival ->
                 val time = if (arrival.dayOffset > 0) "${arrival.time} +${arrival.dayOffset}" else arrival.time
@@ -695,7 +686,7 @@ private fun RowScope.StopPicker(
                 )
             }
             if (nearbyStops.size > 1) {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = stringResource(Res.string.choose_stop))
+                Icon(PulseIcons.ArrowDropDown, contentDescription = stringResource(Res.string.choose_stop))
             }
         }
         DropdownMenu(
@@ -733,7 +724,7 @@ private fun RowScope.StopPicker(
         AssistChip(
             onClick = onFollowNearest,
             label = { Text(stringResource(Res.string.back_to_nearest)) },
-            leadingIcon = { Icon(Icons.Default.MyLocation, contentDescription = null, Modifier.size(AssistChipDefaults.IconSize)) },
+            leadingIcon = { Icon(PulseIcons.MyLocation, contentDescription = null, Modifier.size(AssistChipDefaults.IconSize)) },
         )
     }
 }

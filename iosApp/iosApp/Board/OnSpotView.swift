@@ -230,7 +230,7 @@ private struct FoldedSection: View {
                 HStack(spacing: 12) {
                     Image(systemName: systemImage)
                     Text(label)
-                        .font(.headline)
+                        .font(.pulse(.headline))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Image(systemName: arrow)
@@ -280,7 +280,7 @@ private struct LocationStatus: View {
                 ProgressView()
             }
             Text(message)
-                .font(.headline)
+                .font(.pulse(.headline))
                 .multilineTextAlignment(.center)
                 .foregroundColor(Palette.textPrimary)
             if let actionTitle, let action {
@@ -309,7 +309,7 @@ private struct RoutesSection: View {
         if state.routeDestinations.isEmpty {
             VStack(spacing: 16) {
                 Text(L("routes_add_destination"))
-                    .font(.headline)
+                    .font(.pulse(.headline))
                     .multilineTextAlignment(.center)
                 Button(L("add_destination"), action: onOpenSettings)
                     .buttonStyle(.borderedProminent)
@@ -399,7 +399,7 @@ private struct DestinationRoutesCard: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: 0) {
                         Text(L("route_to", destination.name))
-                            .font(.headline)
+                            .font(.pulse(.headline))
                             .lineLimit(1)
                             .padding(.horizontal, 16)
                             .padding(.vertical, 4)
@@ -451,22 +451,22 @@ private struct TripOptionRow: View {
     var body: some View {
         HStack(spacing: 16) {
             Text(isoClockTime(trip.expectedStartTime))
-                .font(isFirst ? .title2.bold() : .title3)
+                .font(isFirst ? .pulse(.title2, weight: .bold) : .pulse(.title3))
                 .monospacedDigit()
             VStack(alignment: .leading, spacing: 2) {
-                Text(tripRouteText(trip))
-                    .font(.subheadline)
+                tripRouteText(trip)
+                    .font(.pulse(.subheadline))
                     .lineLimit(2)
                 if let arrival = TripArrivalKt.tripArrival(trip: trip) {
                     let time = arrival.dayOffset > 0 ? "\(arrival.time)⁺\(arrival.dayOffset)" : arrival.time
                     Text(L("route_arrival", time))
-                        .font(.caption)
+                        .font(.pulse(.caption))
                         .opacity(0.7)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             Text(tripDuration(trip.durationMinutes))
-                .font(.headline)
+                .font(.pulse(.headline))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -551,16 +551,16 @@ private struct StopPicker: View {
                 HStack(spacing: 4) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(selected.name)
-                            .font(.title3.bold())
+                            .font(.pulse(.title3, weight: .bold))
                             .lineLimit(1)
                         Text(subtitle)
-                            .font(.subheadline)
+                            .font(.pulse(.subheadline))
                             .foregroundColor(Palette.textSecondary)
                             .lineLimit(1)
                     }
                     if nearbyStops.count > 1 {
                         Image(systemName: "chevron.down")
-                            .font(.subheadline.bold())
+                            .font(.pulse(.subheadline, weight: .bold))
                             .accessibilityLabel(L("choose_stop"))
                     }
                 }
@@ -571,7 +571,7 @@ private struct StopPicker: View {
             if isPinned {
                 Button(action: onFollowNearest) {
                     Label(L("back_to_nearest"), systemImage: "location.fill")
-                        .font(.footnote)
+                        .font(.pulse(.footnote))
                 }
                 .buttonStyle(.bordered)
             }

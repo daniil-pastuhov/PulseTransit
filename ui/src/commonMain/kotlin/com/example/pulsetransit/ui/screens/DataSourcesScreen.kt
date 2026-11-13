@@ -15,9 +15,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +37,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.DataSource
 import com.example.pulsetransit.data.DataSourceMode
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
@@ -67,7 +65,7 @@ fun DataSourcesScreen(
                     title = { Text(stringResource(Res.string.data_sources_title)) },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(Res.string.back))
+                            Icon(imageVector = PulseIcons.ArrowBack, contentDescription = stringResource(Res.string.back))
                         }
                     },
                     windowInsets = WindowInsets.statusBars,
@@ -95,7 +93,7 @@ fun DataSourcesScreen(
                             value = uiState.query,
                             onValueChange = viewModel::setQuery,
                             placeholder = { Text(stringResource(Res.string.data_sources_search)) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            leadingIcon = { Icon(PulseIcons.Search, contentDescription = null) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                         )

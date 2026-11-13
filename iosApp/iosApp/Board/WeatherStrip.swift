@@ -59,32 +59,32 @@ private struct WeatherItem: View {
         if isCompact {
             VStack(spacing: 0) {
                 Text(hourText)
-                    .font(.system(size: 9))
+                    .font(.pulse(fixedSize: 9))
                     .foregroundColor(Palette.textPrimary.opacity(0.8))
                     .lineLimit(1)
                 HStack(spacing: 3) {
                     icon.font(.system(size: 15))
-                    temperature.font(.subheadline.bold())
+                    temperature.font(.pulse(.subheadline, weight: .bold))
                 }
             }
         } else {
             VStack(spacing: 2) {
                 Text(hourText)
-                    .font(.caption2)
+                    .font(.pulse(.caption2))
                     .foregroundColor(Palette.textPrimary.opacity(0.8))
                     .lineLimit(1)
                 icon
                     .font(.system(size: 22))
                     .frame(height: 26)
                 HStack(spacing: 3) {
-                    temperature.font(.body.bold())
+                    temperature.font(.pulse(.body, weight: .bold))
                     PrecipitationBar(millimetres: weather.precipitation)
                         .frame(width: 4, height: 16)
                         .accessibilityLabel(L("weather_precipitation", String(weather.precipitation)))
                 }
                 if showsCondition {
                     Text(label)
-                        .font(.system(size: 9))
+                        .font(.pulse(fixedSize: 9))
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .foregroundColor(Palette.textPrimary.opacity(0.6))

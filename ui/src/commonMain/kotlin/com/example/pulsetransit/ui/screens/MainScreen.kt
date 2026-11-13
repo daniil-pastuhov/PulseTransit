@@ -36,12 +36,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SearchOff
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -108,6 +102,7 @@ import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.data.parseWeatherSymbol
 import com.example.pulsetransit.data.tripArrival
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.BlurredPlaceholder
 import com.example.pulsetransit.ui.components.FollowedJourneyBar
@@ -121,9 +116,9 @@ import com.example.pulsetransit.ui.components.RouteSearchSheet
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
+import com.example.pulsetransit.ui.components.TripRouteText
 import com.example.pulsetransit.ui.components.UpdateBanner
 import com.example.pulsetransit.ui.components.WeatherIcon
-import com.example.pulsetransit.ui.components.getTransportEmoji
 import com.example.pulsetransit.ui.components.loadFailureIcon
 import com.example.pulsetransit.ui.components.loadFailureReason
 import com.example.pulsetransit.ui.components.rememberPlaceholderPulse
@@ -591,12 +586,11 @@ fun FastestTripBanner(
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )
-        Text(
-            text = tripRouteText(trip),
+        TripRouteText(
+            trip = trip,
             style = MaterialTheme.typography.bodyMedium,
             color = onContainer.copy(alpha = 0.8f),
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
     }
 
@@ -643,26 +637,6 @@ fun FastestTripBanner(
         }
     }
 }
-
-/** A trip's legs as "🚇 2 from Oslo S  →  🚶 4 min", or its first line and origin if Entur sent no legs. */
-@Composable
-internal fun tripRouteText(trip: TripInfo): String =
-    if (trip.legs.isNotEmpty()) {
-        trip.legs
-            .mapNotNull { leg ->
-                when {
-                    leg.lineName != null -> {
-                        val prefix = "${getTransportEmoji(leg.mode)} ${leg.lineName}"
-                        leg.fromName?.let { "$prefix ${stringResource(Res.string.leg_from, it)}" } ?: prefix
-                    }
-                    leg.durationMinutes > 0 ->
-                        stringResource(Res.string.leg_walk, leg.durationMinutes)
-                    else -> null // skip 0-minute foot legs (quay transfers)
-                }
-            }.joinToString("  →  ")
-    } else {
-        stringResource(Res.string.fastest_route_info, trip.lineName, trip.originName)
-    }
 
 // Size of the "+1" next-day marker on an arrival time, as on the board's departure times.
 private const val ARRIVAL_DAY_OFFSET_FONT_SCALE = 0.6f
@@ -758,7 +732,7 @@ fun FastestTripNone(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(
-            imageVector = Icons.Default.SearchOff,
+            imageVector = PulseIcons.SearchOff,
             contentDescription = null,
             tint = onContainer.copy(alpha = 0.8f),
             modifier = Modifier.size(20.dp),
@@ -1265,13 +1239,13 @@ private fun HeaderActions(
         var expanded by remember { mutableStateOf(false) }
         Box {
             IconButton(onClick = { expanded = true }) {
-                Icon(imageVector = Icons.Default.MoreVert, contentDescription = stringResource(Res.string.more_actions), tint = tint)
+                Icon(imageVector = PulseIcons.MoreVert, contentDescription = stringResource(Res.string.more_actions), tint = tint)
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 listOf(
-                    Triple(Icons.Default.Search, Res.string.search_route, onSearchRoute),
-                    Triple(Icons.Default.Refresh, Res.string.refresh, onRefresh),
-                    Triple(Icons.Default.Settings, Res.string.settings_title, onOpenSettings),
+                    Triple(PulseIcons.Search, Res.string.search_route, onSearchRoute),
+                    Triple(PulseIcons.Refresh, Res.string.refresh, onRefresh),
+                    Triple(PulseIcons.Settings, Res.string.settings_title, onOpenSettings),
                 ).forEach { (icon, label, action) ->
                     DropdownMenuItem(
                         text = { Text(stringResource(label)) },
@@ -1291,13 +1265,13 @@ private fun HeaderActions(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         IconButton(onClick = onSearchRoute) {
-            Icon(imageVector = Icons.Default.Search, contentDescription = stringResource(Res.string.search_route), tint = tint)
+            Icon(imageVector = PulseIcons.Search, contentDescription = stringResource(Res.string.search_route), tint = tint)
         }
         IconButton(onClick = onRefresh) {
-            Icon(imageVector = Icons.Default.Refresh, contentDescription = stringResource(Res.string.refresh), tint = tint)
+            Icon(imageVector = PulseIcons.Refresh, contentDescription = stringResource(Res.string.refresh), tint = tint)
         }
         IconButton(onClick = onOpenSettings) {
-            Icon(imageVector = Icons.Default.Settings, contentDescription = stringResource(Res.string.settings_title), tint = tint)
+            Icon(imageVector = PulseIcons.Settings, contentDescription = stringResource(Res.string.settings_title), tint = tint)
         }
     }
 }

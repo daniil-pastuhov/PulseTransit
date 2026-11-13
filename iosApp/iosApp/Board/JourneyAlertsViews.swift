@@ -42,7 +42,7 @@ struct JourneyRationaleView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Image(systemName: "bell.badge")
-                        .font(.largeTitle)
+                        .font(.pulse(.largeTitle))
                         .foregroundColor(Palette.primary)
                         .accessibilityHidden(true)
                     Text(L("journey_rationale_body"))
@@ -55,7 +55,7 @@ struct JourneyRationaleView: View {
                         .accessibilityIdentifier("journey.mode.time")
                     // Unlike Android, iOS suspends the app, so time-only alerts stop following live times.
                     Label(L("journey_ios_time_limit"), systemImage: "info.circle")
-                        .font(.footnote)
+                        .font(.pulse(.footnote))
                         .foregroundColor(Palette.textSecondary)
                         .accessibilityIdentifier("journey.rationale.iosLimit")
                 }
@@ -80,12 +80,12 @@ struct JourneyRationaleView: View {
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: symbol)
-                    .font(.title3)
+                    .font(.pulse(.title3))
                     .foregroundColor(Palette.primary)
                     .frame(width: 28)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(L(title)).font(.headline)
-                    Text(L(detail)).font(.subheadline).foregroundColor(Palette.textSecondary)
+                    Text(L(title)).font(.pulse(.headline))
+                    Text(L(detail)).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
                 }
                 Spacer(minLength: 0)
             }
@@ -116,12 +116,12 @@ struct FollowedJourneyBar: View {
             }
             .accessibilityIdentifier("journey.bar")
             Button(L("journey_stop_button"), action: onStop)
-                .font(.subheadline.bold())
+                .font(.pulse(.subheadline, weight: .bold))
                 .foregroundColor(Palette.primary)
                 .accessibilityIdentifier("journey.bar.stop")
         }
         .buttonStyle(.borderless)
-        .font(.subheadline)
+        .font(.pulse(.subheadline))
         .foregroundColor(Palette.textPrimary)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

@@ -51,11 +51,11 @@ struct StopPanel: View {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 0) {
                         Text(stop.name)
-                            .font(.title3.bold())
+                            .font(.pulse(.title3, weight: .bold))
                             .lineLimit(1)
                         if let locality = stop.locality {
                             Text(locality)
-                                .font(.subheadline)
+                                .font(.pulse(.subheadline))
                                 .foregroundColor(Palette.textSecondary)
                         }
                     }
@@ -215,7 +215,7 @@ private struct LoadingPlaceholder: View {
                     PlaceholderBlock(width: 40, height: 20, pulse: pulse)
                 }
                 .padding(8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card.opacity(0.4)))
+                .background(RoundedRectangle(cornerRadius: 8).fill(Palette.surfaceContainer.opacity(0.6)))
             }
             Spacer()
         }
@@ -259,16 +259,10 @@ private struct DepartureGroupRow: View {
         if let first = departures.first {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 10) {
-                    Text(first.line)
-                        .font(.subheadline.bold())
-                        .strikethrough(first.isCancelled)
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .frame(width: 48)
-                        .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 6).fill(first.isCancelled ? Color.gray : Palette.transport(first.transportMode)))
-                    Text("\(Palette.transportEmoji(first.transportMode))  \(first.destination)")
-                        .font(.body.weight(.medium))
+                    LinePill(line: first.line, mode: first.transportMode, cancelled: first.isCancelled)
+                    TransportIcon(mode: first.transportMode).font(.pulse(.subheadline))
+                    Text(first.destination)
+                        .font(.pulse(.body, weight: .medium))
                         .strikethrough(first.isCancelled)
                         .foregroundColor(first.isCancelled ? Palette.textSecondary.opacity(0.6) : Palette.textPrimary)
                         .lineLimit(1)
@@ -285,7 +279,7 @@ private struct DepartureGroupRow: View {
                             Text(first.isCancelled || times.primary.hasPrefix(clock) ? "" : clock)
                                 .monospacedDigit()
                                 .reservingWidth(of: WideRow.widestClock, alignment: .trailing)
-                                .font(.body.weight(.medium))
+                                .font(.pulse(.body, weight: .medium))
                                 .foregroundColor(Palette.textSecondary)
                         }
                     }
@@ -295,11 +289,11 @@ private struct DepartureGroupRow: View {
                         // clock and platform stay in line with the others.
                         Text(delay ?? "")
                             .reservingWidth(of: WideRow.widestDelay)
-                            .font(.caption.bold())
+                            .font(.pulse(.caption, weight: .bold))
                             .foregroundColor(Palette.error)
                     } else if let delay {
                         Text(delay)
-                            .font(.caption.bold())
+                            .font(.pulse(.caption, weight: .bold))
                             .foregroundColor(Palette.error)
                     }
                     // Ticks on its own: the shared state only changes about once a minute, and a row
@@ -307,7 +301,7 @@ private struct DepartureGroupRow: View {
                     TimelineView(.periodic(from: .now, by: 1)) { timeline in
                         let times = DepartureTimes(departures: visible, now: timeline.date)
                         Text(times.primary)
-                            .font(.title3.weight(.heavy))
+                            .font(.pulse(.title3, weight: .heavy))
                             .monospacedDigit()
                             .foregroundColor(first.isCancelled ? Palette.error : (times.primaryIsNow ? Palette.primary : Palette.textPrimary))
                             // Right-aligned in a column of its own, so "Now" and "12m" end in line.
@@ -320,7 +314,7 @@ private struct DepartureGroupRow: View {
                     let secondary = DepartureTimes(departures: visible, now: timeline.date).secondary
                     if !secondary.isEmpty || hidden > 0 {
                         secondaryText(secondary, hidden: hidden)
-                            .font(.body.weight(.medium))
+                            .font(.pulse(.body, weight: .medium))
                             .lineLimit(2) // a backstop: the capped times wrap at most once
                             .padding(.leading, 58)
                     }
@@ -328,18 +322,13 @@ private struct DepartureGroupRow: View {
                 let notices = departures.flatMap(\.notices).uniqued()
                 if showMessages && !notices.isEmpty {
                     ForEach(notices, id: \.self) { notice in
-                        HStack(spacing: 4) {
-                            Text("⚠️").font(.system(size: 10))
-                            Text(notice)
-                                .font(.system(size: 11))
-                                .foregroundColor(Palette.error)
-                                .lineLimit(2)
-                        }
+                        NoticeText(notice: notice, font: .pulse(fixedSize: 11))
+                            .lineLimit(2)
                     }
                 }
             }
             .padding(8)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Palette.card.opacity(first.isCancelled ? 0.2 : 0.5)))
+            .background(RoundedRectangle(cornerRadius: 8).fill(Palette.surfaceContainer.opacity(first.isCancelled ? 0.4 : 1)))
             .contentShape(Rectangle())
             .onTapGesture(perform: onTap)
         }
@@ -354,7 +343,7 @@ private struct PlatformChip: View {
         ZStack {
             if let platform {
                 Text(platform)
-                    .font(.subheadline.bold())
+                    .font(.pulse(.subheadline, weight: .bold))
                     .foregroundColor(Palette.textSecondary)
                     .lineLimit(1)
                     .padding(.horizontal, 8)
@@ -373,7 +362,7 @@ private func secondaryText(_ secondary: [String], hidden: Int) -> Text {
     var text = Text(secondary.joined(separator: "    ")).foregroundColor(Palette.textSecondary)
     if hidden > 0 {
         let more = Text(L("more_departures_hidden", hidden))
-            .font(.subheadline.weight(.medium))
+            .font(.pulse(.subheadline, weight: .medium))
             .foregroundColor(Palette.textSecondary.opacity(0.6))
         text = secondary.isEmpty ? more : text + Text(verbatim: "    ") + more
     }

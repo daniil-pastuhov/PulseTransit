@@ -2,38 +2,85 @@ import Shared
 import SwiftUI
 import UIKit
 
-/// The board's colours, the same tokens as the Android theme (theme/Color.kt), in light and dark.
+/// The board's colours: the Fjord roles from docs/design/tokens.json (generated into FjordTokens.swift),
+/// the same as the Android theme (theme/Color.kt), in light and dark.
 enum Palette {
-    static let background = dynamic(light: 0xF4F6F9, dark: 0x0F1016)
-    static let surface = dynamic(light: 0xFFFFFF, dark: 0x161824)
-    static let card = dynamic(light: 0xFFFFFF, dark: 0x1E2132)
-    static let textPrimary = dynamic(light: 0x1E2132, dark: 0xFFFFFF)
-    static let textSecondary = dynamic(light: 0x6B7280, dark: 0xAEB4C6)
-    static let primary = dynamic(light: 0x1A73E8, dark: 0x5CA1FF)
-    static let error = dynamic(light: 0xBA1A1A, dark: 0xFFB4AB)
+    static let background = dynamic(FjordTokens.background)
+    /// Cards and panels.
+    static let surface = dynamic(FjordTokens.surface)
+    /// Raised cards, sheets and dialogs.
+    static let card = dynamic(FjordTokens.surfaceContainerHigh)
+    /// Fills: rows, skeletons, tracks.
+    static let surfaceContainer = dynamic(FjordTokens.surfaceContainer)
+    static let textPrimary = dynamic(FjordTokens.onSurface)
+    static let textSecondary = dynamic(FjordTokens.onSurfaceVariant)
+    static let outline = dynamic(FjordTokens.outline)
+    static let outlineVariant = dynamic(FjordTokens.outlineVariant)
+    static let primary = dynamic(FjordTokens.primary)
+    static let onPrimary = dynamic(FjordTokens.onPrimary)
+    static let primaryContainer = dynamic(FjordTokens.primaryContainer)
+    static let onPrimaryContainer = dynamic(FjordTokens.onPrimaryContainer)
+    static let error = dynamic(FjordTokens.error)
+    static let errorContainer = dynamic(FjordTokens.errorContainer)
+    static let onErrorContainer = dynamic(FjordTokens.onErrorContainer)
+    static let warningContainer = dynamic(FjordTokens.warningContainer)
+    static let onWarningContainer = dynamic(FjordTokens.onWarningContainer)
+    static let successContainer = dynamic(FjordTokens.successContainer)
+    static let onSuccessContainer = dynamic(FjordTokens.onSuccessContainer)
+    static let infoContainer = dynamic(FjordTokens.infoContainer)
+    static let onInfoContainer = dynamic(FjordTokens.onInfoContainer)
+    static let inverseSurface = dynamic(FjordTokens.inverseSurface)
+    static let onInverseSurface = dynamic(FjordTokens.onInverseSurface)
+    static let inversePrimary = dynamic(FjordTokens.inversePrimary)
+    /// Delayed times and late countdowns.
+    static let late = dynamic(FjordTokens.late)
+    /// "Now" and realtime times.
+    static let now = dynamic(FjordTokens.now)
+    /// The fastest-route banner, which stays dark on the wall at night.
+    static let route = dynamic(FjordTokens.route)
+    static let onRoute = dynamic(FjordTokens.onRoute)
+    static let routeAccent = dynamic(FjordTokens.routeAccent)
+    static let onLine = dynamic(FjordTokens.onLineBus)
     static let rain = Color(hex: 0x42A5F5)
 
-    /// Line pill colour by Entur transport mode.
+    /// Line pill colour by Entur transport mode, tuned per theme so white text passes AA.
     static func transport(_ mode: String?) -> Color {
         switch mode?.lowercased() {
-        case "bus": return Color(hex: 0xE74C3C)
-        case "tram": return Color(hex: 0x7E48A2)
-        case "metro": return Color(hex: 0xC45B25)
-        case "rail": return Color(hex: 0x003D82)
-        case "airportrail": return Color(hex: 0x86005B)
-        case "water": return Color(hex: 0x16A085)
-        default: return Color(hex: 0x7F8C8D)
+        case "bus", "coach": return lineBus
+        case "tram": return lineTram
+        case "metro": return lineMetro
+        case "rail": return lineTrain
+        case "airportrail": return lineExpress
+        case "water": return lineFerry
+        default: return lineOther
         }
     }
 
-    static func transportEmoji(_ mode: String?) -> String {
+    private static let lineBus = dynamic(FjordTokens.lineBus)
+    private static let lineTram = dynamic(FjordTokens.lineTram)
+    private static let lineTrain = dynamic(FjordTokens.lineTrain)
+    private static let lineExpress = dynamic(FjordTokens.lineExpress)
+    private static let lineMetro = dynamic(FjordTokens.lineMetro)
+    private static let lineFerry = dynamic(FjordTokens.lineFerry)
+    private static let lineOther = dynamic(FjordTokens.lineOther)
+
+    /// The SF Symbol for an Entur transport mode, the counterpart of Android's Material Symbols.
+    /// Newer symbols fall back to ones every supported iOS has.
+    static func transportSymbol(_ mode: String?) -> String {
         switch mode?.lowercased() {
-        case "tram": return "🚃"
-        case "metro": return "🚇"
-        case "rail": return "🚆"
-        case "water": return "⛴️"
-        default: return "🚌"
+        case "tram": return firstAvailable("lightrail.fill", "tram.fill")
+        case "metro": return firstAvailable("tram.tunnel.fill", "tram.fill")
+        // The front-view train, like Material's "train"; the side view reads as a blob at text size.
+        case "rail", "airportrail": return "tram.fill"
+        case "water": return firstAvailable("ferry.fill", "drop.fill")
+        case "air": return "airplane"
+        case "foot": return "figure.walk"
+        default: return "bus.fill"
         }
+    }
+
+    private static func firstAvailable(_ names: String...) -> String {
+        names.first { UIImage(systemName: $0) != nil } ?? names[names.count - 1]
     }
 
     /// Temperature ramp: indigo when freezing through red when hot, as on Android.
@@ -50,9 +97,9 @@ enum Palette {
         return Color(hex: lowC).mix(with: Color(hex: highC), fraction: (celsius - lowT) / (highT - lowT))
     }
 
-    private static func dynamic(light: UInt32, dark: UInt32) -> Color {
+    private static func dynamic(_ pair: (light: UInt32, dark: UInt32)) -> Color {
         Color(UIColor { traits in
-            UIColor(hex: traits.userInterfaceStyle == .dark ? dark : light)
+            UIColor(hex: traits.userInterfaceStyle == .dark ? pair.dark : pair.light)
         })
     }
 }

@@ -25,8 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,7 +44,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -69,13 +66,7 @@ import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.StopPlace
-import com.example.pulsetransit.theme.ColorBus
-import com.example.pulsetransit.theme.ColorDefaultLine
-import com.example.pulsetransit.theme.ColorExpressTrain
-import com.example.pulsetransit.theme.ColorFerry
-import com.example.pulsetransit.theme.ColorMetro
-import com.example.pulsetransit.theme.ColorTrain
-import com.example.pulsetransit.theme.ColorTram
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.layout.BoardLayout
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.flow.first
@@ -218,7 +209,7 @@ fun StopBoardPanel(
                 }
                 dragHandle?.let { handle ->
                     Icon(
-                        imageVector = Icons.Default.DragIndicator,
+                        imageVector = PulseIcons.DragIndicator,
                         contentDescription = stringResource(Res.string.drag_to_reorder),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier =
@@ -411,8 +402,6 @@ fun DepartureRow(
 ) {
     val departures = group.departures
     val firstDeparture = departures.first()
-    val transportEmoji = getTransportEmoji(firstDeparture.transportMode)
-    val pillColor = if (firstDeparture.isCancelled) Color.Gray else getTransportColor(firstDeparture.transportMode)
     val nowText = stringResource(Res.string.now)
     val cancelledText = stringResource(Res.string.cancelled)
     val minUnit = stringResource(Res.string.unit_minute)
@@ -438,34 +427,18 @@ fun DepartureRow(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Line number badge
-            Box(
-                modifier =
-                    Modifier
-                        .width(48.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(pillColor)
-                        .padding(vertical = 4.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = firstDeparture.line,
-                    style =
-                        MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            textDecoration = if (firstDeparture.isCancelled) TextDecoration.LineThrough else null,
-                        ),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            LinePill(
+                line = firstDeparture.line,
+                mode = firstDeparture.transportMode,
+                cancelled = firstDeparture.isCancelled,
+            )
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // Transport Icon & Destination
+            TransportIcon(firstDeparture.transportMode)
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "$transportEmoji  ${firstDeparture.destination}",
+                text = firstDeparture.destination,
                 style =
                     MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.Medium,
@@ -577,10 +550,11 @@ fun DepartureRow(
             Spacer(modifier = Modifier.height(4.dp))
             allNotices.forEach { notice ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "⚠️",
-                        fontSize = 10.sp,
-                        modifier = Modifier.padding(end = 4.dp),
+                    Icon(
+                        PulseIcons.Error,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(end = 4.dp).size(12.dp),
                     )
                     Text(
                         text = notice,
@@ -647,29 +621,6 @@ private fun PlatformChip(platform: String?) {
         }
     }
 }
-
-/** A transport mode's emoji; also used by the Android widgets. */
-fun getTransportEmoji(mode: String?): String =
-    when (mode?.lowercase()) {
-        "bus" -> "🚌"
-        "tram" -> "🚃"
-        "metro" -> "🚇"
-        "rail" -> "🚆"
-        "water" -> "⛴️"
-        else -> "🚌" // fallback
-    }
-
-/** A line badge's colour by Entur transport mode; also used by the Android widgets. */
-fun getTransportColor(mode: String?): Color =
-    when (mode?.lowercase()) {
-        "bus" -> ColorBus
-        "tram" -> ColorTram
-        "metro" -> ColorMetro
-        "rail" -> ColorTrain
-        "airportrail" -> ColorExpressTrain
-        "water" -> ColorFerry
-        else -> ColorDefaultLine
-    }
 
 private fun startOfDayMillis(date: Date): Long =
     Calendar

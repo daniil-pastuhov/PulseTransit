@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +50,7 @@ import com.example.pulsetransit.data.calendarDaysFrom
 import com.example.pulsetransit.data.clockTimeText
 import com.example.pulsetransit.data.localTimeOfDay
 import com.example.pulsetransit.data.nextTimeOfDay
+import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.resources.*
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Clock
@@ -101,7 +100,7 @@ fun TripTimeChip(
     AssistChip(
         onClick = { editing = true },
         label = { Text(tripTimeLabel(time), maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        leadingIcon = { Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        leadingIcon = { Icon(PulseIcons.Schedule, contentDescription = null, modifier = Modifier.size(18.dp)) },
         modifier = modifier,
     )
     if (editing) {
@@ -141,7 +140,7 @@ fun TripTimeButton(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (atMillis == null) {
-            Icon(Icons.Default.Schedule, contentDescription = null, tint = tint, modifier = Modifier.padding(4.dp))
+            Icon(PulseIcons.Schedule, contentDescription = null, tint = tint, modifier = Modifier.padding(4.dp))
         } else {
             Text(
                 text =
