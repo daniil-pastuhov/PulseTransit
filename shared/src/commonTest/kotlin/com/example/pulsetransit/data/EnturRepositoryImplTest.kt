@@ -580,4 +580,37 @@ class EnturRepositoryImplTest {
             // The geocoder wants "no": "NOR" filters out every stop, Norwegian ones included.
             assertEquals(listOf<String?>("no", "no", "no"), countries)
         }
+
+    @Test
+    fun `place search asks for streets and routes to one by its coordinates`() =
+        runTest {
+            var layers: String? = null
+            val engine =
+                MockEngine { request ->
+                    layers = request.url.parameters["layers"]
+                    respond(
+                        """
+                        {"features":[{
+                          "geometry":{"type":"Point","coordinates":[10.827993,59.950236]},
+                          "properties":{
+                            "id":"KVE:TopographicPlace:0301-Kristine Bonnevies vei",
+                            "layer":"street",
+                            "names":{"default":"Kristine Bonnevies vei"},
+                            "address":{"locality":"Oslo"}
+                          }
+                        }]}
+                        """.trimIndent(),
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val street = repo.searchPlaces("Kristine Bonnevies", focusLat = null, focusLon = null).single()
+
+            assertEquals(true, layers?.split(",")?.contains("street"))
+            assertEquals(PlaceKind.ADDRESS, street.kind)
+            assertEquals(59.950236, street.latitude)
+            assertEquals(10.827993, street.longitude)
+        }
 }
