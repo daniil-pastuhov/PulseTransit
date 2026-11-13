@@ -379,17 +379,41 @@ class StopBoardViewModelTest : BoardTestBase() {
         }
 
     @Test
-    fun `no favorites means no request and a clear message`() =
+    fun `no favorites means no request and no update time`() =
         boardTest {
             settings.favoriteStops = emptyList()
             val vm = viewModel()
 
-            assertEquals("No favorites", vm.uiState.value.lastUpdated)
+            assertEquals("", vm.uiState.value.lastUpdated)
             assertTrue(
                 vm.uiState.value.departures
                     .isEmpty(),
             )
             assertTrue(entur.requestedQuays.isEmpty())
+        }
+
+    @Test
+    fun `removing the last stop clears the update time of the earlier fetch`() =
+        boardTest {
+            settings.favoriteStops = listOf(oslo)
+            entur.departures = { Sourced.live(listOf(departure("L1", "Lillestrøm", nowMillis() + 5 * minute))) }
+            val vm = viewModel()
+            assertTrue(
+                vm.uiState.value.lastUpdated
+                    .isNotEmpty(),
+            )
+
+            // Removed in Settings: the footer must not keep saying when the old stop was fetched.
+            settings.favoriteStops = emptyList()
+            vm.loadSettings()
+            vm.refreshDepartures()
+            runCurrent()
+
+            assertEquals("", vm.uiState.value.lastUpdated)
+            assertTrue(
+                vm.uiState.value.departures
+                    .isEmpty(),
+            )
         }
 
     @Test

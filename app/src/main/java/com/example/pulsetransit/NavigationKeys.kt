@@ -16,8 +16,8 @@ import kotlinx.serialization.Serializable
 /** Settings' data sources: the transport companies whose timetables reach Entur. */
 @Serializable data object DataSources : NavKey
 
-/** The first-launch choice of [com.example.pulsetransit.data.AppMode]. */
-@Serializable data object ModeSelection : NavKey
-
-/** The intro to the chosen mode, shown once after [ModeSelection]; every page can be skipped. */
-@Serializable data object Intro : NavKey
+/**
+ * First launch: the choice of [com.example.pulsetransit.data.AppMode], the intro to it and, for on
+ * the spot, the ask for location, stepped through by `OnboardingFlow`.
+ */
+@Serializable data object Onboarding : NavKey

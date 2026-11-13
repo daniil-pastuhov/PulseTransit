@@ -92,7 +92,6 @@ private struct MockHeader: View {
             Text("08:12").font(.pulse(.title2, weight: .bold)).foregroundColor(Palette.primary).spot(spot)
             Spacer()
             icon("magnifyingglass", focus == .search ? .focus : spot)
-            icon("arrow.clockwise", spot)
             icon("gearshape.fill", focus == .settings ? .focus : spot)
         }
     }

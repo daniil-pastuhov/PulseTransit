@@ -69,6 +69,23 @@
         }
       }
     },
+    "app_name_brand": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit"
+          }
+        }
+      }
+    },
     "attribution_entur": {
       "extractionState": "manual",
       "localizations": {
@@ -422,6 +439,159 @@
           "stringUnit": {
             "state": "translated",
             "value": "Av"
+          }
+        }
+      }
+    },
+    "camera_allow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow camera"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tillat kamera"
+          }
+        }
+      }
+    },
+    "camera_denied_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit can’t use the front camera, so the board won’t wake by motion. It stays at full brightness instead of dimming, and you can still touch it."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit kan ikke bruke frontkameraet, så tavlen vekkes ikke av bevegelse. Den holder full lysstyrke i stedet for å dempes, og du kan fortsatt trykke på den."
+          }
+        }
+      }
+    },
+    "camera_denied_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera access is off"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kameratilgang er av"
+          }
+        }
+      }
+    },
+    "camera_keep_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep it off"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La det være av"
+          }
+        }
+      }
+    },
+    "camera_rationale_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "While the screen is dimmed, the front camera watches for movement and wakes the board."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mens skjermen er dempet, ser frontkameraet etter bevegelse og vekker tavlen."
+          }
+        }
+      }
+    },
+    "camera_rationale_nothing_kept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing is recorded, saved or sent anywhere."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting tas opp, lagres eller sendes noe sted."
+          }
+        }
+      }
+    },
+    "camera_rationale_on_device": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frames never leave this device. Each one is compared with the last and thrown away."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildene forlater aldri enheten. Hvert bilde sammenlignes med det forrige og kastes."
+          }
+        }
+      }
+    },
+    "camera_rationale_sensitivity": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose how much motion wakes it in Settings, under Camera Sensitivity."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Velg hvor mye bevegelse som vekker den i Innstillinger, under Kamerafølsomhet."
+          }
+        }
+      }
+    },
+    "camera_rationale_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wake the screen when someone walks by"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vekk skjermen når noen går forbi"
           }
         }
       }
@@ -3619,6 +3789,23 @@
         }
       }
     },
+    "location_continue_without": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue without location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsett uten posisjon"
+          }
+        }
+      }
+    },
     "location_denied": {
       "extractionState": "manual",
       "localizations": {
@@ -3632,6 +3819,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "Posisjonstilgang trengs for å vise reiser og stoppesteder der du er."
+          }
+        }
+      }
+    },
+    "location_needed_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access is needed to show routes and stops from where you are. Turn it on in your phone’s settings, or go on without it and search for routes yourself."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjonstilgang trengs for å vise reiser og holdeplasser fra der du er. Slå den på i telefonens innstillinger, eller fortsett uten og søk opp reiser selv."
+          }
+        }
+      }
+    },
+    "location_needed_body_undecided": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access is needed to show routes and stops from where you are. Allow it now, or use PulseTransit as a wall board, which needs none."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjonstilgang trengs for å vise reiser og holdeplasser fra der du er. Tillat det nå, eller bruk PulseTransit som veggtavle, som ikke trenger det."
+          }
+        }
+      }
+    },
+    "location_needed_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the spot needs your location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der du er trenger posisjonen din"
+          }
+        }
+      }
+    },
+    "location_rationale_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the spot finds the nearest stop and plans routes from where you stand. Your position is sent only to Entur, to find stops and routes, and to MET Norway for the weather."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der du er finner nærmeste holdeplass og planlegger reiser fra der du står. Posisjonen sendes bare til Entur, for å finne holdeplasser og reiser, og til Meteorologisk institutt for været."
+          }
+        }
+      }
+    },
+    "location_rationale_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Precise location finds the nearest stop; approximate still works, less exactly."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nøyaktig posisjon finner nærmeste holdeplass; omtrentlig fungerer også, men mindre presist."
+          }
+        }
+      }
+    },
+    "location_rationale_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use your location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk posisjonen din"
+          }
+        }
+      }
+    },
+    "location_rationale_turn_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can turn it off at any time in your phone’s settings."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan slå det av når som helst i telefonens innstillinger."
           }
         }
       }
@@ -4180,6 +4486,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingen stoppesteder innen 1 km."
+          }
+        }
+      }
+    },
+    "not_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nå"
           }
         }
       }
@@ -6904,6 +7227,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oppdaterer…"
+          }
+        }
+      }
+    },
+    "use_as_board_instead": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use as a wall board instead"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk som veggtavle i stedet"
           }
         }
       }

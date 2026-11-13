@@ -846,7 +846,8 @@ class StopBoardViewModel(
                     loadingStopIds = emptySet(),
                     loadingMoreStopIds = emptySet(),
                     failedStopIds = emptySet(),
-                    lastUpdated = "No favorites",
+                    // Nothing was fetched, so the footer leaves out "Updated".
+                    lastUpdated = "",
                 )
             }
             return

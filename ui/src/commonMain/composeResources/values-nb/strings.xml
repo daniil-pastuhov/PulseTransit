@@ -496,4 +496,24 @@
         <item quantity="one">%1$d reisemål</item>
         <item quantity="other">%1$d reisemål</item>
     </plurals>
+    <string name="not_now">Ikke nå</string>
+    <string name="location_rationale_title">Bruk posisjonen din</string>
+    <string name="location_rationale_body">Der du er finner nærmeste holdeplass og planlegger reiser fra der du står. Posisjonen sendes bare til Entur, for å finne holdeplasser og reiser, og til Meteorologisk institutt for været.</string>
+    <string name="location_rationale_precise">Nøyaktig posisjon finner nærmeste holdeplass; omtrentlig fungerer også, men mindre presist.</string>
+    <string name="location_rationale_turn_off">Du kan slå det av når som helst i telefonens innstillinger.</string>
+    <string name="location_needed_title">Der du er trenger posisjonen din</string>
+    <string name="location_needed_body">Posisjonstilgang trengs for å vise reiser og holdeplasser fra der du er. Slå den på i telefonens innstillinger, eller fortsett uten og søk opp reiser selv.</string>
+    <string name="location_continue_without">Fortsett uten posisjon</string>
+    <string name="use_as_board_instead">Bruk som veggtavle i stedet</string>
+    <string name="camera_rationale_title">Vekk skjermen når noen går forbi</string>
+    <string name="camera_rationale_body">Mens skjermen er dempet, ser frontkameraet etter bevegelse og vekker tavlen.</string>
+    <string name="camera_rationale_on_device">Bildene forlater aldri enheten. Hvert bilde sammenlignes med det forrige og kastes.</string>
+    <string name="camera_rationale_nothing_kept">Ingenting tas opp, lagres eller sendes noe sted.</string>
+    <string name="camera_rationale_sensitivity">Velg hvor mye bevegelse som vekker den i Innstillinger, under Kamerafølsomhet.</string>
+    <string name="camera_allow">Tillat kamera</string>
+    <string name="camera_denied_title">Kameratilgang er av</string>
+    <string name="camera_denied_body">PulseTransit kan ikke bruke frontkameraet, så tavlen vekkes ikke av bevegelse. Den holder full lysstyrke i stedet for å dempes, og du kan fortsatt trykke på den.</string>
+    <string name="camera_keep_off">La det være av</string>
+    <string name="app_name_brand">PulseTransit</string>
+    <string name="location_needed_body_undecided">Posisjonstilgang trengs for å vise reiser og holdeplasser fra der du er. Tillat det nå, eller bruk PulseTransit som veggtavle, som ikke trenger det.</string>
 </resources>

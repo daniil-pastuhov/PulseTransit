@@ -49,6 +49,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -87,11 +88,16 @@ import com.example.pulsetransit.data.quaySections
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.Callout
+import com.example.pulsetransit.ui.components.CalloutTone
 import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
 import com.example.pulsetransit.ui.components.ReorderableColumn
 import com.example.pulsetransit.ui.components.scheduleSummary
+import com.example.pulsetransit.ui.platform.AppPermission
 import com.example.pulsetransit.ui.platform.rememberLocationPermissionRequest
+import com.example.pulsetransit.ui.platform.rememberOpenAppSettings
+import com.example.pulsetransit.ui.platform.rememberPermissionGranted
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import org.jetbrains.compose.resources.StringResource
@@ -119,6 +125,18 @@ fun SettingsScreen(
     var manualLon by remember { mutableStateOf("") }
 
     val requestLocation = rememberLocationPermissionRequest(onGranted = viewModel::requestLocationAndNearbyStops)
+    val cameraGranted = rememberPermissionGranted(AppPermission.CAMERA)
+    val openAppSettings = rememberOpenAppSettings()
+    var askingCamera by remember { mutableStateOf(false) }
+    if (askingCamera) {
+        CameraAccessDialog(
+            onGranted = {
+                askingCamera = false
+                viewModel.updateCameraMotionWake(true)
+            },
+            onDismiss = { askingCamera = false },
+        )
+    }
 
     PulseTransitTheme(themeMode = uiState.themeMode) {
         Scaffold(
@@ -488,8 +506,22 @@ fun SettingsScreen(
                     // Section: Power & Refresh
                     SettingsCard(title = stringResource(Res.string.power_refresh)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = uiState.cameraMotionWake, onCheckedChange = { viewModel.updateCameraMotionWake(it) })
+                            Checkbox(
+                                checked = uiState.cameraMotionWake,
+                                onCheckedChange = { on ->
+                                    // Turned on without camera access: why first, then the prompt.
+                                    if (on && !cameraGranted) askingCamera = true else viewModel.updateCameraMotionWake(on)
+                                },
+                            )
                             Text(stringResource(Res.string.wake_camera))
+                        }
+                        if (uiState.cameraMotionWake && !cameraGranted) {
+                            // On from before, with access since taken away: say why it does nothing.
+                            Callout(
+                                body = stringResource(Res.string.camera_denied_title),
+                                tone = CalloutTone.WARNING,
+                                icon = PulseIcons.VideocamOff,
+                            ) { TextButton(onClick = openAppSettings) { Text(stringResource(Res.string.open_app_settings)) } }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Checkbox(checked = uiState.dynamicRefresh, onCheckedChange = { viewModel.updateDynamicRefresh(it) })

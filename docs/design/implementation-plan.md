@@ -95,3 +95,13 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
 - Step 6: the stop chooser is an adaptive sheet on Android (bottom, or a side sheet from 700 dp)
   and the system sheet on iOS, as in step 4. "Allow location" on iOS opens the Settings app, since
   iOS asks only once.
+- Step 7: on-spot location denied offers "Continue without location" (the board then says location
+  is off) instead of "Set location manually", as on the spot has no fixed location; on iOS it
+  shows once access is refused, and while undecided the way on is the prompt, since the board
+  would ask anyway. The location rationale names MET Norway as well as Entur: the forecast is for
+  the device's position. Camera denied says the board stays at full brightness, since dimming is
+  tied to camera wake. The permission art is the feature's symbol on a tile, not the drawn scenes.
+  On the spot's intro is the design's three steps (Tap for details is the board's only). Neither
+  board asks for the camera on its own any more, and on Android the on-spot board no longer asks
+  for location (it shows "Allow location"). On iOS it still does while access is undecided, e.g.
+  after switching to on the spot in Settings, since its location source asks the first time.

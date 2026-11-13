@@ -233,16 +233,38 @@ private struct PowerSection: View {
     let state: SettingsViewModel.UiState
     let viewModel: SettingsViewModel
 
+    @State private var askingCamera = false
+    @State private var cameraAuthorized = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+
     var body: some View {
         Section(L("power_refresh")) {
             Toggle(L("wake_camera"), isOn: binding(state.cameraMotionWake) { enabled in
-                viewModel.updateCameraMotionWake(enabled: enabled)
-                // Ask for camera access here, where the user just chose the feature, rather than
-                // later on the board, where the prompt would come out of nowhere.
-                if enabled && AVCaptureDevice.authorizationStatus(for: .video) == .notDetermined {
-                    AVCaptureDevice.requestAccess(for: .video) { _ in }
+                // Turned on without camera access: why first, then the prompt, here where the user
+                // chose the feature rather than later on the board.
+                if enabled && !cameraAuthorized {
+                    askingCamera = true
+                } else {
+                    viewModel.updateCameraMotionWake(enabled: enabled)
                 }
             })
+            .fullScreenCover(isPresented: $askingCamera) {
+                CameraAccessView(
+                    onGranted: {
+                        cameraAuthorized = true
+                        askingCamera = false
+                        viewModel.updateCameraMotionWake(enabled: true)
+                    },
+                    onDismiss: { askingCamera = false }
+                )
+            }
+            if state.cameraMotionWake && !cameraAuthorized {
+                // On from before, with access since taken away: say why it does nothing.
+                Callout(L("camera_denied_title"), tone: .warning, symbol: "video.slash") {
+                    Button(L("open_app_settings")) {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+                    }
+                }
+            }
             Toggle(L("dynamic_refresh"), isOn: binding(state.dynamicRefresh) { viewModel.updateDynamicRefresh(enabled: $0) })
             Toggle(L("full_screen_mode"), isOn: binding(state.isFullScreenMode) { viewModel.updateFullScreenMode(enabled: $0) })
             Toggle(L("always_on_display"), isOn: binding(state.isAlwaysOnEnabled) { viewModel.updateAlwaysOnMode(enabled: $0) })
@@ -262,6 +284,10 @@ private struct PowerSection: View {
                     onSelect: { viewModel.updateCameraSensitivity(sensitivity: $0) }
                 )
             }
+        }
+        // Back from the Settings app, where camera access may have been turned on or off.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            cameraAuthorized = AVCaptureDevice.authorizationStatus(for: .video) == .authorized
         }
     }
 }

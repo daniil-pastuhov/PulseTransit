@@ -37,7 +37,8 @@ struct BoardFooter: View {
 
     var body: some View {
         let parts = [
-            state.isManualRefreshing ? L("updating") : L("footer_updated", state.lastUpdated),
+            // Empty while there is nothing to fetch (no stops yet).
+            state.isManualRefreshing ? L("updating") : (state.lastUpdated.isEmpty ? nil : L("footer_updated", state.lastUpdated)),
             L("attribution_entur"),
             state.showWeather && !state.weather.isEmpty ? L("attribution_met") : nil,
         ].compactMap { $0 }

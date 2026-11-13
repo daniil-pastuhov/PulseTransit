@@ -497,4 +497,24 @@
         <item quantity="one">%1$d destination</item>
         <item quantity="other">%1$d destinations</item>
     </plurals>
+    <string name="not_now">Not now</string>
+    <string name="location_rationale_title">Use your location</string>
+    <string name="location_rationale_body">On the spot finds the nearest stop and plans routes from where you stand. Your position is sent only to Entur, to find stops and routes, and to MET Norway for the weather.</string>
+    <string name="location_rationale_precise">Precise location finds the nearest stop; approximate still works, less exactly.</string>
+    <string name="location_rationale_turn_off">You can turn it off at any time in your phone’s settings.</string>
+    <string name="location_needed_title">On the spot needs your location</string>
+    <string name="location_needed_body">Location access is needed to show routes and stops from where you are. Turn it on in your phone’s settings, or go on without it and search for routes yourself.</string>
+    <string name="location_continue_without">Continue without location</string>
+    <string name="use_as_board_instead">Use as a wall board instead</string>
+    <string name="camera_rationale_title">Wake the screen when someone walks by</string>
+    <string name="camera_rationale_body">While the screen is dimmed, the front camera watches for movement and wakes the board.</string>
+    <string name="camera_rationale_on_device">Frames never leave this device. Each one is compared with the last and thrown away.</string>
+    <string name="camera_rationale_nothing_kept">Nothing is recorded, saved or sent anywhere.</string>
+    <string name="camera_rationale_sensitivity">Choose how much motion wakes it in Settings, under Camera Sensitivity.</string>
+    <string name="camera_allow">Allow camera</string>
+    <string name="camera_denied_title">Camera access is off</string>
+    <string name="camera_denied_body">PulseTransit can’t use the front camera, so the board won’t wake by motion. It stays at full brightness instead of dimming, and you can still touch it.</string>
+    <string name="camera_keep_off">Keep it off</string>
+    <string name="app_name_brand">PulseTransit</string>
+    <string name="location_needed_body_undecided">Location access is needed to show routes and stops from where you are. Allow it now, or use PulseTransit as a wall board, which needs none.</string>
 </resources>

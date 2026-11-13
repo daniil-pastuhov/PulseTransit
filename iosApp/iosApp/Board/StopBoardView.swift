@@ -323,22 +323,12 @@ extension StopBoardView {
 #endif
 
 extension StopBoardView {
-    /// Starts camera motion wake if the setting is on. Settings asks for camera access when the
-    /// switch is turned on; this asks only when the setting is on but access was never requested
-    /// (e.g. after a reinstall). `startCameraMotion()` itself does nothing while the setting is off.
+    /// Starts camera motion wake if the setting is on and camera access is granted. It never asks
+    /// for access: Settings does, with its rationale, where camera wake is turned on.
+    /// `startCameraMotion()` itself does nothing while the setting is off.
     private func startCameraIfAllowed() {
-        let viewModel = model.viewModel
-        switch AVCaptureDevice.authorizationStatus(for: .video) {
-        case .authorized:
-            viewModel.startCameraMotion()
-        case .notDetermined where viewModel.isCameraMotionEnabled():
-            AVCaptureDevice.requestAccess(for: .video) { granted in
-                DispatchQueue.main.async {
-                    if granted { viewModel.startCameraMotion() }
-                }
-            }
-        default:
-            break
+        if AVCaptureDevice.authorizationStatus(for: .video) == .authorized {
+            model.viewModel.startCameraMotion()
         }
     }
 }

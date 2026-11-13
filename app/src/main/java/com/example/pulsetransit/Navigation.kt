@@ -8,55 +8,41 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.example.pulsetransit.ui.screens.DataSourcesScreen
-import com.example.pulsetransit.ui.screens.IntroScreen
 import com.example.pulsetransit.ui.screens.JourneyAlertsScreen
 import com.example.pulsetransit.ui.screens.MainScreen
-import com.example.pulsetransit.ui.screens.ModeSelectionScreen
+import com.example.pulsetransit.ui.screens.OnboardingFlow
 import com.example.pulsetransit.ui.screens.RouteModesScreen
 import com.example.pulsetransit.ui.screens.SettingsScreen
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.ModeSelectionViewModel
+import com.example.pulsetransit.ui.viewmodel.OnboardingScreen
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun MainNavigation() {
-    // The choice of mode comes first, once, then the intro to it; after that the app opens on the board.
+    // The choice of mode comes first, once, then the intro to it (and for on the spot, the ask for
+    // location); after that the app opens on the board.
     val modeSelection: ModeSelectionViewModel = koinViewModel()
     val modeState by modeSelection.uiState.collectAsState()
     val backStack =
-        rememberNavBackStack(
-            when {
-                modeState.mode == null -> ModeSelection
-                modeState.showsIntro -> Intro
-                else -> Main
-            },
-        )
+        rememberNavBackStack(if (modeState.screen == OnboardingScreen.NONE) Main else Onboarding)
 
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
         entryProvider =
             entryProvider {
-                entry<ModeSelection> {
-                    ModeSelectionScreen(
-                        onChoose = { mode ->
-                            modeSelection.choose(mode)
-                            backStack.add(Intro)
-                            backStack.remove(ModeSelection)
-                        },
-                    )
-                }
-                entry<Intro> {
-                    IntroScreen(
-                        pages = modeState.intro,
-                        onFinish = {
-                            modeSelection.finishIntro()
+                entry<Onboarding> {
+                    OnboardingFlow(viewModel = modeSelection)
+                    // Over, by its last step or a mode set elsewhere: the board takes its place.
+                    LaunchedEffect(modeState.screen) {
+                        if (modeState.screen == OnboardingScreen.NONE) {
                             backStack.add(Main)
-                            backStack.remove(Intro)
-                        },
-                    )
+                            backStack.remove(Onboarding)
+                        }
+                    }
                 }
                 entry<Main> {
                     val viewModel: StopBoardViewModel = koinViewModel()

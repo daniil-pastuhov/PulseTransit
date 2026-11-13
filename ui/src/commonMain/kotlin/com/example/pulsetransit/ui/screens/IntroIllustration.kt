@@ -148,7 +148,6 @@ private fun MockHeader(
         )
         Spacer(Modifier.weight(1f))
         HeaderIcon(PulseIcons.Search, if (focus == HeaderButton.SEARCH) Spot.FOCUS else spot)
-        HeaderIcon(PulseIcons.Refresh, spot)
         HeaderIcon(PulseIcons.Settings, if (focus == HeaderButton.SETTINGS) Spot.FOCUS else spot)
     }
 }

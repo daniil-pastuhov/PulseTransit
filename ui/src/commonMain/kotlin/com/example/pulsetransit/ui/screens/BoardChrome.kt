@@ -112,7 +112,12 @@ internal fun BoardFooter(
 ) {
     val parts =
         listOfNotNull(
-            if (uiState.isManualRefreshing) stringResource(Res.string.updating) else stringResource(Res.string.footer_updated, uiState.lastUpdated),
+            when {
+                uiState.isManualRefreshing -> stringResource(Res.string.updating)
+                // Empty while there is nothing to fetch (no stops yet).
+                uiState.lastUpdated.isEmpty() -> null
+                else -> stringResource(Res.string.footer_updated, uiState.lastUpdated)
+            },
             stringResource(Res.string.attribution_entur),
             if (uiState.showWeather && uiState.weather.isNotEmpty()) stringResource(Res.string.attribution_met) else null,
         )

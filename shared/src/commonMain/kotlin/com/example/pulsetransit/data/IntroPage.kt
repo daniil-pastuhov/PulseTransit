@@ -21,7 +21,7 @@ enum class IntroPage {
     /** Board: fastest-route destinations, each with the times it is shown. */
     FASTEST_ROUTES,
 
-    /** Both: tapping a departure or a route opens its details. */
+    /** Board: tapping a departure or a route opens its details. */
     TAP_FOR_DETAILS,
 
     /** Board: burn-in protection, dimming, camera wake and the automatic theme. */
@@ -32,7 +32,7 @@ enum class IntroPage {
 fun introPages(mode: AppMode): List<IntroPage> =
     when (mode) {
         AppMode.ON_SPOT ->
-            listOf(IntroPage.NEAREST_STOP, IntroPage.ROUTES_FROM_HERE, IntroPage.TAP_FOR_DETAILS, IntroPage.RESIZE)
+            listOf(IntroPage.NEAREST_STOP, IntroPage.ROUTES_FROM_HERE, IntroPage.RESIZE)
         AppMode.BOARD ->
             listOf(IntroPage.CHOOSE_STOPS, IntroPage.FASTEST_ROUTES, IntroPage.TAP_FOR_DETAILS, IntroPage.SCREEN_CARE)
     }
