@@ -1,0 +1,365 @@
+{
+ "meta": {
+  "name": "Kveld",
+  "rationale": "A board that lives in a home, not a station: warm stone neutrals, the indigo of the app icon, generous rounding, and Atkinson Hyperlegible with its mono cut for every time, so a 6 never reads as an 8 across the kitchen.",
+  "themes": [
+   "light",
+   "dark"
+  ]
+ },
+ "primitives": {
+  "color": {
+   "stone": {
+    "0": "#FFFFFF",
+    "50": "#F6F3EE",
+    "100": "#ECE7DF",
+    "200": "#DDD6CB",
+    "300": "#B9B0A3",
+    "400": "#958C7F",
+    "500": "#746C61",
+    "600": "#5A534A",
+    "700": "#443E37",
+    "800": "#2C2824",
+    "850": "#211E1B",
+    "900": "#181614",
+    "950": "#0F0E0C"
+   },
+   "indigo": {
+    "100": "#E2E3FB",
+    "200": "#C7C9F6",
+    "300": "#A6AAF5",
+    "600": "#3B40B4",
+    "700": "#2F3392",
+    "800": "#25286E",
+    "900": "#161844"
+   },
+   "red": {
+    "100": "#FDE4E1",
+    "300": "#FF9B8F",
+    "600": "#BE2A1D",
+    "800": "#7C1B12",
+    "900": "#4A0E08"
+   },
+   "amber": {
+    "100": "#FDF0CC",
+    "200": "#F9DB86",
+    "300": "#F2C14E",
+    "800": "#5E4206",
+    "900": "#382703"
+   },
+   "green": {
+    "100": "#DAF2E0",
+    "300": "#7FD39A",
+    "800": "#1A5230",
+    "900": "#0E311C"
+   }
+  }
+ },
+ "color": {
+  "light": {
+   "background": "{stone.50}",
+   "on-background": "{stone.900}",
+   "surface": "{stone.0}",
+   "on-surface": "{stone.900}",
+   "on-surface-variant": "{stone.600}",
+   "surface-container": "{stone.100}",
+   "surface-container-high": "{stone.0}",
+   "outline": "{stone.500}",
+   "outline-variant": "{stone.200}",
+   "primary": "{indigo.600}",
+   "on-primary": "{stone.0}",
+   "primary-container": "{indigo.100}",
+   "on-primary-container": "{indigo.900}",
+   "error": "{red.600}",
+   "on-error": "{stone.0}",
+   "error-container": "{red.100}",
+   "on-error-container": "{red.900}",
+   "warning-container": "{amber.100}",
+   "on-warning-container": "{amber.900}",
+   "success-container": "{green.100}",
+   "on-success-container": "{green.900}",
+   "info-container": "{indigo.100}",
+   "on-info-container": "{indigo.900}",
+   "inverse-surface": "{stone.800}",
+   "on-inverse-surface": "{stone.50}",
+   "inverse-primary": "{indigo.300}",
+   "focus-ring": "{indigo.700}",
+   "scrim": "{stone.950}",
+   "late": "{red.600}",
+   "now": "{indigo.600}",
+   "route": "{indigo.600}",
+   "on-route": "{stone.0}",
+   "route-accent": "{stone.0}",
+   "line-bus": "#D63A2C",
+   "on-line-bus": "#ffffff",
+   "line-tram": "#7E48A2",
+   "on-line-tram": "#ffffff",
+   "line-train": "#003D82",
+   "on-line-train": "#ffffff",
+   "line-express": "#86005B",
+   "on-line-express": "#ffffff",
+   "line-metro": "#B5501C",
+   "on-line-metro": "#ffffff",
+   "line-ferry": "#0E7C68",
+   "on-line-ferry": "#ffffff",
+   "line-other": "#66706F",
+   "on-line-other": "#ffffff"
+  },
+  "dark": {
+   "background": "#000000",
+   "on-background": "{stone.100}",
+   "surface": "{stone.950}",
+   "on-surface": "{stone.100}",
+   "on-surface-variant": "{stone.300}",
+   "surface-container": "{stone.900}",
+   "surface-container-high": "{stone.850}",
+   "outline": "{stone.400}",
+   "outline-variant": "{stone.800}",
+   "primary": "{indigo.300}",
+   "on-primary": "{indigo.900}",
+   "primary-container": "{indigo.800}",
+   "on-primary-container": "{indigo.100}",
+   "error": "{red.300}",
+   "on-error": "{red.900}",
+   "error-container": "{red.800}",
+   "on-error-container": "{red.100}",
+   "warning-container": "{amber.800}",
+   "on-warning-container": "{amber.100}",
+   "success-container": "{green.800}",
+   "on-success-container": "{green.100}",
+   "info-container": "{indigo.800}",
+   "on-info-container": "{indigo.100}",
+   "inverse-surface": "{stone.100}",
+   "on-inverse-surface": "{stone.900}",
+   "inverse-primary": "{indigo.600}",
+   "focus-ring": "{indigo.200}",
+   "scrim": "#000000",
+   "late": "{red.300}",
+   "now": "{indigo.300}",
+   "route": "{indigo.800}",
+   "on-route": "{indigo.100}",
+   "route-accent": "{stone.0}",
+   "line-bus": "#D63A2C",
+   "on-line-bus": "#ffffff",
+   "line-tram": "#8A55AE",
+   "on-line-tram": "#ffffff",
+   "line-train": "#2A63B8",
+   "on-line-train": "#ffffff",
+   "line-express": "#B0287C",
+   "on-line-express": "#ffffff",
+   "line-metro": "#B5501C",
+   "on-line-metro": "#ffffff",
+   "line-ferry": "#0E7C68",
+   "on-line-ferry": "#ffffff",
+   "line-other": "#66706F",
+   "on-line-other": "#ffffff"
+  }
+ },
+ "contrast": [
+  {
+   "fg": "on-surface-variant",
+   "bg": [
+    "surface-container",
+    "surface-container-high",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "late",
+   "bg": [
+    "surface",
+    "surface-container",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "now",
+   "bg": [
+    "surface",
+    "surface-container",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "primary",
+   "bg": [
+    "surface-container",
+    "background"
+   ],
+   "use": "text"
+  },
+  {
+   "fg": "route-accent",
+   "bg": "route",
+   "use": "large-text"
+  },
+  {
+   "fg": "on-line-bus",
+   "bg": "line-bus",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-tram",
+   "bg": "line-tram",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-train",
+   "bg": "line-train",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-express",
+   "bg": "line-express",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-metro",
+   "bg": "line-metro",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-ferry",
+   "bg": "line-ferry",
+   "use": "text"
+  },
+  {
+   "fg": "on-line-other",
+   "bg": "line-other",
+   "use": "text"
+  }
+ ],
+ "font": {
+  "display": {
+   "family": "Atkinson Hyperlegible Next",
+   "fallback": "system-ui, sans-serif",
+   "google": "Atkinson Hyperlegible Next:wght@400;600;700"
+  },
+  "body": {
+   "family": "Atkinson Hyperlegible Next",
+   "fallback": "system-ui, sans-serif",
+   "google": "Atkinson Hyperlegible Next:wght@400;600;700"
+  },
+  "mono": {
+   "family": "Atkinson Hyperlegible Mono",
+   "fallback": "ui-monospace, monospace",
+   "google": "Atkinson Hyperlegible Mono:wght@400;600;700"
+  }
+ },
+ "type": {
+  "display": {
+   "font": "display",
+   "size": 38,
+   "line": 46,
+   "weight": 700,
+   "tracking": -0.4
+  },
+  "headline": {
+   "font": "display",
+   "size": 24,
+   "line": 32,
+   "weight": 700
+  },
+  "title": {
+   "font": "body",
+   "size": 19,
+   "line": 26,
+   "weight": 700
+  },
+  "title-sm": {
+   "font": "body",
+   "size": 17,
+   "line": 24,
+   "weight": 600
+  },
+  "body": {
+   "font": "body",
+   "size": 17,
+   "line": 26,
+   "weight": 400
+  },
+  "body-sm": {
+   "font": "body",
+   "size": 15,
+   "line": 22,
+   "weight": 400
+  },
+  "label": {
+   "font": "body",
+   "size": 15,
+   "line": 20,
+   "weight": 600
+  },
+  "caption": {
+   "font": "body",
+   "size": 13,
+   "line": 18,
+   "weight": 400
+  },
+  "clock": {
+   "font": "mono",
+   "size": 42,
+   "line": 48,
+   "weight": 600,
+   "tracking": -1.5
+  },
+  "countdown": {
+   "font": "mono",
+   "size": 20,
+   "line": 24,
+   "weight": 600,
+   "tracking": -0.5
+  },
+  "pill": {
+   "font": "mono",
+   "size": 15,
+   "line": 16,
+   "weight": 700,
+   "tracking": -0.3
+  }
+ },
+ "space": {
+  "1": 4,
+  "2": 8,
+  "3": 12,
+  "4": 16,
+  "5": 20,
+  "6": 24,
+  "8": 32,
+  "10": 40,
+  "12": 48
+ },
+ "radius": {
+  "sm": 8,
+  "md": 14,
+  "lg": 22,
+  "xl": 30,
+  "full": 9999
+ },
+ "size": {
+  "control": 52,
+  "touch": 48,
+  "pill-w": 46,
+  "row": 58
+ },
+ "elevation": {
+  "light": {
+   "1": "0 1px 2px rgba(15,20,30,.08), 0 1px 3px rgba(15,20,30,.06)",
+   "2": "0 4px 12px rgba(15,20,30,.10)",
+   "3": "0 12px 32px rgba(15,20,30,.18)"
+  },
+  "dark": {
+   "1": "0 0 0 1px rgba(255,255,255,.06)",
+   "2": "0 0 0 1px rgba(255,255,255,.08), 0 6px 16px rgba(0,0,0,.7)",
+   "3": "0 0 0 1px rgba(255,255,255,.10), 0 12px 32px rgba(0,0,0,.8)"
+  }
+ },
+ "icons": {
+  "set": "lucide",
+  "version": "0.460.0",
+  "stroke": 2
+ }
+}

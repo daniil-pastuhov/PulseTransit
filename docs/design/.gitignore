@@ -1,0 +1,2 @@
+# Publish-only build copies (same content as design.html / options.html)
+.artifact/
