@@ -50,8 +50,16 @@ final class JourneyLiveActivity {
         // The bar fills by itself between these, like the countdown.
         let startAt = progress.startAtMillis.map { Self.date($0.int64Value) }
         let endAt = progress.timeline.last.map { Self.date($0.endMillis) }
+        let segments = progress.timeline.map { segment in
+            JourneyActivityAttributes.Segment(
+                startAt: Self.date(segment.startMillis),
+                endAt: Self.date(segment.endMillis),
+                isRide: segment.kind == .ride
+            )
+        }
         return JourneyActivityAttributes.ContentState(
-            headline: headline, detail: detail, nextAt: nextAt, symbol: symbol, startAt: startAt, endAt: endAt
+            headline: headline, detail: detail, nextAt: nextAt, symbol: symbol, startAt: startAt, endAt: endAt,
+            segments: segments.isEmpty ? nil : segments
         )
     }
 

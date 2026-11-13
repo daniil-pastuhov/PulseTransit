@@ -22,14 +22,30 @@ import com.example.pulsetransit.ui.viewmodel.SettingsViewModel
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import org.koin.androidx.compose.koinViewModel
 
+/**
+ * The app's screens. [openRequest] is a widget's request to open Settings ("SETTINGS") or Add stop
+ * ("ADD_STOP") over the board; [onOpenHandled] is called once it is opened.
+ */
 @Composable
-fun MainNavigation() {
+fun MainNavigation(
+    openRequest: String? = null,
+    onOpenHandled: () -> Unit = {},
+) {
     // The choice of mode comes first, once, then the intro to it (and for on the spot, the ask for
     // location); after that the app opens on the board.
     val modeSelection: ModeSelectionViewModel = koinViewModel()
     val modeState by modeSelection.uiState.collectAsState()
     val backStack =
         rememberNavBackStack(if (modeState.screen == OnboardingScreen.NONE) Main else Onboarding)
+
+    // Waits for onboarding to finish: a widget can be tapped before a mode is chosen.
+    LaunchedEffect(openRequest, modeState.screen) {
+        if (openRequest == null || modeState.screen != OnboardingScreen.NONE) return@LaunchedEffect
+        while (backStack.size > 1) backStack.removeLastOrNull()
+        backStack.add(Settings)
+        if (openRequest == "ADD_STOP") backStack.add(AddStop)
+        onOpenHandled()
+    }
 
     NavDisplay(
         backStack = backStack,

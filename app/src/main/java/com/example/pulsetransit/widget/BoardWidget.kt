@@ -20,6 +20,7 @@ import com.example.pulsetransit.data.widget.WidgetFreshness
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.serialization.json.Json
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -95,15 +96,23 @@ abstract class BoardWidget<V : Any> :
 
     protected fun appName(context: Context): String = context.getString(R.string.app_name)
 
-    /** The footer line: when the data is from, and whether that is a problem. */
-    protected suspend fun status(freshness: WidgetFreshness): Pair<String, Boolean> {
+    /** The footer line: when the data is from, a warning when it is not live; null when nothing was fetched. */
+    protected suspend fun status(freshness: WidgetFreshness): StatusView? {
         val stale = freshness.staleSinceMillis
         return when {
-            freshness.failed -> getString(Res.string.widget_unreachable) to true
-            stale != null -> getString(Res.string.widget_offline_since, time(stale)) to true
-            else -> getString(Res.string.widget_updated, time(System.currentTimeMillis())) to false
+            // The message in the widget's body already says so (T5).
+            freshness.failed -> null
+            stale != null -> StatusView(getString(Res.string.widget_offline_since, time(stale)), isWarning = true)
+            else -> StatusView(getString(Res.string.widget_updated, time(System.currentTimeMillis())), isWarning = false)
         }
     }
+
+    protected suspend fun message(
+        icon: WidgetIcon,
+        title: StringResource,
+        body: StringResource? = null,
+        target: WidgetTarget = WidgetTarget.BOARD,
+    ) = MessageView(icon, getString(title), body?.let { getString(it) }, target)
 
     companion object {
         /** The stop or destination id the widget was set to in [WidgetConfigActivity]. */

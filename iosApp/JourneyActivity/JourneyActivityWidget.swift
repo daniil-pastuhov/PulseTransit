@@ -40,7 +40,7 @@ struct JourneyActivityWidget: Widget {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .lineLimit(2)
-                        JourneyBar(start: context.state.startAt, end: context.state.endAt)
+                        JourneyBar(start: context.state.startAt, end: context.state.endAt, segments: context.state.segments)
                     }
                 }
             } compactLeading: {
@@ -76,7 +76,7 @@ private struct LockScreenView: View {
                 .font(.subheadline)
                 .foregroundColor(.secondary)
                 .lineLimit(2)
-            JourneyBar(start: state.startAt, end: state.endAt)
+            JourneyBar(start: state.startAt, end: state.endAt, segments: state.segments)
             Text(title)
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -84,14 +84,36 @@ private struct LockScreenView: View {
     }
 }
 
-/// How far along the journey is, filling by itself from its start to the arrival; nothing without
-/// both times.
+/// How far along the journey is, filling by itself from its start to the arrival: leg by leg when
+/// the segments are known (each fills over its own time, rides in the accent, walks and waits
+/// muted, as Android 16's segmented bar), else as one bar; nothing without both times.
 private struct JourneyBar: View {
     let start: Date?
     let end: Date?
+    var segments: [JourneyActivityAttributes.Segment]?
 
     var body: some View {
-        if let start, let end, end > start {
+        if let segments, segments.count > 1, let first = segments.first, let last = segments.last, last.endAt > first.startAt {
+            let total = last.endAt.timeIntervalSince(first.startAt)
+            GeometryReader { proxy in
+                let gaps = CGFloat(segments.count - 1) * 2
+                HStack(spacing: 2) {
+                    ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                        let share = max(segment.endAt.timeIntervalSince(segment.startAt), 1) / total
+                        ProgressView(timerInterval: segment.startAt...max(segment.endAt, segment.startAt.addingTimeInterval(1)), countsDown: false) {
+                            EmptyView()
+                        } currentValueLabel: {
+                            EmptyView()
+                        }
+                        .progressViewStyle(.linear)
+                        .tint(segment.isRide ? Color.accentColor : Color.secondary)
+                        .frame(width: max((proxy.size.width - gaps) * share, 4))
+                    }
+                }
+            }
+            .frame(height: 6)
+            .accessibilityHidden(true)
+        } else if let start, let end, end > start {
             ProgressView(timerInterval: start...end, countsDown: false) {
                 EmptyView()
             } currentValueLabel: {

@@ -27,7 +27,11 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="🚇 2 · 14:09 → 14:21"
+        android:drawablePadding="4dp"
+        android:drawableTint="@color/widget_text_secondary"
+        android:gravity="center_vertical"
+        android:text="2 · 14:09 → 14:21"
         android:textColor="@color/widget_text_secondary"
+        android:drawableStart="@drawable/ic_widget_route"
         android:textSize="14sp" />
 </LinearLayout>

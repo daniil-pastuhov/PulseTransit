@@ -8819,6 +8819,23 @@
         }
       }
     },
+    "widget_choose_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap one to show it on this widget. Until you do, it shows the first one."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk på en for å vise den på denne widgeten. Til du gjør det, viser den den første."
+          }
+        }
+      }
+    },
     "widget_choose_none": {
       "extractionState": "manual",
       "localizations": {
@@ -8832,6 +8849,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingenting er lagret ennå. Legg til i PulseTransit og kom tilbake."
+          }
+        }
+      }
+    },
+    "widget_choose_none_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add some in PulseTransit, then come back."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Legg til noen i PulseTransit, og kom så tilbake."
+          }
+        }
+      }
+    },
+    "widget_choose_none_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing saved yet"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting lagret ennå"
           }
         }
       }
@@ -8887,6 +8938,23 @@
         }
       }
     },
+    "widget_no_destinations_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to open the app and add one."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk for å åpne appen og legge til et."
+          }
+        }
+      }
+    },
     "widget_no_origin": {
       "extractionState": "manual",
       "localizations": {
@@ -8921,6 +8989,23 @@
         }
       }
     },
+    "widget_no_route_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing runs there in the next hours. Check the trip in PulseTransit."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting går dit de neste timene. Sjekk reisen i PulseTransit."
+          }
+        }
+      }
+    },
     "widget_no_stops": {
       "extractionState": "manual",
       "localizations": {
@@ -8938,6 +9023,23 @@
         }
       }
     },
+    "widget_no_stops_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to open the app and pick one."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk for å åpne appen og velge en."
+          }
+        }
+      }
+    },
     "widget_offline_since": {
       "extractionState": "manual",
       "localizations": {
@@ -8951,6 +9053,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Frakoblet · data fra %1$@"
+          }
+        }
+      }
+    },
+    "widget_open_app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open PulseTransit"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne PulseTransit"
           }
         }
       }
@@ -8985,6 +9104,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fikk ikke kontakt med Entur"
+          }
+        }
+      }
+    },
+    "widget_unreachable_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap refresh to try again."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trykk på oppdater for å prøve igjen."
+          }
+        }
+      }
+    },
+    "widget_unreachable_departures_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing saved to show yet. Tap refresh to try again."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting lagret å vise ennå. Trykk på oppdater for å prøve igjen."
           }
         }
       }

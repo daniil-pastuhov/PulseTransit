@@ -584,4 +584,13 @@
     <string name="schedule_next_day">next day</string>
     <string name="schedule_shows">Shows %1$s</string>
     <string name="travel_by_group_toggle">All %1$s</string>
+    <string name="widget_no_stops_body">Tap to open the app and pick one.</string>
+    <string name="widget_no_destinations_body">Tap to open the app and add one.</string>
+    <string name="widget_unreachable_departures_body">Nothing saved to show yet. Tap refresh to try again.</string>
+    <string name="widget_unreachable_body">Tap refresh to try again.</string>
+    <string name="widget_no_route_body">Nothing runs there in the next hours. Check the trip in PulseTransit.</string>
+    <string name="widget_choose_hint">Tap one to show it on this widget. Until you do, it shows the first one.</string>
+    <string name="widget_choose_none_title">Nothing saved yet</string>
+    <string name="widget_choose_none_body">Add some in PulseTransit, then come back.</string>
+    <string name="widget_open_app">Open PulseTransit</string>
 </resources>

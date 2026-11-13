@@ -583,4 +583,13 @@
     <string name="schedule_next_day">neste dag</string>
     <string name="schedule_shows">Vises %1$s</string>
     <string name="travel_by_group_toggle">Alle: %1$s</string>
+    <string name="widget_no_stops_body">Trykk for å åpne appen og velge en.</string>
+    <string name="widget_no_destinations_body">Trykk for å åpne appen og legge til et.</string>
+    <string name="widget_unreachable_departures_body">Ingenting lagret å vise ennå. Trykk på oppdater for å prøve igjen.</string>
+    <string name="widget_unreachable_body">Trykk på oppdater for å prøve igjen.</string>
+    <string name="widget_no_route_body">Ingenting går dit de neste timene. Sjekk reisen i PulseTransit.</string>
+    <string name="widget_choose_hint">Trykk på en for å vise den på denne widgeten. Til du gjør det, viser den den første.</string>
+    <string name="widget_choose_none_title">Ingenting lagret ennå</string>
+    <string name="widget_choose_none_body">Legg til noen i PulseTransit, og kom så tilbake.</string>
+    <string name="widget_open_app">Åpne PulseTransit</string>
 </resources>
