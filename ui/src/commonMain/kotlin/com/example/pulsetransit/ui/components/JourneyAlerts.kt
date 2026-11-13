@@ -29,15 +29,18 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.data.journey.TrackedJourney
+import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.ui.platform.rememberJourneyPermissionRequest
+import com.example.pulsetransit.ui.platform.rememberOpenAppSettings
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
 import org.jetbrains.compose.resources.stringResource
 
 /**
  * "Notify me about this journey" in a route's details, or "Stop following" while it is the journey
- * being followed. Absent where alerts are unavailable or notifications are denied.
+ * being followed. With notifications denied, a note with the way to the system settings instead;
+ * absent where alerts are unavailable.
  */
 @Composable
 fun JourneyNotifyButton(
@@ -47,11 +50,31 @@ fun JourneyNotifyButton(
     onStop: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val openSettings = rememberOpenAppSettings()
     if (state.isFollowing(trip)) {
-        OutlinedButton(onClick = onStop, modifier = modifier.fillMaxWidth()) {
-            Icon(PulseIcons.NotificationsOff, contentDescription = null, modifier = Modifier.size(18.dp))
-            Text(stringResource(Res.string.journey_stop_button), modifier = Modifier.padding(start = 8.dp))
+        Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+            if (state.followingWithoutLocation) {
+                Callout(
+                    title = stringResource(Res.string.journey_time_only_title),
+                    body = stringResource(Res.string.journey_time_only_body),
+                    tone = CalloutTone.WARNING,
+                    icon = PulseIcons.LocationOff,
+                ) { TextButton(onClick = openSettings) { Text(stringResource(Res.string.open_app_settings)) } }
+            }
+            OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth()) {
+                Icon(PulseIcons.NotificationsOff, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(Res.string.journey_stop_button), modifier = Modifier.padding(start = 8.dp))
+            }
         }
+    } else if (state.notificationsDenied) {
+        // Alerts can't be offered; say why and where to change it, rather than hiding the button.
+        Callout(
+            title = stringResource(Res.string.journey_notifications_off_title),
+            body = stringResource(Res.string.journey_notifications_off_body),
+            tone = CalloutTone.WARNING,
+            icon = PulseIcons.NotificationsOff,
+            modifier = modifier,
+        ) { TextButton(onClick = openSettings) { Text(stringResource(Res.string.open_app_settings)) } }
     } else if (state.available) {
         FilledTonalButton(onClick = onNotify, modifier = modifier.fillMaxWidth()) {
             Icon(PulseIcons.NotificationsActive, contentDescription = null, modifier = Modifier.size(18.dp))

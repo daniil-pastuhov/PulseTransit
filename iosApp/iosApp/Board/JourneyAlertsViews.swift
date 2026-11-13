@@ -2,7 +2,7 @@ import Shared
 import SwiftUI
 
 /// "Notify me about this journey" in a route's details, or "Stop following" while it is the journey
-/// being followed. Absent where notifications are denied. The counterpart of Android's
+/// being followed. With notifications denied, a note with the way to Settings instead. The counterpart of Android's
 /// `JourneyNotifyButton`; the rationale it may open is presented by `TripDetailsView`.
 struct JourneyNotifyButton: View {
     @ObservedObject var model: JourneyAlertsModel
@@ -10,14 +10,26 @@ struct JourneyNotifyButton: View {
 
     var body: some View {
         if model.state.isFollowing(trip: trip) {
-            Button {
-                model.viewModel.onStopClick()
-            } label: {
-                Label(L("journey_stop_button"), systemImage: "bell.slash")
-                    .frame(maxWidth: .infinity)
+            VStack(spacing: 8) {
+                if model.state.followingWithoutLocation {
+                    Callout(L("journey_time_only_body"), tone: .warning, title: L("journey_time_only_title"), symbol: "location.slash") {
+                        Button(L("open_app_settings"), action: openAppSettings).buttonStyle(.borderless)
+                    }
+                }
+                Button {
+                    model.viewModel.onStopClick()
+                } label: {
+                    Label(L("journey_stop_button"), systemImage: "bell.slash")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .accessibilityIdentifier("journey.stop")
             }
-            .buttonStyle(.bordered)
-            .accessibilityIdentifier("journey.stop")
+        } else if model.state.notificationsDenied {
+            // Alerts can't be offered; say why and where to change it, rather than hiding the button.
+            Callout(L("journey_notifications_off_body"), tone: .warning, title: L("journey_notifications_off_title"), symbol: "bell.slash") {
+                Button(L("open_app_settings"), action: openAppSettings).buttonStyle(.borderless)
+            }
         } else if model.state.available {
             Button {
                 model.viewModel.onNotifyClick(trip: trip)
@@ -28,6 +40,10 @@ struct JourneyNotifyButton: View {
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("journey.notify")
         }
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
     }
 }
 

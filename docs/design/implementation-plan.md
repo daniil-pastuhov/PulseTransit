@@ -79,3 +79,11 @@ column, Location only in board mode, Duo `VerticalBarHost`, widget `boardAtMilli
 - App: `GlanceView.status`, `RouteView.legs` as a list, title + body messages, vector icons,
   redone 2×2, new 4×1/4×4, picker empty state.
 - Per-leg segmented progress (Android `ProgressStyle` API 36 + fallback; iOS `ContentState` segments).
+
+## Deviations decided while building
+- Steps 3: a phone used as a board still pages its stops (the design scrolls them). Pull to refresh
+  on iOS needs iOS 16 (`refreshable` on a ScrollView); iOS 15 relies on the automatic refresh.
+  "Nothing leaves in the next 24 hours" uses the real departure window, not the mock-up's 2 hours.
+- Step 4: iOS keeps the system sheet (an iPad form sheet) instead of a custom right-side sheet.
+  "Open settings" on the time-only fallback note helps the next journey; a running one keeps its
+  mode. The walk-only "faster than any ride" note waits for the planner query of step 5.

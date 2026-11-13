@@ -800,6 +800,74 @@
         }
       }
     },
+    "details_board_here": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "you board here"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "du går på her"
+          }
+        }
+      }
+    },
+    "details_cancelled_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operator cancelled the %1$@. The next one leaves at %2$@, %3$@."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operatøren har innstilt avgangen %1$@. Neste går %2$@, %3$@."
+          }
+        }
+      }
+    },
+    "details_cancelled_none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The operator cancelled the %1$@."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Operatøren har innstilt avgangen %1$@."
+          }
+        }
+      }
+    },
+    "details_cancelled_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This departure won’t run"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denne avgangen går ikke"
+          }
+        }
+      }
+    },
     "details_departures": {
       "extractionState": "manual",
       "localizations": {
@@ -834,6 +902,23 @@
         }
       }
     },
+    "details_from": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fra %1$@"
+          }
+        }
+      }
+    },
     "details_in_hours": {
       "extractionState": "manual",
       "localizations": {
@@ -864,6 +949,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "om %1$lld min"
+          }
+        }
+      }
+    },
+    "details_last_stop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last stop"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siste stopp"
           }
         }
       }
@@ -949,6 +1051,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingen stoppliste for denne avgangen"
+          }
+        }
+      }
+    },
+    "details_show_departure": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the %1$@ departure"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis avgangen %1$@"
+          }
+        }
+      }
+    },
+    "details_stops_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur didn’t send the stops for this departure."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur sendte ikke stoppene for denne avgangen."
           }
         }
       }
@@ -1483,6 +1619,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Favoritter (%1$lld)"
+          }
+        }
+      }
+    },
+    "filter_out_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden from the departures and avoided in route searches. Show it again any time in Settings › Filtered out lines."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skjules fra avgangene og unngås i rutesøk. Vis den igjen når som helst i Innstillinger › Filtrerte linjer."
           }
         }
       }
@@ -2541,6 +2694,40 @@
         }
       }
     },
+    "journey_notifications_off_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn them on to be told when to leave, change and get off."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå dem på for å få beskjed om når du skal gå, bytte og gå av."
+          }
+        }
+      }
+    },
+    "journey_notifications_off_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications are off for PulseTransit"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varsler er slått av for PulseTransit"
+          }
+        }
+      }
+    },
     "journey_notify_button": {
       "extractionState": "manual",
       "localizations": {
@@ -3020,6 +3207,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Slutt å følge"
+          }
+        }
+      }
+    },
+    "journey_time_only_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is off, so alerts can’t notice if you miss your ride. Turn it on for your next journey."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posisjon er av, så varslene kan ikke merke om du går glipp av turen. Slå den på før neste reise."
+          }
+        }
+      }
+    },
+    "journey_time_only_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Following live times only"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Følger bare sanntid"
           }
         }
       }
@@ -4061,6 +4282,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vis reiser"
+          }
+        }
+      }
+    },
+    "open_app_settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open settings"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpne innstillinger"
           }
         }
       }
@@ -6098,6 +6336,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ i morgen"
+          }
+        }
+      }
+    },
+    "try_again": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv igjen"
           }
         }
       }

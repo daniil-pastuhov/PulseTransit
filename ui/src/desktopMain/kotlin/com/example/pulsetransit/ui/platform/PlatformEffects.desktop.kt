@@ -47,3 +47,7 @@ actual fun rememberWalkingDirections(): (latitude: Double, longitude: Double) ->
         }
     }
 }
+
+/** The desktop app has no permission settings to open. */
+@Composable
+actual fun rememberOpenAppSettings(): () -> Unit = {}

@@ -19,6 +19,8 @@ struct DepartureDetailsView: View {
     @State private var selectedJourneyId: String?
     /// Nil while loading.
     @State private var stops: [JourneyStop]?
+    /// Bumped by "Try again" to ask Entur for the stops once more.
+    @State private var stopsAttempt = 0
 
     /// How long the details stay open untouched: a wall display left showing them would never
     /// return to the board.
@@ -43,7 +45,7 @@ struct DepartureDetailsView: View {
                         }
                     }
                     // Keyed by trip, so a refresh of the same departure keeps its stops.
-                    .task(id: selected.serviceJourneyId) {
+                    .task(id: "\(selected.serviceJourneyId ?? "")#\(stopsAttempt)") {
                         stops = nil
                         let loaded = await loadJourney(selected)
                         // A load superseded by picking another departure must not overwrite its stops.
@@ -64,28 +66,57 @@ struct DepartureDetailsView: View {
             let nowMillis = Int64(timeline.date.timeIntervalSince1970 * 1000)
             GeometryReader { geometry in
                 VStack(alignment: .leading, spacing: 16) {
-                    DetailsHeader(first: first, departures: departures, stopName: stopName, showMessages: showMessages)
+                    DetailsHeader(first: first, selected: selected, departures: departures, stopName: stopName, nowMillis: nowMillis, showMessages: showMessages)
+                    if selected.isCancelled {
+                        cancelledCallout(selected: selected, nowMillis: nowMillis)
+                    }
+                    let route = RouteColumn(departure: selected, stops: stops, nowMillis: nowMillis, onRetry: { stopsAttempt += 1 })
                     if geometry.size.width >= Self.twoColumnMinWidth {
                         HStack(alignment: .top, spacing: 24) {
                             ScrollView { departuresColumn(selected: selected, nowMillis: nowMillis) }
-                            ScrollView { RouteColumn(departure: selected, stops: stops, nowMillis: nowMillis) }
+                            ScrollView { route }
                         }
                     } else {
                         ScrollView {
                             VStack(alignment: .leading, spacing: 16) {
                                 departuresColumn(selected: selected, nowMillis: nowMillis)
-                                RouteColumn(departure: selected, stops: stops, nowMillis: nowMillis)
+                                route
                             }
                         }
                     }
-                    Button(L("filter_out_line", first.line)) {
-                        onFilterOut(first.line)
-                        dismiss()
+                    // Hiding acts at once: the sheet closes and the board offers Undo.
+                    VStack(alignment: .leading, spacing: 4) {
+                        Button {
+                            onFilterOut(first.line)
+                            dismiss()
+                        } label: {
+                            Label(L("filter_out_line", first.line), systemImage: "line.3.horizontal.decrease.circle")
+                        }
+                        .buttonStyle(.bordered)
+                        Text(L("filter_out_hint"))
+                            .font(.pulse(.footnote))
+                            .foregroundColor(Palette.textSecondary)
                     }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             }
+        }
+    }
+
+    /// A cancelled departure says so, with a way to the next one that runs (T4).
+    @ViewBuilder
+    private func cancelledCallout(selected: Departure, nowMillis: Int64) -> some View {
+        let cancelledAt = clockText(selected.expectedTime, nowMillis: nowMillis)
+        if let next = DepartureDetailsKt.nextRunningDeparture(departures: departures, cancelled: selected) {
+            let nextAt = clockText(next.expectedTime, nowMillis: nowMillis)
+            let nextIn = DepartureDetailsKt.minutesUntil(time: next.expectedTime, nowMillis: nowMillis).map { inTimeText($0.int64Value) } ?? ""
+            Callout(L("details_cancelled_body", cancelledAt, nextAt, nextIn), tone: .error, title: L("details_cancelled_title")) {
+                Button(L("details_show_departure", nextAt)) { selectedJourneyId = next.serviceJourneyId }
+                    .buttonStyle(.borderless)
+            }
+        } else {
+            Callout(L("details_cancelled_none", cancelledAt), tone: .error, title: L("details_cancelled_title"))
         }
     }
 
@@ -102,38 +133,71 @@ struct DepartureDetailsView: View {
     }
 }
 
-/// Line badge and destination, then the line's full name, who runs it, the stop and how often.
+/// Line pill and destination (wrapping: details are where cut board text is read in full), where it
+/// leaves from, then the selected departure large: countdown, clock time, Live, how often the line runs.
 private struct DetailsHeader: View {
     let first: Departure
+    let selected: Departure
     let departures: [Departure]
     let stopName: String
+    let nowMillis: Int64
     let showMessages: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
                 LinePill(line: first.line, mode: first.transportMode)
                 VStack(alignment: .leading, spacing: 2) {
-                    (Text(Image(systemName: Palette.transportSymbol(first.transportMode))) + Text("  \(first.destination)"))
-                        .font(.pulse(.title3, weight: .bold))
-                        .lineLimit(1)
-                    let line = [first.lineName, first.authority, first.operator].compactMap { $0 }.uniqued().joined(separator: " · ")
-                    if !line.isEmpty {
-                        Text(line).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary).lineLimit(1)
-                    }
-                    let headway = DepartureDetailsKt.typicalHeadwayMinutes(departures: departures).map { L("details_every", $0.intValue) }
-                    Text([stopName, headway].compactMap { $0 }.joined(separator: " · "))
+                    Text(first.destination)
+                        .font(.pulse(role: FjordTokens.typeHeadline, relativeTo: .title2))
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text([L("details_from", stopName), selected.platform.map { L("details_platform", $0) }].compactMap { $0 }.joined(separator: " · "))
                         .font(.pulse(.subheadline))
                         .foregroundColor(Palette.textSecondary)
                 }
             }
-            let notices = departures.flatMap(\.notices).uniqued()
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(countdown)
+                    .font(.pulse(size: 32, weight: .bold, relativeTo: .largeTitle))
+                    .foregroundColor(selected.isCancelled ? Palette.error : Palette.textPrimary)
+                Text(clockText(selected.expectedTime, nowMillis: nowMillis))
+                    .font(.pulse(.title3))
+                    .strikethrough(selected.isCancelled)
+                    .foregroundColor(Palette.textSecondary)
+                if selected.isRealtime && !selected.isCancelled { LiveChip() }
+                if let headway = DepartureDetailsKt.typicalHeadwayMinutes(departures: departures) {
+                    Text(L("details_every", headway.intValue)).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
+                }
+            }
+            let line = [first.lineName, first.authority, first.operator].compactMap { $0 }.uniqued().joined(separator: " · ")
+            if !line.isEmpty {
+                Text(line).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+            }
             if showMessages {
-                ForEach(notices, id: \.self) { notice in
+                ForEach(departures.flatMap(\.notices).uniqued(), id: \.self) { notice in
                     NoticeText(notice: notice)
                 }
             }
         }
+    }
+
+    private var countdown: String {
+        if selected.isCancelled { return L("cancelled") }
+        let countdown = DepartureCountdownKt.departureCountdown(expectedTime: selected.expectedTime, nowMillis: nowMillis)
+        if countdown is DepartureCountdownNow { return L("now") }
+        return DepartureDetailsKt.minutesUntil(time: selected.expectedTime, nowMillis: nowMillis).map { L("countdown_minutes", $0.intValue) } ?? ""
+    }
+}
+
+/// "Live", on the success colours: the time comes from the vehicle, not the timetable.
+struct LiveChip: View {
+    var body: some View {
+        Text(L("details_live"))
+            .font(.pulse(.caption, weight: .bold))
+            .foregroundColor(Palette.onSuccessContainer)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(RoundedRectangle(cornerRadius: FjordTokens.radiusSm).fill(Palette.successContainer))
     }
 }
 
@@ -159,9 +223,7 @@ private struct DepartureDetailRow: View {
                             .monospacedDigit()
                             .strikethrough()
                             .foregroundColor(Palette.textSecondary)
-                        Text("+\(departure.delayMinutes)")
-                            .font(.pulse(.caption, weight: .bold))
-                            .foregroundColor(Palette.error)
+                        DelayChip(minutes: Int(departure.delayMinutes))
                     }
                 }
                 facts
@@ -171,7 +233,7 @@ private struct DepartureDetailRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(RoundedRectangle(cornerRadius: 8).fill(isSelected ? Palette.primary.opacity(0.12) : Color.clear))
+        .background(RoundedRectangle(cornerRadius: FjordTokens.radiusMd).fill(isSelected ? Palette.primaryContainer : Color.clear))
     }
 
     /// Only live ones are marked: departures further out have no live data yet, as is normal.
@@ -180,11 +242,10 @@ private struct DepartureDetailRow: View {
         let platform = departure.platform.map { L("details_platform", $0) }
         let isLive = departure.isRealtime && !departure.isCancelled
         if platform != nil || isLive {
-            let live = isLive ? Text("● \(L("details_live"))").bold().foregroundColor(Palette.primary) : Text(verbatim: "")
-            let separator = isLive && platform != nil ? Text(verbatim: " · ") : Text(verbatim: "")
-            (live + separator + Text(platform ?? ""))
-                .font(.pulse(.caption))
-                .foregroundColor(Palette.textSecondary)
+            HStack(spacing: 8) {
+                if isLive { LiveChip() }
+                if let platform { Text(platform).font(.pulse(.caption)).foregroundColor(Palette.textSecondary) }
+            }
         }
     }
 
@@ -193,18 +254,22 @@ private struct DepartureDetailRow: View {
         if departure.isCancelled {
             Text(L("cancelled")).font(.pulse(.subheadline, weight: .bold)).foregroundColor(Palette.error)
         } else if case .now = onEnum(of: DepartureCountdownKt.departureCountdown(expectedTime: departure.expectedTime, nowMillis: nowMillis)) {
-            Text(L("now")).font(.pulse(.subheadline, weight: .bold)).foregroundColor(Palette.primary)
+            Text(L("now")).font(.pulse(.subheadline, weight: .bold)).foregroundColor(Palette.now)
         } else if let minutes = DepartureDetailsKt.minutesUntil(time: departure.expectedTime, nowMillis: nowMillis) {
             Text(inTimeText(minutes.int64Value)).font(.pulse(.subheadline, weight: .bold)).monospacedDigit()
         }
     }
 }
 
-/// The selected departure's stops from here to the end of the line, as a timeline.
+/// The selected departure's stops from here to the end of the line, on a rail in the line's colour.
+/// Only this section waits for Entur: skeleton rows while it loads, a note with "Try again" when no
+/// stops come (T4: the rest of the sheet is fine).
 private struct RouteColumn: View {
     let departure: Departure
     let stops: [JourneyStop]?
     let nowMillis: Int64
+    let onRetry: () -> Void
+    @State private var pulse = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -216,14 +281,34 @@ private struct RouteColumn: View {
             Spacer().frame(height: 8)
             if let stops = stops {
                 if stops.isEmpty {
-                    Text(L("details_route_unavailable")).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
+                    Callout(L("details_stops_failed"), tone: .warning) {
+                        Button(L("try_again"), action: onRetry).buttonStyle(.borderless)
+                    }
                 } else {
+                    let rail = Palette.transport(departure.transportMode)
+                    let boardHere = [departure.platform.map { L("details_platform", $0) }, L("details_board_here")].compactMap { $0 }.joined(separator: " · ")
                     ForEach(Array(stops.enumerated()), id: \.offset) { index, stop in
-                        RouteStopRow(stop: stop, nowMillis: nowMillis, isFirst: index == 0, isLast: index == stops.count - 1)
+                        RouteStopRow(
+                            stop: stop,
+                            nowMillis: nowMillis,
+                            isFirst: index == 0,
+                            isLast: index == stops.count - 1,
+                            railColor: rail,
+                            label: index == 0 ? boardHere : (index == stops.count - 1 ? L("details_last_stop") : nil)
+                        )
                     }
                 }
             } else {
-                ProgressView().frame(maxWidth: .infinity).padding()
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(0 ..< 5, id: \.self) { _ in
+                        HStack(spacing: 12) {
+                            PlaceholderBlock(width: 40, height: 14, pulse: pulse)
+                            PlaceholderBlock(width: 10, height: 10, cornerRadius: 5, pulse: pulse)
+                            PlaceholderBlock(height: 14, pulse: pulse)
+                        }
+                    }
+                }
+                .modifier(PlaceholderPulse(pulse: $pulse))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -242,6 +327,8 @@ struct RouteStopRow: View {
     let nowMillis: Int64
     let isFirst: Bool
     let isLast: Bool
+    var railColor: Color = Palette.primary
+    var label: String?
 
     var body: some View {
         let isEnd = isFirst || isLast
@@ -257,18 +344,27 @@ struct RouteStopRow: View {
             // The timeline: a rail through every stop, with a larger dot at both ends.
             ZStack {
                 VStack(spacing: 0) {
-                    Rectangle().fill(isFirst ? Color.clear : Palette.primary).frame(width: 2)
-                    Rectangle().fill(isLast ? Color.clear : Palette.primary).frame(width: 2)
+                    Rectangle().fill(isFirst ? Color.clear : railColor).frame(width: 3)
+                    Rectangle().fill(isLast ? Color.clear : railColor).frame(width: 3)
                 }
-                Circle().fill(Palette.primary).frame(width: isEnd ? 12 : 8, height: isEnd ? 12 : 8)
+                Circle()
+                    .fill(isEnd ? railColor : Palette.surface)
+                    .overlay(Circle().stroke(railColor, lineWidth: 2))
+                    .frame(width: isEnd ? 12 : 8, height: isEnd ? 12 : 8)
             }
             .frame(width: 20)
-            Text(stop.name)
-                .font(.pulse(.subheadline, weight: isEnd ? .bold : .regular))
-                .strikethrough(stop.isCancelled)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(stop.name)
+                    .font(.pulse(.subheadline, weight: isEnd ? .semibold : .regular))
+                    .strikethrough(stop.isCancelled)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let label {
+                    Text(label).font(.pulse(.caption)).foregroundColor(Palette.textSecondary)
+                }
+            }
+            .padding(.vertical, 6)
         }
-        .frame(height: 32)
+        .frame(minHeight: 36)
     }
 }
 

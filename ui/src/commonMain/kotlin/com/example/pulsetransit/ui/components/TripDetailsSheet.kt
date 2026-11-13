@@ -5,10 +5,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,10 +26,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,18 +42,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.example.pulsetransit.data.DepartureCountdown
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
-import com.example.pulsetransit.data.departureCountdown
 import com.example.pulsetransit.data.isShown
 import com.example.pulsetransit.data.isTransit
 import com.example.pulsetransit.data.journey.JourneyDetail
@@ -60,13 +59,14 @@ import com.example.pulsetransit.data.journey.JourneyPosition
 import com.example.pulsetransit.data.journey.JourneyProgress
 import com.example.pulsetransit.data.legDelayMinutes
 import com.example.pulsetransit.data.legEndName
-import com.example.pulsetransit.data.minutesUntil
 import com.example.pulsetransit.data.transferCount
 import com.example.pulsetransit.data.tripKey
 import com.example.pulsetransit.data.waitMinutesBefore
 import com.example.pulsetransit.data.walkDestination
 import com.example.pulsetransit.data.walkDistanceMeters
+import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
+import com.example.pulsetransit.theme.PulseTheme
 import com.example.pulsetransit.ui.platform.rememberWalkingDirections
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.delay
@@ -134,10 +134,7 @@ fun TripDetailsSheet(
     // Where the trip is, while it is under way; the same live times a followed journey goes by.
     val progress = remember(trip, legStops, nowMillis) { JourneyPosition.underWay(trip, legStops, nowMillis) }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-    ) {
+    AdaptiveSheet(onDismiss = onDismiss) {
         Column(
             modifier =
                 Modifier
@@ -290,7 +287,10 @@ private fun progressDetailText(detail: JourneyDetail): String {
     }
 }
 
-/** Where to, when it leaves and arrives, how long it takes, how often it changes and how far it walks. */
+/**
+ * Where to (wrapping, as details are where cut text is read in full), then "Leave 19:40 · 28 min ·
+ * arr. 20:08" and the legs at a glance with how often it changes and how far it walks.
+ */
 @Composable
 private fun TripHeader(
     trip: TripInfo,
@@ -299,55 +299,57 @@ private fun TripHeader(
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Text(
         text = stringResource(Res.string.trip_details_title, trip.destinationName),
-        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.headlineSmall,
     )
     Text(
         text =
             buildAnnotatedString {
+                append(stringResource(Res.string.route_leave))
+                append(" ")
                 append(clockText(trip.expectedStartTime, nowMillis))
-                trip.expectedEndTime?.let {
-                    append(" → ")
-                    append(clockText(it, nowMillis))
-                }
                 append(" · ")
                 append(tripDurationText(trip.durationMinutes))
+                trip.expectedEndTime?.let {
+                    append(" · ")
+                    append(stringResource(Res.string.route_arrival, clockText(it, nowMillis).text))
+                }
             },
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.bodyLarge,
+        color = muted,
     )
+    Spacer(modifier = Modifier.height(FjordDimens.space2))
     val changes = transferCount(trip)
     val walked = walkDistanceMeters(trip)
-    val countdown =
-        if (departureCountdown(trip.expectedStartTime, nowMillis) == DepartureCountdown.Now) {
-            stringResource(Res.string.now)
-        } else {
-            minutesUntil(trip.expectedStartTime, nowMillis)?.let { inTimeText(it) }
-        }
+    TripLegs(trip = trip, color = MaterialTheme.colorScheme.onSurface)
     Text(
         text =
             listOfNotNull(
-                if (changes ==
-                    0
-                ) {
+                if (changes == 0) {
                     stringResource(Res.string.trip_details_direct)
                 } else {
                     pluralStringResource(Res.plurals.trip_details_changes, changes, changes)
                 },
                 walked.takeIf { it > 0 }?.let { stringResource(Res.string.trip_details_walk_total, it) },
-                countdown,
             ).joinToString(" · "),
-        style = MaterialTheme.typography.bodyMedium.copy(color = muted),
+        style = MaterialTheme.typography.bodyMedium,
+        color = muted,
     )
 }
 
 @Composable
 private fun WaitRow(minutes: Int) {
-    Text(
-        text = "⏱  ${stringResource(Res.string.trip_details_wait, minutes)}",
-        style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+    Row(
         modifier = Modifier.padding(start = 12.dp, bottom = 8.dp),
-    )
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2),
+    ) {
+        Icon(PulseIcons.HourglassTop, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        Text(
+            text = stringResource(Res.string.trip_details_wait, minutes),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 /** A walk's time, distance and end; with [onShowOnMap], a button that opens the walk in the map app. */
@@ -422,14 +424,44 @@ private fun RideCard(
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     var expanded by remember { mutableStateOf(false) }
+    val rail = PulseTheme.colors.lines.forMode(leg.mode)
+    // A ride sits on a rail in its line's colour, as the stop lists do.
+    Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        Box(
+            Modifier
+                .padding(start = 10.dp, end = FjordDimens.space3)
+                .width(4.dp)
+                .fillMaxHeight()
+                .clip(RoundedCornerShape(2.dp))
+                .background(rail),
+        )
+        RideContent(leg, endName, stops, nowMillis, showDelays, showMessages, expanded, rail) {
+            expanded = !expanded
+            onInteract()
+        }
+    }
+}
+
+/** A ride's line, heading and ends, or every stop once [expanded]. */
+@Composable
+private fun RowScope.RideContent(
+    leg: TripLeg,
+    endName: String?,
+    stops: List<JourneyStop>?,
+    nowMillis: Long,
+    showDelays: Boolean,
+    showMessages: Boolean,
+    expanded: Boolean,
+    rail: Color,
+    onToggle: () -> Unit,
+) {
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
     Column(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                .weight(1f)
                 .animateContentSize()
-                .padding(12.dp),
+                .padding(vertical = FjordDimens.space2),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             LinePill(line = leg.lineName.orEmpty(), mode = leg.mode)
@@ -460,7 +492,7 @@ private fun RideCard(
         Spacer(modifier = Modifier.height(8.dp))
         if (expanded && !stops.isNullOrEmpty()) {
             stops.forEachIndexed { index, stop ->
-                RouteStopRow(stop, nowMillis, isFirst = index == 0, isLast = index == stops.lastIndex)
+                RouteStopRow(stop, nowMillis, isFirst = index == 0, isLast = index == stops.lastIndex, railColor = rail)
             }
         } else {
             EndpointRow(
@@ -475,10 +507,7 @@ private fun RideCard(
             )
             EndpointRow(leg.expectedEndTime, endName, nowMillis)
         }
-        StopsToggle(leg, stops, expanded) {
-            expanded = !expanded
-            onInteract()
-        }
+        StopsToggle(leg, stops, expanded, onToggle)
         if (showMessages) {
             leg.notices.forEach { notice ->
                 NoticeText(notice)
@@ -492,20 +521,11 @@ private fun RideCard(
 private fun LegFacts(leg: TripLeg) {
     val platform = leg.platform?.let { stringResource(Res.string.details_platform, it) }
     if (platform == null && !leg.isRealtime) return
-    val liveText = stringResource(Res.string.details_live)
-    val liveColor = MaterialTheme.colorScheme.primary
     Spacer(modifier = Modifier.height(4.dp))
-    Text(
-        text =
-            buildAnnotatedString {
-                if (leg.isRealtime) {
-                    withStyle(SpanStyle(color = liveColor, fontWeight = FontWeight.Bold)) { append("● $liveText") }
-                    if (platform != null) append(" · ")
-                }
-                if (platform != null) append(platform)
-            },
-        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-    )
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+        if (leg.isRealtime) LiveChip()
+        platform?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    }
 }
 
 /** A time and a stop name; with [delayFrom], the timetabled time struck through and the delay. */

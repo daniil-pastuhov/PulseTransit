@@ -240,3 +240,9 @@ actual fun rememberWalkingDirections(): (latitude: Double, longitude: Double) ->
         }
     }
 }
+
+@Composable
+actual fun rememberOpenAppSettings(): () -> Unit {
+    val context = LocalContext.current
+    return { context.openAppSettings() }
+}

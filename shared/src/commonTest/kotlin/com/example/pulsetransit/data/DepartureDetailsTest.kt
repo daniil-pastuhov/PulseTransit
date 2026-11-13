@@ -76,4 +76,26 @@ class DepartureDetailsTest {
     fun `too few departures have no headway`() {
         assertNull(typicalHeadwayMinutes(listOf(departure(at(20, 2)), departure(at(20, 17)))))
     }
+
+    @Test
+    fun `a cancelled departure points to the next one that runs`() {
+        val cancelled = departure(at(19, 43), isCancelled = true)
+        val alsoCancelled = departure(at(19, 53), isCancelled = true)
+        val runs = departure(at(20, 3))
+        val earlier = departure(at(19, 33))
+        assertEquals(runs, nextRunningDeparture(listOf(earlier, cancelled, alsoCancelled, runs), cancelled))
+    }
+
+    @Test
+    fun `with every later departure cancelled there is none to point to`() {
+        val cancelled = departure(at(19, 43), isCancelled = true)
+        assertNull(nextRunningDeparture(listOf(departure(at(19, 33)), cancelled, departure(at(19, 53), isCancelled = true)), cancelled))
+    }
+
+    @Test
+    fun `a later time with another offset still counts as later`() {
+        val cancelled = departure("2026-07-15T19:43:00+02:00", isCancelled = true)
+        val inUtc = departure("2026-07-15T17:50:00Z")
+        assertEquals(inUtc, nextRunningDeparture(listOf(cancelled, inUtc), cancelled))
+    }
 }

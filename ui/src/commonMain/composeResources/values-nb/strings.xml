@@ -448,4 +448,20 @@
         <item quantity="other">%1$d retninger</item>
     </plurals>
     <string name="weather_now">Været nå: %1$s, %2$s</string>
+    <!-- Fjord detail sheets (step 4) -->
+    <string name="details_from">Fra %1$s</string>
+    <string name="details_board_here">du går på her</string>
+    <string name="details_last_stop">Siste stopp</string>
+    <string name="details_stops_failed">Entur sendte ikke stoppene for denne avgangen.</string>
+    <string name="try_again">Prøv igjen</string>
+    <string name="details_cancelled_title">Denne avgangen går ikke</string>
+    <string name="details_cancelled_body">Operatøren har innstilt avgangen %1$s. Neste går %2$s, %3$s.</string>
+    <string name="details_cancelled_none">Operatøren har innstilt avgangen %1$s.</string>
+    <string name="details_show_departure">Vis avgangen %1$s</string>
+    <string name="filter_out_hint">Skjules fra avgangene og unngås i rutesøk. Vis den igjen når som helst i Innstillinger › Filtrerte linjer.</string>
+    <string name="journey_notifications_off_title">Varsler er slått av for PulseTransit</string>
+    <string name="journey_notifications_off_body">Slå dem på for å få beskjed om når du skal gå, bytte og gå av.</string>
+    <string name="journey_time_only_title">Følger bare sanntid</string>
+    <string name="journey_time_only_body">Posisjon er av, så varslene kan ikke merke om du går glipp av turen. Slå den på før neste reise.</string>
+    <string name="open_app_settings">Åpne innstillinger</string>
 </resources>

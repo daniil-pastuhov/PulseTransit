@@ -58,3 +58,7 @@ expect fun is24HourClock(): Boolean
  */
 @Composable
 expect fun rememberWalkingDirections(): (latitude: Double, longitude: Double) -> Unit
+
+/** Opens this app's page in the system settings, where a denied permission can be turned on. */
+@Composable
+expect fun rememberOpenAppSettings(): () -> Unit

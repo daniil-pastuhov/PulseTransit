@@ -449,4 +449,20 @@
         <item quantity="other">%1$d directions</item>
     </plurals>
     <string name="weather_now">Weather now: %1$s, %2$s</string>
+    <!-- Fjord detail sheets (step 4) -->
+    <string name="details_from">From %1$s</string>
+    <string name="details_board_here">you board here</string>
+    <string name="details_last_stop">Last stop</string>
+    <string name="details_stops_failed">Entur didn’t send the stops for this departure.</string>
+    <string name="try_again">Try again</string>
+    <string name="details_cancelled_title">This departure won’t run</string>
+    <string name="details_cancelled_body">The operator cancelled the %1$s. The next one leaves at %2$s, %3$s.</string>
+    <string name="details_cancelled_none">The operator cancelled the %1$s.</string>
+    <string name="details_show_departure">Show the %1$s departure</string>
+    <string name="filter_out_hint">Hidden from the departures and avoided in route searches. Show it again any time in Settings › Filtered out lines.</string>
+    <string name="journey_notifications_off_title">Notifications are off for PulseTransit</string>
+    <string name="journey_notifications_off_body">Turn them on to be told when to leave, change and get off.</string>
+    <string name="journey_time_only_title">Following live times only</string>
+    <string name="journey_time_only_body">Location is off, so alerts can’t notice if you miss your ride. Turn it on for your next journey.</string>
+    <string name="open_app_settings">Open settings</string>
 </resources>
