@@ -51,7 +51,7 @@ struct TripTimeControls: View {
         let start = tripTimeMillis(initial).map { Date(timeIntervalSince1970: Double($0) / 1000) }
             ?? Date(timeIntervalSince1970: (Date().timeIntervalSince1970 / 300).rounded(.up) * 300 + 15 * 60)
         _time = State(initialValue: start)
-        _tomorrow = State(initialValue: !Calendar.current.isDateInToday(start))
+        _tomorrow = State(initialValue: !Calendar.norway.isDateInToday(start))
         _chosen = State(initialValue: initial)
     }
 
@@ -69,8 +69,10 @@ struct TripTimeControls: View {
                     Text(L("trip_time_tomorrow_day")).tag(true)
                 }
                 .pickerStyle(.segmented)
+                // In Norway time, as the routes are, whatever the device's clock is set to.
                 DatePicker(L("trip_time_title"), selection: $time, displayedComponents: .hourAndMinute)
                     .labelsHidden()
+                    .environment(\.timeZone, .norway)
             }
             // Says what will be searched for, so the day is never a surprise.
             Text(help)
@@ -95,7 +97,7 @@ struct TripTimeControls: View {
     }
 
     private func apply() {
-        let parts = Calendar.current.dateComponents([.hour, .minute], from: time)
+        let parts = Calendar.norway.dateComponents([.hour, .minute], from: time)
         let at = TripTimeKt.timeOnDay(
             dayOffset: tomorrow ? 1 : 0,
             hour: Int32(parts.hour ?? 0),

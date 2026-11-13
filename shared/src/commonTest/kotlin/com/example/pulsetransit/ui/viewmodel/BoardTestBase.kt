@@ -74,6 +74,7 @@ abstract class BoardTestBase {
     protected fun TestScope.viewModel(
         clock: Clock = Clock.System,
         timeZone: TimeZone = TimeZone.currentSystemDefault(),
+        deviceTimeZone: TimeZone = timeZone,
     ): StopBoardViewModel {
         val vm =
             StopBoardViewModel(
@@ -87,6 +88,7 @@ abstract class BoardTestBase {
                 location,
                 clock,
                 timeZone = { timeZone },
+                deviceTimeZone = { deviceTimeZone },
             )
         created += vm
         runCurrent() // let init's loadSettings / first refresh / sensor wiring run

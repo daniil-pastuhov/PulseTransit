@@ -38,11 +38,11 @@ sealed interface DepartureCountdown {
 private const val MILLIS_PER_SECOND = 1000L
 private const val SECONDS_PER_MINUTE = 60L
 
-/** [departureCountdown] in the device's time zone. A separate overload, since Swift has no default arguments. */
+/** [departureCountdown] in Norway time. A separate overload, since Swift has no default arguments. */
 fun departureCountdown(
     expectedTime: String,
     nowMillis: Long,
-): DepartureCountdown = departureCountdown(expectedTime, nowMillis, TimeZone.currentSystemDefault())
+): DepartureCountdown = departureCountdown(expectedTime, nowMillis, NorwayTimeZone)
 
 /** Classifies a departure's ISO-8601 [expectedTime] relative to [nowMillis] in [timeZone]. */
 fun departureCountdown(
@@ -60,11 +60,11 @@ fun departureCountdown(
     }
 }
 
-/** [departureClock] in the device's time zone. A separate overload, since Swift has no default arguments. */
+/** [departureClock] in Norway time. A separate overload, since Swift has no default arguments. */
 fun departureClock(
     time: String,
     nowMillis: Long,
-): DepartureCountdown.Clock? = departureClock(time, nowMillis, TimeZone.currentSystemDefault())
+): DepartureCountdown.Clock? = departureClock(time, nowMillis, NorwayTimeZone)
 
 /**
  * An ISO-8601 [time] as a wall-clock time however close it is, with its day offset from

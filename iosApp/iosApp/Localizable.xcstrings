@@ -4313,6 +4313,23 @@
         }
       }
     },
+    "norway_time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Norway time"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Norsk tid"
+          }
+        }
+      }
+    },
     "not_now": {
       "extractionState": "manual",
       "localizations": {
@@ -4605,6 +4622,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpne innstillinger"
+          }
+        }
+      }
+    },
+    "outside_norway_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit shows public transport in Norway. Try it as if you were standing at one of these stations."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit viser kollektivtrafikk i Norge. Prøv appen som om du sto på en av disse stasjonene."
+          }
+        }
+      }
+    },
+    "outside_norway_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You’re outside Norway"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du er utenfor Norge"
           }
         }
       }
@@ -5591,6 +5642,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "Legg til et reisemål for å se reiser herfra."
+          }
+        }
+      }
+    },
+    "sample_place_active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Showing the board as if you were at %1$@."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viser tavla som om du var ved %1$@."
+          }
+        }
+      }
+    },
+    "sample_place_active_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eksempelsted"
+          }
+        }
+      }
+    },
+    "sample_place_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not in Norway?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke i Norge?"
+          }
+        }
+      }
+    },
+    "sample_place_try": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it at %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prøv ved %1$@"
+          }
+        }
+      }
+    },
+    "sample_place_use_mine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use my location"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk min posisjon"
           }
         }
       }

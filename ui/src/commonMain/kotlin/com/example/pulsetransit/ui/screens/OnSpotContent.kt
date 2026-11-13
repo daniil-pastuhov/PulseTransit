@@ -37,6 +37,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -66,6 +67,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.OnSpotSplit
+import com.example.pulsetransit.data.SamplePlace
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripTime
@@ -79,6 +81,7 @@ import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTheme
 import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.components.AdaptiveSheet
+import com.example.pulsetransit.ui.components.Callout
 import com.example.pulsetransit.ui.components.LoadingPlaceholderList
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.ScreenMessage
@@ -130,9 +133,79 @@ fun OnSpotContent(
 ) {
     val onRetryLocation = rememberLocationAccess(onGranted = viewModel::retryLocation)
 
-    when (val location = uiState.location) {
-        is OnSpotLocation.Located -> LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, modifier)
-        else -> LocationStatus(location, uiState.routeDestinations, onRetry = onRetryLocation, modifier = modifier)
+    val location = uiState.location
+    when {
+        // Nothing near to show, and routes from abroad are no use: offer a place in Norway instead.
+        uiState.isOutsideNorway -> OutsideNorway(onTrySamplePlace = viewModel::useSamplePlace, modifier = modifier)
+        location is OnSpotLocation.Located -> {
+            val samplePlace = uiState.samplePlace
+            if (samplePlace == null) {
+                LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, modifier)
+            } else {
+                Column(modifier = modifier) {
+                    SamplePlaceCallout(
+                        place = samplePlace,
+                        onUseDeviceLocation = viewModel::useDeviceLocation,
+                        modifier = Modifier.padding(start = 6.dp, top = 6.dp, end = 6.dp),
+                    )
+                    LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, Modifier.weight(1f))
+                }
+            }
+        }
+        else ->
+            LocationStatus(
+                location,
+                uiState.routeDestinations,
+                onRetry = onRetryLocation,
+                onTrySamplePlace = viewModel::useSamplePlace,
+                modifier = modifier,
+            )
+    }
+}
+
+/**
+ * The device is outside Norway, where Entur has nothing: says so, and offers to try the board as
+ * if standing at one of the [SamplePlace]s (for testers and store reviewers abroad).
+ */
+@Composable
+private fun OutsideNorway(
+    onTrySamplePlace: (SamplePlace) -> Unit,
+    modifier: Modifier,
+) {
+    Box(modifier = modifier.verticalScroll(rememberScrollState()), contentAlignment = Alignment.Center) {
+        ScreenMessage(
+            title = stringResource(Res.string.outside_norway_title),
+            body = stringResource(Res.string.outside_norway_body),
+            icon = PulseIcons.Map,
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+                SamplePlace.entries.forEachIndexed { index, place ->
+                    val label = stringResource(Res.string.sample_place_try, place.displayName)
+                    if (index == 0) {
+                        Button(onClick = { onTrySamplePlace(place) }) { Text(label) }
+                    } else {
+                        OutlinedButton(onClick = { onTrySamplePlace(place) }) { Text(label) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Says the board is at a sample place, not where the device is, with the way back. */
+@Composable
+private fun SamplePlaceCallout(
+    place: SamplePlace,
+    onUseDeviceLocation: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Callout(
+        title = stringResource(Res.string.sample_place_active_title),
+        body = stringResource(Res.string.sample_place_active, place.displayName),
+        icon = PulseIcons.EditLocationAlt,
+        modifier = modifier,
+    ) {
+        TextButton(onClick = onUseDeviceLocation) { Text(stringResource(Res.string.sample_place_use_mine)) }
     }
 }
 
@@ -365,8 +438,16 @@ private fun LocationStatus(
     location: OnSpotLocation,
     destinations: List<StopPlace>,
     onRetry: () -> Unit,
+    onTrySamplePlace: (SamplePlace) -> Unit,
     modifier: Modifier,
 ) {
+    // Without a location the device may well be abroad (a tester, a store reviewer): offer a place in Norway.
+    val trySample: @Composable () -> Unit = {
+        val place = SamplePlace.entries.first()
+        TextButton(onClick = { onTrySamplePlace(place) }) {
+            Text(stringResource(Res.string.sample_place_hint) + " " + stringResource(Res.string.sample_place_try, place.displayName))
+        }
+    }
     when (location) {
         OnSpotLocation.PermissionDenied ->
             Box(modifier = modifier, contentAlignment = Alignment.Center) {
@@ -383,6 +464,7 @@ private fun LocationStatus(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                         )
+                        trySample()
                     }
                 }
             }
@@ -392,7 +474,12 @@ private fun LocationStatus(
                     title = stringResource(Res.string.location_unavailable),
                     body = stringResource(Res.string.on_spot_unavailable_body),
                     icon = PulseIcons.WrongLocation,
-                ) { OutlinedButton(onClick = onRetry) { Text(stringResource(Res.string.try_again)) } }
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
+                        OutlinedButton(onClick = onRetry) { Text(stringResource(Res.string.try_again)) }
+                        trySample()
+                    }
+                }
             }
         else -> {
             val approximate = (location as? OnSpotLocation.Locating)?.accuracy == LocationAccuracy.APPROXIMATE

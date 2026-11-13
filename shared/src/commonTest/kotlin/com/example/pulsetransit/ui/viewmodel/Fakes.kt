@@ -12,6 +12,7 @@ import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.RoutePreference
 import com.example.pulsetransit.data.RouteTransportMode
+import com.example.pulsetransit.data.SamplePlace
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
@@ -474,6 +475,14 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun clearDeviceLocation() {
         lastDeviceFix = null
+    }
+
+    var storedSamplePlace: SamplePlace? = null
+
+    override fun getSamplePlace() = storedSamplePlace
+
+    override fun setSamplePlace(place: SamplePlace?) {
+        storedSamplePlace = place
     }
 
     override fun isShowDelays() = delaysShown

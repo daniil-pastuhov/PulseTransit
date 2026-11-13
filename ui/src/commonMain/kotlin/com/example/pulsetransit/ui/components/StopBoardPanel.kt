@@ -75,6 +75,7 @@ import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.StopPlace
+import com.example.pulsetransit.data.clockTimeText
 import com.example.pulsetransit.data.departureClock
 import com.example.pulsetransit.data.departureCountdown
 import com.example.pulsetransit.theme.FjordDimens
@@ -101,9 +102,6 @@ import com.example.pulsetransit.ui.resources.stale_no_internet_title
 import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.time.Clock
 
 // Size of the "+1" next-day marker relative to the time it follows.
@@ -576,10 +574,10 @@ private fun DepartureTime(
     )
 }
 
-/** [isoTime]'s "HH:mm" in the device's time zone, or empty when it cannot be read. */
+/** [isoTime]'s "HH:mm" in Norway time, or empty when it cannot be read. */
 private fun formatClock(isoTime: String): String =
     departureClock(isoTime, Clock.System.now().toEpochMilliseconds())
-        ?.let { SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it.epochMillis)) }
+        ?.let { clockTimeText(it.epochMillis) }
         .orEmpty()
 
 /**
@@ -594,7 +592,7 @@ private fun formatDepartureTime(expectedTime: String): AnnotatedString =
         is DepartureCountdown.Minutes -> AnnotatedString(stringResource(Res.string.countdown_minutes, countdown.minutes))
         is DepartureCountdown.Clock ->
             buildAnnotatedString {
-                append(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(countdown.epochMillis)))
+                append(clockTimeText(countdown.epochMillis))
                 if (countdown.dayOffset > 0) {
                     withStyle(SpanStyle(fontSize = DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
                         append("+${countdown.dayOffset}")

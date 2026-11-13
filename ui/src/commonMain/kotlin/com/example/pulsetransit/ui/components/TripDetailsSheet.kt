@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
+import com.example.pulsetransit.data.clockTimeText
 import com.example.pulsetransit.data.isShown
 import com.example.pulsetransit.data.isTransit
 import com.example.pulsetransit.data.journey.JourneyDetail
@@ -73,9 +74,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * What a route's details offer under their header, provided by the screen that owns the actions
@@ -265,7 +263,7 @@ private fun progressHeadline(progress: JourneyProgress): String {
 /** One of the progress' facts, worded like the journey's notification. */
 @Composable
 private fun progressDetailText(detail: JourneyDetail): String {
-    fun time(millis: Long) = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(millis))
+    fun time(millis: Long) = clockTimeText(millis)
     return when (detail) {
         is JourneyDetail.Departs ->
             if (detail.delayMinutes > 0) {

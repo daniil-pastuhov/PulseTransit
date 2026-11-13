@@ -442,6 +442,14 @@
     <string name="on_spot_search_hint">You can still find a route with Search.</string>
     <string name="on_spot_unavailable_body">Check that location services are on. Indoors, moving closer to a window helps.</string>
     <string name="on_spot_approximate">Approximate location</string>
+    <string name="outside_norway_title">You’re outside Norway</string>
+    <string name="outside_norway_body">PulseTransit shows public transport in Norway. Try it as if you were standing at one of these stations.</string>
+    <string name="sample_place_try">Try it at %1$s</string>
+    <string name="sample_place_hint">Not in Norway?</string>
+    <string name="sample_place_active_title">Sample location</string>
+    <string name="sample_place_active">Showing the board as if you were at %1$s.</string>
+    <string name="sample_place_use_mine">Use my location</string>
+    <string name="norway_time">Norway time</string>
     <string name="distance_about">About %1$s</string>
     <string name="on_spot_no_destinations_title">No destinations yet</string>
     <string name="on_spot_one_off_hint">For a one-off trip, tap Search.</string>

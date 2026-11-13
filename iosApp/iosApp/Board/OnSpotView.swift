@@ -23,10 +23,25 @@ struct OnSpotView: View {
     let onOpenSettings: () -> Void
 
     var body: some View {
+        if state.isOutsideNorway {
+            // Nothing near to show, and routes from abroad are no use: offer a place in Norway instead.
+            OutsideNorway { viewModel.useSamplePlace(place: $0) }
+        } else {
+            status
+        }
+    }
+
+    @ViewBuilder private var status: some View {
         switch onEnum(of: state.location) {
         case .located:
-            SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
-                .padding(6)
+            VStack(spacing: 0) {
+                if let place = state.samplePlace {
+                    SamplePlaceCallout(place: place) { viewModel.useDeviceLocation() }
+                        .padding([.horizontal, .top], 6)
+                }
+                SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
+                    .padding(6)
+            }
         case let .locating(locating):
             Locating(approximate: locating.accuracy == .approximate, destinations: state.routeDestinations)
         case .idle:
@@ -37,7 +52,8 @@ struct OnSpotView: View {
                 title: L("location_unavailable"),
                 detail: L("on_spot_unavailable_body"),
                 actionTitle: L("try_again"),
-                prominent: false
+                prominent: false,
+                onTrySamplePlace: { viewModel.useSamplePlace(place: $0) }
             ) { viewModel.retryLocation() }
         case .permissionDenied:
             // iOS asks only once; after a refusal, access can only be granted in the Settings app.
@@ -47,7 +63,8 @@ struct OnSpotView: View {
                 title: L("on_spot_denied_title"),
                 detail: L("location_denied"),
                 actionTitle: L("location_allow"),
-                hint: L("on_spot_search_hint")
+                hint: L("on_spot_search_hint"),
+                onTrySamplePlace: { viewModel.useSamplePlace(place: $0) }
             ) {
                 if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
             }
@@ -314,6 +331,8 @@ private struct LocationStatus: View {
     let actionTitle: String
     var hint: String?
     var prominent = true
+    /// Without a location the device may well be abroad (a tester, a store reviewer): offers a place in Norway.
+    var onTrySamplePlace: ((SamplePlace) -> Void)?
     let action: () -> Void
 
     var body: some View {
@@ -340,10 +359,71 @@ private struct LocationStatus: View {
             if let hint {
                 Text(hint).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary).multilineTextAlignment(.center)
             }
+            if let onTrySamplePlace {
+                let place = samplePlaces[0]
+                Button("\(L("sample_place_hint")) \(L("sample_place_try", place.displayName))") { onTrySamplePlace(place) }
+                    .font(.pulse(.subheadline, weight: .semibold))
+                    .multilineTextAlignment(.center)
+            }
             Spacer()
         }
         .padding(24)
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// The places on-spot mode can stand at instead of the device, in the order offered.
+private let samplePlaces: [SamplePlace] = [.osloS, .bergen, .trondheim]
+
+/// The device is outside Norway, where Entur has nothing: says so, and offers to try the board as
+/// if standing at one of the sample places. The counterpart of Android's OutsideNorway.
+private struct OutsideNorway: View {
+    let onTrySamplePlace: (SamplePlace) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 12) {
+                Image(systemName: "map")
+                    .font(.system(size: 40))
+                    .foregroundColor(Palette.primary)
+                    .accessibilityHidden(true)
+                Text(L("outside_norway_title"))
+                    .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(Palette.textPrimary)
+                Text(L("outside_norway_body"))
+                    .font(.pulse(.body))
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(Palette.textSecondary)
+                    .frame(maxWidth: 360)
+                ForEach(samplePlaces, id: \.self) { place in
+                    let title = L("sample_place_try", place.displayName)
+                    if place == samplePlaces[0] {
+                        Button(title) { onTrySamplePlace(place) }.buttonStyle(.borderedProminent)
+                    } else {
+                        Button(title) { onTrySamplePlace(place) }.buttonStyle(.bordered)
+                    }
+                }
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+/// Says the board is at a sample place, not where the device is, with the way back.
+private struct SamplePlaceCallout: View {
+    let place: SamplePlace
+    let onUseDeviceLocation: () -> Void
+
+    var body: some View {
+        Callout(
+            L("sample_place_active", place.displayName),
+            title: L("sample_place_active_title"),
+            symbol: "mappin.and.ellipse"
+        ) {
+            Button(L("sample_place_use_mine"), action: onUseDeviceLocation)
+        }
     }
 }
 

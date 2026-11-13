@@ -27,6 +27,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.example.pulsetransit.R
 import com.example.pulsetransit.data.Intensity
+import com.example.pulsetransit.data.NORWAY_TIME_ZONE_ID
 import com.example.pulsetransit.data.Precip
 import com.example.pulsetransit.data.Sky
 import com.example.pulsetransit.data.parseWeatherSymbol
@@ -34,6 +35,7 @@ import com.example.pulsetransit.ui.resources.*
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /**
@@ -286,12 +288,14 @@ private fun clockViews(
     }
 
 /**
- * Today in the locale's own order ("Wed 23 Sep", "Wed, Sep 23"). Drawn at each refresh, so after
+ * Today in Norway, in the locale's own order ("Wed 23 Sep", "Wed, Sep 23"). Drawn at each refresh, so after
  * midnight it may show yesterday for up to one refresh interval.
  */
 private fun today(): String {
     val pattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), "EEEMMMd")
-    return SimpleDateFormat(pattern, Locale.getDefault()).format(Date())
+    return SimpleDateFormat(pattern, Locale.getDefault())
+        .apply { timeZone = TimeZone.getTimeZone(NORWAY_TIME_ZONE_ID) }
+        .format(Date())
 }
 
 /**

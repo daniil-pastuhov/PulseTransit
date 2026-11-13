@@ -399,9 +399,10 @@ extension View {
     }
 }
 
-/// 24-hour, like the board, whatever the locale's default.
+/// 24-hour in Norway time, like the board, whatever the locale's default.
 private let clockFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "HH:mm"
+    formatter.timeZone = .norway
     return formatter
 }()

@@ -31,6 +31,7 @@ class SettingsRepositoryImpl(
         const val FILTERED_LINES = "filtered_lines_json"
         const val EXCLUDED_ROUTE_MODES = "route_excluded_modes_json"
         const val DESTINATION_SCHEDULES = "destination_schedules_json"
+        const val SAMPLE_PLACE = "sample_place"
 
         fun selectedQuays(stopId: String) = "quays_json_$stopId"
     }
@@ -297,6 +298,12 @@ class SettingsRepositoryImpl(
     override fun clearDeviceLocation() {
         deviceState?.remove(Keys.DEVICE_LAT)
         deviceState?.remove(Keys.DEVICE_LON)
+    }
+
+    override fun getSamplePlace(): SamplePlace? = prefs.getStringOrNull(Keys.SAMPLE_PLACE)?.let { name -> SamplePlace.entries.firstOrNull { it.name == name } }
+
+    override fun setSamplePlace(place: SamplePlace?) {
+        if (place == null) prefs.remove(Keys.SAMPLE_PLACE) else prefs.putString(Keys.SAMPLE_PLACE, place.name)
     }
 
     private fun roundTo4(value: Double) = kotlin.math.round(value * FOUR_DECIMALS) / FOUR_DECIMALS

@@ -216,9 +216,14 @@ private struct HeaderClock: View {
     private var timeSize: CGFloat { wide ? 64 : FjordTokens.typeClock.size }
 
     private func timeText(_ size: CGFloat) -> some View {
-        Text(state.currentTime)
+        let time = Text(state.currentTime)
             .font(.pulse(fixedSize: size, weight: .bold))
             .foregroundColor(Palette.primary)
+        // When the device's clock reads otherwise, "Norway time" after the clock says whose time every time is.
+        guard state.isNorwayTimeLabelled else { return time }
+        return time + Text(" " + L("norway_time"))
+            .font(.pulse(.caption, weight: .semibold))
+            .foregroundColor(Palette.textSecondary)
     }
 
     /// "**Fri** 13 Nov": weekday strong, day and month muted.

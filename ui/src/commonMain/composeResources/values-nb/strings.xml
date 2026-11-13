@@ -441,6 +441,14 @@
     <string name="on_spot_search_hint">Du kan fortsatt finne en rute med Søk.</string>
     <string name="on_spot_unavailable_body">Sjekk at posisjonstjenester er på. Innendørs hjelper det å gå nærmere et vindu.</string>
     <string name="on_spot_approximate">Omtrentlig posisjon</string>
+    <string name="outside_norway_title">Du er utenfor Norge</string>
+    <string name="outside_norway_body">PulseTransit viser kollektivtrafikk i Norge. Prøv appen som om du sto på en av disse stasjonene.</string>
+    <string name="sample_place_try">Prøv ved %1$s</string>
+    <string name="sample_place_hint">Ikke i Norge?</string>
+    <string name="sample_place_active_title">Eksempelsted</string>
+    <string name="sample_place_active">Viser tavla som om du var ved %1$s.</string>
+    <string name="sample_place_use_mine">Bruk min posisjon</string>
+    <string name="norway_time">Norsk tid</string>
     <string name="distance_about">Ca. %1$s</string>
     <string name="on_spot_no_destinations_title">Ingen reisemål ennå</string>
     <string name="on_spot_one_off_hint">For en enkelt tur, trykk på Søk.</string>

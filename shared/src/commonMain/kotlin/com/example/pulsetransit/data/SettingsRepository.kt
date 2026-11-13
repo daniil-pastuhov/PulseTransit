@@ -127,6 +127,14 @@ interface SettingsRepository {
 
     fun clearDeviceLocation()
 
+    /**
+     * The place in Norway on-spot mode pretends the device is at, so someone abroad can try it; null
+     * to follow the device. Kept until they choose their own location again.
+     */
+    fun getSamplePlace(): SamplePlace?
+
+    fun setSamplePlace(place: SamplePlace?)
+
     // New settings
     fun isShowDelays(): Boolean
 

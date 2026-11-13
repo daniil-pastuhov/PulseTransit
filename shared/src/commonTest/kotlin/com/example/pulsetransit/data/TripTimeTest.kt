@@ -74,8 +74,8 @@ class TripTimeTest {
     }
 
     @Test
-    fun `the public helpers use the device's time zone`() {
-        val zone = TimeZone.currentSystemDefault()
+    fun `the public helpers use Norway's time zone whatever the device's`() {
+        val zone = oslo
         val now = at(3, 17, 0)
         assertEquals(nextTimeOfDay(8, 0, now, zone), nextTimeOfDay(8, 0, now))
         assertEquals(clockTimeText(now, zone), clockTimeText(now))

@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.data.DateDisplayStyle
+import com.example.pulsetransit.data.NORWAY_TIME_ZONE_ID
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.parseWeatherSymbol
 import com.example.pulsetransit.theme.FjordDimens
@@ -56,6 +57,7 @@ import com.example.pulsetransit.ui.components.weatherLabel
 import com.example.pulsetransit.ui.resources.Res
 import com.example.pulsetransit.ui.resources.change_date_style
 import com.example.pulsetransit.ui.resources.more_actions
+import com.example.pulsetransit.ui.resources.norway_time
 import com.example.pulsetransit.ui.resources.search_route
 import com.example.pulsetransit.ui.resources.settings_title
 import com.example.pulsetransit.ui.resources.weather_now
@@ -204,7 +206,23 @@ private fun HeaderClockContent(
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
     val strong = MaterialTheme.colorScheme.onBackground
     val dateStyle = if (wide) MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Normal) else MaterialTheme.typography.bodyMedium
-    val time: @Composable (Modifier) -> Unit = { m -> Text(uiState.currentTime, style = timeStyle, maxLines = 1, modifier = m) }
+    // When the device's clock reads otherwise, "Norway time" after the clock says whose time every time is.
+    val zoneLabel = if (uiState.isNorwayTimeLabelled) stringResource(Res.string.norway_time) else null
+    val zoneStyle =
+        MaterialTheme.typography.labelMedium
+            .toSpanStyle()
+            .copy(color = secondary)
+    val time: @Composable (Modifier) -> Unit = { m ->
+        Text(
+            buildAnnotatedString {
+                append(uiState.currentTime)
+                if (zoneLabel != null) withStyle(zoneStyle) { append(" $zoneLabel") }
+            },
+            style = timeStyle,
+            maxLines = 1,
+            modifier = m,
+        )
+    }
     when (style) {
         DateDisplayStyle.HIDDEN -> time(Modifier)
 
@@ -378,13 +396,13 @@ private fun temperatureText(celsius: Double): String {
 }
 
 /**
- * The local hour of a MET time ("2026-11-13T19:00:00Z"), two digits. MET sends UTC, so the
- * timestamp is read as UTC and shown in the device's zone.
+ * The hour of a MET time ("2026-11-13T19:00:00Z") in Norway, two digits. MET sends UTC, so the
+ * timestamp is read as UTC and shown in Norway time, like every time the board shows.
  */
 private fun localHour(time: String): String =
     try {
         val utc = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC") }
-        utc.parse(time.substring(0, MET_TIME_LENGTH))?.let { SimpleDateFormat("HH", Locale.getDefault()).format(it) } ?: "??"
+        utc.parse(time.substring(0, MET_TIME_LENGTH))?.let { SimpleDateFormat("HH", Locale.getDefault()).apply { timeZone = TimeZone.getTimeZone(NORWAY_TIME_ZONE_ID) }.format(it) } ?: "??"
     } catch (_: Exception) {
         "??"
     }

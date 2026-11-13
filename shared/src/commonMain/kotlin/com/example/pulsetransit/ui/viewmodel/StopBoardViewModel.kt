@@ -12,9 +12,11 @@ import com.example.pulsetransit.data.DestinationSchedule
 import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.NorwayTimeZone
 import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RouteOptions
+import com.example.pulsetransit.data.SamplePlace
 import com.example.pulsetransit.data.SettingsRepository
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopDepartures
@@ -25,11 +27,13 @@ import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.data.differsFromNorwayTime
 import com.example.pulsetransit.data.directionSummary
 import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.earliestArriving
 import com.example.pulsetransit.data.hasPassed
 import com.example.pulsetransit.data.isArrivedFrom
+import com.example.pulsetransit.data.isInNorway
 import com.example.pulsetransit.data.legStops
 import com.example.pulsetransit.data.stopsAhead
 import com.example.pulsetransit.platform.ClockFormatter
@@ -69,8 +73,10 @@ class StopBoardViewModel(
     private val connectivityMonitor: ConnectivityMonitor,
     private val locationProvider: LocationProvider,
     private val clock: Clock = Clock.System,
-    // Read on each use, so a board follows the device into another time zone.
-    private val timeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
+    // The zone schedules and the night refresh stretch go by: Norway's, like every time shown.
+    private val timeZone: () -> TimeZone = { NorwayTimeZone },
+    // Read on each tick, so the "Norway time" label follows the device into another time zone.
+    private val deviceTimeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
 ) : ViewModel() {
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
@@ -250,6 +256,18 @@ class StopBoardViewModel(
          * earliest after it, so route search still has an answer. By destination id.
          */
         val earliestArrivals: Map<String, TripInfo> = emptyMap(),
+        /**
+         * Whether the device's clock reads differently from Norway's, so the header labels its
+         * times as Norway time; every time the board shows is Norway's (see [NorwayTimeZone]).
+         */
+        val isNorwayTimeLabelled: Boolean = false,
+        /**
+         * On-spot mode: the place in Norway the board pretends the device is at, so someone abroad
+         * can try it; null while it follows the device.
+         */
+        val samplePlace: SamplePlace? = null,
+        /** On-spot mode: the device was found outside Norway, where there is nothing to show. */
+        val isOutsideNorway: Boolean = false,
     ) {
         /**
          * Every destination routes are shown for: the temporary one first, then the saved ones
@@ -350,10 +368,13 @@ class StopBoardViewModel(
     private var loadMoreJobs: Map<String, Job> = emptyMap()
     private var tripsJob: Job? = null
 
-    /** On-spot: follows the device while the screen is showing (see [startLocationTracking]). */
+    /**
+     * On-spot: follows the device while the screen is showing (see [startLocationTracking]), or
+     * stands at the chosen [UiState.samplePlace].
+     */
     private val follower =
         DeviceFollower(
-            locationProvider,
+            SamplePlaceLocationProvider(locationProvider) { _uiState.value.samplePlace },
             clock,
             viewModelScope,
             onLocation = ::showLocation,
@@ -368,6 +389,8 @@ class StopBoardViewModel(
 
     init {
         loadSettings() // also starts the light sensor when the theme is AUTO
+        // Only the board itself changes the sample place, so it is read once, at launch.
+        settingsRepository.getSamplePlace()?.let(::applySamplePlace)
         startClock()
         startAutoRefresh()
         observeSettings()
@@ -710,6 +733,7 @@ class StopBoardViewModel(
                         currentMonth = text.monthShort,
                         currentWeekdayLong = text.weekdayLong,
                         currentMonthLong = text.monthLong,
+                        isNorwayTimeLabelled = differsFromNorwayTime(now, deviceTimeZone()),
                         // Derived here so the age keeps climbing while the board stays offline.
                         staleAgeMinutes =
                             it.staleSinceMillis?.let { since ->
@@ -1478,6 +1502,65 @@ class StopBoardViewModel(
         follower.stop()
     }
 
+    /**
+     * Pretends the device is at [place], for someone abroad trying on-spot mode, until
+     * [useDeviceLocation]. Kept across launches.
+     */
+    fun useSamplePlace(place: SamplePlace) {
+        settingsRepository.setSamplePlace(place)
+        applySamplePlace(place)
+    }
+
+    /** Follows the device again after [useSamplePlace]. */
+    fun useDeviceLocation() {
+        settingsRepository.setSamplePlace(null)
+        applySamplePlace(null)
+    }
+
+    /**
+     * Starts over from [place] (or the device): drops the stops and routes of where the board
+     * was, and follows again if the screen is showing.
+     */
+    private fun applySamplePlace(place: SamplePlace?) {
+        follower.reset()
+        nearbyJob?.cancel()
+        lastWeatherFix = null // the forecast is for the old place
+        val onSpot = isOnSpot
+        if (onSpot) {
+            departuresJob?.cancel()
+            tripsJob?.cancel()
+            rawDepartures = emptyMap()
+            stopFetchedAt = emptyMap()
+        }
+        _uiState.update {
+            val cleared =
+                if (onSpot) {
+                    it.copy(
+                        favorites = emptyList(),
+                        departures = emptyList(),
+                        fastestTrips = emptyMap(),
+                        loadingStopIds = emptySet(),
+                        loadingTripDestinationIds = emptySet(),
+                        failedStopIds = emptySet(),
+                        failedTripDestinationIds = emptySet(),
+                        noRouteDestinationIds = emptySet(),
+                    )
+                } else {
+                    it
+                }
+            cleared.copy(
+                samplePlace = place,
+                isOutsideNorway = false,
+                location = OnSpotLocation.Idle,
+                nearbyStops = emptyList(),
+                selectedStopId = null,
+                isStopPinned = false,
+                isSearchingNearby = false,
+            )
+        }
+        if (onSpot && isTrackingRequested) follower.start()
+    }
+
     /** Looks for the device again after it could not be found or access was refused. */
     fun retryLocation() {
         if (isOnSpot) follower.start()
@@ -1516,7 +1599,13 @@ class StopBoardViewModel(
             val keepFound =
                 it.location is OnSpotLocation.Located &&
                     (location is OnSpotLocation.Locating || location is OnSpotLocation.Unavailable)
-            if (keepFound) it else it.copy(location = location)
+            when {
+                keepFound -> it
+                // A sample place is in Norway, and a found location says nothing new until then.
+                location is OnSpotLocation.Located ->
+                    it.copy(location = location, isOutsideNorway = it.samplePlace == null && !isInNorway(location.latitude, location.longitude))
+                else -> it.copy(location = location)
+            }
         }
     }
 

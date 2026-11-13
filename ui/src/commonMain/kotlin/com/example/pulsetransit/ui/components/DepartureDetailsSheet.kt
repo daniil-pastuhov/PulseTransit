@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureCountdown
 import com.example.pulsetransit.data.JourneyStop
+import com.example.pulsetransit.data.clockTimeText
 import com.example.pulsetransit.data.departureClock
 import com.example.pulsetransit.data.departureCountdown
 import com.example.pulsetransit.data.minutesBetween
@@ -66,9 +67,6 @@ import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.resources.*
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlin.time.Duration.Companion.minutes
 
 /** How long the details stay open untouched: a wall display left showing them would never return to the board. */
@@ -553,7 +551,7 @@ internal fun clockText(
 ): AnnotatedString {
     val clock = departureClock(time, nowMillis) ?: return AnnotatedString("?")
     return buildAnnotatedString {
-        append(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(clock.epochMillis)))
+        append(clockTimeText(clock.epochMillis))
         if (clock.dayOffset > 0) {
             withStyle(SpanStyle(fontSize = DAY_OFFSET_FONT_SCALE.em, baselineShift = BaselineShift.Superscript)) {
                 append("+${clock.dayOffset}")

@@ -111,6 +111,7 @@ private struct HourWeather: View {
     private static let hourFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH"
+        formatter.timeZone = .norway
         return formatter
     }()
 }
