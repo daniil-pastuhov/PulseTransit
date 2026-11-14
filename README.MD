@@ -166,7 +166,7 @@ Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project
 `iosApp/fastlane/screenshots` and `iosApp/fastlane/app_previews` hold the App Store media for the
 6.9" iPhone and 13" iPad, in English (UK) and Norwegian, plus iPhone Duo screenshots (`duo_*`, the
 inner display in portrait, 2007×2853). The Play screenshots are in
-`app/src/main/play/listings/<locale>/graphics/{phone,tablet}-screenshots`. Both stores show the
+`app/src/main/play/listings/<locale>/graphics/{phone,tablet,large-tablet}-screenshots` (the tablet shots go to both of Play's tablet sizes). Both stores show the
 same scenes, in this order: the board, the home-screen widgets, the board on a wall (a mock-up),
 On the spot, a route's details with journey alerts, route search, the dark board with the weather,
 and a departure's details with "Filter out line". They are made from the running apps with live

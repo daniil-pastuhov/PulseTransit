@@ -217,18 +217,22 @@ for locale in ["en-GB", "no"] {
         guard let caption = (play ? playCaptions[scene]?[locale] : nil) ?? captions[scene]?[locale] else { continue }
         let shot = image()
         var canvas = CGSize(width: shot.width, height: shot.height)
-        let out: URL
+        var outs: [URL] = []
         if play {
             // Play: neither side more than twice the other.
             canvas.height = min(canvas.height, canvas.width * 2)
             canvas.width = min(canvas.width, canvas.height * 2)
             let listing = locale == "no" ? "no-NO" : "en-US"
-            let folder = device == "tablet" ? "tablet-screenshots" : "phone-screenshots"
-            out = outDir.appendingPathComponent("\(listing)/graphics/\(folder)/\(scene).jpg")
+            // A tablet's shots go to Play's 7- and 10-inch slots alike (GPP's tablet and large-tablet).
+            let folders = device == "tablet" ? ["tablet-screenshots", "large-tablet-screenshots"] : ["phone-screenshots"]
+            outs = folders.map { outDir.appendingPathComponent("\(listing)/graphics/\($0)/\(scene).jpg") }
         } else {
-            out = outDir.appendingPathComponent(locale).appendingPathComponent(name + ".jpg")
+            outs = [outDir.appendingPathComponent(locale).appendingPathComponent(name + ".jpg")]
         }
-        save(framed(shot, caption: caption, canvas: canvas), to: out)
-        print("Wrote \(out.path)")
+        let image = framed(shot, caption: caption, canvas: canvas)
+        for out in outs {
+            save(image, to: out)
+            print("Wrote \(out.path)")
+        }
     }
 }
