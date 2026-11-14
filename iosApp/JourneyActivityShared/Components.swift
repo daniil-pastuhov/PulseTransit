@@ -26,6 +26,8 @@ struct LinePill: View {
                 RoundedRectangle(cornerRadius: FjordTokens.radiusSm)
                     .fill(cancelled ? Palette.outline : Palette.transport(mode))
             )
+            // Never narrower than its number: squeezed, the fill shrank under the text.
+            .fixedSize()
             .accessibilityHidden(true)
     }
 }
