@@ -82,6 +82,7 @@ fun RouteSearchSheet(
     onUndo: () -> Unit,
     onRetry: () -> Unit,
     loadLegStops: suspend (TripLeg) -> List<JourneyStop>,
+    onFilterOutLine: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -171,6 +172,7 @@ fun RouteSearchSheet(
             showMessages = state.showMessages,
             loadLegStops = loadLegStops,
             onDismiss = { openTrip = null },
+            onFilterOutLine = onFilterOutLine,
         )
     }
 }
@@ -361,6 +363,15 @@ private fun RouteResults(
         }
         Spacer(modifier = Modifier.height(FjordDimens.space3))
         val justSaved = (state.pendingUndo as? BoardUndo.DestinationSaved)?.takeIf { it.place.id == place.id }
+        // The board's snackbar is under this sheet, so a line filtered out from a route's details
+        // is offered back here.
+        (state.pendingUndo as? BoardUndo.LineHidden)?.let { hidden ->
+            Callout(
+                body = stringResource(Res.string.line_hidden, hidden.line),
+                tone = CalloutTone.SUCCESS,
+            ) { TextButton(onClick = onUndo) { Text(stringResource(Res.string.undo)) } }
+            Spacer(modifier = Modifier.height(FjordDimens.space3))
+        }
         when {
             justSaved != null ->
                 Callout(

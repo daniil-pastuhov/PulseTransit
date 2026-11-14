@@ -256,6 +256,7 @@ fun MainScreen(
                                         showMessages = uiState.showMessages,
                                         loadLegStops = viewModel::tripLegStops,
                                         onDismiss = { detailsTrip = null },
+                                        onFilterOutLine = viewModel::filterOutLine,
                                     )
                                 }
                                 RouteCards(
@@ -327,6 +328,7 @@ fun MainScreen(
                         onUndo = { viewModel.undo() },
                         onRetry = { viewModel.refreshNow() },
                         loadLegStops = viewModel::tripLegStops,
+                        onFilterOutLine = viewModel::filterOutLine,
                         onDismiss = {
                             showRouteSearch = false
                             viewModel.clearRouteSearch()

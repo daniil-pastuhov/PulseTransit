@@ -573,6 +573,7 @@ private fun RoutesSection(
             showMessages = uiState.showMessages,
             loadLegStops = viewModel::tripLegStops,
             onDismiss = { detailsTrip = null },
+            onFilterOutLine = viewModel::filterOutLine,
         )
     }
     BoxWithConstraints(modifier = modifier) {

@@ -263,7 +263,8 @@ struct StopBoardView: View {
                 showDelays: state.showDelays,
                 showMessages: state.showMessages,
                 loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] },
-                journey: journeyModel
+                journey: journeyModel,
+                onFilterOutLine: { viewModel.filterOutLine(line: $0) }
             )
         }
         if state.favorites.isEmpty {

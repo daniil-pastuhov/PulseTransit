@@ -15,13 +15,15 @@ struct TripSelection: Identifiable {
 /// `loadLegStops` while the sheet is open, and listed on request. Under the header is the journey
 /// alerts button, and the rationale it opens. While the trip is under way, a "Now" card says where
 /// it is, and its legs show which one it is on. Each walk offers walking directions to where it
-/// leads in the map app. As on Android.
+/// leads in the map app. With `onFilterOutLine`, each ride's menu filters its line out: the sheet
+/// closes, since its route may no longer be offered, and the screen offers Undo. As on Android.
 struct TripDetailsView: View {
     let trip: TripInfo
     let showDelays: Bool
     let showMessages: Bool
     let loadLegStops: (TripLeg) async -> [JourneyStop]
     @ObservedObject var journey: JourneyAlertsModel
+    var onFilterOutLine: ((String) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     /// By leg index; a leg missing from it is still loading.
@@ -151,7 +153,13 @@ struct TripDetailsView: View {
                     nowMillis: nowMillis,
                     showDelays: showDelays,
                     showMessages: showMessages,
-                    onInteract: { interactions += 1 }
+                    onInteract: { interactions += 1 },
+                    onFilterOut: onFilterOutLine.map { filterOut in
+                        { line in
+                            filterOut(line)
+                            dismiss()
+                        }
+                    }
                 )
             } else {
                 WalkRow(leg: leg, endName: endName, showOnMap: showOnMap(forLeg: index))
@@ -303,6 +311,7 @@ private struct RideCard: View {
     let showDelays: Bool
     let showMessages: Bool
     let onInteract: () -> Void
+    let onFilterOut: ((String) -> Void)?
     @State private var expanded = false
 
     var body: some View {
@@ -317,6 +326,21 @@ private struct RideCard: View {
                     if !line.isEmpty {
                         Text(line).font(.pulse(.caption)).foregroundColor(Palette.textSecondary).lineLimit(1)
                     }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // Entur's fallback "?" names no line to filter.
+                if let onFilterOut, let line = leg.lineName, !line.isEmpty, line != "?" {
+                    Menu {
+                        Button { onFilterOut(line) } label: {
+                            Label(L("filter_out_line", line), systemImage: "line.3.horizontal.decrease.circle")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                            .font(.pulse(.title3))
+                            .foregroundColor(Palette.textSecondary)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel(L("more_actions"))
                 }
             }
             facts

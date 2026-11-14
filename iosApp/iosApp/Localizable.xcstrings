@@ -3591,13 +3591,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Line %1$@ hidden from departures"
+            "value": "Line %1$@ filtered out"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "Linje %1$@ er skjult fra avgangene"
+            "value": "Linje %1$@ er filtrert bort"
           }
         }
       }

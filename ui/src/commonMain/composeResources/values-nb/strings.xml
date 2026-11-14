@@ -392,7 +392,7 @@
     <string name="board_empty_action">Legg til stopp</string>
     <string name="footer_updated">Oppdatert %1$s</string>
     <string name="updating">Oppdaterer…</string>
-    <string name="line_hidden">Linje %1$s er skjult fra avgangene</string>
+    <string name="line_hidden">Linje %1$s er filtrert bort</string>
     <string name="destination_saved">Lagret %1$s som reisemål</string>
     <string name="undo">Angre</string>
     <string name="directions_all">alle retninger</string>

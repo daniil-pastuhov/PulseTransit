@@ -22,8 +22,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -88,7 +91,8 @@ val LocalTripDetailsActions = staticCompositionLocalOf<@Composable (TripInfo) ->
  * [loadLegStops] while the sheet is open, and listed on request. Under the header go the
  * [LocalTripDetailsActions]: the journey alerts button. While the trip is under way, a "Now" card
  * says where it is, and its legs show which one it is on. Each walk offers walking directions to
- * where it leads in the map app.
+ * where it leads in the map app. With [onFilterOutLine], each ride's menu filters its line out: the
+ * sheet closes, since its route may no longer be offered, and the screen offers Undo.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +102,7 @@ fun TripDetailsSheet(
     showMessages: Boolean,
     loadLegStops: suspend (TripLeg) -> List<JourneyStop>,
     onDismiss: () -> Unit,
+    onFilterOutLine: ((String) -> Unit)? = null,
 ) {
     // Bumped by every tap inside, so only an untouched sheet closes itself.
     var interactions by remember { mutableIntStateOf(0) }
@@ -172,6 +177,13 @@ fun TripDetailsSheet(
                                 showDelays = showDelays,
                                 showMessages = showMessages,
                                 onInteract = { interactions++ },
+                                onFilterOut =
+                                    onFilterOutLine?.let { filterOut ->
+                                        { line ->
+                                            filterOut(line)
+                                            onDismiss()
+                                        }
+                                    },
                             )
                         } else {
                             WalkRow(
@@ -419,8 +431,8 @@ private fun RideCard(
     showDelays: Boolean,
     showMessages: Boolean,
     onInteract: () -> Unit,
+    onFilterOut: ((String) -> Unit)?,
 ) {
-    val muted = MaterialTheme.colorScheme.onSurfaceVariant
     var expanded by remember { mutableStateOf(false) }
     val rail = PulseTheme.colors.lines.forMode(leg.mode)
     // A ride sits on a rail in its line's colour, as the stop lists do.
@@ -433,7 +445,7 @@ private fun RideCard(
                 .clip(RoundedCornerShape(2.dp))
                 .background(rail),
         )
-        RideContent(leg, endName, stops, nowMillis, showDelays, showMessages, expanded, rail) {
+        RideContent(leg, endName, stops, nowMillis, showDelays, showMessages, expanded, rail, onFilterOut) {
             expanded = !expanded
             onInteract()
         }
@@ -451,6 +463,7 @@ private fun RowScope.RideContent(
     showMessages: Boolean,
     expanded: Boolean,
     rail: Color,
+    onFilterOut: ((String) -> Unit)?,
     onToggle: () -> Unit,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
@@ -485,6 +498,9 @@ private fun RowScope.RideContent(
                     )
                 }
             }
+            // Foot legs have no line, and Entur's fallback "?" names none to filter.
+            val lineName = leg.lineName?.takeIf { it.isNotBlank() && it != "?" }
+            if (onFilterOut != null && lineName != null) LineMenu(lineName, onFilterOut)
         }
         LegFacts(leg)
         Spacer(modifier = Modifier.height(8.dp))
@@ -510,6 +526,30 @@ private fun RowScope.RideContent(
             leg.notices.forEach { notice ->
                 NoticeText(notice)
             }
+        }
+    }
+}
+
+/** A ride's overflow menu: filtering its [line] out of the departures and routes. */
+@Composable
+private fun LineMenu(
+    line: String,
+    onFilterOut: (String) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(PulseIcons.MoreVert, contentDescription = stringResource(Res.string.more_actions), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.filter_out_line, line)) },
+                leadingIcon = { Icon(PulseIcons.FilterAlt, contentDescription = null) },
+                onClick = {
+                    open = false
+                    onFilterOut(line)
+                },
+            )
         }
     }
 }
