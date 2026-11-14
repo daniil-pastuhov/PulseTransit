@@ -103,6 +103,10 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     func end(journey: TrackedJourney, clearAlerts: Bool) {
         // Only this journey's: by the time the lists arrive the next journey may have scheduled its own.
         let prefix = Self.idPrefix(journey)
+        // Those known to be scheduled go at once; the system's list then catches any from an
+        // earlier run of the app.
+        let known = scheduled.keys.filter { $0.hasPrefix(prefix) }
+        if !known.isEmpty { center.removePendingNotificationRequests(withIdentifiers: known) }
         center.getPendingNotificationRequests { [center] requests in
             center.removePendingNotificationRequests(
                 withIdentifiers: requests.map(\.identifier).filter { $0.hasPrefix(prefix) }
@@ -117,7 +121,7 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
         }
         scheduled = [:]
         if #available(iOS 16.2, *) {
-            JourneyLiveActivity.shared.end()
+            JourneyLiveActivity.shared.end(immediately: clearAlerts)
         }
     }
 

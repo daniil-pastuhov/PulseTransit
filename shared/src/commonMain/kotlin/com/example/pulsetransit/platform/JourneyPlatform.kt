@@ -28,8 +28,10 @@ interface JourneyNotifier {
 
     /**
      * [journey] is over or no longer followed: take its ongoing notification down, and its alerts
-     * not yet shown. With [clearAlerts], because another journey took its place, the alerts it has
-     * already shown go too: only the followed journey's alerts are ever in sight.
+     * not yet shown. With [clearAlerts], because the user stopped following it or another journey
+     * took its place, the alerts it has already shown go too, and its progress leaves at once: only
+     * the followed journey's alerts are ever in sight. Without, it arrived, and its last alert and
+     * progress may stay a while to say so.
      */
     fun end(
         journey: TrackedJourney,

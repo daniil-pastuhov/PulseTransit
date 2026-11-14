@@ -210,6 +210,47 @@ class JourneyTrackerTest {
 
             assertTrue(harness.job.isCompleted)
             assertEquals(listOf(journey().id), notifier.ended)
+            assertEquals(listOf(true), notifier.clearedAlerts, "nothing of a stopped journey stays in sight")
+        }
+
+    // As the platforms stop it: the store is finished, then the service or coroutine is cancelled
+    // before the loop has woken to notice.
+    @Test
+    fun `stopping by cancellation also takes every alert and the location down`() =
+        trackerTest {
+            val harness = track(journey(JourneyTrackingMode.LOCATION), startAt = at(3))
+            assertEquals(listOf("walk-0"), shownIds)
+            assertEquals(1, location.activeCollectors)
+
+            store.finish(at(3))
+            harness.job.cancel()
+            runCurrent()
+
+            assertEquals(listOf(journey().id), notifier.ended)
+            assertEquals(listOf(true), notifier.clearedAlerts)
+            assertEquals(0, location.activeCollectors)
+            assertNull(store.active.value)
+            advanceMinutes(30)
+            assertEquals(listOf("walk-0"), shownIds, "no alert after the stop")
+        }
+
+    // A journey's id is its rides' service journeys, so the same daily run has the same id on
+    // another day, and the platforms run the one tracker again for each journey followed.
+    @Test
+    fun `stopping a trip followed again after it once arrived takes its alerts down`() =
+        trackerTest {
+            val harness = track(journey(), startAt = at(25))
+            advanceMinutes(10)
+            assertEquals(listOf(false), notifier.clearedAlerts, "the first time it arrived")
+
+            store.start(journey().copy(trip = tramOn(arrival = 60), startedAtMillis = at(35)))
+            val again = launch { harness.tracker.run() }
+            runCurrent()
+            store.finish(at(35))
+            again.cancel()
+            runCurrent()
+
+            assertEquals(listOf(false, true), notifier.clearedAlerts, "the second time it was stopped")
         }
 
     @Test
