@@ -160,13 +160,19 @@ struct StopPanel: View {
         GeometryReader { geometry in
             let isWide = BoardLayout.shared.isWideRow(panelWidthDp: Float(geometry.size.width))
             let showPlatform = BoardLayout.shared.showsPlatform(groups: groups)
+            // A frequent line's departures get the panel's free rows; only its last folds, as on Android.
+            let rows = PanelRows.shared.fill(
+                groups: groups,
+                rows: PanelRows.shared.capacity(listHeightDp: Float(geometry.size.height)),
+                showMessages: showMessages
+            )
             ScrollView {
                 LazyVStack(spacing: 0) {
                     // Identified by content, so a refresh that shifts the list gives a changed group
                     // fresh row state. Entur can return identical-looking journeys, so the index
                     // is part of the id to keep it unique, as on Android.
                     ForEach(
-                        Array(groups.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", index: $0.offset, group: $0.element) },
+                        Array(rows.enumerated()).map { (id: "\($0.offset)_\($0.element.rowID)", index: $0.offset, group: $0.element) },
                         id: \.id
                     ) { row in
                         if row.index > 0 { Palette.outlineVariant.frame(height: 1) }
