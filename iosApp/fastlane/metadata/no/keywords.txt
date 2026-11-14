@@ -1,1 +1,1 @@
-avganger,buss,trikk,t-bane,tog,ferje,rutetider,sanntid,tavle,skjerm,kollektiv,pendling,vær
+avganger,holdeplass,kollektivtrafikk,rutetider,trikk,t-bane,ferje,widget,reiseplanlegger,bybane,båt

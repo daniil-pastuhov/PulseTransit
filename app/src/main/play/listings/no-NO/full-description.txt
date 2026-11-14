@@ -1,31 +1,34 @@
-PulseTransit viser avganger i sanntid og raskeste vei dit du skal, for all kollektivtrafikk i Norge. Ta den med deg, så følger den der du er, eller heng opp en ledig telefon eller et nettbrett ved ytterdøra som en avgangstavle som alltid er på.
+PulseTransit er en avgangstavle i sanntid for all kollektivtrafikk i Norge: buss, trikk, T-bane, bybane, tog, båt og ferje. Se når neste avgang går fra holdeplassen din og raskeste reise dit du skal – i appen, i en widget på hjemskjermen eller på en skjerm på veggen.
+
+Virker i hele landet, fra Oslo, Bergen, Trondheim og Stavanger til Tromsø og Kristiansand. Gratis, uten reklame og uten konto.
 
 AVGANGER I SANNTID
-• Sanntidsavganger for all kollektivtrafikk i Norge, fra Entur
-• Forsinkelser, innstillinger og driftsmeldinger
+• Sanntidsavganger fra holdeplassene dine, med forsinkelser, innstillinger og driftsmeldinger
 • Velg plattformene og retningene du bryr deg om, og skjul linjer du aldri tar
+• Nedtelling i minutter, og klokkeslett for avganger lenger fram, som på skiltene på stasjonen
 
-REISER
-• Raskeste rute til stedene du reiser oftest til, inkludert gangtid
-• Velg dagene og klokkeslettene hver rute skal vises, for eksempel hverdagsmorgener for turen til jobb
-• Søk etter et stoppested, en adresse eller et sted og få reiser dit
-• Trykk på en reise for å se hele reisen: linjer, plattformer, sanntid, gåing og bytter
+WIDGETS
+• Tre widgets til hjemskjermen: oversikt, avganger og raskeste reise
+• Se neste buss, trikk eller tog uten å åpne appen
+
+REISEPLANLEGGER OG REISEVARSLER
+• Søk etter en holdeplass, en adresse eller et sted, og få opptil fem reiseforslag med gangtid og bytter
+• Raskeste reise til stedene du reiser oftest til, på dagene og klokkeslettene du velger, for eksempel hverdagsmorgener for turen til jobb
 • Velg raskest, færre bytter eller mindre gåing, hvilke transportmidler du vil bruke, og din gangfart
+• «Varsle meg om denne reisen»: få beskjed når du må gå, når avgangen går, hvor du bytter og når neste stopp er ditt
 
 DER DU ER
-• Følger deg: reiser til målene dine herfra, og avganger fra nærmeste stoppested
-• Velg et annet stoppested i nærheten, eller la den følge det nærmeste
-• Dra for å fordele skjermen mellom reiser og avganger, eller brett bort en av dem. Den blir slik du forlot den
+• Følger deg: avganger fra nærmeste holdeplass og reiser til målene dine herfra
+• Velg en annen holdeplass i nærheten, eller la appen følge den nærmeste
 
-VEGGTAVLE
-• Alltid på-modus som holder skjermen våken
-• Vekker skjermen når noen går forbi, ved hjelp av frontkameraet. Bildene analyseres på enheten og blir aldri lagret eller sendt noe sted
-• Demper skjermen og bytter mellom dag- og nattema etter lyssensoren
+VEGGTAVLE SOM ALLTID ER PÅ
+• Gjør et ledig nettbrett eller en gammel telefon om til en avgangstavle i gangen, på kjøkkenet eller på kontoret
+• Holder skjermen våken og vekker den når noen går forbi, ved hjelp av frontkameraet. Bildene analyseres på enheten og blir aldri lagret eller sendt noe sted
+• Demper skjermen når ingen er i nærheten, og kan bytte mellom dag- og nattema etter lyset i rommet
 • Pikselforskyvning beskytter OLED-skjermer mot innbrenning
-• Oppdaterer sjeldnere om natten og når skjermen er dempet, for å spare strøm
 • Viser siste kjente avganger og vær når forbindelsen faller ut
 
 VÆR
-• Nåværende vær og varsel for der du er, fra Meteorologisk institutt. Kan slås av
+• Været nå og varselet for de neste timene, fra Meteorologisk institutt. Kan slås av
 
-Avgangsdata fra Entur, det nasjonale registeret for kollektivtrafikk i Norge: alle selskaper som deler rutetidene sine med Entur, er med, og under Innstillinger finner du hele lista, så du kan sjekke dem du reiser med. Værdata fra Meteorologisk institutt (yr.no).
+Avgangsdata fra Entur, det nasjonale registeret for kollektivtrafikk i Norge: alle selskaper som deler rutetidene sine med Entur, er med, og under Innstillinger finner du hele lista. Værdata fra Meteorologisk institutt. PulseTransit er en uavhengig app og er ikke tilknyttet Entur eller kollektivselskapene.
