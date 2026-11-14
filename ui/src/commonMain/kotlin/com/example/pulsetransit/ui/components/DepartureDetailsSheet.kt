@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,7 +102,7 @@ fun DepartureDetailsSheet(
     val first = departures.firstOrNull() ?: return
     // Kept by trip rather than position, so a refresh that drops the departures already gone
     // leaves the same one selected.
-    var selectedJourneyId by remember { mutableStateOf(departures.firstOrNull { !it.isCancelled }?.serviceJourneyId) }
+    var selectedJourneyId by rememberSaveable { mutableStateOf(departures.firstOrNull { !it.isCancelled }?.serviceJourneyId) }
     val selected = departures.firstOrNull { it.serviceJourneyId == selectedJourneyId } ?: first
 
     val currentOnDismiss by rememberUpdatedState(onDismiss)

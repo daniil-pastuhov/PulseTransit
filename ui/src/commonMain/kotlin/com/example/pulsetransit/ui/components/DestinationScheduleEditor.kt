@@ -34,7 +34,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,13 +109,17 @@ private fun ScheduleContent(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var always by remember { mutableStateOf(schedule == null) }
-    var days by remember { mutableStateOf(schedule?.isoDays ?: DestinationSchedule.WEEKDAYS) }
-    var startMinute by remember { mutableIntStateOf(schedule?.startMinute ?: DEFAULT_START_MINUTE) }
-    var endMinute by remember { mutableIntStateOf(schedule?.endMinute ?: DEFAULT_END_MINUTE) }
-    var picking by remember { mutableStateOf<TimeField?>(null) }
+    // Kept across rotation by name, since turning the device can swap the sheet for a dialog.
+    val key = "schedule_${destination.id}"
+    var always by rememberSaveable(key = "${key}_always") { mutableStateOf(schedule == null) }
+    var days by rememberSaveable(key = "${key}_days", stateSaver = DaysSaver) {
+        mutableStateOf(schedule?.isoDays ?: DestinationSchedule.WEEKDAYS)
+    }
+    var startMinute by rememberSaveable(key = "${key}_start") { mutableIntStateOf(schedule?.startMinute ?: DEFAULT_START_MINUTE) }
+    var endMinute by rememberSaveable(key = "${key}_end") { mutableIntStateOf(schedule?.endMinute ?: DEFAULT_END_MINUTE) }
+    var picking by rememberSaveable(key = "${key}_picking") { mutableStateOf<TimeField?>(null) }
     // Save stays enabled; pressing it with no days says so at the day picker (T1).
-    var showDaysError by remember { mutableStateOf(false) }
+    var showDaysError by rememberSaveable(key = "${key}_daysError") { mutableStateOf(false) }
     val edited = DestinationSchedule(days, startMinute, endMinute)
 
     Column(
@@ -232,6 +237,12 @@ private fun ScheduleContent(
 }
 
 private enum class TimeField { START, END }
+
+private val DaysSaver =
+    Saver<Set<Int>, List<Int>>(
+        save = { it.toList() },
+        restore = { it.toSet() },
+    )
 
 @Composable
 private fun DayToggle(

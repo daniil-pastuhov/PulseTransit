@@ -37,7 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -125,9 +125,10 @@ private val PanelShape = RoundedCornerShape(FjordDimens.radiusLg)
  * next page; [isLoadingMore] is that page in flight, shown as a spinner at the end of the list
  * only. Tapping a row opens its line's details, which list every loaded departure the row leaves
  * out. [directions] says which directions the panel shows, beside the locality. [header] replaces
- * the stop's name and that line, as on-spot mode does with its stop picker. [onDetailsOpenChange]
- * reports when those details open and close, so a board taking turns through its stops can hold
- * the page they were opened from. [dragHandle], where the panel can be moved, shows a grip in the
+ * the stop's name and that line, as on-spot mode does with its stop picker. With [onOpenDetails]
+ * the tapped row goes there instead and the caller shows the details: a board taking turns through
+ * its stops keeps them above its pages, where turning the device, which moves the panels between
+ * pages, does not close them. [dragHandle], where the panel can be moved, shows a grip in the
  * header with that modifier, which does the dragging.
  */
 @Composable
@@ -149,15 +150,17 @@ fun StopBoardPanel(
     onLoadMore: () -> Unit = {},
     loadJourney: suspend (Departure) -> List<JourneyStop> = { emptyList() },
     onRowCapacity: (Int) -> Unit = {},
-    onDetailsOpenChange: (Boolean) -> Unit = {},
+    onOpenDetails: ((DepartureGroup) -> Unit)? = null,
     dragHandle: Modifier? = null,
     header: (@Composable RowScope.() -> Unit)? = null,
 ) {
     // The tapped row, captured at the tap. The details follow refreshes through departuresLike,
     // which gathers the line's current departures and falls back to these once they have all gone.
-    var detailsGroup by remember { mutableStateOf<DepartureGroup?>(null) }
-    val detailsOpen = detailsGroup != null
-    LaunchedEffect(detailsOpen) { onDetailsOpenChange(detailsOpen) }
+    // Keyed by stop, since turning the device can move the panel within the layout.
+    var detailsGroup by rememberSaveable(key = "departure_details_${stopPlace.id}", stateSaver = DepartureGroupSaver) {
+        mutableStateOf<DepartureGroup?>(null)
+    }
+    val openDetails: (DepartureGroup) -> Unit = onOpenDetails ?: { detailsGroup = it }
     detailsGroup?.let { group ->
         DepartureDetailsSheet(
             stopName = stopPlace.name,
@@ -325,7 +328,7 @@ fun StopBoardPanel(
                                         showMessages = showMessages,
                                         isWide = isWide,
                                         showPlatform = showPlatform,
-                                        onClick = { detailsGroup = group },
+                                        onClick = { openDetails(group) },
                                     )
                                 }
                                 if (isLoadingMore) {

@@ -31,7 +31,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -167,7 +166,7 @@ internal fun WakeAndDimSection(
 ) {
     val cameraGranted = rememberPermissionGranted(AppPermission.CAMERA)
     val openAppSettings = rememberOpenAppSettings()
-    var askingCamera by remember { mutableStateOf(false) }
+    var askingCamera by rememberSaveable(key = "asking_camera") { mutableStateOf(false) }
     if (askingCamera) {
         CameraAccessDialog(
             onGranted = {
