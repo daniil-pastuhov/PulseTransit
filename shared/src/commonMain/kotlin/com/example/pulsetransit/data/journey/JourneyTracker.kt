@@ -56,6 +56,9 @@ class JourneyTracker(
     private var lastRefreshMillis: Long? = null
     private var lastFasterSearchMillis: Long? = null
 
+    /** The journey this tracker finished itself, because it was over; null while none has. */
+    private var finishedId: String? = null
+
     private fun now() = clock.now().toEpochMilliseconds()
 
     suspend fun run() {
@@ -79,14 +82,19 @@ class JourneyTracker(
         offSinceMillis = null
         lastRefreshMillis = null
         lastFasterSearchMillis = null
+        finishedId = null
         try {
             while (step(id)) {
                 // Woken early by any change to the store: a stop or skip from a notification.
                 withTimeoutOrNull(TICK_MILLIS) { store.active.drop(1).first() }
             }
         } finally {
-            val replaced = store.active.value.let { it != null && it.id != id }
-            notifier.end(journey, clearAlerts = replaced)
+            // Only a journey that ran to its end keeps its alerts in sight: the last one says it has
+            // arrived. One the user stopped, or that another replaced, is no longer followed, so
+            // nothing of it may stay, not even an alert offering to skip what is left of it. A stop
+            // usually comes as a cancellation (the platform stops the service or coroutine), which
+            // runs this too.
+            notifier.end(journey, clearAlerts = finishedId != id)
         }
     }
 
@@ -113,7 +121,10 @@ class JourneyTracker(
         notifier.scheduleUpcoming(latest, JourneyAlertPlanner.upcomingAlerts(latest, now).filter { it.alert.kind !in disabled })
         val end = JourneyAlertPlanner.endMillis(latest)
         val over = end == null || now >= end + LINGER_AFTER_ARRIVAL_MILLIS
-        if (over) store.finish(now)
+        if (over) {
+            finishedId = id
+            store.finish(now)
+        }
         return !over
     }
 

@@ -28,9 +28,15 @@ final class JourneyLiveActivity {
         journeyId = progress.journeyId
     }
 
-    func end() {
-        if let activity {
-            Task { await activity.end(nil, dismissalPolicy: .default) }
+    /// Ends the journey's activity. `immediately` when the journey was stopped or replaced: the
+    /// default policy keeps an ended activity on the Lock Screen for up to four hours, which reads
+    /// as a journey still followed. An arrival keeps it, to say so. Any other activity of ours, left
+    /// over from an earlier run of the app, ends with it, since only one journey is ever followed.
+    func end(immediately: Bool = true) {
+        let policy: ActivityUIDismissalPolicy = immediately ? .immediate : .default
+        let ending = Activity<JourneyActivityAttributes>.activities.filter { $0.id != activity?.id } + [activity].compactMap { $0 }
+        for activity in ending {
+            Task { await activity.end(nil, dismissalPolicy: policy) }
         }
         activity = nil
         journeyId = nil
