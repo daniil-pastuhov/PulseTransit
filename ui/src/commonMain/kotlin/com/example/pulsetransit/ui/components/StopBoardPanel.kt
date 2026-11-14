@@ -83,6 +83,7 @@ import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTheme
 import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.layout.BoardLayout
+import com.example.pulsetransit.ui.layout.PanelRows
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.resources.cancelled
 import com.example.pulsetransit.ui.resources.details_every
@@ -309,9 +310,11 @@ fun StopBoardPanel(
                         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                             val isWide = BoardLayout.isWideRow(maxWidth.value)
                             val showPlatform = BoardLayout.showsPlatform(groups)
+                            // A frequent line's departures get the panel's free rows; only its last folds.
+                            val rows = PanelRows.fill(groups, PanelRows.capacity(maxHeight.value), showMessages)
                             LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
                                 itemsIndexed(
-                                    items = groups,
+                                    items = rows,
                                     // Entur can return several service journeys that are identical in line,
                                     // destination, time and quay (replacement buses, for one), and when two
                                     // land non-consecutively they form two groups with the same identity.
