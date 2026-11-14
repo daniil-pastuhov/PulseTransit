@@ -394,7 +394,7 @@
     <string name="board_empty_action">Add stops</string>
     <string name="footer_updated">Updated %1$s</string>
     <string name="updating">Updating…</string>
-    <string name="line_hidden">Line %1$s hidden from departures</string>
+    <string name="line_hidden">Line %1$s filtered out</string>
     <string name="destination_saved">Saved %1$s to destinations</string>
     <string name="undo">Undo</string>
     <string name="directions_all">all directions</string>

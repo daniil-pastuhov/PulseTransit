@@ -63,7 +63,8 @@ struct RouteSearchView: View {
                     showDelays: state.showDelays,
                     showMessages: state.showMessages,
                     loadLegStops: { leg in (try? await viewModel.tripLegStops(leg: leg)) ?? [] },
-                    journey: journey
+                    journey: journey,
+                    onFilterOutLine: { viewModel.filterOutLine(line: $0) }
                 )
             }
         }
@@ -175,6 +176,13 @@ struct RouteSearchView: View {
 
     @ViewBuilder
     private func saveRow(_ place: StopPlace) -> some View {
+        // The board's toast is under this sheet, so a line filtered out from a route's details is
+        // offered back here.
+        if let hidden = state.pendingUndo as? BoardUndoLineHidden {
+            Callout(L("line_hidden", hidden.line), tone: .success) {
+                Button(L("undo")) { viewModel.undo() }.buttonStyle(.borderless)
+            }
+        }
         if let saved = state.pendingUndo as? BoardUndoDestinationSaved, saved.place.id == place.id {
             Callout(L("destination_saved", place.name), tone: .success) {
                 Button(L("undo")) { viewModel.undo() }.buttonStyle(.borderless)
