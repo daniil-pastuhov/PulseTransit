@@ -1,0 +1,7 @@
+# A departure's details, where its line can be filtered out: the board's ${DEPARTURE}-th (from 0).
+appId: com.homieapps.pulsetransit
+---
+- tapOn:
+    text: ".*, (Platform|Plattform) .*"
+    index: ${DEPARTURE}
+- waitForAnimationToEnd

@@ -1,0 +1,19 @@
+# Route search to ${PLACE} (the place's row in the results is ${PLACE_ROW}), up to the routes.
+# Run by capture-ios-screenshots.sh; needs the simulator's autocorrect off, as the script sets it.
+appId: com.homieapps.pulsetransit
+---
+- tapOn:
+    id: magnifyingglass
+- inputText: ${PLACE}
+- extendedWaitUntil:
+    visible: ${PLACE_ROW}
+    timeout: 15000
+- tapOn: ${PLACE_ROW}
+- waitForAnimationToEnd
+# The first tap may only dismiss the keyboard.
+- tapOn:
+    text: ${PLACE_ROW}
+    optional: true
+- extendedWaitUntil:
+    visible: "\\d{1,2}:\\d{2}, .*"
+    timeout: 30000

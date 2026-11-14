@@ -132,7 +132,7 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   (a sheet; the board calls `loadSettings()` when it closes). Colours are the design tokens in
   `JourneyActivityShared/Palette.swift`; text uses `.font(.pulse(...))` (bundled Public Sans), never `.font(.body)`. In debug builds, launching with `-PTOpenSettings YES` opens Settings
   directly, and `-PTRequestLocation YES` also starts "Detect location", and `-PTDemo YES` plays the scripted
-  tour the App Store previews are recorded from (see "App Store screenshots and previews" in README).
+  tour the App Store previews are recorded from (see "Store screenshots and previews" in README).
   `-PTUITest YES` swaps in fixed data (a board at Oslo S with one route to Majorstuen, no network) and
   a settings store of its own, which `-PTUITestReset YES` empties first (`di/UiTestFixtures.kt`).
   The XCUITest target `iosAppUITests` checks journey alerts on it up to the notification prompt:

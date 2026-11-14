@@ -161,30 +161,48 @@ like Android's `versionCode`: the CI run number plus `BUILD_NUMBER_BASE`.
 Crash reports use `iosApp/iosApp/GoogleService-Info.plist` (the Firebase project's iOS app), and the
 `beta` lane uploads the dSYM to Crashlytics. Collection is off in Debug builds, as on Android.
 
-### App Store screenshots and previews
+### Store screenshots and previews
 
-`iosApp/fastlane/screenshots` and `iosApp/fastlane/app_previews` hold the store media for the 6.9"
-iPhone and 13" iPad, in English (UK) and Norwegian, plus iPhone Duo screenshots (`duo_*`, the
-inner display in portrait, 2007×2853). They are made from the running app with live data, so
-regenerate them when the UI changes:
+`iosApp/fastlane/screenshots` and `iosApp/fastlane/app_previews` hold the App Store media for the
+6.9" iPhone and 13" iPad, in English (UK) and Norwegian, plus iPhone Duo screenshots (`duo_*`, the
+inner display in portrait, 2007×2853). The Play screenshots are in
+`app/src/main/play/listings/<locale>/graphics/{phone,tablet}-screenshots`. Both stores show the
+same scenes, in this order: the board, the home-screen widgets, the board on a wall (a mock-up),
+On the spot, a route's details with journey alerts, route search, the dark board with the weather,
+and a departure's details with "Filter out line". They are made from the running apps with live
+data, so regenerate them when the UI changes. The scripts drive the apps with Maestro
+(`scripts/store-flows`, the `maestro` CLI); run one capture at a time, as two Maestro sessions at
+once fail.
 
-1. Build the Debug app for a simulator and boot an iPhone 17 Pro Max and an iPad Pro 13-inch (and
-   an iPhone Duo, unfolded in portrait in Device Hub; `<device-name>` is then `duo`).
+1. Build the Debug iOS app for a simulator. Create fresh simulators for the iPhone 17 Pro Max and
+   iPad Pro 13-inch, one per locale, and set each one's language before the first shots
+   (`xcrun simctl spawn <udid> defaults write -g AppleLanguages -array nb` and `AppleLocale`, then
+   reboot it), so the status bar and the widgets match. Boot an iPhone Duo too, unfolded in
+   portrait in Device Hub (`<device-name>` is then `duo`, and `SCREEN=3` picks its inner display).
 2. `scripts/capture-ios-screenshots.sh <udid> <PulseTransit.app> <raw-dir> <en-GB|no> <iphone|ipad|duo>`
-   seeds a set of Oslo stops and captures On the spot, the board (light and dark) and Settings.
-   For more iPhone Duo poses, fold or rotate it in Device Hub (simctl cannot) and run again with
-   the pose's name as a sixth argument, e.g. `SCREEN=1 SCENES="board_light board_dark" … duo outer`
-   for the folded outer display. The pose goes into the file names, so all poses share one set,
-   of at most 10 screenshots.
-3. `swift scripts/frame-ios-screenshots.swift <raw-dir> iosApp/fastlane/screenshots` adds the
-   captions (in the script) on the icon's gradient.
-4. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the
+   seeds a set of Oslo stops and captures the scenes (the script lists them; `SCENES` picks some).
+   The widgets scene adds three widgets to a fresh simulator's Home Screen; check that shot, and
+   leave it out on the iPad, whose first page is full of Apple's widgets. For more iPhone Duo
+   poses, fold or rotate it in Device Hub (simctl cannot) and run again with the pose's name as a
+   sixth argument, e.g. `SCREEN=1 SCENES="board_light board_dark" … duo outer` for the folded
+   outer display. The pose goes into the file names, so all poses share one set, of at most 10
+   screenshots. If a live departure is cancelled, `DEPARTURE=1` opens the next one instead.
+3. `scripts/capture-android-screenshots.sh <serial> <app-debug.apk> <raw-dir> <en-GB|no> <phone|tablet>`
+   does the same on an emulator (a Pixel 10 Pro XL and a Pixel Tablet), setting the app's own
+   language. The phone's widgets scene adds two widgets to the launcher; `KEEP_WIDGETS=1` reuses
+   them for the second locale. Run one emulator at a time if memory is tight.
+4. `swift scripts/frame-ios-screenshots.swift <raw-dir> iosApp/fastlane/screenshots` adds the
+   captions (in the script) on the icon's gradient and draws the wall mock-up from the iPad's dark
+   board; `swift scripts/frame-ios-screenshots.swift --play <raw-dir> app/src/main/play/listings`
+   does the Play set, from the Android tablet's board, on canvases no longer than 2:1. Play
+   screenshots go out with the next release's `publishReleaseListing`.
+5. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the
    scripted tour (`-PTDemo YES`), from On the spot to the wall board, as a 29-second preview.
-5. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
+6. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
    editable App Store version, the iPhone Duo set included. Duo screenshots are optional until
    April 2027, when apps built with the iOS 27.1 SDK must include them; until then they earn the
    "optimized for iPhone Duo" badge.
-6. `swift scripts/render-ios-store-header.swift <raw-dir> iosApp/fastlane/creative_assets` renders
+7. `swift scripts/render-ios-store-header.swift <raw-dir> iosApp/fastlane/creative_assets` renders
    the "Header and Search Results" image (one universal 16:9 PNG per locale, iOS 27 and later).
    It is git-ignored for its size, and uploaded by hand on the version's Header and Search
    Results tab, with "Use header asset in search results" ticked.

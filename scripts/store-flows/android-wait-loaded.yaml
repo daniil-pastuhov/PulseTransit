@@ -1,0 +1,6 @@
+# Waits for the board's first load: its footer says when it was updated.
+appId: com.homieapps.pulsetransit
+---
+- extendedWaitUntil:
+    visible: "(Updated|Oppdatert) \\d.*"
+    timeout: 60000

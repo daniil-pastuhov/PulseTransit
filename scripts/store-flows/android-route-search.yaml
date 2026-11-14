@@ -1,0 +1,15 @@
+# Route search to ${PLACE}, up to the routes.
+# ${FIND_ROUTE} is the search button's label in the app's language. Run by
+# capture-android-screenshots.sh.
+appId: com.homieapps.pulsetransit
+---
+- tapOn: ${FIND_ROUTE}
+- inputText: ${PLACE}
+- hideKeyboard
+# The search field matches too; the place's first result comes after it.
+- tapOn:
+    text: ${PLACE}
+    index: 1
+- extendedWaitUntil:
+    visible: "\\d{1,2}:\\d{2}"
+    timeout: 30000

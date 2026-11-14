@@ -1,0 +1,28 @@
+# Adds PulseTransit's ${WIDGET} widget (its name in the picker) to the home screen, where the
+# launcher finds room. ${WIDGETS_LABEL} is the launcher's "Widgets" in the system language. The long
+# press is on the home screen's middle, which must be empty: add widgets top down.
+appId: com.google.android.apps.nexuslauncher
+---
+- pressKey: home
+- longPressOn:
+    point: "50%,45%"
+- waitForAnimationToEnd
+- tapOn: ${WIDGETS_LABEL}
+- waitForAnimationToEnd
+- tapOn: "Search"
+- inputText: "PulseTransit"
+- hideKeyboard
+# The search field reads "PulseTransit" too: the app's entry is the second match.
+- tapOn:
+    text: "PulseTransit"
+    index: 1
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      text: ${WIDGET}
+    direction: DOWN
+- tapOn:
+    text: ${WIDGET}
+    index: 0
+- tapOn: ".* ${WIDGET} .*"
+- waitForAnimationToEnd
