@@ -1,0 +1,5 @@
+• Fresh new look: a clearer board, rounded stop cards and the weather in the header
+• Route search shows routes right away, with recent places and up to five options
+• Countdowns switch to clock time after 15 min, as on station signs, and all times are Norway's
+• Redesigned Settings and widgets; drag to reorder stops and undo changes
+• Place search now finds streets by name
