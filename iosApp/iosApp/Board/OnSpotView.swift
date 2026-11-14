@@ -609,7 +609,7 @@ private struct TripOptionRow: View {
                         .font(.pulse(.caption))
                 }
             }
-            TripLegs(trip: trip, color: Palette.onRoute)
+            TripLegs(trip: trip, color: Palette.onRoute, maxLines: 2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .trailing, spacing: 0) {
                 Text(tripDuration(trip.durationMinutes)).font(.pulse(.subheadline, weight: .semibold))

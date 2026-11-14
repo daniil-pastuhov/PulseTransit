@@ -161,7 +161,7 @@ struct RouteSearchView: View {
                         Text(inTimeText(minutes.int64Value)).font(.pulse(.caption)).foregroundColor(Palette.textSecondary)
                     }
                 }
-                TripLegs(trip: trip).frame(maxWidth: .infinity, alignment: .leading)
+                TripLegs(trip: trip, maxLines: 2).frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 0) {
                     Text(tripDuration(trip.durationMinutes)).font(.pulse(.subheadline, weight: .semibold))
                     if let end = trip.expectedEndTime {

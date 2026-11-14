@@ -95,6 +95,8 @@
     <string name="fastest_route_info">Line %1$s from %2$s</string>
     <string name="leg_walk">%1$d min</string>
     <string name="leg_from">from %1$s</string>
+    <!-- Ends a route's legs when the rest do not fit on its two lines: how many legs are not shown. -->
+    <string name="legs_hidden">+%1$d more</string>
     <string name="duration_min">%1$d min</string>
     <string name="duration_hours">%1$d h</string>
     <string name="duration_days">%1$d d</string>

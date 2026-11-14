@@ -47,7 +47,7 @@ struct FastestTripBanner: View {
             Text(L("fastest_route_to", trip.destinationName))
                 .font(.pulse(.callout, weight: .semibold))
                 .lineLimit(2)
-            TripLegs(trip: trip, color: Palette.onRoute)
+            TripLegs(trip: trip, color: Palette.onRoute, maxLines: 2)
         }
         .foregroundColor(Palette.onRoute)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -108,11 +108,15 @@ struct FastestTripBanner: View {
     }
 }
 
-/// A trip's legs as a chain: "[walk] 9 min → [FLY2] from Oslo S", line pills in their colours, or
-/// its first line and origin if Entur sent no legs. Zero-minute foot legs are quay transfers.
+/// A trip's legs as a chain that wraps onto more lines, as on Android: "[walk] 9 min → [FLY2] from
+/// Oslo S", line pills in their colours, or its first line and origin if Entur sent no legs.
+/// Zero-minute foot legs are quay transfers. With a `maxLines` limit, as in the route rows, it shows
+/// the start of the journey without the boarding stops and, when the rest doesn't fit, ends with how
+/// many legs are hidden: the trip's details show them all, with their stops.
 struct TripLegs: View {
     let trip: TripInfo
     var color: Color = Palette.textPrimary
+    var maxLines: Int?
 
     var body: some View {
         let legs = trip.legs.filter { $0.lineName != nil || $0.durationMinutes > 0 }
@@ -120,37 +124,60 @@ struct TripLegs: View {
             Text(L("fastest_route_info", trip.lineName, trip.originName))
                 .font(.pulse(.subheadline))
                 .foregroundColor(color)
-                .lineLimit(2)
+                .lineLimit(maxLines ?? 2)
         } else if #available(iOS 16, *) {
-            // Where the chain is too long for the line, the boarding stops go first.
-            ViewThatFits(in: .horizontal) {
-                chain(legs, showsFrom: true)
-                chain(legs, showsFrom: false)
+            FlowLayout(itemCount: legs.count, maxLines: maxLines ?? .max, spacing: FjordTokens.space1, lineSpacing: 2) {
+                ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
+                    item(leg, index: index, showsFrom: maxLines == nil).collapsible()
+                }
+                if maxLines != nil {
+                    // One marker per count that can be hidden; the layout places the one it needs.
+                    ForEach(1 ... legs.count, id: \.self) { hidden in
+                        Text(L("legs_hidden", hidden)).lineLimit(1).fixedSize().collapsible().accessibilityHidden(true)
+                    }
+                }
             }
+            .font(.pulse(.subheadline))
+            .foregroundColor(color)
         } else {
-            chain(legs, showsFrom: true)
+            // No layout to measure with before iOS 16: one line, without the boarding stops; in a row,
+            // the first legs and how many follow, cut at the row's edge rather than run into its times.
+            let shown = maxLines == nil ? legs.count : min(legs.count, Self.iOS15RowLegs)
+            HStack(spacing: FjordTokens.space1) {
+                ForEach(Array(legs.prefix(shown).enumerated()), id: \.offset) { index, leg in
+                    item(leg, index: index, showsFrom: false)
+                }
+                if shown < legs.count {
+                    Text(L("legs_hidden", legs.count - shown)).lineLimit(1).fixedSize().accessibilityHidden(true)
+                }
+            }
+            .font(.pulse(.subheadline))
+            .foregroundColor(color)
+            .frame(maxWidth: maxLines == nil ? nil : .infinity, alignment: .leading)
+            .clipped()
         }
     }
 
-    private func chain(_ legs: [TripLeg], showsFrom: Bool) -> some View {
+    /// Legs a route row shows on iOS 15, which cannot measure where they run out: a walk, a ride
+    /// and a walk fit a phone's row.
+    private static let iOS15RowLegs = 3
+
+    /// One leg with the arrow before it, so a wrapped chain only breaks between legs.
+    private func item(_ leg: TripLeg, index: Int, showsFrom: Bool) -> some View {
         HStack(spacing: FjordTokens.space1) {
-            ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
-                if index > 0 {
-                    Image(systemName: "arrow.right").font(.pulse(.caption)).accessibilityHidden(true)
+            if index > 0 {
+                Image(systemName: "arrow.right").font(.pulse(.caption)).accessibilityHidden(true)
+            }
+            if let line = leg.lineName {
+                LinePill(line: line, mode: leg.mode, small: true)
+                if showsFrom, let from = leg.fromName {
+                    Text(L("leg_from", from)).lineLimit(1)
                 }
-                if let line = leg.lineName {
-                    LinePill(line: line, mode: leg.mode, small: true)
-                    if showsFrom, let from = leg.fromName {
-                        Text(L("leg_from", from)).lineLimit(1).fixedSize()
-                    }
-                } else {
-                    Image(systemName: "figure.walk").font(.pulse(.caption)).accessibilityHidden(true)
-                    Text(L("leg_walk", Int(leg.durationMinutes))).lineLimit(1).fixedSize()
-                }
+            } else {
+                Image(systemName: "figure.walk").font(.pulse(.caption)).accessibilityHidden(true)
+                Text(L("leg_walk", Int(leg.durationMinutes))).lineLimit(1).fixedSize()
             }
         }
-        .font(.pulse(.subheadline))
-        .foregroundColor(color)
     }
 }
 
