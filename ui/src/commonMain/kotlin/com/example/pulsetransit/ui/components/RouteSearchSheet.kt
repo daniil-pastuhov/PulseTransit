@@ -39,7 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -83,7 +83,6 @@ fun RouteSearchSheet(
     loadLegStops: suspend (TripLeg) -> List<JourneyStop>,
     onDismiss: () -> Unit,
 ) {
-    val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
     var picked by remember { mutableStateOf<StopPlace?>(null) }
     var openTrip by remember { mutableStateOf<TripInfo?>(null) }
@@ -95,11 +94,6 @@ fun RouteSearchSheet(
             value = System.currentTimeMillis()
         }
     }
-    val pick: (StopPlace) -> Unit = { place ->
-        keyboardController?.hide()
-        picked = place
-        onPick(place)
-    }
     // A new time searches the picked place again: a saved destination routed for now is not the
     // board's searched place until it has a time of its own.
     val changeTime: (TripTime) -> Unit = { time ->
@@ -108,6 +102,14 @@ fun RouteSearchSheet(
     }
 
     AdaptiveSheet(onDismiss = onDismiss) {
+        // Read inside the sheet: it is its own window, with its own focus manager. Clearing focus,
+        // not just hiding the keyboard, leaves no cursor in the picked name.
+        val focusManager = LocalFocusManager.current
+        val pick: (StopPlace) -> Unit = { place ->
+            focusManager.clearFocus()
+            picked = place
+            onPick(place)
+        }
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 16.dp)) {
             Text(stringResource(Res.string.search_route), style = MaterialTheme.typography.headlineSmall)
             Text(originLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -124,7 +126,7 @@ fun RouteSearchSheet(
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
+                keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
             )
             TripTimeChip(time = state.temporaryTripTime, onTimeChange = changeTime, modifier = Modifier.padding(top = 4.dp))
             val place = picked
