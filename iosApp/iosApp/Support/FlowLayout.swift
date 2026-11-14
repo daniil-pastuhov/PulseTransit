@@ -26,7 +26,10 @@ struct FlowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let rows = arrange(width: bounds.width, subviews: subviews)
+        // Rows break where they did when measured, at the proposed width (none is one row, as in
+        // sizeThatFits). The bounds are only as wide as the widest row, rounded to the pixel, and
+        // arranging in them can push that row onto a line of its own, overlapping what is below.
+        let rows = arrange(width: proposal.width ?? .infinity, subviews: subviews)
         var placed = Set<Int>()
         var y = bounds.minY
         for row in rows.rows {
