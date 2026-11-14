@@ -36,10 +36,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
@@ -478,28 +478,54 @@ private fun LuxScaleIndicator(
                         .background(lightMarkColor),
             )
         }
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(16.dp)) {
-            val fullWidth = maxWidth
-            val labelWidth = 48.dp
-            Text(
-                text = stringResource(Res.string.lux_value, darkLux.roundToInt()),
-                style = MaterialTheme.typography.labelSmall,
-                color = darkMarkColor,
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(labelWidth).offset(x = (fullWidth * darkFrac - labelWidth / 2).coerceIn(0.dp, fullWidth - labelWidth)),
-            )
-            Text(
-                text = stringResource(Res.string.lux_value, lightLux.roundToInt()),
-                style = MaterialTheme.typography.labelSmall,
-                color = lightMarkColor,
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(labelWidth).offset(x = (fullWidth * lightFrac - labelWidth / 2).coerceIn(0.dp, fullWidth - labelWidth)),
-            )
+        // Each label sits centred under its tick; when the thresholds are close on the scale the
+        // two would overlap, so they are pushed apart around the ticks' midpoint instead.
+        Layout(
+            content = {
+                Text(
+                    text = stringResource(Res.string.lux_value, darkLux.roundToInt()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = darkMarkColor,
+                    maxLines = 1,
+                )
+                Text(
+                    text = stringResource(Res.string.lux_value, lightLux.roundToInt()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = lightMarkColor,
+                    maxLines = 1,
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { measurables, constraints ->
+            val loose = constraints.copy(minWidth = 0, minHeight = 0)
+            val dark = measurables[0].measure(loose)
+            val light = measurables[1].measure(loose)
+            val width = constraints.maxWidth
+            val gap = LUX_LABEL_GAP.roundToPx()
+
+            fun centredAt(
+                frac: Float,
+                labelWidth: Int,
+            ) = (width * frac - labelWidth / 2f).roundToInt().coerceAtMost(width - labelWidth).coerceAtLeast(0)
+
+            var darkX = centredAt(darkFrac, dark.width)
+            var lightX = centredAt(lightFrac, light.width)
+            if (darkX + dark.width + gap > lightX) {
+                val total = dark.width + gap + light.width
+                val mid = width * (darkFrac + lightFrac) / 2f
+                darkX = (mid - total / 2f).roundToInt().coerceAtMost(width - total).coerceAtLeast(0)
+                lightX = darkX + dark.width + gap
+            }
+            layout(width, maxOf(dark.height, light.height)) {
+                dark.placeRelative(darkX, 0)
+                light.placeRelative(lightX, 0)
+            }
         }
     }
 }
+
+/** The least space between the two threshold labels under the lux scale. */
+private val LUX_LABEL_GAP = 8.dp
 
 private val DARK_THRESHOLDS = listOf(10f, 30f, 50f, 100f)
 private val LIGHT_THRESHOLDS = listOf(100f, 150f, 200f, 250f)
