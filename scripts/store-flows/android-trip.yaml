@@ -1,0 +1,9 @@
+# A route's details, opened from route search's first route.
+appId: com.homieapps.pulsetransit
+---
+- runFlow: android-route-search.yaml
+# The first route's "in 4 min": a bare clock time also matches the board's clock under the sheet.
+- tapOn:
+    text: "(in|om) \\d+ min"
+    index: 0
+- waitForAnimationToEnd

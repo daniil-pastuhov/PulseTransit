@@ -1,0 +1,31 @@
+# Adds the ${SWIPES}+1-th widget of PulseTransit's widget gallery to the current Home Screen page.
+# The gallery's pages: At a glance S/M/L, Departures S/M/L, Fastest route S/M. ${EDIT},
+# ${ADD_WIDGET} and ${DONE} are SpringBoard's labels in the simulator's language.
+appId: com.apple.springboard
+---
+- pressKey: home
+- pressKey: home
+- longPressOn:
+    id: Safari
+- waitForAnimationToEnd
+- tapOn: ${EDIT}
+- tapOn:
+    id: widget.small.badge.plus
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: PulseTransit
+    direction: DOWN
+- tapOn: PulseTransit
+- waitForAnimationToEnd
+- repeat:
+    times: ${SWIPES}
+    commands:
+      - swipe:
+          start: "85%,55%"
+          end: "15%,55%"
+      - waitForAnimationToEnd
+- tapOn: "\\s*${ADD_WIDGET}"
+- waitForAnimationToEnd
+- tapOn:
+    text: ${DONE}
+    optional: true

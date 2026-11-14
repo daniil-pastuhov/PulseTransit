@@ -1,0 +1,11 @@
+# A route's details, opened from route search's first route.
+appId: com.homieapps.pulsetransit
+---
+- runFlow: ios-route-search.yaml
+- tapOn:
+    text: "\\d{1,2}:\\d{2}, .*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: journey.notify
+    timeout: 15000
