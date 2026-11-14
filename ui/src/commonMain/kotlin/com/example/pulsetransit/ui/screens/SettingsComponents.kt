@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -12,8 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -30,8 +33,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 
@@ -160,13 +163,30 @@ internal fun <T> SettingSegmented(
                     shape = SegmentedButtonDefaults.itemShape(index, options.size),
                     // No check mark: the fill shows the choice, and five labels need the room.
                     icon = {},
-                    // Two lines before an ellipsis: "Fewer transfers" in a third of a phone.
-                    label = { Text(label, maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center) },
+                    contentPadding = SEGMENT_PADDING,
+                    // One line, as iOS's segmented control: "Fewer transfers" in a third of a phone
+                    // shrinks a little rather than wrap and make its segment taller than the rest.
+                    // No ellipsis: with one, autoSize cuts the text instead of shrinking it.
+                    label = {
+                        val style = LocalTextStyle.current
+                        Text(
+                            label,
+                            maxLines = 1,
+                            textAlign = TextAlign.Center,
+                            autoSize = TextAutoSize.StepBased(minFontSize = SEGMENT_MIN_FONT, maxFontSize = style.fontSize),
+                        )
+                    },
                 )
             }
         }
     }
 }
+
+/** A segment's sides: Material's 24 dp each leave a third of a phone too little for a label. */
+private val SEGMENT_PADDING = PaddingValues(horizontal = 8.dp)
+
+/** How far a segment's label may shrink before it is cut. */
+private val SEGMENT_MIN_FONT = 11.sp
 
 /** A link to a screen of its own: icon, title, what it is, the current value and a chevron. */
 @Composable
