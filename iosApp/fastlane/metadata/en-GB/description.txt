@@ -1,31 +1,34 @@
-PulseTransit shows live departures and the fastest way to where you're going, for all public transport in Norway. Take it with you and it follows where you are, or mount a spare iPhone or iPad by the front door as an always-on departure board.
+PulseTransit is a live departure board for all public transport in Norway: bus, tram, metro, light rail, train, boat and ferry. See when the next departure leaves your stop and the fastest route to where you're going, in the app, in a Home Screen widget or on a screen on the wall.
+
+Works across the whole country, from Oslo, Bergen, Trondheim and Stavanger to Tromsø and Kristiansand. Free, with no ads and no account.
 
 LIVE DEPARTURES
-• Real-time departures for all public transport in Norway, from Entur
-• Delays, cancellations and service messages
+• Real-time departures from your stops, with delays, cancellations and service messages
 • Pick the platforms and directions you care about, and hide lines you never take
+• Minute countdowns, and clock times for departures further out, as on station signs
 
-ROUTES
-• Fastest route to the places you travel to most, including walking time
-• Choose the days and hours each route shows, like weekday mornings for your trip to work
-• Search for any stop, address or place and get routes there
-• Tap a route to see every leg: lines, platforms, live times, walks and changes
+WIDGETS
+• Three Home Screen widgets: at a glance, departures and fastest route, with at a glance on the Lock Screen too
+• See the next bus, tram or train without opening the app
+
+JOURNEY PLANNER AND ALERTS
+• Search for any stop, address or place and get up to five routes, with walking time and changes
+• Fastest route to the places you travel to most, on the days and hours you choose, like weekday mornings for your trip to work
 • Prefer the fastest trip, fewer transfers or less walking, pick which transport to use, and set your walking speed
+• "Notify me about this journey": be told when to leave, when your ride departs, where to change and when the next stop is yours, also as a Live Activity on the Lock Screen
 
 ON THE SPOT
-• Follows where you are: routes to your destinations from right here, and departures from the nearest stop
+• Follows where you are: departures from the nearest stop, and routes to your destinations from right here
 • Pick another stop nearby, or let it follow the nearest one
-• Drag to share the screen between routes and departures, or fold either one away. It stays the way you left it
 
-WALL BOARD
-• Always-on mode that keeps the screen awake
-• Wakes up when someone walks past, using the front camera. Frames are analysed on the device and never stored or sent anywhere
+ALWAYS-ON WALL BOARD
+• Turn a spare iPad or an old iPhone into a departure board in the hallway, the kitchen or the office
+• Keeps the screen awake and wakes it when someone walks past, using the front camera. Frames are analysed on the device and never stored or sent anywhere
 • Dims when nobody is around, and can switch between day and night theme with the light in the room
 • Pixel shifting protects OLED screens from burn-in
-• Refreshes less often at night and while dimmed to save power
 • Keeps showing the last known departures and weather when the connection drops
 
 WEATHER
-• Current weather and forecast for your location, from MET Norway. Can be turned off
+• Current weather and the forecast for the coming hours, from MET Norway. Can be turned off
 
-Departure data from Entur, the national registry of public transport in Norway: every company that shares its timetables with Entur is covered, and Settings lists them all, so you can check the ones you travel with. Weather data from MET Norway (yr.no).
+Departure data from Entur, the national registry of public transport in Norway: every company that shares its timetables with Entur is covered, and Settings lists them all. Weather data from MET Norway. PulseTransit is an independent app and is not affiliated with Entur or the transport operators.
