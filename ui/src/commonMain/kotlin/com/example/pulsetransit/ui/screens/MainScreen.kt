@@ -41,7 +41,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -49,6 +48,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,6 +70,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.Departure
+import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.StopDepartures
@@ -80,6 +81,8 @@ import com.example.pulsetransit.data.TripTime
 import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseTransitTheme
+import com.example.pulsetransit.ui.components.DepartureDetailsSheet
+import com.example.pulsetransit.ui.components.DestinationTripSaver
 import com.example.pulsetransit.ui.components.FollowedJourneyBar
 import com.example.pulsetransit.ui.components.JourneyAlertsEffects
 import com.example.pulsetransit.ui.components.JourneyNotifyButton
@@ -87,6 +90,7 @@ import com.example.pulsetransit.ui.components.LocalTripDetailsActions
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.RouteSearchSheet
 import com.example.pulsetransit.ui.components.StopBoardPanel
+import com.example.pulsetransit.ui.components.StopDepartureGroupSaver
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.layout.BoardLayout
@@ -128,10 +132,10 @@ fun MainScreen(
     }
 
     // The fastest route whose details are open, with its destination's id.
-    var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
-    var showRouteSearch by remember { mutableStateOf(false) }
+    var detailsTrip by rememberSaveable(stateSaver = DestinationTripSaver) { mutableStateOf<Pair<String, TripInfo>?>(null) }
+    var showRouteSearch by rememberSaveable { mutableStateOf(false) }
     // The followed journey's details, opened from its bar or a tap on a notification.
-    var showFollowedJourney by remember { mutableStateOf(false) }
+    var showFollowedJourney by rememberSaveable { mutableStateOf(false) }
 
     JourneyAlertsEffects(journeyViewModel, onOpenJourney = { showFollowedJourney = true })
     // A journey that ends while its details are open closes them, so the next one does not open them.
@@ -460,7 +464,25 @@ fun ReorderableFavoriteList(
     onRowCapacity: (stopId: String, rows: Int) -> Unit = { _, _ -> },
 ) {
     var isDragging by remember { mutableStateOf(false) }
-    var openDetailsStopIds by remember { mutableStateOf(emptySet<String>()) }
+    // The tapped row with its stop's id. Shown here rather than in the panel: turning the device
+    // moves panels to other pages, each of which keeps its own saved state.
+    var openDetails by rememberSaveable(stateSaver = StopDepartureGroupSaver) { mutableStateOf<Pair<String, DepartureGroup>?>(null) }
+    openDetails?.let { (stopId, group) ->
+        val stop = favorites.find { it.id == stopId }
+        if (stop == null) {
+            LaunchedEffect(stopId) { openDetails = null }
+        } else {
+            DepartureDetailsSheet(
+                stopName = stop.name,
+                departures = group.departuresLike(departures.find { it.stopId == stopId }?.groups.orEmpty()),
+                showDelays = showDelays,
+                showMessages = showMessages,
+                onFilterOut = onFilterOut,
+                loadJourney = { departure -> loadJourney(departure, stopId) },
+                onDismiss = { openDetails = null },
+            )
+        }
+    }
 
     @Composable
     fun grid(
@@ -477,9 +499,7 @@ fun ReorderableFavoriteList(
         loadingStopIds = loadingStopIds,
         onReorder = { from, to -> onReorder(first + from, first + to) },
         onDraggingChange = { isDragging = it },
-        onDetailsOpenChange = { stopId, open ->
-            openDetailsStopIds = if (open) openDetailsStopIds + stopId else openDetailsStopIds - stopId
-        },
+        onOpenDetails = { stopId, group -> openDetails = stopId to group },
         onFilterOut = onFilterOut,
         extendedStopIds = extendedStopIds,
         failedStopIds = failedStopIds,
@@ -503,7 +523,7 @@ fun ReorderableFavoriteList(
         val pagerState = rememberPagerState { pageSizes.size }
         // Tapping the page dots holds the current page until they are tapped again.
         var heldByUser by remember { mutableStateOf(false) }
-        val paused = rotationPaused || heldByUser || isDragging || openDetailsStopIds.isNotEmpty()
+        val paused = rotationPaused || heldByUser || isDragging || openDetails != null
         LaunchedEffect(pagerState.settledPage, pageSizes.size, paused) {
             if (paused) return@LaunchedEffect
             delay(BoardLayout.PAGE_INTERVAL_MS.milliseconds)
@@ -613,7 +633,7 @@ private fun StopPanelGrid(
     loadingStopIds: Set<String>,
     onReorder: (Int, Int) -> Unit,
     onDraggingChange: (Boolean) -> Unit,
-    onDetailsOpenChange: (stopId: String, open: Boolean) -> Unit,
+    onOpenDetails: (stopId: String, DepartureGroup) -> Unit,
     onFilterOut: (String) -> Unit,
     extendedStopIds: Set<String>,
     failedStopIds: Set<String>,
@@ -684,9 +704,6 @@ private fun StopPanelGrid(
                             val latestIndex by rememberUpdatedState(index)
                             val latestTarget by rememberUpdatedState(currentTargetIndex)
 
-                            // A panel paged out of view cannot have its details open any more.
-                            DisposableEffect(stop.id) { onDispose { onDetailsOpenChange(stop.id, false) } }
-
                             val onDragStart = { _: Offset ->
                                 draggingIndex = latestIndex
                                 onDraggingChange(true)
@@ -739,7 +756,7 @@ private fun StopPanelGrid(
                                     onLoadMore = { onLoadMore(stop.id) },
                                     loadJourney = { departure -> loadJourney(departure, stop.id) },
                                     onRowCapacity = { rows -> onRowCapacity(stop.id, rows) },
-                                    onDetailsOpenChange = { open -> onDetailsOpenChange(stop.id, open) },
+                                    onOpenDetails = { group -> onOpenDetails(stop.id, group) },
                                     // The handle shows the panels can be moved, and drags at once.
                                     dragHandle =
                                         if (itemCount > 1) {

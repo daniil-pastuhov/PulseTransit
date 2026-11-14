@@ -32,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,10 +86,17 @@ fun RouteSearchSheet(
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusRequester = remember { FocusRequester() }
-    var picked by remember { mutableStateOf<StopPlace?>(null) }
-    var openTrip by remember { mutableStateOf<TripInfo?>(null) }
-    var editingTime by remember { mutableStateOf(false) }
+    var picked by rememberSaveable(stateSaver = StopPlaceSaver) { mutableStateOf<StopPlace?>(null) }
+    var openTrip by rememberSaveable(stateSaver = TripSaver) { mutableStateOf<TripInfo?>(null) }
+    var editingTime by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    // A place restored after the process was killed is unknown to the new ViewModel: route it again,
+    // or the sheet would wait for routes nobody asked for. After a rotation the ViewModel still has it.
+    LaunchedEffect(Unit) {
+        picked?.let { place ->
+            if (place.id != state.temporaryDestination?.id && place.id !in state.activeDestinationIds) onPick(place)
+        }
+    }
     val nowMillis by produceState(System.currentTimeMillis()) {
         while (true) {
             delay(SEARCH_CLOCK_TICK_MILLIS)

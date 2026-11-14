@@ -41,6 +41,8 @@ kotlin {
             implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.jetbrains.lifecycle.viewmodel.compose)
             implementation(libs.kotlinx.datetime)
+            // Saves the trip or departures an open sheet shows across rotation (SheetSavers.kt).
+            implementation(libs.kotlinx.serialization.json)
         }
         androidMain.dependencies {
             implementation(libs.androidx.core.ktx)

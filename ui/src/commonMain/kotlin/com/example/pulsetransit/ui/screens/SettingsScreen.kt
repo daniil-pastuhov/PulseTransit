@@ -79,6 +79,7 @@ import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.DestinationScheduleEditor
 import com.example.pulsetransit.ui.components.PlaceKindIcon
 import com.example.pulsetransit.ui.components.ReorderableColumn
+import com.example.pulsetransit.ui.components.StopPlaceSaver
 import com.example.pulsetransit.ui.components.scheduleSummary
 import com.example.pulsetransit.ui.platform.appVersion
 import com.example.pulsetransit.ui.resources.*
@@ -446,7 +447,8 @@ private fun DestinationsSection(
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
     val destinations = state.destinationStations
-    var editingSchedule by remember { mutableStateOf<StopPlace?>(null) }
+    // Keyed by name: a wide window moves this section to the other column.
+    var editingSchedule by rememberSaveable(key = "editing_schedule", stateSaver = StopPlaceSaver) { mutableStateOf<StopPlace?>(null) }
     editingSchedule?.let { destination ->
         DestinationScheduleEditor(
             destination = destination,

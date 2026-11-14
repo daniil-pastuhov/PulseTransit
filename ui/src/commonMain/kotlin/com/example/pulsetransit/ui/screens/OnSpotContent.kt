@@ -47,6 +47,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,6 +83,7 @@ import com.example.pulsetransit.theme.PulseTheme
 import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.components.AdaptiveSheet
 import com.example.pulsetransit.ui.components.Callout
+import com.example.pulsetransit.ui.components.DestinationTripSaver
 import com.example.pulsetransit.ui.components.LoadingPlaceholderList
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.ScreenMessage
@@ -559,8 +561,11 @@ private fun RoutesSection(
                 it.id in uiState.failedTripDestinationIds ||
                 it.id == uiState.temporaryDestination?.id
         }
-    // The tapped alternative, with its destination's id; the details follow its refreshes.
-    var detailsTrip by remember { mutableStateOf<Pair<String, TripInfo>?>(null) }
+    // The tapped alternative, with its destination's id; the details follow its refreshes. Keyed by
+    // name, since turning the device moves this section from a column to a row.
+    var detailsTrip by rememberSaveable(key = "on_spot_trip_details", stateSaver = DestinationTripSaver) {
+        mutableStateOf<Pair<String, TripInfo>?>(null)
+    }
     detailsTrip?.let { (destinationId, selected) ->
         TripDetailsSheet(
             trip = currentTrip(uiState.fastestTrips[destinationId], selected),
@@ -835,7 +840,7 @@ private fun RowScope.StopPicker(
     onSelect: (String) -> Unit,
     onFollowNearest: () -> Unit,
 ) {
-    var choosing by remember { mutableStateOf(false) }
+    var choosing by rememberSaveable(key = "on_spot_choosing_stop") { mutableStateOf(false) }
     val distance = nearbyStops.firstOrNull { it.stop.id == selected.id }?.distanceMeters
     val distanceLabel = distance?.let { distanceText(it) }?.let { if (approximate) stringResource(Res.string.distance_about, it) else it }
     Row(
