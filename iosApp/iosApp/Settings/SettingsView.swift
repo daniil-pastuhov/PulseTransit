@@ -648,6 +648,14 @@ private struct WakeAndDimSection: View {
                 enabled: on,
                 onSelect: { viewModel.updateAutoDimSeconds(seconds: $0) }
             )
+            OptionPicker(
+                title: L("dim_level"),
+                footnote: L(on ? "dim_level_hint" : "set_auto_dim_off_hint"),
+                options: [(DimLevel.off, L("dim_level_off")), (.low, L("dim_level_low")), (.half, L("dim_level_half"))],
+                selection: state.dimLevel,
+                enabled: on,
+                onSelect: { viewModel.updateDimLevel(level: $0) }
+            )
         }
         // Back from the Settings app, where camera access may have been turned on or off.
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in

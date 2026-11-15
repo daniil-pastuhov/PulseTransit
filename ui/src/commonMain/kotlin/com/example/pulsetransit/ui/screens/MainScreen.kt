@@ -151,10 +151,10 @@ fun MainScreen(
         )
     }
 
-    // A dimmed wall board goes dark and drops to about half brightness: on OLED black that keeps it
-    // readable from across the room without lighting it.
+    // A dimmed wall board goes dark and is drawn over black at the brightness chosen in Settings:
+    // from all but blank (on OLED as good as the screen being off) to readable across the room.
     val effectiveTheme = if (uiState.isScreenDimmed) ThemeMode.DARK else uiState.activeTheme
-    val screenAlpha = if (uiState.isScreenDimmed) DIMMED_ALPHA else 1f
+    val screenAlpha = if (uiState.isScreenDimmed) uiState.dimLevel.alpha else 1f
     val snackbarHostState = remember { SnackbarHostState() }
     BoardUndoSnackbar(
         pending = uiState.pendingUndo,
@@ -351,9 +351,6 @@ fun MainScreen(
         }
     }
 }
-
-/** How bright a dimmed board is drawn, over black. */
-private const val DIMMED_ALPHA = 0.55f
 
 /** Narrowest a route card gets before wide boards put fewer of them side by side. */
 private const val ROUTE_CARD_MIN_WIDTH_DP = 320f

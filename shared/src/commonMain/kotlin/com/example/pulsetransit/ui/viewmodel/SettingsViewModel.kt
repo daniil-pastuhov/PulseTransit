@@ -6,6 +6,7 @@ import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DestinationSchedule
+import com.example.pulsetransit.data.DimLevel
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.RouteModeGroup
 import com.example.pulsetransit.data.RoutePreference
@@ -96,6 +97,7 @@ class SettingsViewModel(
         val burnInLevel: BurnInProtectionLevel = BurnInProtectionLevel.MEDIUM,
         val refreshIntervalSeconds: Int = 60,
         val autoDimSeconds: Int = 30,
+        val dimLevel: DimLevel = DimLevel.OFF,
         val favorites: List<StopPlace> = emptyList(),
         val favoriteStopsWithQuays: Map<String, StopPlace> = emptyMap(),
         /** Stops whose platforms Entur did not return, for Directions to say so and retry. */
@@ -177,6 +179,7 @@ class SettingsViewModel(
                 burnInLevel = settingsRepository.getBurnInProtectionLevel(),
                 refreshIntervalSeconds = settingsRepository.getRefreshIntervalSeconds(),
                 autoDimSeconds = settingsRepository.getAutoDimSeconds(),
+                dimLevel = settingsRepository.getDimLevel(),
                 latitude = settingsRepository.getSavedLatitude(),
                 longitude = settingsRepository.getSavedLongitude(),
                 favorites = favs,
@@ -617,6 +620,11 @@ class SettingsViewModel(
     fun updateRefreshInterval(seconds: Int) {
         settingsRepository.setRefreshIntervalSeconds(seconds)
         _uiState.update { it.copy(refreshIntervalSeconds = seconds) }
+    }
+
+    fun updateDimLevel(level: DimLevel) {
+        settingsRepository.setDimLevel(level)
+        _uiState.update { it.copy(dimLevel = level) }
     }
 
     fun updateAutoDimSeconds(seconds: Int) {

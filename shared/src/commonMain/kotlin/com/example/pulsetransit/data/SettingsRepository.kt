@@ -80,6 +80,11 @@ interface SettingsRepository {
 
     fun getAutoDimSecondsFlow(): Flow<Int>
 
+    /** How bright the board stays while dimmed; [DimLevel.OFF] unless chosen. */
+    fun getDimLevel(): DimLevel
+
+    fun setDimLevel(level: DimLevel)
+
     fun getThemeMode(): ThemeMode
 
     fun setThemeMode(mode: ThemeMode)

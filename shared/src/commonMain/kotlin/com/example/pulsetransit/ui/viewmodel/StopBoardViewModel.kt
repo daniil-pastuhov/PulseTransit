@@ -9,6 +9,7 @@ import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.DestinationSchedule
+import com.example.pulsetransit.data.DimLevel
 import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
@@ -194,6 +195,8 @@ class StopBoardViewModel(
         val isFullScreenMode: Boolean = false,
         val isAlwaysOnEnabled: Boolean = false,
         val autoDimSeconds: Int = 30,
+        /** How bright the board is drawn while [isScreenDimmed]. */
+        val dimLevel: DimLevel = DimLevel.OFF,
         val cameraMotionWake: Boolean = false,
         val filteredLines: Set<String> = emptySet(),
         /**
@@ -501,12 +504,7 @@ class StopBoardViewModel(
         val isFullScreen = settingsRepository.isFullScreenMode()
         val alwaysOn = settingsRepository.isAlwaysOnEnabled()
         val autoDim = settingsRepository.getAutoDimSeconds()
-        val autoDark = settingsRepository.getAutoThemeDarkLux()
-        val autoLight = settingsRepository.getAutoThemeLightLux()
         val cameraWake = settingsRepository.isCameraMotionWakeEnabled()
-        val filtered = settingsRepository.getFilteredLines()
-        val tripOptions = settingsRepository.getTripOptionsCount()
-        val split = settingsRepository.getOnSpotSplit()
 
         _uiState.update {
             val kept = it.keepingTemporaryDestination(activeIds)
@@ -531,12 +529,13 @@ class StopBoardViewModel(
                 isFullScreenMode = isFullScreen && !onSpot,
                 isAlwaysOnEnabled = alwaysOn && !onSpot,
                 autoDimSeconds = autoDim,
-                autoThemeDarkLux = autoDark,
-                autoThemeLightLux = autoLight,
+                dimLevel = settingsRepository.getDimLevel(),
+                autoThemeDarkLux = settingsRepository.getAutoThemeDarkLux(),
+                autoThemeLightLux = settingsRepository.getAutoThemeLightLux(),
                 cameraMotionWake = cameraWake && !onSpot,
-                filteredLines = filtered,
-                tripOptionsCount = tripOptions,
-                onSpotSplit = split,
+                filteredLines = settingsRepository.getFilteredLines(),
+                tripOptionsCount = settingsRepository.getTripOptionsCount(),
+                onSpotSplit = settingsRepository.getOnSpotSplit(),
             )
         }
 

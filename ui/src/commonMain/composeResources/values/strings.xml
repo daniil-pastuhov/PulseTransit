@@ -141,6 +141,11 @@
     <string name="dim_1m">1 Min</string>
     <string name="dim_2m">2 Min</string>
     <string name="dim_never">Never</string>
+    <string name="dim_level">Brightness when dimmed</string>
+    <string name="dim_level_hint">Off leaves the screen looking switched off; Half keeps the board readable across the room</string>
+    <string name="dim_level_off">Off</string>
+    <string name="dim_level_low">Low</string>
+    <string name="dim_level_half">Half</string>
 
     <!-- Front camera sensitivity -->
     <string name="camera_sensitivity">Camera sensitivity</string>

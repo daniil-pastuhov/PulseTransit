@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.CoordinateProblem
+import com.example.pulsetransit.data.DimLevel
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.theme.FjordDimens
@@ -224,6 +225,20 @@ internal fun WakeAndDimSection(
                 ),
             selected = state.autoDimSeconds,
             onSelect = viewModel::updateAutoDimSeconds,
+            enabled = on,
+        )
+        SettingsDivider()
+        SettingSegmented(
+            title = stringResource(Res.string.dim_level),
+            hint = stringResource(if (on) Res.string.dim_level_hint else Res.string.set_auto_dim_off_hint),
+            options =
+                listOf(
+                    DimLevel.OFF to stringResource(Res.string.dim_level_off),
+                    DimLevel.LOW to stringResource(Res.string.dim_level_low),
+                    DimLevel.HALF to stringResource(Res.string.dim_level_half),
+                ),
+            selected = state.dimLevel,
+            onSelect = viewModel::updateDimLevel,
             enabled = on,
         )
     }
