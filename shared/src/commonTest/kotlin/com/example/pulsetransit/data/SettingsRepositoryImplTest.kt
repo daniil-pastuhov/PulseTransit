@@ -83,6 +83,17 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
+    fun `the dim level is off until chosen and an unknown stored one reads as off`() {
+        assertEquals(DimLevel.OFF, repo.getDimLevel())
+
+        repo.setDimLevel(DimLevel.HALF)
+        assertEquals(DimLevel.HALF, SettingsRepositoryImpl(store).getDimLevel())
+
+        store.putString("dim_level", "BRIGHT")
+        assertEquals(DimLevel.OFF, repo.getDimLevel())
+    }
+
+    @Test
     fun `a fresh install has no mode until one is chosen`() {
         assertNull(repo.getAppMode())
 

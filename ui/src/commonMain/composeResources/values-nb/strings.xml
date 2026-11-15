@@ -140,6 +140,11 @@
     <string name="dim_1m">1 min</string>
     <string name="dim_2m">2 min</string>
     <string name="dim_never">Aldri</string>
+    <string name="dim_level">Lysstyrke når dempet</string>
+    <string name="dim_level_hint">Av får skjermen til å se avslått ut; Halv holder tavlen lesbar på tvers av rommet</string>
+    <string name="dim_level_off">Av</string>
+    <string name="dim_level_low">Lav</string>
+    <string name="dim_level_half">Halv</string>
 
     <!-- Front camera sensitivity -->
     <string name="camera_sensitivity">Kamerafølsomhet</string>

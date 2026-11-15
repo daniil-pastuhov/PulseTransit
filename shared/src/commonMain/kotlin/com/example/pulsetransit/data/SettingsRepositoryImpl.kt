@@ -342,6 +342,14 @@ class SettingsRepositoryImpl(
         _cameraMotionWake.value = enabled
     }
 
+    override fun getDimLevel(): DimLevel =
+        prefs.getStringOrNull("dim_level")?.let { name -> DimLevel.entries.firstOrNull { it.name == name } }
+            ?: DimLevel.OFF
+
+    override fun setDimLevel(level: DimLevel) {
+        prefs.putString("dim_level", level.name)
+    }
+
     override fun getCameraSensitivity(): CameraSensitivity {
         val str = prefs.getString("camera_sensitivity", CameraSensitivity.MEDIUM.name)
         return try {

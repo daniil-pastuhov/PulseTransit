@@ -1,6 +1,7 @@
 package com.example.pulsetransit.ui.viewmodel
 
 import com.example.pulsetransit.data.DateDisplayStyle
+import com.example.pulsetransit.data.DimLevel
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.RoutePreference
@@ -571,6 +572,20 @@ class StopBoardViewModelTest : BoardTestBase() {
         }
 
     // --- Screen dimming --------------------------------------------------------------------
+
+    @Test
+    fun `the dim level chosen in Settings reaches the board on reload`() =
+        boardTest {
+            val vm = viewModel()
+            runCurrent()
+            assertEquals(DimLevel.OFF, vm.uiState.value.dimLevel)
+
+            settings.dim = DimLevel.HALF
+            vm.loadSettings()
+            runCurrent()
+
+            assertEquals(DimLevel.HALF, vm.uiState.value.dimLevel)
+        }
 
     @Test
     fun `waking the screen schedules an auto-dim when camera wake is on`() =

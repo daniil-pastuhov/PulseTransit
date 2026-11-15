@@ -6,6 +6,7 @@ import com.example.pulsetransit.data.CameraSensitivity
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DestinationSchedule
+import com.example.pulsetransit.data.DimLevel
 import com.example.pulsetransit.data.EnturRepository
 import com.example.pulsetransit.data.JourneyStop
 import com.example.pulsetransit.data.OnSpotSplit
@@ -284,6 +285,7 @@ class FakeSettingsRepository : SettingsRepository {
     var schedules = mapOf<String, DestinationSchedule>()
     var selectedQuays = mapOf<String, Set<String>>()
     var sensitivity = CameraSensitivity.MEDIUM
+    var dim = DimLevel.OFF
 
     // The flow is the single source of truth for every setting the ViewModel also observes.
     // Backing these with separate vars would let a test set a value that `observeSettings`
@@ -517,6 +519,12 @@ class FakeSettingsRepository : SettingsRepository {
     }
 
     override fun getCameraMotionWakeFlow(): Flow<Boolean> = cameraMotionFlow
+
+    override fun getDimLevel() = dim
+
+    override fun setDimLevel(level: DimLevel) {
+        dim = level
+    }
 
     override fun getCameraSensitivity() = sensitivity
 

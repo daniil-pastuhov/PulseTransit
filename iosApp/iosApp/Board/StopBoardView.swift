@@ -171,9 +171,9 @@ struct StopBoardView: View {
             .onChange(of: journeyModel.state.openJourneyRequested) { requested in
                 if requested { openFollowedJourney() }
             }
-            // Dimmed: dark, at about half brightness, which keeps an OLED board readable across a
-            // room without lighting it.
-            .opacity(state.isScreenDimmed ? 0.55 : 1)
+            // Dimmed: dark, at the brightness chosen in Settings, from all but blank (on OLED as
+            // good as the screen being off) to readable across a room, as on Android.
+            .opacity(state.isScreenDimmed ? Double(state.dimLevel.alpha) : 1)
             .pixelShift(state.burnInLevel)
             .overlay(alignment: .bottom) {
                 UndoToast(

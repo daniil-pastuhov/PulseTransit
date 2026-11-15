@@ -235,6 +235,18 @@ enum class BurnInProtectionLevel(
 }
 
 /**
+ * How bright the wall board is drawn, over black, while it is dimmed. [OFF] all but blanks it, so
+ * an OLED screen looks switched off; [HALF] keeps it readable across a room.
+ */
+enum class DimLevel(
+    val alpha: Float,
+) {
+    OFF(0.05f),
+    LOW(0.2f),
+    HALF(0.55f),
+}
+
+/**
  * Front-camera motion sensitivity. [motionPixelCountThreshold] is how many changed pixels
  * (at full resolution) are required to register motion — lower means more sensitive.
  */
