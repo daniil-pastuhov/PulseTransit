@@ -1,0 +1,2 @@
+• New setting "Brightness when dimmed" under Wake and dim: choose Off, Low or Half for how bright the board stays when no one is around.
+• The dimmed board is dark again by default, so a wall display looks switched off when the room is empty.

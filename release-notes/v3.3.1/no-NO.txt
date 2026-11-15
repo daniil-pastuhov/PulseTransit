@@ -1,0 +1,2 @@
+• Ny innstilling «Lysstyrke når dimmet» under Vekking og dimming: velg Av, Lav eller Halv for hvor lys tavlen skal være når ingen er i nærheten.
+• Den dimmede tavlen er mørk igjen som standard, slik at en veggskjerm ser avslått ut når rommet er tomt.
