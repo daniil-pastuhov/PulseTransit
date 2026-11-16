@@ -4,10 +4,10 @@ import kotlin.math.floor
 
 /**
  * The wall board's route alternatives (board mode only; on the spot lists its own): each saved
- * destination's banner shows the first route, a one-line "Then 08:16 [3] · 08:19 [5]" naming the
- * next ones while collapsed, and, expanded, the next ones as rows below it. Which destinations are
- * expanded is a setting ([SettingsRepository.getRouteAlternativesShownIds]). Kept free of UI code
- * so both apps show the same alternatives and cap them by the same rule.
+ * destination's card shows the first route; its toggle bar names the next ones while collapsed
+ * ("Then 08:16 [3] 08:19 [5]"), and, expanded, the next ones are rows below the journey. Which
+ * destinations are expanded is a setting ([SettingsRepository.getRouteAlternativesShownIds]).
+ * Kept free of UI code so both apps show the same alternatives and cap them by the same rule.
  */
 object BoardRouteAlternatives {
     /** How many alternatives after the first route the board fetches and can show. */
@@ -15,19 +15,6 @@ object BoardRouteAlternatives {
 
     /** How many routes board mode asks for per destination: the first and its [ALTERNATIVES]. */
     const val ROUTES_PER_DESTINATION = 1 + ALTERNATIVES
-
-    /** How many alternatives the collapsed banner's "Then" line names; more would wrap. */
-    const val THEN_LINE_ENTRIES = 2
-
-    /**
-     * About how tall an expanded card's alternative row is, with its divider, in dp (points on
-     * iOS), before font scaling: as tall as the on-spot rows it reuses. The views use the height
-     * they measure once a row has been shown, and this until then.
-     */
-    const val ROW_HEIGHT_DP = 64f
-
-    /** About how tall the "+N in details" row is, with its divider, as [ROW_HEIGHT_DP]: a touch target. */
-    const val MORE_ROW_HEIGHT_DP = 49f
 
     /**
      * The alternatives after the first of [trips] that have not left by [nowMillis], in order. A
@@ -42,16 +29,6 @@ object BoardRouteAlternatives {
             .drop(1)
             .filter { trip -> parseIsoToMillis(trip.expectedStartTime)?.let { it >= nowMillis } ?: true }
             .take(ALTERNATIVES)
-
-    /**
-     * What a "Then" line names: the next [THEN_LINE_ENTRIES] [alternatives]. Which cards show one
-     * is [com.example.pulsetransit.ui.viewmodel.StopBoardViewModel.UiState.routeThenLine]. A view
-     * shows as many of them, in order, as fit its width, and none rather than a clock cut short.
-     */
-    fun thenLine(
-        trips: List<TripInfo>?,
-        nowMillis: Long,
-    ): List<ThenLineEntry> = alternatives(trips, nowMillis).take(THEN_LINE_ENTRIES).map(::ThenLineEntry)
 
     /**
      * How many alternative rows each expanded card shows so that the stop panels keep
@@ -104,31 +81,6 @@ object BoardRouteAlternatives {
      * first frames never squeeze the stop panels, and no "Then" line.
      */
     fun unmeasured(count: Int): List<VisibleAlternatives> = List(count) { VisibleAlternatives(shown = 0, hidden = 0) }
-}
-
-/** One alternative on the "Then" line: its departure clock and the line pill of its first ride. */
-data class ThenLineEntry(
-    val trip: TripInfo,
-) {
-    /** "08:16", from the ISO time, which is already in Norway's time; "--:--" when unreadable. */
-    val clock: String
-        get() = trip.expectedStartTime.takeIf { it.length >= ISO_MINUTE_END }?.substring(ISO_HOUR_START, ISO_MINUTE_END) ?: "--:--"
-
-    /** The first ride's line ("3", "FLY2"), or null for a route that only walks. */
-    val lineName: String?
-        get() = trip.legs.firstOrNull { it.isTransit }?.lineName ?: trip.lineName.takeIf { trip.legs.isEmpty() && it != UNKNOWN_LINE }
-
-    /** The first ride's mode ("metro", "bus"), for the pill's colour. */
-    val mode: String?
-        get() = trip.legs.firstOrNull { it.isTransit }?.mode
-
-    private companion object {
-        const val ISO_HOUR_START = 11
-        const val ISO_MINUTE_END = 16
-
-        /** What [TripInfo.lineName] holds when a route has no ride. */
-        const val UNKNOWN_LINE = "?"
-    }
 }
 
 /**

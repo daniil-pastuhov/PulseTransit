@@ -5000,6 +5000,40 @@
         }
       }
     },
+    "route_alternatives_collapsed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapsed"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skjult"
+          }
+        }
+      }
+    },
+    "route_alternatives_expanded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Expanded"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utvidet"
+          }
+        }
+      }
+    },
     "route_arrival": {
       "extractionState": "manual",
       "localizations": {
@@ -5013,6 +5047,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "ank. %1$@"
+          }
+        }
+      }
+    },
+    "route_arrive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrive"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fremme"
           }
         }
       }
@@ -5619,6 +5670,23 @@
         }
       }
     },
+    "route_no_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No later routes"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen senere reiser"
+          }
+        }
+      }
+    },
     "route_no_places_hint": {
       "extractionState": "manual",
       "localizations": {
@@ -5802,6 +5870,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rutesøk"
+          }
+        }
+      }
+    },
+    "route_show_all_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show all routes to %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis alle reiser til %1$@"
           }
         }
       }

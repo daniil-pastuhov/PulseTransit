@@ -445,6 +445,11 @@
     <string name="route_more_description">Vis flere reiser til %1$s</string>
     <string name="route_fewer_description">Vis færre reiser til %1$s</string>
     <string name="route_more_in_details">+%1$d i detaljer</string>
+    <string name="route_arrive">Fremme</string>
+    <string name="route_alternatives_expanded">Utvidet</string>
+    <string name="route_alternatives_collapsed">Skjult</string>
+    <string name="route_no_later">Ingen senere reiser</string>
+    <string name="route_show_all_description">Vis alle reiser til %1$s</string>
     <string name="show_alternatives_on_board">Vis alternativer på tavla</string>
     <string name="trip_time_today">I dag</string>
     <string name="trip_time_tomorrow_day">I morgen</string>

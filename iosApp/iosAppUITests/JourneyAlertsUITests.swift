@@ -35,8 +35,9 @@ final class JourneyAlertsUITests: XCTestCase {
         XCTAssertFalse(element("journey.bar").exists)
     }
 
-    /// The board's route alternatives: "N more" opens the later routes below the banner, and the
-    /// choice is saved, so the card is still open after a relaunch.
+    /// The board's route alternatives: a tap on the card's toggle bar opens the later routes below
+    /// its journey, the choice is saved, so the card is still open after a relaunch, and pulling the
+    /// bar up closes it again.
     func testRouteAlternativesOpenAndStayOpen() {
         launch()
         let toggle = element("routeAlternatives.toggle")
@@ -49,6 +50,12 @@ final class JourneyAlertsUITests: XCTestCase {
         app.launchArguments = ["-PTUITest", "YES"]
         app.launch()
         XCTAssertTrue(element("routeAlternative").waitForExistence(timeout: 15), "the open card is saved")
+        XCTAssertEqual(toggle.value as? String, "Expanded")
+
+        let bar = toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        bar.press(forDuration: 0.05, thenDragTo: bar.withOffset(CGVector(dx: 0, dy: -80)))
+        XCTAssertTrue(waitForAbsence(element("routeAlternative")), "pulling the bar up closes the card")
+        XCTAssertEqual(toggle.value as? String, "Collapsed")
     }
 
     // MARK: Helpers
@@ -60,6 +67,11 @@ final class JourneyAlertsUITests: XCTestCase {
 
     private func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier].firstMatch
+    }
+
+    private func waitForAbsence(_ element: XCUIElement, timeout: TimeInterval = 5) -> Bool {
+        let gone = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: element)
+        return XCTWaiter().wait(for: [gone], timeout: timeout) == .completed
     }
 
     private func openRoute() {

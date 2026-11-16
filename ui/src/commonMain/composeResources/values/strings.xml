@@ -447,6 +447,11 @@
     <string name="route_more_description">Show more routes to %1$s</string>
     <string name="route_fewer_description">Show fewer routes to %1$s</string>
     <string name="route_more_in_details">+%1$d in details</string>
+    <string name="route_arrive">Arrive</string>
+    <string name="route_alternatives_expanded">Expanded</string>
+    <string name="route_alternatives_collapsed">Collapsed</string>
+    <string name="route_no_later">No later routes</string>
+    <string name="route_show_all_description">Show all routes to %1$s</string>
     <string name="show_alternatives_on_board">Show alternatives on the board</string>
     <string name="trip_time_today">Today</string>
     <string name="trip_time_tomorrow_day">Tomorrow</string>

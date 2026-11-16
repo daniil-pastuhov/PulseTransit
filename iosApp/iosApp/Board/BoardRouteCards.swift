@@ -1,212 +1,269 @@
 import Shared
 import SwiftUI
 
-/// The wall board's route cards above the stop panels, `columns` side by side, as on Android
-/// (MainScreen.kt's RouteCards): one per destination in `routes`, the searched-for one first.
+/// The wall board's route cards above the stop panels, as on Android (routecards/BoardBody.kt): a
+/// card per destination in `routes` (the searched-for one first), as a grid laid out from the
+/// `width` the board's body has, never the device's. Every rule is the shared
+/// `RouteCardLayout`'s: the columns, each card's size class from its own width (at the text size
+/// Dynamic Type sets), its band (`RouteCardBands`), one density for all cards, the richest whose
+/// collapsed cards fit `maxHeight` (what leaves the panels `BoardLayout.MIN_PANEL_HEIGHT_DP`),
+/// the expanded cards' rows that fit (`BoardRouteAlternatives.visibleRows`), and equal heights
+/// per grid row (`stretch`). Only when not even one line a card fits does the area scroll.
 ///
-/// A saved destination's banner names its next alternatives on a "Then" line and offers "N more";
-/// expanded (a saved choice, see `UiState.showsRouteAlternatives`) they are listed below it as on
-/// the spot instead. Expanded cards take only the rows that leave the stop panels
-/// `BoardLayout.MIN_PANEL_HEIGHT_DP` of `bodyHeight` (by `BoardRouteAlternatives.visibleRows`),
-/// ending with "+N in details" (`onMoreInDetails`) when that is not all of them. The rule needs
-/// each card's height without its rows, measured as they are drawn, so until every card has been
-/// measured none shows a row: the first frames never squeeze the panels. Nothing here collapses a card.
+/// The cards' heights are measured as drawn: each card is laid out out of sight at every density
+/// (and an expanded one's rows), and reports its heights; until they are all in, no card shows, so
+/// the first frame never squeezes the panels. Nothing here collapses a card.
 struct BoardRouteCards: View {
     let state: StopBoardViewModel.UiState
-    let viewModel: StopBoardViewModel
     let routes: [StopPlace]
-    let columns: Int
-    /// The height the cards and the stop panels share.
-    let bodyHeight: CGFloat
-    /// The space between the cards and the panels.
-    let gap: CGFloat
+    let width: CGFloat
+    /// The height the cards may take: the body's, less the gap above the panels and their minimum.
+    let maxHeight: CGFloat
     let nowMillis: Int64
-    let onOpenTrip: (_ destinationId: String, _ trip: TripInfo) -> Void
-    /// "+N in details": the route search, on that destination's routes.
-    let onMoreInDetails: (_ destination: StopPlace) -> Void
+    let actions: RouteCardActions
 
-    /// The rows' heights until one has been drawn, grown with the text size as Android's grow with
-    /// the font scale.
-    @ScaledMetric private var fallbackRowHeight = CGFloat(BoardRouteAlternatives.shared.ROW_HEIGHT_DP)
-    @ScaledMetric private var fallbackMoreRowHeight = CGFloat(BoardRouteAlternatives.shared.MORE_ROW_HEIGHT_DP)
-    /// Each card's head (the card without its rows), by destination id, each measured on its own.
-    @State private var headHeights: [String: CGFloat] = [:]
-    /// An alternative row's height and the "+N in details" row's, once one has been drawn.
-    @State private var rowHeight: CGFloat?
-    @State private var moreRowHeight: CGFloat?
+    @Environment(\.dynamicTypeSize) private var typeSize
+    /// The measuring copies' heights, by "<density>/<destination id>/<part>" and "rows/<id>/<row>".
+    @State private var measured: [String: CGFloat] = [:]
+    /// Where the bottom of the cards is while they scroll, for the fade.
+    @State private var scrolledBottom: CGFloat = 0
+
+    static let cardGap = FjordTokens.space3
 
     var body: some View {
-        let perRow = min(columns, max(1, routes.count))
-        let alternatives = BoardRouteAlternatives.shared
-        let expanded: [[TripInfo]] = routes.map { destination in
-            state.showsRouteAlternatives(destinationId: destination.id)
-                ? alternatives.alternatives(trips: state.fastestTrips[destination.id], nowMillis: nowMillis)
-                : []
-        }
-        let gridRows = stride(from: 0, to: routes.count, by: perRow).map { Array(routes[$0 ..< min($0 + perRow, routes.count)]) }
-        let measured = routes.allSatisfy { headHeights[$0.id] != nil }
-        // The cards without their rows: a grid row is as tall as its tallest card.
-        let headsHeight = gridRows.map { row in row.map { headHeights[$0.id] ?? 0 }.max() ?? 0 }.reduce(0, +)
-            + FjordTokens.space2 * CGFloat(max(0, gridRows.count - 1))
-        let spare = bodyHeight - headsHeight - gap - CGFloat(BoardLayout.shared.MIN_PANEL_HEIGHT_DP)
-        let visible = measured
-            ? alternatives.visibleRows(
-                alternativeCounts: expanded.map { KotlinInt(int: Int32($0.count)) },
-                columns: Int32(perRow),
-                spareHeight: Float(spare),
-                rowHeight: Float(rowHeight ?? fallbackRowHeight),
-                moreRowHeight: Float(moreRowHeight ?? fallbackMoreRowHeight)
-            )
-            : alternatives.unmeasured(count: Int32(routes.count))
-        LazyVGrid(
-            columns: Array(repeating: GridItem(.flexible(), spacing: FjordTokens.space3, alignment: .top), count: perRow),
-            spacing: FjordTokens.space2
-        ) {
-            ForEach(Array(routes.enumerated()), id: \.element.id) { index, destination in
-                card(destination, alternatives: expanded[index], visible: visible[index])
-            }
-        }
-        .onPreferenceChange(HeadHeightsKey.self) { headHeights = $0 }
-        .onPreferenceChange(RowHeightKey.self) { if let height = $0 { rowHeight = height } }
-        .onPreferenceChange(MoreRowHeightKey.self) { if let height = $0 { moreRowHeight = height } }
-    }
+        let measurer = CardMeasurer(typeSize)
+        let specs = makeSpecs(measurer: measurer)
+        let columns = max(1, Int(RouteCardLayout.shared.columns(
+            count: Int32(routes.count), widthDp: Float(width), gapDp: Float(Self.cardGap), fontScale: Float(measurer.fontScale)
+        )))
+        let gridRows = stride(from: 0, to: specs.count, by: columns).map { Array($0 ..< min($0 + columns, specs.count)) }
+        let nextBlockMax = max(0, (maxHeight - Self.cardGap * CGFloat(max(0, gridRows.count - 1))) / CGFloat(max(1, gridRows.count)))
+        let densities = RouteCardBands.shared.densities(footers: specs.map(\.footer))
+        let plan = GridPlan(specs: specs, densities: densities, measured: measured, columns: columns, maxHeight: maxHeight)
 
-    /// One destination's card: its banner (or why it has none), and when it is expanded the
-    /// `visible` ones of `alternatives` below it, on the banner's colour as one card.
-    @ViewBuilder
-    private func card(_ destination: StopPlace, alternatives: [TripInfo], visible: VisibleAlternatives) -> some View {
-        let trips = state.fastestTrips[destination.id]
-        let trip = trips?.first
-        let expanded = state.showsRouteAlternatives(destinationId: destination.id)
-        let showsRows = expanded && trip != nil && visible.showsRows
-        let isTemporary = destination.id == state.temporaryDestination?.id
-        HStack(spacing: 0) {
-            VStack(spacing: 0) {
-                // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
-                ZStack {
-                    if let trip {
-                        FastestTripBanner(
-                            trip: trip,
-                            isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
-                            thenLine: state.routeThenLine(destinationId: destination.id, nowMillis: nowMillis, visible: visible),
-                            toggle: state.canToggleRouteAlternatives(destinationId: destination.id, nowMillis: nowMillis)
-                                ? RouteAlternativesToggle(
-                                    count: BoardRouteAlternatives.shared.alternatives(trips: trips, nowMillis: nowMillis).count,
-                                    expanded: expanded,
-                                    destinationName: destination.name,
-                                    onTap: { viewModel.toggleRouteAlternatives(destinationId: destination.id) }
+        Group {
+            if let plan {
+                let grid = VStack(alignment: .leading, spacing: Self.cardGap) {
+                    ForEach(Array(gridRows.enumerated()), id: \.offset) { _, row in
+                        HStack(alignment: .top, spacing: Self.cardGap) {
+                            ForEach(row, id: \.self) { index in
+                                RouteCardView(
+                                    spec: specs[index],
+                                    state: state,
+                                    density: plan.density,
+                                    visible: plan.visible[index],
+                                    nowMillis: nowMillis,
+                                    measurer: measurer,
+                                    actions: actions,
+                                    nextBlockMax: nextBlockMax,
+                                    fill: plan.fills[index]
                                 )
-                                : nil,
-                            onTap: { onOpenTrip(destination.id, trip) }
-                        )
-                        .transition(.opacity)
-                    } else if state.failedTripDestinationIds.contains(destination.id) {
-                        FastestTripUnavailable(
-                            destinationName: destination.name,
-                            isOnline: state.isOnline,
-                            isRetrying: state.loadingTripDestinationIds.contains(destination.id)
-                        )
-                        .transition(.opacity)
-                    } else if let noRouteTime = state.noRouteTime(destinationId: destination.id) {
-                        FastestTripNone(destinationName: destination.name, time: noRouteTime)
-                            .transition(.opacity)
-                    } else {
-                        FastestTripPlaceholder(destinationName: destination.name)
-                            .transition(.opacity)
+                                .id(specs[index].destination.id)
+                            }
+                        }
                     }
                 }
-                .animation(.easeInOut(duration: 0.3), value: trip == nil)
-                // The head of a card that can open is its banner, measured on its own rather than
-                // as the card less its rows.
-                .background(isTemporary ? nil : HeadHeightReader(id: destination.id))
-                if showsRows {
-                    rows(destination, alternatives: alternatives, visible: visible)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-            }
-            .background(showsRows ? Palette.route : Color.clear)
-            .clipShape(RoundedRectangle(cornerRadius: FjordTokens.radiusLg))
-            if isTemporary {
-                TemporaryRouteActions(
-                    time: state.temporaryTripTime,
-                    onTimeChange: { viewModel.setTripTime(time: $0) },
-                    canSave: state.canSaveTemporaryDestination,
-                    onSave: { viewModel.saveTemporaryDestination() },
-                    onDismiss: { viewModel.dismissTemporaryDestination() },
-                    fillsBackground: true
-                )
-            }
-        }
-        .fixedSize(horizontal: false, vertical: true)
-        .animation(.easeInOut(duration: 0.3), value: showsRows)
-        // The searched-for card never opens, so its head is all of it, buttons included.
-        .background(isTemporary ? HeadHeightReader(id: destination.id) : nil)
-    }
-
-    /// An expanded card's rows: the on-spot rows, then "+N in details" when not all of them fit.
-    private func rows(_ destination: StopPlace, alternatives: [TripInfo], visible: VisibleAlternatives) -> some View {
-        let shown = min(Int(visible.shown), alternatives.count)
-        return VStack(spacing: 0) {
-            if shown > 0 {
-                VStack(spacing: 0) {
-                    ForEach(Array(alternatives.prefix(shown).enumerated()), id: \.offset) { _, alternative in
-                        Divider().padding(.horizontal, 16)
-                        TripOptionRow(trip: alternative, isFirst: false)
-                            .contentShape(Rectangle())
-                            .onTapGesture { onOpenTrip(destination.id, alternative) }
-                            .accessibilityAddTraits(.isButton)
-                            .accessibilityIdentifier("routeAlternative")
+                .frame(width: width, alignment: .leading)
+                if plan.gridHeight <= maxHeight + 0.5 {
+                    grid.frame(height: plan.gridHeight, alignment: .top)
+                } else {
+                    // The last resort: not even one line a card fits, so the cards scroll, faded at
+                    // the bottom while there is more below.
+                    ScrollView(.vertical, showsIndicators: true) {
+                        grid.background(GeometryReader { geometry in
+                            Color.clear.preference(key: ScrolledBottomKey.self, value: geometry.frame(in: .named(Self.scrollSpace)).maxY)
+                        })
                     }
+                    .coordinateSpace(name: Self.scrollSpace)
+                    .frame(width: width, height: maxHeight)
+                    .onPreferenceChange(ScrolledBottomKey.self) { scrolledBottom = $0 }
+                    .mask(
+                        VStack(spacing: 0) {
+                            Color.black
+                            LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)
+                                .frame(height: scrolledBottom > maxHeight + 1 ? 32 : 0)
+                        }
+                    )
                 }
-                .background(GeometryReader { geometry in
-                    Color.clear.preference(key: RowHeightKey.self, value: geometry.size.height / CGFloat(shown))
-                })
-            }
-            if visible.showsMoreRow {
-                VStack(spacing: 0) {
-                    Divider().padding(.horizontal, 16)
-                    RouteMoreInDetailsRow(hidden: Int(visible.hidden)) { onMoreInDetails(destination) }
-                }
-                .background(GeometryReader { geometry in
-                    Color.clear.preference(key: MoreRowHeightKey.self, value: geometry.size.height)
-                })
+            } else {
+                Color.clear.frame(width: width, height: 0)
             }
         }
-        .foregroundColor(Palette.onRoute)
+        .animation(.easeInOut(duration: 0.25), value: plan?.signature)
+        .background(alignment: .topLeading) {
+            probes(specs: specs, densities: densities, measurer: measurer, nextBlockMax: nextBlockMax)
+        }
+        .onPreferenceChange(CardProbeKey.self) { measured = $0 }
     }
-}
 
-/// Reports the height of what it is the background of as `id`'s head.
-private struct HeadHeightReader: View {
-    let id: String
+    private static let scrollSpace = "routeCards"
 
-    var body: some View {
-        GeometryReader { geometry in
-            Color.clear.preference(key: HeadHeightsKey.self, value: [id: geometry.size.height])
+    /// Each card as the board decides it before drawing: its size class from its own width, its
+    /// band lined up with its grid row's, its alternatives still to leave and whether they are open.
+    private func makeSpecs(measurer: CardMeasurer) -> [RouteCardSpec] {
+        let fontScale = Float(measurer.fontScale)
+        let columns = RouteCardLayout.shared.columns(count: Int32(routes.count), widthDp: Float(width), gapDp: Float(Self.cardGap), fontScale: fontScale)
+        let widths = RouteCardLayout.shared.cardWidths(count: Int32(routes.count), columns: columns, widthDp: Float(width), gapDp: Float(Self.cardGap)).points
+        let sizes = widths.map { RouteCardLayout.shared.size(widthDp: Float($0), fontScale: fontScale) }
+        let canToggle = routes.map { state.canToggleRouteAlternatives(destinationId: $0.id, nowMillis: nowMillis) }
+        let own = routes.indices.map { index in
+            RouteCardBands.shared.own(
+                isSearched: routes[index].id == state.temporaryDestination?.id,
+                hasRoute: !(state.fastestTrips[routes[index].id]?.isEmpty ?? true),
+                size: sizes[index],
+                hasAlternatives: canToggle[index]
+            )
+        }
+        let footers = RouteCardBands.shared.footers(own: own, columns: columns)
+        return routes.indices.map { index in
+            RouteCardSpec(
+                destination: routes[index],
+                size: sizes[index],
+                narrow: RouteCardLayout.shared.isNarrow(widthDp: Float(widths[index]), fontScale: fontScale),
+                footer: footers[index],
+                alternatives: canToggle[index]
+                    ? BoardRouteAlternatives.shared.alternatives(trips: state.fastestTrips[routes[index].id], nowMillis: nowMillis)
+                    : [],
+                expanded: state.showsRouteAlternatives(destinationId: routes[index].id),
+                width: floor(widths[index])
+            )
         }
     }
-}
 
-/// Each route card's head height, by destination id.
-private struct HeadHeightsKey: PreferenceKey {
-    static var defaultValue: [String: CGFloat] = [:]
-    static func reduce(value: inout [String: CGFloat], nextValue: () -> [String: CGFloat]) {
-        value.merge(nextValue()) { $1 }
+    /// The measuring copies, out of sight: every card collapsed at every density, and each
+    /// expanded card's rows one by one ("+N in details" last).
+    private func probes(specs: [RouteCardSpec], densities: [RouteCardDensity], measurer: CardMeasurer, nextBlockMax: CGFloat) -> some View {
+        let unmeasured = BoardRouteAlternatives.shared.unmeasured(count: 1)[0]
+        return ZStack(alignment: .topLeading) {
+            ForEach(Array(densities.enumerated()), id: \.offset) { _, density in
+                ForEach(specs, id: \.destination.id) { spec in
+                    RouteCardView(
+                        spec: spec,
+                        state: state,
+                        density: density,
+                        visible: unmeasured,
+                        nowMillis: nowMillis,
+                        measurer: measurer,
+                        actions: RouteCardActions(),
+                        nextBlockMax: nextBlockMax,
+                        probeKey: "\(density.name)/\(spec.destination.id)"
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            ForEach(specs.filter { $0.footer == .toggle && $0.expanded }, id: \.destination.id) { spec in
+                ForEach(0 ... spec.alternatives.count, id: \.self) { row in
+                    VStack(spacing: 0) {
+                        Rectangle().frame(height: 1)
+                        if row < spec.alternatives.count {
+                            AlternativeRow(trip: spec.alternatives[row], size: spec.size, measurer: measurer, width: spec.width, nowMillis: nowMillis) {}
+                        } else {
+                            RouteMoreInDetailsRow(hidden: spec.alternatives.count) {}
+                        }
+                    }
+                    .frame(width: spec.width)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .background(GeometryReader { geometry in
+                        Color.clear.preference(key: CardProbeKey.self, value: ["rows/\(spec.destination.id)/\(row)": geometry.size.height])
+                    })
+                }
+            }
+        }
+        .opacity(0)
+        .allowsHitTesting(false)
+        // Out of VoiceOver's and the UI tests' reach: only the drawn cards are there.
+        .accessibilityElement(children: .ignore)
+        .accessibilityHidden(true)
     }
 }
 
-/// The height of one alternative row, from any expanded card that shows some.
-private struct RowHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat?
-    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
-        value = nextValue() ?? value
+/// What the measured heights decide: the density all cards take, how many rows each expanded card
+/// shows, and how each card fills its grid row. Nil until every card has been measured.
+private struct GridPlan {
+    let density: RouteCardDensity
+    let visible: [VisibleAlternatives]
+    let fills: [CardFill]
+    let gridHeight: CGFloat
+
+    /// Changes when what is shown changes, for the animation.
+    var signature: [CGFloat] { fills.map(\.height) + [CGFloat(density.ordinal)] }
+
+    init?(specs: [RouteCardSpec], densities: [RouteCardDensity], measured: [String: CGFloat], columns: Int, maxHeight: CGFloat) {
+        guard !specs.isEmpty, let last = densities.last else { return nil }
+        let gap = Float(BoardRouteCards.cardGap)
+        func part(_ density: RouteCardDensity, _ spec: RouteCardSpec, _ name: String) -> CGFloat? {
+            measured["\(density.name)/\(spec.destination.id)/\(name)"]
+        }
+        // The richest density whose collapsed cards fit, else the last.
+        var chosen = last
+        var totals: [CGFloat] = []
+        for density in densities {
+            let heights = specs.map { part(density, $0, "total") }
+            guard heights.allSatisfy({ $0 != nil }) else { return nil }
+            totals = heights.map { $0! }
+            chosen = density
+            if RouteCardLayout.shared.fits(cardHeights: totals.kotlin, columns: Int32(columns), gap: gap, maxHeight: Float(maxHeight)) { break }
+        }
+        let heads = specs.map { part(chosen, $0, "head") ?? 0 }
+        let footers = specs.map { part(chosen, $0, "footer") ?? 0 }
+
+        // The expanded cards' rows as measured, and how many of them fit.
+        let expanded = specs.map { chosen == .full && $0.footer == .toggle && $0.expanded }
+        var rowHeights: [[CGFloat]] = []
+        for (index, spec) in specs.enumerated() {
+            guard expanded[index] else {
+                rowHeights.append([])
+                continue
+            }
+            let rows = (0 ... spec.alternatives.count).map { measured["rows/\(spec.destination.id)/\($0)"] }
+            guard rows.allSatisfy({ $0 != nil }) else { return nil }
+            rowHeights.append(rows.map { $0! })
+        }
+        let alternatives = BoardRouteAlternatives.shared
+        let visible: [VisibleAlternatives] = expanded.contains(true)
+            ? alternatives.visibleRows(
+                alternativeCounts: specs.indices.map { KotlinInt(int: Int32(expanded[$0] ? specs[$0].alternatives.count : 0)) },
+                columns: Int32(columns),
+                spareHeight: Float(maxHeight) - RouteCardLayout.shared.gridHeight(cardHeights: totals.kotlin, columns: Int32(columns), gap: gap),
+                rowHeight: Float(rowHeights.map { $0.dropLast().max() ?? 0 }.max() ?? 0),
+                moreRowHeight: Float(rowHeights.map { $0.last ?? 0 }.max() ?? 0)
+            )
+            : alternatives.unmeasured(count: Int32(specs.count))
+        // Each card's rows as shown.
+        let shownRows: [[CGFloat]] = specs.indices.map { index in
+            let rows = rowHeights[index]
+            let shown = visible[index]
+            guard !rows.isEmpty, shown.showsRows else { return [] }
+            return Array(rows.prefix(Int(shown.shown))) + (shown.showsMoreRow ? [rows[rows.count - 1]] : [])
+        }
+        let natural = specs.indices.map { totals[$0] + shownRows[$0].reduce(0, +) }
+        let gridRowHeights = RouteCardLayout.shared.rowHeights(cardHeights: natural.kotlin, columns: Int32(columns)).points
+        let headMax = RouteCardLayout.shared.rowHeights(cardHeights: heads.kotlin, columns: Int32(columns)).points
+        density = chosen
+        self.visible = visible
+        fills = specs.indices.map { index in
+            let height = gridRowHeights[index / columns]
+            let stretch = RouteCardLayout.shared.stretch(
+                head: Float(heads[index]),
+                rowHeadMax: Float(headMax[index / columns]),
+                rows: Int32(shownRows[index].count),
+                rowsHeight: Float(shownRows[index].reduce(0, +)),
+                footer: Float(footers[index]),
+                rowHeight: Float(height)
+            )
+            let extra = CGFloat(stretch.rowExtra)
+            return CardFill(
+                height: height,
+                headBand: CGFloat(stretch.headBand),
+                rowHeights: shownRows[index].map { $0 + extra },
+                footerBand: CGFloat(stretch.footerBand)
+            )
+        }
+        gridHeight = gridRowHeights.reduce(0, +) + BoardRouteCards.cardGap * CGFloat(max(0, gridRowHeights.count - 1))
     }
 }
 
-/// The height of the "+N in details" row, from any card that shows one.
-private struct MoreRowHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat?
-    static func reduce(value: inout CGFloat?, nextValue: () -> CGFloat?) {
-        value = nextValue() ?? value
-    }
+private struct ScrolledBottomKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }

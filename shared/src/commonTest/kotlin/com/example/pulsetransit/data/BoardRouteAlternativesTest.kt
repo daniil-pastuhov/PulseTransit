@@ -39,25 +39,6 @@ class BoardRouteAlternativesTest {
         assertEquals(BoardRouteAlternatives.ALTERNATIVES, BoardRouteAlternatives.alternatives(trips, now).size)
     }
 
-    @Test
-    fun `the Then line names the next two by clock and first ride`() {
-        val trips = listOf(trip(2, "2"), trip(6, "3"), trip(9, "FLY2", mode = "air"), trip(12, "5"))
-
-        val entries = BoardRouteAlternatives.thenLine(trips, now)
-
-        assertEquals(listOf("3", "FLY2"), entries.map { it.lineName })
-        assertEquals(listOf("metro", "air"), entries.map { it.mode })
-        assertEquals(isoOslo(now + 6 * minute).substring(11, 16), entries.first().clock)
-    }
-
-    @Test
-    fun `a Then entry for a walk has no line`() {
-        val walk = TripInfo("X", isoOslo(now + 5 * minute), lineName = "?", durationMinutes = 9, originName = "A", legs = listOf(TripLeg(mode = "foot")))
-
-        assertEquals(null, ThenLineEntry(walk).lineName)
-        assertEquals("--:--", ThenLineEntry(walk.copy(expectedStartTime = "soon")).clock)
-    }
-
     private val row = 64f
     private val more = 49f
 

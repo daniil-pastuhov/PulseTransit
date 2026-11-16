@@ -98,12 +98,6 @@ class BoardLayoutTest {
     }
 
     @Test
-    fun `a narrow banner stacks its title`() {
-        assertTrue(BoardLayout.isCompactBanner(359f))
-        assertFalse(BoardLayout.isCompactBanner(360f))
-    }
-
-    @Test
     fun `wide rows start at the breakpoint`() {
         assertFalse(BoardLayout.isWideRow(439f))
         assertTrue(BoardLayout.isWideRow(440f))

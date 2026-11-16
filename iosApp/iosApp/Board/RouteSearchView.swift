@@ -221,6 +221,7 @@ struct TemporaryRouteActions: View {
     let onDismiss: () -> Void
     /// Beside a route card: as tall as the card, so the buttons centre on it.
     var fillsBackground = false
+    var tint: Color = Palette.textPrimary
 
     var body: some View {
         HStack(spacing: 4) {
@@ -228,19 +229,19 @@ struct TemporaryRouteActions: View {
             if canSave {
                 Button(action: onSave) {
                     Image(systemName: "bookmark")
-                        .frame(width: 36, height: 36)
+                        .frame(width: FjordTokens.touch, height: FjordTokens.touch)
                 }
                 .accessibilityLabel(L("save_destination"))
             }
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .frame(width: 36, height: 36)
+                    .frame(width: FjordTokens.touch, height: FjordTokens.touch)
             }
             .accessibilityLabel(L("dismiss_route"))
         }
         .buttonStyle(.borderless)
         .font(.pulse(.title3))
-        .foregroundColor(Palette.textPrimary)
+        .foregroundColor(tint)
         .padding(.trailing, 8)
         .frame(maxHeight: fillsBackground ? .infinity : nil)
     }
