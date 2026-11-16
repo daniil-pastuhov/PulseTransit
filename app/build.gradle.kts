@@ -30,7 +30,7 @@ android {
                 .orElse(providers.environmentVariable("pulseVersionCode"))
                 .map(String::toInt)
                 .getOrElse(1)
-        versionName = "3.3.1"
+        versionName = "3.3.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
