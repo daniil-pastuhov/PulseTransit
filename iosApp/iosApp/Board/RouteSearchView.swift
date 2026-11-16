@@ -8,11 +8,23 @@ struct RouteSearchView: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
     let journey: JourneyAlertsModel
+    /// Opens on a saved destination's routes (the board's "+N in details"), as if it had been
+    /// picked, without focusing the field: no keyboard on a wall display, and the board stays as
+    /// it is, since a saved destination routed for now is shown as it is.
+    let initialPlace: StopPlace?
 
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isFieldFocused: Bool
     @State private var picked: StopPlace?
     @State private var openTrip: TripSelection?
+
+    init(state: StopBoardViewModel.UiState, viewModel: StopBoardViewModel, journey: JourneyAlertsModel, initialPlace: StopPlace? = nil) {
+        self.state = state
+        self.viewModel = viewModel
+        self.journey = journey
+        self.initialPlace = initialPlace
+        _picked = State(initialValue: initialPlace)
+    }
 
     var body: some View {
         NavigationView {
@@ -70,6 +82,7 @@ struct RouteSearchView: View {
         }
         .navigationViewStyle(.stack)
         .onAppear {
+            guard initialPlace == nil else { return }
             // Focusing in the same pass as the sheet's presentation is ignored, so wait a beat.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { isFieldFocused = true }
         }

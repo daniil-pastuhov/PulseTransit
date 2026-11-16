@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -45,7 +46,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,6 +62,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -69,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.LifecycleStartEffect
 import com.example.pulsetransit.data.AppMode
+import com.example.pulsetransit.data.BoardRouteAlternatives
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.DirectionSummary
@@ -78,8 +84,10 @@ import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripTime
+import com.example.pulsetransit.data.VisibleAlternatives
 import com.example.pulsetransit.data.currentTrip
 import com.example.pulsetransit.theme.FjordDimens
+import com.example.pulsetransit.theme.PulseTheme
 import com.example.pulsetransit.theme.PulseTransitTheme
 import com.example.pulsetransit.ui.components.DepartureDetailsSheet
 import com.example.pulsetransit.ui.components.DestinationTripSaver
@@ -91,6 +99,7 @@ import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.RouteSearchSheet
 import com.example.pulsetransit.ui.components.StopBoardPanel
 import com.example.pulsetransit.ui.components.StopDepartureGroupSaver
+import com.example.pulsetransit.ui.components.StopPlaceSaver
 import com.example.pulsetransit.ui.components.TemporaryRouteActions
 import com.example.pulsetransit.ui.components.TripDetailsSheet
 import com.example.pulsetransit.ui.layout.BoardLayout
@@ -104,6 +113,7 @@ import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("ParamsComparedByRef")
@@ -134,6 +144,8 @@ fun MainScreen(
     // The fastest route whose details are open, with its destination's id.
     var detailsTrip by rememberSaveable(stateSaver = DestinationTripSaver) { mutableStateOf<Pair<String, TripInfo>?>(null) }
     var showRouteSearch by rememberSaveable { mutableStateOf(false) }
+    // The saved destination whose routes the search opens on ("+N in details"); null to search.
+    var routeSearchPlace by rememberSaveable(stateSaver = StopPlaceSaver) { mutableStateOf<StopPlace?>(null) }
     // The followed journey's details, opened from its bar or a tap on a notification.
     var showFollowedJourney by rememberSaveable { mutableStateOf(false) }
 
@@ -210,7 +222,10 @@ fun MainScreen(
                                 uiState = uiState,
                                 wide = wide,
                                 onCycleDateStyle = viewModel::cycleDateStyle,
-                                onSearchRoute = { showRouteSearch = true },
+                                onSearchRoute = {
+                                    routeSearchPlace = null
+                                    showRouteSearch = true
+                                },
                                 onOpenSettings = onNavigateToSettings,
                             )
 
@@ -259,43 +274,57 @@ fun MainScreen(
                                         onFilterOutLine = viewModel::filterOutLine,
                                     )
                                 }
-                                RouteCards(
-                                    uiState = uiState,
-                                    columns = routeColumns,
-                                    onOpenTrip = { destinationId, trip -> detailsTrip = destinationId to trip },
-                                    onTimeChange = viewModel::setTripTime,
-                                    onSave = viewModel::saveTemporaryDestination,
-                                    onDismissTemporary = viewModel::dismissTemporaryDestination,
-                                )
+                                // The route cards and the panels share what is left, so an expanded card
+                                // knows how much it may take before the panels drop below their minimum.
+                                BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                                    val bodyHeight = maxHeight
+                                    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(gap)) {
+                                        RouteCards(
+                                            uiState = uiState,
+                                            columns = routeColumns,
+                                            bodyHeight = bodyHeight,
+                                            gap = gap,
+                                            onOpenTrip = { destinationId, trip -> detailsTrip = destinationId to trip },
+                                            onToggleAlternatives = viewModel::toggleRouteAlternatives,
+                                            onMoreInDetails = { destination ->
+                                                routeSearchPlace = destination
+                                                showRouteSearch = true
+                                            },
+                                            onTimeChange = viewModel::setTripTime,
+                                            onSave = viewModel::saveTemporaryDestination,
+                                            onDismissTemporary = viewModel::dismissTemporaryDestination,
+                                        )
 
-                                if (uiState.favorites.isEmpty()) {
-                                    BoardEmptyState(
-                                        onAddStops = onNavigateToSettings,
-                                        modifier = Modifier.fillMaxWidth().weight(1f),
-                                    )
-                                } else {
-                                    ReorderableFavoriteList(
-                                        favorites = uiState.favorites,
-                                        departures = uiState.departures,
-                                        directionSummaries = uiState.directionSummaries,
-                                        showDelays = uiState.showDelays,
-                                        showMessages = uiState.showMessages,
-                                        loadingStopIds = uiState.loadingStopIds,
-                                        onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
-                                        onFilterOut = { line -> viewModel.filterOutLine(line) },
-                                        extendedStopIds = uiState.extendedStopIds,
-                                        failedStopIds = uiState.failedStopIds,
-                                        isOnline = uiState.isOnline,
-                                        onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
-                                        canLoadMoreStopIds = uiState.canLoadMoreStopIds,
-                                        loadingMoreStopIds = uiState.loadingMoreStopIds,
-                                        onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
-                                        loadJourney = viewModel::journeyStopsAhead,
-                                        onRowCapacity = viewModel::setPanelRowCapacity,
-                                        rotationPaused = uiState.isScreenDimmed,
-                                        gap = gap,
-                                        modifier = Modifier.fillMaxWidth().weight(1f),
-                                    )
+                                        if (uiState.favorites.isEmpty()) {
+                                            BoardEmptyState(
+                                                onAddStops = onNavigateToSettings,
+                                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                            )
+                                        } else {
+                                            ReorderableFavoriteList(
+                                                favorites = uiState.favorites,
+                                                departures = uiState.departures,
+                                                directionSummaries = uiState.directionSummaries,
+                                                showDelays = uiState.showDelays,
+                                                showMessages = uiState.showMessages,
+                                                loadingStopIds = uiState.loadingStopIds,
+                                                onReorder = { from, to -> viewModel.reorderFavorites(from, to) },
+                                                onFilterOut = { line -> viewModel.filterOutLine(line) },
+                                                extendedStopIds = uiState.extendedStopIds,
+                                                failedStopIds = uiState.failedStopIds,
+                                                isOnline = uiState.isOnline,
+                                                onSearchFurtherAhead = { stopId -> viewModel.searchFurtherAhead(stopId) },
+                                                canLoadMoreStopIds = uiState.canLoadMoreStopIds,
+                                                loadingMoreStopIds = uiState.loadingMoreStopIds,
+                                                onLoadMore = { stopId -> viewModel.loadMoreDepartures(stopId) },
+                                                loadJourney = viewModel::journeyStopsAhead,
+                                                onRowCapacity = viewModel::setPanelRowCapacity,
+                                                rotationPaused = uiState.isScreenDimmed,
+                                                gap = gap,
+                                                modifier = Modifier.fillMaxWidth().weight(1f),
+                                            )
+                                        }
+                                    }
                                 }
                             }
 
@@ -317,6 +346,7 @@ fun MainScreen(
                 if (showRouteSearch) {
                     RouteSearchSheet(
                         state = uiState,
+                        initialPlace = routeSearchPlace,
                         originLabel =
                             stringResource(
                                 if (uiState.mode == AppMode.ON_SPOT) Res.string.route_from_here else Res.string.route_from_board,
@@ -331,6 +361,7 @@ fun MainScreen(
                         onFilterOutLine = viewModel::filterOutLine,
                         onDismiss = {
                             showRouteSearch = false
+                            routeSearchPlace = null
                             viewModel.clearRouteSearch()
                         },
                     )
@@ -362,12 +393,24 @@ private val SNACKBAR_MAX_WIDTH = 560.dp
  * appearing as soon as its own route arrives, [columns] side by side. A destination whose route
  * loaded as nothing is left out, except the searched-for one, which says it has no route and keeps
  * its buttons.
+ *
+ * A saved destination's banner names its next alternatives on a "Then" line and offers "N more";
+ * expanded (a saved choice, see [StopBoardViewModel.UiState.showsRouteAlternatives]) they are
+ * listed below it as on the spot instead. Expanded cards take only the rows that leave the stop
+ * panels [BoardLayout.MIN_PANEL_HEIGHT_DP] of [bodyHeight] (by [BoardRouteAlternatives.visibleRows]),
+ * ending with "+N in details" ([onMoreInDetails]) when that is not all of them. The rule needs each
+ * card's height without its rows, measured as they are drawn, so until every card has been
+ * measured none shows a row: the first frames never squeeze the panels.
  */
 @Composable
 private fun RouteCards(
     uiState: StopBoardViewModel.UiState,
     columns: Int,
+    bodyHeight: Dp,
+    gap: Dp,
     onOpenTrip: (destinationId: String, TripInfo) -> Unit,
+    onToggleAlternatives: (destinationId: String) -> Unit,
+    onMoreInDetails: (StopPlace) -> Unit,
     onTimeChange: (TripTime) -> Unit,
     onSave: () -> Unit,
     onDismissTemporary: () -> Unit,
@@ -380,56 +423,200 @@ private fun RouteCards(
                 it.id == uiState.temporaryDestination?.id
         }
     if (destinations.isEmpty()) return
+    // Ticks so departed alternatives drop off between refreshes, as the cache drops them offline.
+    val nowMillis by produceState(Clock.System.now().toEpochMilliseconds()) {
+        while (true) {
+            delay(ROUTE_CARDS_TICK_MILLIS)
+            value = Clock.System.now().toEpochMilliseconds()
+        }
+    }
+    val density = LocalDensity.current
+    val perRow = columns.coerceIn(1, destinations.size)
+    // Each card's height without its alternative rows (its head), by destination id, and the
+    // heights of an alternative row and of the "+N in details" row once one has been drawn.
+    val headHeights = remember { mutableStateMapOf<String, Int>() }
+    var measuredRowHeight by remember { mutableStateOf<Float?>(null) }
+    var measuredMoreRowHeight by remember { mutableStateOf<Float?>(null) }
+    val expandedAlternatives =
+        destinations.map { destination ->
+            if (uiState.showsRouteAlternatives(destination.id)) {
+                BoardRouteAlternatives.alternatives(uiState.fastestTrips[destination.id], nowMillis)
+            } else {
+                emptyList()
+            }
+        }
+    val rows = destinations.chunked(perRow)
+    val visible =
+        if (destinations.any { it.id !in headHeights }) {
+            BoardRouteAlternatives.unmeasured(destinations.size)
+        } else {
+            val headsHeight =
+                with(density) {
+                    rows.sumOf { row -> row.maxOf { headHeights.getValue(it.id) } }.toDp()
+                } + FjordDimens.space2 * (rows.size - 1)
+            val spare = bodyHeight - headsHeight - gap - BoardLayout.MIN_PANEL_HEIGHT_DP.dp
+            BoardRouteAlternatives.visibleRows(
+                alternativeCounts = expandedAlternatives.map { it.size },
+                columns = perRow,
+                spareHeight = spare.value,
+                rowHeight = measuredRowHeight ?: (BoardRouteAlternatives.ROW_HEIGHT_DP * density.fontScale),
+                moreRowHeight = measuredMoreRowHeight ?: (BoardRouteAlternatives.MORE_ROW_HEIGHT_DP * density.fontScale),
+            )
+        }
+    val indexOf = destinations.withIndex().associate { (index, destination) -> destination.id to index }
+
     Column(verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
-        destinations.chunked(columns.coerceAtMost(destinations.size)).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3)) {
+        rows.forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3), verticalAlignment = Alignment.Top) {
                 row.forEach { destination ->
                     key(destination.id) {
-                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                            val trip = uiState.fastestTrips[destination.id]?.firstOrNull()
-                            val noRouteTime = uiState.noRouteTime(destination.id)
-                            AnimatedContent(
-                                targetState = trip,
-                                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                                label = "fastestTrip",
-                                contentKey = { it == null },
-                                modifier = Modifier.weight(1f),
-                            ) { loaded ->
-                                when {
-                                    loaded == null && destination.id in uiState.failedTripDestinationIds ->
-                                        FastestTripUnavailable(
-                                            destinationName = destination.name,
-                                            isOnline = uiState.isOnline,
-                                            isRetrying = destination.id in uiState.loadingTripDestinationIds,
-                                        )
-                                    loaded == null && noRouteTime != null ->
-                                        FastestTripNone(destinationName = destination.name, time = noRouteTime)
-                                    loaded == null -> FastestTripPlaceholder(destinationName = destination.name)
-                                    else ->
-                                        FastestTripBanner(
-                                            trip = loaded,
-                                            onClick = { onOpenTrip(destination.id, loaded) },
-                                            isRefreshing = destination.id in uiState.loadingTripDestinationIds,
-                                        )
-                                }
-                            }
-                            if (destination.id == uiState.temporaryDestination?.id) {
-                                TemporaryRouteActions(
-                                    time = uiState.temporaryTripTime,
-                                    onTimeChange = onTimeChange,
-                                    canSave = uiState.canSaveTemporaryDestination,
-                                    onSave = onSave,
-                                    onDismiss = onDismissTemporary,
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                )
-                            }
-                        }
+                        val index = indexOf.getValue(destination.id)
+                        DestinationRouteCard(
+                            destination = destination,
+                            uiState = uiState,
+                            nowMillis = nowMillis,
+                            alternatives = expandedAlternatives[index],
+                            visible = visible[index],
+                            onHeadHeight = { headHeights[destination.id] = it },
+                            onRowHeight = { px -> measuredRowHeight = with(density) { px.toDp().value } },
+                            onMoreRowHeight = { px -> measuredMoreRowHeight = with(density) { px.toDp().value } },
+                            onOpenTrip = { onOpenTrip(destination.id, it) },
+                            onToggleAlternatives = { onToggleAlternatives(destination.id) },
+                            onMoreInDetails = { onMoreInDetails(destination) },
+                            onTimeChange = onTimeChange,
+                            onSave = onSave,
+                            onDismissTemporary = onDismissTemporary,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
         }
     }
 }
+
+/**
+ * One destination's card: its banner (or why it has none), and when [alternatives] are open the
+ * [visible] ones below it. Reports the height of its head (the card without those rows,
+ * [onHeadHeight]) and of one alternative row ([onRowHeight]) and the "+N" row ([onMoreRowHeight]),
+ * in pixels, each measured directly.
+ */
+@Composable
+private fun DestinationRouteCard(
+    destination: StopPlace,
+    uiState: StopBoardViewModel.UiState,
+    nowMillis: Long,
+    alternatives: List<TripInfo>,
+    visible: VisibleAlternatives,
+    onHeadHeight: (Int) -> Unit,
+    onRowHeight: (Float) -> Unit,
+    onMoreRowHeight: (Float) -> Unit,
+    onOpenTrip: (TripInfo) -> Unit,
+    onToggleAlternatives: () -> Unit,
+    onMoreInDetails: () -> Unit,
+    onTimeChange: (TripTime) -> Unit,
+    onSave: () -> Unit,
+    onDismissTemporary: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val trips = uiState.fastestTrips[destination.id]
+    val trip = trips?.firstOrNull()
+    val noRouteTime = uiState.noRouteTime(destination.id)
+    val expanded = uiState.showsRouteAlternatives(destination.id)
+    val canToggle = uiState.canToggleRouteAlternatives(destination.id, nowMillis)
+    val thenLine = uiState.routeThenLine(destination.id, nowMillis, visible)
+    val openCount = BoardRouteAlternatives.alternatives(trips, nowMillis).size
+    val shownRows = minOf(visible.shown, alternatives.size)
+    val showsRows = expanded && trip != null && visible.showsRows
+    val isTemporary = destination.id == uiState.temporaryDestination?.id
+    val shape = RoundedCornerShape(FjordDimens.radiusLg)
+
+    // The searched-for card never opens, so its head is all of it, buttons included; the others'
+    // head is the banner, measured on its own rather than as the card less its rows.
+    Row(
+        modifier = modifier.then(if (isTemporary) Modifier.onSizeChanged { onHeadHeight(it.height) } else Modifier),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    // An open card is one card: the banner, then its rows on the same colour.
+                    .then(if (showsRows) Modifier.clip(shape).background(PulseTheme.colors.route) else Modifier),
+        ) {
+            AnimatedContent(
+                targetState = trip,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "fastestTrip",
+                contentKey = { it == null },
+                modifier = if (isTemporary) Modifier else Modifier.onSizeChanged { onHeadHeight(it.height) },
+            ) { loaded ->
+                when {
+                    loaded == null && destination.id in uiState.failedTripDestinationIds ->
+                        FastestTripUnavailable(
+                            destinationName = destination.name,
+                            isOnline = uiState.isOnline,
+                            isRetrying = destination.id in uiState.loadingTripDestinationIds,
+                        )
+                    loaded == null && noRouteTime != null ->
+                        FastestTripNone(destinationName = destination.name, time = noRouteTime)
+                    loaded == null -> FastestTripPlaceholder(destinationName = destination.name)
+                    else ->
+                        FastestTripBanner(
+                            trip = loaded,
+                            onClick = { onOpenTrip(loaded) },
+                            isRefreshing = destination.id in uiState.loadingTripDestinationIds,
+                            belowTitle = if (thenLine.isNotEmpty()) ({ RouteThenLine(thenLine) }) else null,
+                            belowTitleDescription = if (thenLine.isNotEmpty()) routeThenLineDescription(thenLine) else null,
+                            trailing =
+                                if (canToggle) {
+                                    {
+                                        RouteAlternativesToggle(
+                                            count = openCount,
+                                            expanded = expanded,
+                                            destinationName = destination.name,
+                                            onClick = onToggleAlternatives,
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                        )
+                }
+            }
+            if (showsRows) {
+                val divider = PulseTheme.colors.onRoute.copy(alpha = 0.15f)
+                if (shownRows > 0) {
+                    Column(modifier = Modifier.onSizeChanged { onRowHeight(it.height.toFloat() / shownRows) }) {
+                        alternatives.take(shownRows).forEach { alternative ->
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = FjordDimens.space4), color = divider)
+                            TripOptionRow(trip = alternative, isFirst = false, onClick = { onOpenTrip(alternative) })
+                        }
+                    }
+                }
+                if (visible.showsMoreRow) {
+                    Column(modifier = Modifier.onSizeChanged { onMoreRowHeight(it.height.toFloat()) }) {
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = FjordDimens.space4), color = divider)
+                        RouteMoreInDetailsRow(hidden = visible.hidden, onClick = onMoreInDetails)
+                    }
+                }
+            }
+        }
+        if (isTemporary) {
+            TemporaryRouteActions(
+                time = uiState.temporaryTripTime,
+                onTimeChange = onTimeChange,
+                canSave = uiState.canSaveTemporaryDestination,
+                onSave = onSave,
+                onDismiss = onDismissTemporary,
+                tint = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+    }
+}
+
+/** How often the route cards drop departed alternatives. */
+private const val ROUTE_CARDS_TICK_MILLIS = 15_000L
 
 /**
  * The favourite stops' panels, as many at once as [BoardLayout.pageSizes] lets fit. When they do

@@ -593,8 +593,9 @@ private struct DestinationRoutesCard: View {
     }
 }
 
-/// One alternative: "19:41 in 4 min", the legs, then how long it takes and when it arrives.
-private struct TripOptionRow: View {
+/// One alternative: "19:41 in 4 min", the legs, then how long it takes and when it arrives. Also
+/// the rows of an expanded route card on the wall board.
+struct TripOptionRow: View {
     let trip: TripInfo
     let isFirst: Bool
 

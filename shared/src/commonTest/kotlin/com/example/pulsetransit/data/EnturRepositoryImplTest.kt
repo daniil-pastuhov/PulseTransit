@@ -524,7 +524,8 @@ class EnturRepositoryImplTest {
             online = false
             val cached = repo.getTripOptions(lat = 59.91, lon = 10.75, to = to, count = 3)
 
-            assertEquals("4", variables(bodies.first())["count"].toString())
+            // At least the board's four routes, whoever asks, and one for the walk.
+            assertEquals("5", variables(bodies.first())["count"].toString())
             assertEquals(listOf("31", "2", "20"), live.data.map { it.lineName })
             assertFalse(live.isFromCache)
             assertEquals(listOf("31", "2", "20"), cached.data.map { it.lineName })

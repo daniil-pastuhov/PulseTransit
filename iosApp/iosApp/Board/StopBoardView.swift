@@ -19,7 +19,8 @@ struct StopBoardView: View {
     #endif
     /// The fastest route whose details are open.
     @State private var detailsTrip: TripSelection?
-    @State private var showRouteSearch = false
+    /// The open route search; see `openRouteSearch(on:)`.
+    @State private var routeSearch: RouteSearchRequest?
     /// The followed journey's details, opened from its bar or a tap on a notification.
     @State private var followedJourney: TripSelection?
     /// The board's size, for how much of the header fits in iPhone Duo's bar.
@@ -39,7 +40,7 @@ struct StopBoardView: View {
             board(state: state, viewModel: viewModel, showsHeader: placement == .none)
         } actions: {
             BoardActionButtons(
-                onSearchRoute: { showRouteSearch = true },
+                onSearchRoute: { openRouteSearch(on: nil) },
                 onOpenSettings: { showSettings = true },
                 shift: state.burnInLevel
             )
@@ -105,6 +106,8 @@ struct StopBoardView: View {
     /// A board this wide gets the one-row header, larger rows and side-by-side routes, as on Android.
     private var isWide: Bool { boardSize.width >= 700 }
     private var gap: CGFloat { isWide ? FjordTokens.space4 : FjordTokens.space3 }
+    /// How often the route cards drop departed alternatives, as on Android.
+    private let routeCardsTickSeconds: TimeInterval = 15
 
     /// The board itself; `showsHeader` is false while the header sits in iPhone Duo's bar.
     @ViewBuilder
@@ -124,7 +127,7 @@ struct StopBoardView: View {
                         state: state,
                         wide: isWide,
                         onCycleDateStyle: { viewModel.cycleDateStyle() },
-                        onSearchRoute: { showRouteSearch = true },
+                        onSearchRoute: { openRouteSearch(on: nil) },
                         onOpenSettings: { showSettings = true }
                     )
                 }
@@ -152,8 +155,8 @@ struct StopBoardView: View {
             .padding(.vertical, isWide ? FjordTokens.space4 : FjordTokens.space3)
             // Its own anchor: two sheets on one view do not both present on iOS 15. Not on the
             // header, which is not there while it is in the side bar.
-            .sheet(isPresented: $showRouteSearch, onDismiss: { viewModel.clearRouteSearch() }) {
-                RouteSearchView(state: model.state, viewModel: viewModel, journey: journeyModel)
+            .sheet(item: $routeSearch, onDismiss: { viewModel.clearRouteSearch() }) { request in
+                RouteSearchView(state: model.state, viewModel: viewModel, journey: journeyModel, initialPlace: request.place)
             }
             .background(
                 Color.clear.sheet(item: $followedJourney) { selection in
@@ -201,10 +204,17 @@ struct StopBoardView: View {
         followedJourney = TripSelection(destinationId: journey.id, trip: journey.trip)
     }
 
-    /// The wall board's body: a banner per destination (the searched-for one first), then a panel per favourite stop.
+    /// Opens the route search, on `place`'s routes when given (a saved destination's "+N in details").
+    private func openRouteSearch(on place: StopPlace?) {
+        routeSearch = RouteSearchRequest(place: place)
+    }
+
+    /// The wall board's body: a card per destination (the searched-for one first), then a panel per
+    /// favourite stop. The cards and the panels share the space the body has, so an expanded card
+    /// knows how much it may take before the panels drop below their minimum.
     @ViewBuilder
     private func boardBody(state: StopBoardViewModel.UiState, viewModel: StopBoardViewModel) -> some View {
-        // One banner per destination, each appearing as soon as its own route arrives; a
+        // One card per destination, each appearing as soon as its own route arrives; a
         // destination with no route is left out once it has loaded, but one that failed
         // keeps its slot, and so does the searched-for one, to say so and keep its buttons.
         let routes = state.routeDestinations.filter {
@@ -215,47 +225,45 @@ struct StopBoardView: View {
         }
         // Side by side on a wide board, as many as fit at 320 pt or more each.
         let columns = isWide ? max(1, Int(boardSize.width / 320)) : 1
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: FjordTokens.space3), count: min(columns, max(1, routes.count))), spacing: FjordTokens.space2) {
-            ForEach(routes, id: \.id) { destination in
-                HStack(spacing: 0) {
-                    // Overlaid, not stacked, so the placeholder and the banner cross-fade in place.
-                    ZStack {
-                        if let trip = state.fastestTrips[destination.id]?.first {
-                            FastestTripBanner(
-                                trip: trip,
-                                isRefreshing: state.loadingTripDestinationIds.contains(destination.id),
-                                onTap: { detailsTrip = TripSelection(destinationId: destination.id, trip: trip) }
-                            )
-                            .transition(.opacity)
-                        } else if state.failedTripDestinationIds.contains(destination.id) {
-                            FastestTripUnavailable(
-                                destinationName: destination.name,
-                                isOnline: state.isOnline,
-                                isRetrying: state.loadingTripDestinationIds.contains(destination.id)
-                            )
-                            .transition(.opacity)
-                        } else if let noRouteTime = state.noRouteTime(destinationId: destination.id) {
-                            FastestTripNone(destinationName: destination.name, time: noRouteTime)
-                                .transition(.opacity)
-                        } else {
-                            FastestTripPlaceholder(destinationName: destination.name)
-                                .transition(.opacity)
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.3), value: state.fastestTrips[destination.id] == nil)
-                    if destination.id == state.temporaryDestination?.id {
-                        TemporaryRouteActions(
-                            time: state.temporaryTripTime,
-                            onTimeChange: { viewModel.setTripTime(time: $0) },
-                            canSave: state.canSaveTemporaryDestination,
-                            onSave: { viewModel.saveTemporaryDestination() },
-                            onDismiss: { viewModel.dismissTemporaryDestination() },
-                            fillsBackground: true
+        GeometryReader { body in
+            VStack(spacing: gap) {
+                if !routes.isEmpty {
+                    // Ticks so departed alternatives drop off between refreshes, as on Android.
+                    TimelineView(.periodic(from: .now, by: routeCardsTickSeconds)) { timeline in
+                        BoardRouteCards(
+                            state: state,
+                            viewModel: viewModel,
+                            routes: routes,
+                            columns: columns,
+                            bodyHeight: body.size.height,
+                            gap: gap,
+                            nowMillis: Int64(timeline.date.timeIntervalSince1970 * 1000),
+                            onOpenTrip: { destinationId, trip in detailsTrip = TripSelection(destinationId: destinationId, trip: trip) },
+                            onMoreInDetails: { openRouteSearch(on: $0) }
                         )
                     }
                 }
-                .fixedSize(horizontal: false, vertical: true)
+                if state.favorites.isEmpty {
+                    EmptyBoard(onAddStops: { showSettings = true })
+                } else {
+                    // Pages by the shared rules for the space the panels have: one when every stop fits,
+                    // else the board takes turns. Read from the layout rather than the screen, so an iPad
+                    // rotation (regular size class both ways) re-lays it out.
+                    GeometryReader { geometry in
+                        let pageSizes = BoardLayout.shared.pageSizes(
+                            stopCount: Int32(state.favorites.count),
+                            widthDp: Float(geometry.size.width),
+                            heightDp: Float(geometry.size.height)
+                        ).map(\.intValue)
+                        if pageSizes.count > 1 {
+                            PagedStopPanels(state: state, viewModel: viewModel, pageSizes: pageSizes, paused: state.isScreenDimmed, gap: gap)
+                        } else {
+                            StopPanels(state: state, viewModel: viewModel, firstIndex: 0, count: state.favorites.count, gap: gap)
+                        }
+                    }
+                }
             }
+            .frame(width: body.size.width, height: body.size.height, alignment: .top)
         }
         .sheet(item: $detailsTrip) { selection in
             TripDetailsView(
@@ -266,25 +274,6 @@ struct StopBoardView: View {
                 journey: journeyModel,
                 onFilterOutLine: { viewModel.filterOutLine(line: $0) }
             )
-        }
-        if state.favorites.isEmpty {
-            EmptyBoard(onAddStops: { showSettings = true })
-        } else {
-            // Pages by the shared rules for the space the panels have: one when every stop fits,
-            // else the board takes turns. Read from the layout rather than the screen, so an iPad
-            // rotation (regular size class both ways) re-lays it out.
-            GeometryReader { geometry in
-                let pageSizes = BoardLayout.shared.pageSizes(
-                    stopCount: Int32(state.favorites.count),
-                    widthDp: Float(geometry.size.width),
-                    heightDp: Float(geometry.size.height)
-                ).map(\.intValue)
-                if pageSizes.count > 1 {
-                    PagedStopPanels(state: state, viewModel: viewModel, pageSizes: pageSizes, paused: state.isScreenDimmed, gap: gap)
-                } else {
-                    StopPanels(state: state, viewModel: viewModel, firstIndex: 0, count: state.favorites.count, gap: gap)
-                }
-            }
         }
     }
 }
@@ -555,4 +544,11 @@ private struct PanelDropDelegate: DropDelegate {
     func dropUpdated(info: DropInfo) -> DropProposal? {
         DropProposal(operation: .move)
     }
+}
+
+/// A route search to open: on a saved destination's routes ("+N in details"), or with nil to search.
+/// Presented by item, so the sheet is built with the place it was opened for.
+private struct RouteSearchRequest: Identifiable {
+    let id = UUID()
+    let place: StopPlace?
 }

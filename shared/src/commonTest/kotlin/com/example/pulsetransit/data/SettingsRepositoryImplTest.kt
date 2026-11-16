@@ -159,6 +159,30 @@ class SettingsRepositoryImplTest {
     }
 
     @Test
+    fun `shown route alternatives are kept as a JSON list and survive a relaunch`() {
+        repo.setRouteAlternativesShown("a", true)
+        repo.setRouteAlternativesShown("b", true)
+        repo.setRouteAlternativesShown("a", false)
+
+        assertEquals(setOf("b"), SettingsRepositoryImpl(store).getRouteAlternativesShownIds())
+        assertEquals(listOf("b"), Json.decodeFromString<List<String>>(store.getString(SettingsRepositoryImpl.Keys.ROUTE_ALTERNATIVES_SHOWN, "")))
+    }
+
+    @Test
+    fun `removing a destination forgets that its alternatives were shown`() {
+        val oslo = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
+        val bergen = StopPlace(id = "NSR:StopPlace:2", name = "Bergen")
+        repo.addDestinationStation(oslo)
+        repo.addDestinationStation(bergen)
+        repo.setRouteAlternativesShown(oslo.id, true)
+        repo.setRouteAlternativesShown(bergen.id, true)
+
+        repo.removeDestinationStation(oslo.id)
+
+        assertEquals(setOf(bergen.id), repo.getRouteAlternativesShownIds())
+    }
+
+    @Test
     fun `a corrupt schedule store reads as no schedules`() {
         store.putString(SettingsRepositoryImpl.Keys.DESTINATION_SCHEDULES, """{"a":{"startMinute":9999}}""")
 

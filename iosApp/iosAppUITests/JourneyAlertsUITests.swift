@@ -35,6 +35,22 @@ final class JourneyAlertsUITests: XCTestCase {
         XCTAssertFalse(element("journey.bar").exists)
     }
 
+    /// The board's route alternatives: "N more" opens the later routes below the banner, and the
+    /// choice is saved, so the card is still open after a relaunch.
+    func testRouteAlternativesOpenAndStayOpen() {
+        launch()
+        let toggle = element("routeAlternatives.toggle")
+        XCTAssertTrue(toggle.waitForExistence(timeout: 15), "the fixture route has alternatives")
+        XCTAssertFalse(element("routeAlternative").exists, "collapsed by default")
+        toggle.tap()
+        XCTAssertTrue(element("routeAlternative").waitForExistence(timeout: 5), "the alternatives open below the banner")
+
+        app.terminate()
+        app.launchArguments = ["-PTUITest", "YES"]
+        app.launch()
+        XCTAssertTrue(element("routeAlternative").waitForExistence(timeout: 15), "the open card is saved")
+    }
+
     // MARK: Helpers
 
     private func launch() {

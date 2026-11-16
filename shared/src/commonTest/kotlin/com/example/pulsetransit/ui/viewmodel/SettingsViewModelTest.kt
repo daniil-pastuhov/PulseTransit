@@ -473,4 +473,19 @@ class SettingsViewModelTest {
             assertEquals(RouteTransportMode.entries.size - 1, settings.excludedModes.size)
             assertEquals(settings.excludedModes, vm.uiState.value.excludedRouteModes)
         }
+
+    @Test
+    fun `the alternatives switch writes the board's choice and removing the destination clears it`() =
+        settingsTest { vm ->
+            val oslo = StopPlace(id = "NSR:StopPlace:1", name = "Oslo S")
+            settings.destinations = listOf(oslo)
+            vm.loadSettings()
+
+            vm.setRouteAlternativesShown(oslo.id, true)
+            assertEquals(setOf(oslo.id), vm.uiState.value.routeAlternativesShownIds)
+            assertEquals(setOf(oslo.id), settings.alternativesShown)
+
+            vm.removeDestinationStation(oslo.id)
+            assertEquals(emptySet(), vm.uiState.value.routeAlternativesShownIds)
+        }
 }

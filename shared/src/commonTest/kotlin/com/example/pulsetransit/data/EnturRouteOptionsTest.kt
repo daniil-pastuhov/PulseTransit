@@ -58,7 +58,8 @@ class EnturRouteOptionsTest {
             repo.getFastestTrip(fromIds = listOf(stopId), to = StopPlace(id = "NSR:StopPlace:3", name = "Majorstuen"))
 
             assertEquals(setOf("from", "to", "count"), variables(bodies.single()).keys)
-            assertEquals(2, variables(bodies.single())["count"]!!.jsonPrimitive.int)
+            // The board's routes, whoever asks (see the cache tests below), and one for the walk.
+            assertEquals(BoardRouteAlternatives.ROUTES_PER_DESTINATION + 1, variables(bodies.single())["count"]!!.jsonPrimitive.int)
         }
 
     private val fewerTransfersAvoiding31 =
@@ -296,9 +297,11 @@ class EnturRouteOptionsTest {
         startMinutes: Int,
         endMinutes: Int,
         line: String? = null,
+        journey: String? = null,
     ): String {
         val foot = """{"mode":"foot","duration":300}"""
-        val legs = if (line == null) foot else """$foot,{"mode":"bus","duration":300,"line":{"publicCode":"$line"}}"""
+        val ride = journey?.let { ""","serviceJourney":{"id":"$it"}""" }.orEmpty()
+        val legs = if (line == null) foot else """$foot,{"mode":"bus","duration":300,"line":{"publicCode":"$line"}$ride}"""
         return """{"expectedStartTime":"${isoOslo(now + startMinutes * minute)}",
            "expectedEndTime":"${isoOslo(now + endMinutes * minute)}","duration":600,"legs":[$legs]}"""
     }
@@ -536,5 +539,180 @@ class EnturRouteOptionsTest {
             val trip = repo.getFastestTrip(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = to, options = options)
 
             assertEquals("late", trip.data?.lineName)
+        }
+
+    /** From the first origin the 31 at +4 and +12; from the second the 5 at +2, +8 and +14. */
+    private fun twoOriginsEngine(
+        bodies: MutableList<String>,
+        online: () -> Boolean = { true },
+    ): MockEngine {
+        val now = nowMillis()
+        return MockEngine { request ->
+            if (!online()) throw IOException("offline")
+            val body = (request.body as TextContent).text
+            bodies += body
+            val from = variables(body)["from"]!!.jsonPrimitive.content
+            val answer =
+                if (from == "NSR:StopPlace:A") {
+                    routes(route(now, 4, 20, "31"), route(now, 12, 28, "31"))
+                } else {
+                    routes(route(now, 2, 18, "5"), route(now, 8, 24, "5"), route(now, 14, 30, "5"))
+                }
+            respond(answer, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+        }
+    }
+
+    @Test
+    fun `from the favourites several routes are merged across origins in one request each`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val repo = EnturRepositoryImpl(client(twoOriginsEngine(bodies)), departureCache, tripCache)
+
+            val trips = repo.getTripOptionsFromStops(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = majorstuen, count = 4)
+
+            assertEquals(listOf("5", "31", "5", "31"), trips.data.map { it.lineName }, "earliest first, the same line's later ones too")
+            assertEquals(2, bodies.size, "one request per origin, as for one route")
+            assertEquals(listOf(5, 5), bodies.map { variables(it)["count"]!!.jsonPrimitive.int }, "each asks for the routes and the walk")
+            assertFalse(trips.isFromCache)
+        }
+
+    @Test
+    fun `from the favourites one route is still the earliest across origins`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            val repo = EnturRepositoryImpl(client(twoOriginsEngine(bodies)), departureCache, tripCache)
+            val origins = listOf("NSR:StopPlace:A", "NSR:StopPlace:B")
+
+            assertEquals("5", repo.getFastestTrip(fromIds = origins, to = majorstuen).data?.lineName)
+            assertEquals(2, bodies.size, "one request per origin")
+        }
+
+    @Test
+    fun `routes from the favourites are cached together and served offline`() =
+        runTest {
+            var online = true
+            val repo = EnturRepositoryImpl(client(twoOriginsEngine(mutableListOf()) { online }), departureCache, tripCache)
+            val origins = listOf("NSR:StopPlace:A", "NSR:StopPlace:B")
+
+            val live = repo.getTripOptionsFromStops(fromIds = origins, to = majorstuen, count = 4)
+            online = false
+            val cached = repo.getTripOptionsFromStops(fromIds = origins.reversed(), to = majorstuen, count = 4)
+            val first = repo.getTripOptionsFromStops(fromIds = origins, to = majorstuen, count = 1)
+
+            assertEquals(live.data.map { it.expectedStartTime }, cached.data.map { it.expectedStartTime })
+            assertEquals(listOf("5", "31", "5", "31"), cached.data.map { it.lineName })
+            assertTrue(cached.isFromCache)
+            assertFalse(cached.failed)
+            assertEquals(listOf("5"), first.data.map { it.lineName }, "fewer asked, fewer served")
+            assertEquals("5", repo.getFastestTrip(fromIds = origins, to = majorstuen).data?.lineName)
+        }
+
+    @Test
+    fun `routes from the favourites with nothing cached fail as unknown`() =
+        runTest {
+            val repo = EnturRepositoryImpl(client(twoOriginsEngine(mutableListOf()) { false }), departureCache, tripCache)
+
+            val trips = repo.getTripOptionsFromStops(fromIds = listOf("NSR:StopPlace:A"), to = majorstuen, count = 4)
+
+            assertTrue(trips.failed)
+            assertEquals(emptyList(), trips.data)
+        }
+
+    @Test
+    fun `a widget asking for one route leaves the board's cached alternatives from the favourites`() =
+        runTest {
+            val bodies = mutableListOf<String>()
+            var online = true
+            val repo = EnturRepositoryImpl(client(twoOriginsEngine(bodies) { online }), departureCache, tripCache)
+            val origins = listOf("NSR:StopPlace:A", "NSR:StopPlace:B")
+
+            val board = repo.getTripOptionsFromStops(fromIds = origins, to = majorstuen, count = 4)
+            val widget = repo.getFastestTrip(fromIds = origins, to = majorstuen)
+            online = false
+            val offline = repo.getTripOptionsFromStops(fromIds = origins, to = majorstuen, count = 4)
+
+            assertEquals("5", widget.data?.lineName)
+            assertEquals(4, bodies.size, "still one request per origin each time")
+            assertEquals(board.data.map { it.expectedStartTime }, offline.data.map { it.expectedStartTime })
+            assertEquals(4, offline.data.size)
+            assertTrue(offline.isFromCache)
+        }
+
+    @Test
+    fun `a widget asking for one route leaves the board's cached alternatives from the location`() =
+        runTest {
+            val now = nowMillis()
+            val bodies = mutableListOf<String>()
+            var online = true
+            val engine =
+                MockEngine { request ->
+                    if (!online) throw IOException("offline")
+                    bodies += (request.body as TextContent).text
+                    val answer = routes(route(now, 2, 18, "5"), route(now, 4, 20, "31"), route(now, 8, 24, "5"), route(now, 12, 28, "31"))
+                    respond(answer, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val board = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 4)
+            val widget = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 1)
+            online = false
+            val offline = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 4)
+
+            assertEquals(listOf("5"), widget.data.map { it.lineName }, "the widget still gets the one it asked for")
+            assertEquals(2, bodies.size)
+            assertEquals(listOf(5, 5), bodies.map { variables(it)["count"]!!.jsonPrimitive.int })
+            assertEquals(board.data.map { it.expectedStartTime }, offline.data.map { it.expectedStartTime })
+            assertEquals(listOf("5", "31", "5", "31"), offline.data.map { it.lineName })
+            assertTrue(offline.isFromCache)
+        }
+
+    @Test
+    fun `more routes than the board's are still fetched and served in full`() =
+        runTest {
+            val now = nowMillis()
+            val bodies = mutableListOf<String>()
+            val engine =
+                MockEngine { request ->
+                    bodies += (request.body as TextContent).text
+                    val answer = routes(*Array(7) { route(now, 2 + 3 * it, 18 + 3 * it, "${it + 1}") })
+                    respond(answer, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val onSpot = repo.getTripOptions(lat = 59.91, lon = 10.75, to = majorstuen, count = 6)
+
+            assertEquals(6, onSpot.data.size, "on the spot may ask for more than the board")
+            assertEquals(7, variables(bodies.single())["count"]!!.jsonPrimitive.int)
+        }
+
+    @Test
+    fun `the same departure reached from two favourites is listed once`() =
+        runTest {
+            val now = nowMillis()
+            val engine =
+                MockEngine { request ->
+                    val from = variables((request.body as TextContent).text)["from"]!!.jsonPrimitive.content
+                    val answer =
+                        if (from == "NSR:StopPlace:A") {
+                            // A short walk to the 31 that leaves at +9.
+                            routes(route(now, 4, 20, "31", journey = "RUT:ServiceJourney:31-0900"))
+                        } else {
+                            // A longer walk to that same 31, then the next 31.
+                            routes(
+                                route(now, 2, 20, "31", journey = "RUT:ServiceJourney:31-0900"),
+                                route(now, 10, 26, "31", journey = "RUT:ServiceJourney:31-0915"),
+                            )
+                        }
+                    respond(answer, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            val repo = EnturRepositoryImpl(client(engine), departureCache, tripCache)
+
+            val trips = repo.getTripOptionsFromStops(fromIds = listOf("NSR:StopPlace:A", "NSR:StopPlace:B"), to = majorstuen, count = 4)
+
+            assertEquals(
+                listOf(isoOslo(now + 2 * minute), isoOslo(now + 10 * minute)),
+                trips.data.map { it.expectedStartTime },
+                "the 31 at 09:00 once, as its first-ranked route, and the next 31 kept",
+            )
         }
 }

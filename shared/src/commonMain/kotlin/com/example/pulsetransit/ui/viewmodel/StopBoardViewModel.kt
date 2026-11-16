@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.pulsetransit.data.ARRIVED_RADIUS_METERS
 import com.example.pulsetransit.data.AppMode
+import com.example.pulsetransit.data.BoardRouteAlternatives
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
@@ -23,9 +24,11 @@ import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
+import com.example.pulsetransit.data.ThenLineEntry
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.TripTime
+import com.example.pulsetransit.data.VisibleAlternatives
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.differsFromNorwayTime
@@ -156,9 +159,16 @@ class StopBoardViewModel(
         /**
          * Route alternatives per destination station id, best first; a destination with no route,
          * or that the origin is already at (see `isArrivedFrom`), is absent. Board mode
-         * asks for one, on-spot mode for up to [tripOptionsCount].
+         * asks for [BoardRouteAlternatives.ROUTES_PER_DESTINATION], on-spot mode for up to
+         * [tripOptionsCount].
          */
         val fastestTrips: Map<String, List<TripInfo>> = emptyMap(),
+        /**
+         * Board mode: the saved destinations whose card lists its alternatives below the banner,
+         * as the user chose on the board or in Settings. Kept as chosen: nothing collapses a card
+         * on its own. See [showsRouteAlternatives].
+         */
+        val routeAlternativesShownIds: Set<String> = emptySet(),
         /** The on-spot alternatives setting: [SettingsRepository.TRIP_OPTIONS_AUTO] or a fixed count. */
         val tripOptionsCount: Int = SettingsRepository.TRIP_OPTIONS_AUTO,
         /** On-spot mode only: the routes' share of the board, as the user dragged it; see [OnSpotSplit]. */
@@ -300,6 +310,49 @@ class StopBoardViewModel(
                 destinationId !in noRouteDestinationIds -> null
                 destinationId == temporaryDestination?.id -> temporaryTripTime
                 else -> TripTime.Now
+            }
+
+        /**
+         * Whether [destinationId]'s card is one of the board's own: board mode, a saved destination,
+         * not the searched-for one, whose banner stays as it is and has buttons of its own.
+         */
+        private fun isBoardRouteCard(destinationId: String): Boolean =
+            mode == AppMode.BOARD &&
+                destinationId != temporaryDestination?.id &&
+                destinationStations.any { it.id == destinationId }
+
+        /**
+         * Whether [destinationId]'s route card is expanded: one of the board's own cards (see
+         * [canToggleRouteAlternatives]) in [routeAlternativesShownIds].
+         */
+        fun showsRouteAlternatives(destinationId: String): Boolean = destinationId in routeAlternativesShownIds && isBoardRouteCard(destinationId)
+
+        /**
+         * Whether [destinationId]'s card offers "N more" / "Fewer": board mode, a saved destination
+         * (not the searched-for one) with alternatives still to leave. An expanded card whose
+         * alternatives have all left loses it until new ones come, and stays expanded meanwhile.
+         */
+        fun canToggleRouteAlternatives(
+            destinationId: String,
+            nowMillis: Long,
+        ): Boolean =
+            isBoardRouteCard(destinationId) &&
+                BoardRouteAlternatives.alternatives(fastestTrips[destinationId], nowMillis).isNotEmpty()
+
+        /**
+         * The "Then 08:16 [3] · 08:19 [5]" line under [destinationId]'s banner: a board card's next
+         * alternatives while it is collapsed, or expanded with no room for any row ([visible], from
+         * [BoardRouteAlternatives.visibleRows]). Empty for the searched-for destination and on the spot.
+         */
+        fun routeThenLine(
+            destinationId: String,
+            nowMillis: Long,
+            visible: VisibleAlternatives,
+        ): List<ThenLineEntry> =
+            if (!isBoardRouteCard(destinationId) || (showsRouteAlternatives(destinationId) && !visible.showsThenLine)) {
+                emptyList()
+            } else {
+                BoardRouteAlternatives.thenLine(fastestTrips[destinationId], nowMillis)
             }
 
         /** True while any part of the transit board is missing or stale because a fetch failed. */
@@ -536,6 +589,7 @@ class StopBoardViewModel(
                 filteredLines = settingsRepository.getFilteredLines(),
                 tripOptionsCount = settingsRepository.getTripOptionsCount(),
                 onSpotSplit = settingsRepository.getOnSpotSplit(),
+                routeAlternativesShownIds = settingsRepository.getRouteAlternativesShownIds(),
             )
         }
 
@@ -1090,7 +1144,7 @@ class StopBoardViewModel(
         val lat = if (onSpot) fix?.latitude else settingsRepository.getSavedLatitude()
         val lon = if (onSpot) fix?.longitude else settingsRepository.getSavedLongitude()
         val destinations = _uiState.value.routeDestinations.filterNot { isArrivedAt(it, onSpot, lat, lon) }
-        val count = if (onSpot) tripOptionsToFetch() else 1
+        val count = if (onSpot) tripOptionsToFetch() else BoardRouteAlternatives.ROUTES_PER_DESTINATION
         val options = routeOptions()
         val temporaryId = _uiState.value.temporaryDestination?.id
         val temporaryOptions = options.copy(time = _uiState.value.temporaryTripTime)
@@ -1277,8 +1331,7 @@ class StopBoardViewModel(
         }
         val fromIds = _uiState.value.favorites.map { it.id }
         if (fromIds.isEmpty()) return Sourced(emptyList())
-        val trip = enturRepository.getFastestTrip(fromIds = fromIds, to = destination, options = options)
-        return Sourced(listOfNotNull(trip.data), trip.fetchedAtMillis, trip.failed)
+        return enturRepository.getTripOptionsFromStops(fromIds = fromIds, to = destination, count = count, options = options)
     }
 
     /**
@@ -1350,6 +1403,7 @@ class StopBoardViewModel(
                 activeDestinationIds = activeDestinationIds(destinations, it.destinationSchedules),
                 temporaryDestination = saved.place,
                 temporaryTripTime = saved.tripTime,
+                routeAlternativesShownIds = settingsRepository.getRouteAlternativesShownIds(),
             )
         }
         if (saved.tripTime != TripTime.Now) {
@@ -1359,6 +1413,25 @@ class StopBoardViewModel(
     }
 
     private fun nextUndoSerial() = ++undoSerial
+
+    /**
+     * Board mode: opens [destinationId]'s alternatives below its banner, or closes them ("N more" /
+     * "Fewer"), and saves the choice, so an untouched wall board keeps it across refreshes, dimming
+     * and restarts. Only saved destinations have one; see [UiState.showsRouteAlternatives].
+     */
+    fun toggleRouteAlternatives(destinationId: String) {
+        setRouteAlternativesShown(destinationId, destinationId !in _uiState.value.routeAlternativesShownIds)
+    }
+
+    /** As [toggleRouteAlternatives], to a given state. */
+    fun setRouteAlternativesShown(
+        destinationId: String,
+        shown: Boolean,
+    ) {
+        if (_uiState.value.destinationStations.none { it.id == destinationId }) return
+        settingsRepository.setRouteAlternativesShown(destinationId, shown)
+        _uiState.update { it.copy(routeAlternativesShownIds = settingsRepository.getRouteAlternativesShownIds()) }
+    }
 
     /** Keeps the on-spot board's split where the user left it, across launches; see [OnSpotSplit]. */
     fun setOnSpotSplit(split: Float) {

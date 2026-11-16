@@ -57,8 +57,25 @@ interface EnturRepository {
     ): Sourced<TripInfo?>
 
     /**
+     * As [getFastestTrip], but the best [count] routes, best first: each origin is asked for its
+     * best [count] in the same one request per origin, and the answers are merged and ranked by
+     * [options]; the same departure reached from two origins is listed once. Cached as one list,
+     * so offline the routes still to leave are served from it. At least
+     * [BoardRouteAlternatives.ROUTES_PER_DESTINATION] are fetched and cached whatever [count] is
+     * (in the same requests), so a caller asking for fewer, like a widget, never cuts the
+     * board's cached alternatives; only [count] are returned.
+     */
+    suspend fun getTripOptionsFromStops(
+        fromIds: List<String>,
+        to: StopPlace,
+        count: Int,
+        options: RouteOptions = RouteOptions(),
+    ): Sourced<List<TripInfo>>
+
+    /**
      * As [getDepartures], but for the next [count] route alternatives to a destination from a
      * coordinate, best first by [options] (the first is the one to take). Empty when there are none.
+     * Fetched and cached as [getTripOptionsFromStops] is: never fewer than the board's routes.
      */
     suspend fun getTripOptions(
         lat: Double,

@@ -70,6 +70,10 @@ import org.jetbrains.compose.resources.stringResource
  * the saved and recent places. Picking a place also shows its route on the board, until dismissed
  * there or saved. A place with no route says what to change; an "arrive by" no route can meet gets
  * the earliest arrival instead (T4), and a failed search a way to try again (T5).
+ *
+ * [initialPlace] opens the sheet on a saved destination's routes (the board's "+N in details"), as
+ * if it had been picked, without focusing the field: no keyboard pops up on a wall display, and the
+ * board is left as it was, since a saved destination routed for now is shown as it is.
  */
 @Composable
 fun RouteSearchSheet(
@@ -84,12 +88,13 @@ fun RouteSearchSheet(
     loadLegStops: suspend (TripLeg) -> List<JourneyStop>,
     onFilterOutLine: (String) -> Unit,
     onDismiss: () -> Unit,
+    initialPlace: StopPlace? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
-    var picked by rememberSaveable(stateSaver = StopPlaceSaver) { mutableStateOf<StopPlace?>(null) }
+    var picked by rememberSaveable(stateSaver = StopPlaceSaver) { mutableStateOf(initialPlace) }
     var openTrip by rememberSaveable(stateSaver = TripSaver) { mutableStateOf<TripInfo?>(null) }
     var editingTime by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(Unit) { if (initialPlace == null) focusRequester.requestFocus() }
     // A place restored after the process was killed is unknown to the new ViewModel: route it again,
     // or the sheet would wait for routes nobody asked for. After a rotation the ViewModel still has it.
     LaunchedEffect(Unit) {

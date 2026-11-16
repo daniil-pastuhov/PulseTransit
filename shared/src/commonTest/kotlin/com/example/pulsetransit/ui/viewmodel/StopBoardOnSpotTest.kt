@@ -1,6 +1,7 @@
 package com.example.pulsetransit.ui.viewmodel
 
 import com.example.pulsetransit.data.AppMode
+import com.example.pulsetransit.data.BoardRouteAlternatives
 import com.example.pulsetransit.data.BurnInProtectionLevel
 import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.SettingsRepository
@@ -311,16 +312,17 @@ class StopBoardOnSpotTest : BoardTestBase() {
         }
 
     @Test
-    fun `board mode never follows the device and asks for one route`() =
+    fun `board mode never follows the device and asks for the first route and its alternatives`() =
         boardTest {
             settings.destinations = listOf(oslo)
+            settings.tripOptions = 1 // the on-spot setting, which board mode does not follow
             val vm = viewModel(virtualClock())
             vm.startLocationTracking()
             runCurrent()
 
             assertEquals(0, location.activeCollectors)
             assertEquals(OnSpotLocation.Idle, vm.uiState.value.location)
-            assertEquals(1, entur.lastTripOptionsCount)
+            assertEquals(BoardRouteAlternatives.ROUTES_PER_DESTINATION, entur.lastTripOptionsCount)
         }
 
     @Test

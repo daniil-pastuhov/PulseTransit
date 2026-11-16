@@ -438,6 +438,16 @@
     <string name="route_earliest_body">The earliest you can arrive is %1$s, if you leave at %2$s.</string>
     <string name="route_offline_body">Route search needs a connection. Your saved destinations keep showing on the board from the last update.</string>
     <string name="route_saved">Saved</string>
+    <string name="route_then">Then</string>
+    <plurals name="route_more">
+        <item quantity="one">%1$d more</item>
+        <item quantity="other">%1$d more</item>
+    </plurals>
+    <string name="route_fewer">Fewer</string>
+    <string name="route_more_description">Show more routes to %1$s</string>
+    <string name="route_fewer_description">Show fewer routes to %1$s</string>
+    <string name="route_more_in_details">+%1$d in details</string>
+    <string name="show_alternatives_on_board">Show alternatives on the board</string>
     <string name="trip_time_today">Today</string>
     <string name="trip_time_tomorrow_day">Tomorrow</string>
     <string name="trip_time_help_now">Routes leaving now, with live times.</string>
