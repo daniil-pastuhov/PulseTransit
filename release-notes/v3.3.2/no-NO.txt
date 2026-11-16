@@ -1,0 +1,3 @@
+• Veggtavlen viser nå alternativer for hver rute: en «Neste»-linje med de neste avgangene, og «N til» for å liste dem under ruten.
+• Velg i Innstillinger hvilke reisemål som viser alternativer.
+• Rutekortet er lettere å lese: reisetid og ankomst står nå under avgangstiden.
