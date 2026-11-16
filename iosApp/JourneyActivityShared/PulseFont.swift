@@ -1,5 +1,6 @@
 import CoreText
 import SwiftUI
+import UIKit
 
 /// Public Sans, bundled (Fonts/, registered by UIAppFonts) so the app matches Android and the
 /// widgets. Each system text style keeps its size and Dynamic Type scaling; digits are tabular so
@@ -26,6 +27,42 @@ extension Font {
         relativeTo style: Font.TextStyle = .body
     ) -> Font {
         pulse(size: role.size, weight: PulseFace.weight(role.weight), relativeTo: style)
+    }
+}
+
+/// The UIFont that `.pulse(size:weight:relativeTo:)` draws with at the Dynamic Type size
+/// `category`, tabular figures included, for measuring text before it is laid out (the route cards
+/// decide what fits from such widths).
+func pulseUIFont(size: CGFloat, weight: Font.Weight, relativeTo style: Font.TextStyle, category: UIContentSizeCategory) -> UIFont {
+    let base = UIFont(name: PulseFace(weight).postScriptName, size: size) ?? .systemFont(ofSize: size)
+    let tabular = base.fontDescriptor.addingAttributes([
+        .featureSettings: [[
+            UIFontDescriptor.FeatureKey.type: kNumberSpacingType,
+            UIFontDescriptor.FeatureKey.selector: kMonospacedNumbersSelector,
+        ]],
+    ])
+    return UIFontMetrics(forTextStyle: style.uiTextStyle)
+        .scaledFont(for: UIFont(descriptor: tabular, size: size), compatibleWith: UITraitCollection(preferredContentSizeCategory: category))
+}
+
+extension DynamicTypeSize {
+    /// UIKit's name for this size, for `UIFontMetrics`.
+    var contentSizeCategory: UIContentSizeCategory {
+        switch self {
+        case .xSmall: return .extraSmall
+        case .small: return .small
+        case .medium: return .medium
+        case .large: return .large
+        case .xLarge: return .extraLarge
+        case .xxLarge: return .extraExtraLarge
+        case .xxxLarge: return .extraExtraExtraLarge
+        case .accessibility1: return .accessibilityMedium
+        case .accessibility2: return .accessibilityLarge
+        case .accessibility3: return .accessibilityExtraLarge
+        case .accessibility4: return .accessibilityExtraExtraLarge
+        case .accessibility5: return .accessibilityExtraExtraExtraLarge
+        @unknown default: return .large
+        }
     }
 }
 
@@ -90,4 +127,21 @@ private extension Font.TextStyle {
     }
 
     var defaultWeight: Font.Weight { self == .headline ? .semibold : .regular }
+
+    var uiTextStyle: UIFont.TextStyle {
+        switch self {
+        case .largeTitle: return .largeTitle
+        case .title: return .title1
+        case .title2: return .title2
+        case .title3: return .title3
+        case .headline: return .headline
+        case .body: return .body
+        case .callout: return .callout
+        case .subheadline: return .subheadline
+        case .footnote: return .footnote
+        case .caption: return .caption1
+        case .caption2: return .caption2
+        @unknown default: return .body
+        }
+    }
 }

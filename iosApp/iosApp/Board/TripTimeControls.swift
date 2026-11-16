@@ -141,7 +141,7 @@ struct TripTimeButton: View {
                 .padding(.horizontal, 4)
             } else {
                 Image(systemName: "clock")
-                    .frame(width: 36, height: 36)
+                    .frame(width: FjordTokens.touch, height: FjordTokens.touch)
             }
         }
         .accessibilityLabel(L("trip_time_change"))

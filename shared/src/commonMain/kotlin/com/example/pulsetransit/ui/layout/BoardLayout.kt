@@ -24,12 +24,6 @@ object BoardLayout {
      */
     const val WIDE_ROW_MIN_WIDTH_DP = 440f
 
-    /**
-     * Below this width a fastest-route banner stacks its title under the departure time and
-     * duration, rather than squeezing the title into the gap between them.
-     */
-    const val COMPACT_BANNER_MAX_WIDTH_DP = 360f
-
     /** Height of the row under the panels that shows which page of stops is up, when there are pages. */
     const val PAGE_INDICATOR_HEIGHT_DP = 24f
 
@@ -110,9 +104,6 @@ object BoardLayout {
         val extra = stopCount % pages
         return List(pages) { page -> if (page < extra) base + 1 else base }
     }
-
-    /** Whether a fastest-route banner this wide stacks its title, by [COMPACT_BANNER_MAX_WIDTH_DP]. */
-    fun isCompactBanner(widthDp: Float): Boolean = widthDp < COMPACT_BANNER_MAX_WIDTH_DP
 
     /** How many departure rows a list this tall shows without scrolling. */
     fun rowCapacity(listHeightDp: Float): Int = floor(listHeightDp / ROW_HEIGHT_DP).toInt().coerceAtLeast(0)

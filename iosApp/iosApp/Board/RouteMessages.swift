@@ -1,0 +1,190 @@
+import Shared
+import SwiftUI
+
+// The on-the-spot route cards' pieces: a trip's legs as a chain, and the muted cards that keep a
+// destination's slot while its route loads, failed or found nothing. The wall board's cards are
+// RouteCardView.swift.
+
+/// A route card's frame: the route colours (or muted), rounded, at least a touch target high.
+private struct RouteCardFrame: ViewModifier {
+    var muted = false
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, FjordTokens.space4)
+            .padding(.vertical, FjordTokens.space3)
+            .frame(maxWidth: .infinity, minHeight: FjordTokens.touch, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: FjordTokens.radiusLg)
+                    .fill(muted ? Palette.surfaceContainer : Palette.route)
+            )
+    }
+}
+
+/// A trip's legs as a chain that wraps onto more lines, as on Android: "[walk] 9 min → [FLY2] from
+/// Oslo S", line pills in their colours, or its first line and origin if Entur sent no legs.
+/// Zero-minute foot legs are quay transfers. With a `maxLines` limit, as in the route rows, it shows
+/// the start of the journey without the boarding stops and, when the rest doesn't fit, ends with how
+/// many legs are hidden: the trip's details show them all, with their stops.
+struct TripLegs: View {
+    let trip: TripInfo
+    var color: Color = Palette.textPrimary
+    var maxLines: Int?
+
+    var body: some View {
+        let legs = trip.legs.filter { $0.lineName != nil || $0.durationMinutes > 0 }
+        if legs.isEmpty {
+            Text(L("fastest_route_info", trip.lineName, trip.originName))
+                .font(.pulse(.subheadline))
+                .foregroundColor(color)
+                .lineLimit(maxLines ?? 2)
+        } else if #available(iOS 16, *) {
+            FlowLayout(itemCount: legs.count, maxLines: maxLines ?? .max, spacing: FjordTokens.space1, lineSpacing: 2) {
+                ForEach(Array(legs.enumerated()), id: \.offset) { index, leg in
+                    item(leg, index: index, showsFrom: maxLines == nil).collapsible()
+                }
+                if maxLines != nil {
+                    // One marker per count that can be hidden; the layout places the one it needs.
+                    ForEach(1 ... legs.count, id: \.self) { hidden in
+                        Text(L("legs_hidden", hidden)).lineLimit(1).fixedSize().collapsible().accessibilityHidden(true)
+                    }
+                }
+            }
+            .font(.pulse(.subheadline))
+            .foregroundColor(color)
+        } else {
+            // No layout to measure with before iOS 16: one line, without the boarding stops; in a row,
+            // the first legs and how many follow, cut at the row's edge rather than run into its times.
+            let shown = maxLines == nil ? legs.count : min(legs.count, Self.iOS15RowLegs)
+            HStack(spacing: FjordTokens.space1) {
+                ForEach(Array(legs.prefix(shown).enumerated()), id: \.offset) { index, leg in
+                    item(leg, index: index, showsFrom: false)
+                }
+                if shown < legs.count {
+                    Text(L("legs_hidden", legs.count - shown)).lineLimit(1).fixedSize().accessibilityHidden(true)
+                }
+            }
+            .font(.pulse(.subheadline))
+            .foregroundColor(color)
+            .frame(maxWidth: maxLines == nil ? nil : .infinity, alignment: .leading)
+            .clipped()
+        }
+    }
+
+    /// Legs a route row shows on iOS 15, which cannot measure where they run out: a walk, a ride
+    /// and a walk fit a phone's row.
+    private static let iOS15RowLegs = 3
+
+    /// One leg with the arrow before it, so a wrapped chain only breaks between legs.
+    private func item(_ leg: TripLeg, index: Int, showsFrom: Bool) -> some View {
+        HStack(spacing: FjordTokens.space1) {
+            if index > 0 {
+                Image(systemName: "arrow.right").font(.pulse(.caption)).accessibilityHidden(true)
+            }
+            if let line = leg.lineName {
+                LinePill(line: line, mode: leg.mode, small: true)
+                if showsFrom, let from = leg.fromName {
+                    Text(L("leg_from", from)).lineLimit(1)
+                }
+            } else {
+                Image(systemName: "figure.walk").font(.pulse(.caption)).accessibilityHidden(true)
+                Text(L("leg_walk", Int(leg.durationMinutes))).lineLimit(1).fixedSize()
+            }
+        }
+    }
+}
+
+/// "HH:mm" straight out of an ISO timestamp, which is already in local Oslo time.
+func isoClockTime(_ iso: String) -> String {
+    guard iso.count >= 16 else { return "--:--" }
+    let start = iso.index(iso.startIndex, offsetBy: 11)
+    return String(iso[start ..< iso.index(start, offsetBy: 5)])
+}
+
+/// A muted card in a route's slot, so the layout doesn't jump when the route comes back.
+private struct RouteMessage: View {
+    let symbol: String
+    let title: String
+    var detail: String?
+    var isRetrying = false
+
+    var body: some View {
+        HStack(spacing: FjordTokens.space3) {
+            Image(systemName: symbol)
+                .font(.pulse(.title2))
+                .foregroundColor(Palette.textSecondary)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.pulse(.callout, weight: .semibold))
+                    .foregroundColor(Palette.textPrimary)
+                if let detail {
+                    Text(detail)
+                        .font(.pulse(.subheadline))
+                        .foregroundColor(Palette.textSecondary)
+                }
+            }
+        }
+        .modifier(RouteCardFrame(muted: true))
+        .overlay(alignment: .bottom) {
+            if isRetrying { RefreshBar().padding(.horizontal, FjordTokens.radiusLg) }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Keeps a destination's slot when its route failed to load, rather than silently dropping it.
+struct FastestTripUnavailable: View {
+    let destinationName: String
+    let isOnline: Bool
+    let isRetrying: Bool
+
+    var body: some View {
+        RouteMessage(
+            symbol: loadFailureSymbol(isOnline: isOnline),
+            title: L("fastest_route_unavailable", destinationName),
+            detail: L("error_retrying_automatically"),
+            isRetrying: isRetrying
+        )
+    }
+}
+
+/// Says that Entur found no route to a destination, e.g. none arriving by the time asked for,
+/// rather than leaving a placeholder that never fills. As Android's FastestTripNone.
+struct FastestTripNone: View {
+    let destinationName: String
+    let time: TripTime
+
+    var body: some View {
+        let arriveBy = time as? TripTimeArriveBy
+        RouteMessage(
+            symbol: arriveBy != nil ? "clock" : "magnifyingglass",
+            title: arriveBy.map { L("no_route_to_arriving", destinationName, tripClockText($0.atMillis)) }
+                ?? L("no_route_to", destinationName)
+        )
+    }
+}
+
+/// Stands in for a `FastestTripBanner` whose route hasn't arrived yet: its title, and skeletons.
+struct FastestTripPlaceholder: View {
+    let destinationName: String
+    @State private var pulse = false
+
+    var body: some View {
+        let label = L("loading_fastest_route", destinationName)
+        HStack(spacing: FjordTokens.space3) {
+            PlaceholderBlock(width: 52, height: 36, pulse: pulse)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(label)
+                    .font(.pulse(.callout, weight: .semibold))
+                    .foregroundColor(Palette.textPrimary)
+                    .lineLimit(2)
+                PlaceholderBlock(width: 140, height: 12, pulse: pulse)
+            }
+        }
+        .modifier(RouteCardFrame(muted: true))
+        .modifier(PlaceholderPulse(pulse: $pulse))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+    }
+}

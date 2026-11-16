@@ -24,11 +24,9 @@ import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.ThemeMode
-import com.example.pulsetransit.data.ThenLineEntry
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.TripTime
-import com.example.pulsetransit.data.VisibleAlternatives
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
 import com.example.pulsetransit.data.differsFromNorwayTime
@@ -338,22 +336,6 @@ class StopBoardViewModel(
         ): Boolean =
             isBoardRouteCard(destinationId) &&
                 BoardRouteAlternatives.alternatives(fastestTrips[destinationId], nowMillis).isNotEmpty()
-
-        /**
-         * The "Then 08:16 [3] · 08:19 [5]" line under [destinationId]'s banner: a board card's next
-         * alternatives while it is collapsed, or expanded with no room for any row ([visible], from
-         * [BoardRouteAlternatives.visibleRows]). Empty for the searched-for destination and on the spot.
-         */
-        fun routeThenLine(
-            destinationId: String,
-            nowMillis: Long,
-            visible: VisibleAlternatives,
-        ): List<ThenLineEntry> =
-            if (!isBoardRouteCard(destinationId) || (showsRouteAlternatives(destinationId) && !visible.showsThenLine)) {
-                emptyList()
-            } else {
-                BoardRouteAlternatives.thenLine(fastestTrips[destinationId], nowMillis)
-            }
 
         /** True while any part of the transit board is missing or stale because a fetch failed. */
         val hasLoadFailure: Boolean

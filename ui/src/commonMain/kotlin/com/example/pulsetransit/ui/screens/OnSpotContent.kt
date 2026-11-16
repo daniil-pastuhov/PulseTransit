@@ -713,7 +713,7 @@ private fun DestinationRoutesCard(
  * the rows of an expanded route card on the wall board.
  */
 @Composable
-internal fun TripOptionRow(
+private fun TripOptionRow(
     trip: TripInfo,
     isFirst: Boolean,
     onClick: () -> Unit,

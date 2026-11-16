@@ -223,8 +223,6 @@ struct StopBoardView: View {
                 state.failedTripDestinationIds.contains($0.id) ||
                 $0.id == state.temporaryDestination?.id
         }
-        // Side by side on a wide board, as many as fit at 320 pt or more each.
-        let columns = isWide ? max(1, Int(boardSize.width / 320)) : 1
         GeometryReader { body in
             VStack(spacing: gap) {
                 if !routes.isEmpty {
@@ -232,14 +230,18 @@ struct StopBoardView: View {
                     TimelineView(.periodic(from: .now, by: routeCardsTickSeconds)) { timeline in
                         BoardRouteCards(
                             state: state,
-                            viewModel: viewModel,
                             routes: routes,
-                            columns: columns,
-                            bodyHeight: body.size.height,
-                            gap: gap,
+                            width: body.size.width,
+                            maxHeight: max(0, body.size.height - gap - CGFloat(BoardLayout.shared.MIN_PANEL_HEIGHT_DP)),
                             nowMillis: Int64(timeline.date.timeIntervalSince1970 * 1000),
-                            onOpenTrip: { destinationId, trip in detailsTrip = TripSelection(destinationId: destinationId, trip: trip) },
-                            onMoreInDetails: { openRouteSearch(on: $0) }
+                            actions: RouteCardActions(
+                                onOpenTrip: { destinationId, trip in detailsTrip = TripSelection(destinationId: destinationId, trip: trip) },
+                                onToggleAlternatives: { viewModel.toggleRouteAlternatives(destinationId: $0) },
+                                onMoreInDetails: { openRouteSearch(on: $0) },
+                                onTimeChange: { viewModel.setTripTime(time: $0) },
+                                onSave: { viewModel.saveTemporaryDestination() },
+                                onDismissTemporary: { viewModel.dismissTemporaryDestination() }
+                            )
                         )
                     }
                 }

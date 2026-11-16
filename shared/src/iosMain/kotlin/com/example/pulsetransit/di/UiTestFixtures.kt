@@ -49,6 +49,24 @@ private val osloS = StopPlace(id = "NSR:StopPlace:337", name = "Oslo S", localit
 private val majorstuen =
     StopPlace(id = "NSR:StopPlace:58381", name = "Majorstuen", locality = "Oslo", latitude = 59.9297, longitude = 10.7155)
 
+/** The more destinations of [UiTestScenario.THREE]: one route with a train, one with three transfers. */
+private val lillestrom = StopPlace(id = "NSR:StopPlace:62339", name = "Lillestrøm stasjon", locality = "Lillestrøm")
+private val gardermoen = StopPlace(id = "NSR:StopPlace:58211", name = "Oslo lufthavn Gardermoen", locality = "Ullensaker")
+
+/**
+ * Which board the fixtures seed, from the launch argument -PTUITestScenario: by default one
+ * destination, Majorstuen; THREE also routes to Lillestrøm (a train) and Gardermoen (walk, bus 31,
+ * walk, metro 5, tram 17, walk, FLY1), for looking at the route cards' layouts.
+ */
+private enum class UiTestScenario { ONE, THREE }
+
+private fun uiTestScenario(): UiTestScenario =
+    if (NSUserDefaults.standardUserDefaults.stringForKey("PTUITestScenario").equals("three", ignoreCase = true)) {
+        UiTestScenario.THREE
+    } else {
+        UiTestScenario.ONE
+    }
+
 /** What any place search finds, so a test can add a second destination. */
 private val nationaltheatret =
     StopPlace(id = "NSR:StopPlace:58404", name = "Nationaltheatret", locality = "Oslo", latitude = 59.9147, longitude = 10.7312)
@@ -66,6 +84,14 @@ internal fun seedUiTestSettings(settings: SettingsRepository) {
     settings.setAppMode(AppMode.BOARD)
     settings.addFavorite(osloS)
     settings.addDestinationStation(majorstuen)
+    if (uiTestScenario() == UiTestScenario.THREE) {
+        settings.addDestinationStation(lillestrom)
+        settings.addDestinationStation(gardermoen)
+    }
+    // -PTUITestExpanded YES opens every card's alternatives, for looking at them.
+    if (NSUserDefaults.standardUserDefaults.boolForKey("PTUITestExpanded")) {
+        settings.getDestinationStations().forEach { settings.setRouteAlternativesShown(it.id, true) }
+    }
     settings.setShowWeather(false)
 }
 
@@ -155,6 +181,110 @@ private class FixtureEnturRepository(
 
     private val trip = route("5", 0)
 
+    /** One ride or walk of a fixture route: a line (null for a walk), its mode, from, to and minutes. */
+    private class Part(
+        val line: String?,
+        val mode: String,
+        val from: String,
+        val to: String,
+        val minutes: Int,
+        val platform: String? = null,
+    )
+
+    /** A route to [to] leaving [leave] minutes after launch, its [parts] end to end, a minute's wait before each ride. */
+    private fun routeOf(
+        to: StopPlace,
+        leave: Int,
+        parts: List<Part>,
+    ): TripInfo {
+        var minute = leave
+        val legs =
+            parts.map { part ->
+                if (part.line != null) minute += 1
+                val start = minute
+                minute += part.minutes
+                TripLeg(
+                    mode = part.mode,
+                    lineName = part.line,
+                    fromName = part.from,
+                    toName = part.to,
+                    durationMinutes = part.minutes,
+                    expectedStartTime = at(start),
+                    expectedEndTime = at(minute),
+                    aimedStartTime = at(start),
+                    isRealtime = part.line != null,
+                    platform = part.platform,
+                    destination = part.line?.let { to.name },
+                    serviceJourneyId = part.line?.let { "RUT:ServiceJourney:$it-$start" },
+                    serviceDate = part.line?.let { at(0).take(10) },
+                )
+            }
+        return TripInfo(
+            destinationName = to.name,
+            expectedStartTime = at(leave),
+            expectedEndTime = at(minute),
+            lineName = parts.firstOrNull { it.line != null }?.line ?: "?",
+            durationMinutes = minute - leave,
+            originName = osloS.name,
+            legs = legs,
+        )
+    }
+
+    private val lillestromRoutes =
+        listOf("R12" to 5, "R14" to 15, "R13" to 25, "RE11" to 35).map { (line, leave) ->
+            routeOf(
+                lillestrom,
+                leave,
+                listOf(Part(null, "foot", "Kirkegata", "Oslo S", 2), Part(line, "rail", "Oslo S", lillestrom.name, 11, platform = "11")),
+            )
+        }
+
+    private val gardermoenRoutes =
+        listOf(
+            routeOf(
+                gardermoen,
+                5,
+                listOf(
+                    Part(null, "foot", "Kirkegata", "Jernbanetorget", 4),
+                    Part("31", "bus", "Jernbanetorget", "Tøyen", 6, platform = "E"),
+                    Part(null, "foot", "Tøyen", "Tøyen", 3),
+                    Part("5", "metro", "Tøyen", "Storo", 9, platform = "1"),
+                    Part("17", "tram", "Storo", "Grefsen stasjon", 4),
+                    Part(null, "foot", "Grefsen", "Grefsen stasjon", 6),
+                    Part("FLY1", "airportRail", "Grefsen stasjon", gardermoen.name, 18, platform = "2"),
+                ),
+            ),
+            routeOf(
+                gardermoen,
+                16,
+                listOf(
+                    Part(null, "foot", "Kirkegata", "Stortorvet", 5),
+                    Part("37", "bus", "Stortorvet", "Carl Berners plass", 7, platform = "B"),
+                    Part("4", "metro", "Carl Berners plass", "Sinsen", 3),
+                    Part(null, "foot", "Sinsen", "Grefsen stasjon", 5),
+                    Part("FLY2", "airportRail", "Grefsen stasjon", gardermoen.name, 19, platform = "2"),
+                ),
+            ),
+            routeOf(
+                gardermoen,
+                24,
+                listOf(Part(null, "foot", "Kirkegata", "Oslo S", 4), Part("FLY1", "airportRail", "Oslo S", gardermoen.name, 22, platform = "13")),
+            ),
+            routeOf(
+                gardermoen,
+                35,
+                listOf(Part(null, "foot", "Kirkegata", "Oslo bussterminal", 2), Part("FB2", "coach", "Oslo bussterminal", gardermoen.name, 50, platform = "1")),
+            ),
+        )
+
+    /** Each destination's routes, best first. */
+    private fun routesTo(to: StopPlace): List<TripInfo> =
+        when (to.id) {
+            lillestrom.id -> lillestromRoutes
+            gardermoen.id -> gardermoenRoutes
+            else -> listOf(trip) + alternatives
+        }
+
     private val alternatives = ALTERNATIVE_LINES.mapIndexed { index, line -> route(line, (index + 1) * ALTERNATIVE_GAP_MINUTES) }
 
     private val metroStops =
@@ -212,14 +342,14 @@ private class FixtureEnturRepository(
         fromIds: List<String>,
         to: StopPlace,
         options: RouteOptions,
-    ): Sourced<TripInfo?> = Sourced.live(trip)
+    ): Sourced<TripInfo?> = Sourced.live(routesTo(to).first())
 
     override suspend fun getTripOptionsFromStops(
         fromIds: List<String>,
         to: StopPlace,
         count: Int,
         options: RouteOptions,
-    ): Sourced<List<TripInfo>> = Sourced.live((listOf(trip) + alternatives).take(count.coerceAtLeast(1)))
+    ): Sourced<List<TripInfo>> = Sourced.live(routesTo(to).take(count.coerceAtLeast(1)))
 
     override suspend fun getTripOptions(
         lat: Double,

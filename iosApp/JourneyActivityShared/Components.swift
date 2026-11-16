@@ -12,18 +12,25 @@ struct LinePill: View {
     /// The inline size used in route legs.
     var small = false
     var minWidth: CGFloat?
+    /// Scales the small pill as a whole, box and text, as a route card's larger type does.
+    var scale: CGFloat = 1
+
+    /// The small pill's text size before Dynamic Type, and its padding and height, at `scale` 1.
+    static let smallTextSize: CGFloat = 13
+    static let smallPadding: CGFloat = 6
+    static let smallHeight: CGFloat = 22
 
     var body: some View {
         Text(line)
-            .font(small ? .pulse(size: 13, weight: .bold, relativeTo: .footnote) : .pulse(role: FjordTokens.typePill, relativeTo: .subheadline))
+            .font(small ? .pulse(size: Self.smallTextSize * scale, weight: .bold, relativeTo: .footnote) : .pulse(role: FjordTokens.typePill, relativeTo: .subheadline))
             .strikethrough(cancelled)
             .foregroundColor(Palette.onLine)
             .lineLimit(1)
             .fixedSize()
-            .padding(.horizontal, small ? 6 : 4)
-            .frame(minWidth: minWidth ?? (small ? 0 : FjordTokens.pillW), minHeight: small ? 22 : 28)
+            .padding(.horizontal, small ? Self.smallPadding * scale : 4)
+            .frame(minWidth: minWidth ?? (small ? 0 : FjordTokens.pillW), minHeight: small ? Self.smallHeight * scale : 28)
             .background(
-                RoundedRectangle(cornerRadius: FjordTokens.radiusSm)
+                RoundedRectangle(cornerRadius: FjordTokens.radiusSm * (small ? scale : 1))
                     .fill(cancelled ? Palette.outline : Palette.transport(mode))
             )
             // Never narrower than its number: squeezed, the fill shrank under the text.

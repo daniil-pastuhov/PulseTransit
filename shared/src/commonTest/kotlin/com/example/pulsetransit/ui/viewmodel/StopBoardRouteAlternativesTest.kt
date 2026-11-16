@@ -4,7 +4,6 @@ import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.BoardRouteAlternatives
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.StopPlace
-import com.example.pulsetransit.data.VisibleAlternatives
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -180,37 +179,7 @@ class StopBoardRouteAlternativesTest : BoardTestBase() {
         }
 
     @Test
-    fun `the Then line shows on collapsed board cards and on open ones with no room`() =
-        boardTest {
-            settings.destinations = listOf(oslo)
-            entur.tripOptionsTo = { _, _ -> Sourced(List(4) { trip("Oslo S").copy(expectedStartTime = later) }) }
-            val vm = viewModel(virtualClock())
-            val now = virtualClock().now().toEpochMilliseconds()
-            val rows = VisibleAlternatives(shown = 2, hidden = 1)
-            val noRoom = VisibleAlternatives(shown = 0, hidden = 3, showsThenLine = true)
-
-            assertEquals(
-                2,
-                vm.uiState.value
-                    .routeThenLine(oslo.id, now, VisibleAlternatives(0, 0))
-                    .size,
-                "collapsed",
-            )
-
-            vm.toggleRouteAlternatives(oslo.id)
-
-            assertEquals(emptyList(), vm.uiState.value.routeThenLine(oslo.id, now, rows), "open, with its rows")
-            assertEquals(
-                2,
-                vm.uiState.value
-                    .routeThenLine(oslo.id, now, noRoom)
-                    .size,
-                "open, no room for a row",
-            )
-        }
-
-    @Test
-    fun `the searched-for destination's banner has no Then line or control`() =
+    fun `the searched-for destination's banner has no control`() =
         boardTest {
             settings.destinations = listOf(oslo)
             entur.tripOptionsTo = { to, _ -> Sourced(List(4) { trip(to.name).copy(expectedStartTime = later) }) }
@@ -225,7 +194,6 @@ class StopBoardRouteAlternativesTest : BoardTestBase() {
                 vm.uiState.value.fastestTrips[bergen.id]
                     ?.size,
             )
-            assertEquals(emptyList(), vm.uiState.value.routeThenLine(bergen.id, now, VisibleAlternatives(0, 0)))
             assertFalse(vm.uiState.value.canToggleRouteAlternatives(bergen.id, now))
         }
 
