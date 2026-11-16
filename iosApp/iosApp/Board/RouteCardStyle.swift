@@ -76,8 +76,9 @@ struct CardMeasurer {
 /// The type and sizes of one `RouteCardSize`: the card's text steps up with its width, and so do
 /// its line pills (`pillScale`), so a wall card is read across a room while a phone card stays
 /// tight. As Android's RouteCardMetrics: COMPACT clock 34, title 16, body 14; REGULAR clock 44,
-/// title 19, body 15; WIDE clock 56, title 22, body 17, caption 13, second clock 24; WALL clock 88,
-/// title 30, body 22, caption 17, second clock 34.
+/// title 19, body 15; WIDE clock 48, title 22, body 17, caption 13, second clock 24; WALL clock 56,
+/// title 24, body 18, caption 14, second clock 26. The leave clock stays smaller than the header's
+/// clock on a wide board (64 pt).
 struct RouteCardMetrics {
     var padH: CGFloat
     var padV: CGFloat
@@ -126,16 +127,16 @@ struct RouteCardMetrics {
         case .wide:
             return RouteCardMetrics(
                 padH: FjordTokens.space6, padV: FjordTokens.space4, gap: FjordTokens.space6,
-                clock: bold(56, .largeTitle), title: semibold(22, .headline), body: regular(17), caption: caption(13),
-                secondClock: bold(24, .title3), lineClock: bold(32, .title), label: label,
+                clock: bold(48, .largeTitle), title: semibold(22, .headline), body: regular(17), caption: caption(13),
+                secondClock: bold(24, .title3), lineClock: bold(30, .title), label: label,
                 pillScale: 1.25, icon: 20, track: 6, perMinute: 34, footer: 56
             )
         case .wall:
             return RouteCardMetrics(
-                padH: FjordTokens.space8, padV: FjordTokens.space5, gap: FjordTokens.space8,
-                clock: bold(88, .largeTitle), title: semibold(30, .headline), body: regular(22), caption: caption(17),
-                secondClock: bold(34, .title3), lineClock: bold(44, .title), label: label,
-                pillScale: 1.7, icon: 28, track: 10, perMinute: 44, footer: 64
+                padH: FjordTokens.space6, padV: FjordTokens.space4, gap: FjordTokens.space6,
+                clock: bold(56, .largeTitle), title: semibold(24, .headline), body: regular(18), caption: caption(14),
+                secondClock: bold(26, .title3), lineClock: bold(34, .title), label: label,
+                pillScale: 1.35, icon: 22, track: 8, perMinute: 38, footer: 60
             )
         }
     }

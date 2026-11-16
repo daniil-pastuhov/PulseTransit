@@ -87,8 +87,9 @@ internal data class RouteCardMetrics(
 /**
  * The metrics of each size class. Type sizes in sp, line heights after them: COMPACT clock 34/38,
  * title titleMedium, body bodyMedium; REGULAR clock 44/48, title titleLarge, body 15/22; WIDE clock
- * 56/60, title 22/28, body 17/24, caption 13/18, second clock 24/28; WALL clock 88/92, title 30/36,
- * body 22/30, caption 17/22, second clock 34/40.
+ * 48/52, title 22/28, body 17/24, caption 13/18, second clock 24/28; WALL clock 56/60, title 24/30,
+ * body 18/26, caption 14/18, second clock 26/30. The leave clock stays smaller than the header's
+ * clock on a wide board (64sp): the board's own clock is the largest thing on it.
  */
 @Composable
 internal fun routeCardMetrics(size: RouteCardSize): RouteCardMetrics {
@@ -139,7 +140,7 @@ internal fun routeCardMetrics(size: RouteCardSize): RouteCardMetrics {
                 padH = FjordDimens.space6,
                 padV = FjordDimens.space4,
                 gap = FjordDimens.space6,
-                clock = bold.sized(56, 60),
+                clock = bold.sized(48, 52),
                 title = typography.titleLarge.sized(22, 28),
                 body = typography.bodyMedium.sized(17, 24),
                 caption = typography.labelSmall.sized(13, 18),
@@ -149,24 +150,24 @@ internal fun routeCardMetrics(size: RouteCardSize): RouteCardMetrics {
                 track = 6.dp,
                 perMinute = 34f,
                 footer = 56.dp,
-                lineClock = bold.sized(32, 36),
+                lineClock = bold.sized(30, 34),
             )
         RouteCardSize.WALL ->
             RouteCardMetrics(
-                padH = FjordDimens.space8,
-                padV = FjordDimens.space5,
-                gap = FjordDimens.space8,
-                clock = bold.sized(88, 92),
-                title = typography.titleLarge.sized(30, 36),
-                body = typography.bodyMedium.sized(22, 30),
-                caption = typography.labelSmall.sized(17, 22),
-                secondClock = bold.sized(34, 40),
-                pillScale = 1.7f,
-                icon = 28.dp,
-                track = 10.dp,
-                perMinute = 44f,
-                footer = 64.dp,
-                lineClock = bold.sized(44, 48),
+                padH = FjordDimens.space6,
+                padV = FjordDimens.space4,
+                gap = FjordDimens.space6,
+                clock = bold.sized(56, 60),
+                title = typography.titleLarge.sized(24, 30),
+                body = typography.bodyMedium.sized(18, 26),
+                caption = typography.labelSmall.sized(14, 18),
+                secondClock = bold.sized(26, 30),
+                pillScale = 1.35f,
+                icon = 22.dp,
+                track = 8.dp,
+                perMinute = 38f,
+                footer = 60.dp,
+                lineClock = bold.sized(34, 38),
             )
     }
 }
