@@ -31,14 +31,19 @@ import kotlin.time.Instant
 /*
  * Fixed data for the iOS UI tests, used when the debug app is launched with -PTUITest YES: a board
  * at Oslo S with one route to Majorstuen that starts a minute after launch, so its first journey
- * alert is due at once. Nothing reaches the network, and settings live in their own store, so the
- * tests start from a known state and never touch the user's.
+ * alert is due at once, and on the wall board later ones as its alternatives. Nothing reaches the
+ * network, and settings live in their own store, so the tests start from a known state and never
+ * touch the user's.
  */
 
 private const val SUITE = "com.homieapps.pulsetransit.uitest"
 private const val MINUTE = 60_000L
 private const val DEPARTURE_COUNT = 4
 private const val DEPARTURE_GAP_MINUTES = 3
+
+/** The metro lines of the board's alternatives to Majorstuen, [ALTERNATIVE_GAP_MINUTES] apart after the first route. */
+private val ALTERNATIVE_LINES = listOf("3", "2", "5")
+private const val ALTERNATIVE_GAP_MINUTES = 3
 
 private val osloS = StopPlace(id = "NSR:StopPlace:337", name = "Oslo S", locality = "Oslo", latitude = 59.9111, longitude = 10.7528)
 private val majorstuen =
@@ -79,19 +84,22 @@ private fun iso(millis: Long): String {
 
 /**
  * Oslo S to Majorstuen, timed from [base]: walk 2 min to Jernbanetorget from base + 1 min, metro 5
- * from base + 4 min to base + 10 min, then walk 3 min to the destination.
+ * from base + 4 min to base + 10 min, then walk 3 min to the destination. The alternatives are the
+ * same journey later, on other lines.
  */
 private class FixtureEnturRepository(
     private val base: Long,
 ) : EnturRepository {
     private fun at(minutes: Int) = iso(base + minutes * MINUTE)
 
-    private val trip =
+    /** The journey with the metro on [line], later minutes after the first route. */
+    private val route: (line: String, later: Int) -> TripInfo = { line, later ->
+        fun at(minutes: Int) = iso(base + (minutes + later) * MINUTE)
         TripInfo(
             destinationName = majorstuen.name,
             expectedStartTime = at(1),
             expectedEndTime = at(13),
-            lineName = "5",
+            lineName = line,
             durationMinutes = 12,
             originName = "Jernbanetorget",
             legs =
@@ -109,7 +117,7 @@ private class FixtureEnturRepository(
                     ),
                     TripLeg(
                         mode = "metro",
-                        lineName = "5",
+                        lineName = line,
                         fromName = "Jernbanetorget",
                         toName = "Majorstuen",
                         durationMinutes = 6,
@@ -119,7 +127,7 @@ private class FixtureEnturRepository(
                         isRealtime = true,
                         platform = "2",
                         destination = "Vestli",
-                        serviceJourneyId = "RUT:ServiceJourney:5",
+                        serviceJourneyId = if (later == 0) "RUT:ServiceJourney:5" else "RUT:ServiceJourney:$line-$later",
                         serviceDate = at(0).take(10),
                         fromQuayId = "NSR:Quay:1",
                         toQuayId = "NSR:Quay:4",
@@ -143,6 +151,11 @@ private class FixtureEnturRepository(
                     ),
                 ),
         )
+    }
+
+    private val trip = route("5", 0)
+
+    private val alternatives = ALTERNATIVE_LINES.mapIndexed { index, line -> route(line, (index + 1) * ALTERNATIVE_GAP_MINUTES) }
 
     private val metroStops =
         listOf(
@@ -200,6 +213,13 @@ private class FixtureEnturRepository(
         to: StopPlace,
         options: RouteOptions,
     ): Sourced<TripInfo?> = Sourced.live(trip)
+
+    override suspend fun getTripOptionsFromStops(
+        fromIds: List<String>,
+        to: StopPlace,
+        count: Int,
+        options: RouteOptions,
+    ): Sourced<List<TripInfo>> = Sourced.live((listOf(trip) + alternatives).take(count.coerceAtLeast(1)))
 
     override suspend fun getTripOptions(
         lat: Double,

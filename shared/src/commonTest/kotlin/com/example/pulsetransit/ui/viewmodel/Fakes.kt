@@ -97,6 +97,14 @@ class FakeEnturRepository : EnturRepository {
     var lastFastestTripCoords: Pair<Double, Double>? = null
     var lastTripOptionsCount: Int? = null
 
+    /** The count the last route from the favourites ([getTripOptionsFromStops]) asked for. */
+    var lastTripOptionsFromStopsCount: Int? = null
+
+    /** Route alternatives from the favourites; defaults to the single [tripTo] answer. */
+    var tripOptionsFromStopsTo: (StopPlace, Int) -> Sourced<List<TripInfo>> = { to, _ ->
+        tripTo(to).let { Sourced(listOfNotNull(it.data), it.fetchedAtMillis, it.failed) }
+    }
+
     /** Route alternatives by coordinates; defaults to the single [tripTo] answer. */
     var tripOptionsTo: (StopPlace, Int) -> Sourced<List<TripInfo>> = { to, _ ->
         tripTo(to).let { Sourced(listOfNotNull(it.data), it.fetchedAtMillis, it.failed) }
@@ -191,6 +199,22 @@ class FakeEnturRepository : EnturRepository {
         routeOptionsTo[to.id] = options
         lastFastestTripFromIds = fromIds
         val result = tripTo(to)
+        latency(tripDelayMillis(to))
+        return result
+    }
+
+    override suspend fun getTripOptionsFromStops(
+        fromIds: List<String>,
+        to: StopPlace,
+        count: Int,
+        options: RouteOptions,
+    ): Sourced<List<TripInfo>> {
+        tripCalls++
+        lastRouteOptions = options
+        routeOptionsTo[to.id] = options
+        lastFastestTripFromIds = fromIds
+        lastTripOptionsFromStopsCount = count
+        val result = tripOptionsFromStopsTo(to, count)
         latency(tripDelayMillis(to))
         return result
     }
@@ -561,6 +585,18 @@ class FakeSettingsRepository : SettingsRepository {
     override fun removeDestinationStation(stopId: String) {
         destinations = destinations.filter { it.id != stopId }
         schedules = schedules - stopId
+        alternativesShown = alternativesShown - stopId
+    }
+
+    var alternativesShown = setOf<String>()
+
+    override fun getRouteAlternativesShownIds() = alternativesShown
+
+    override fun setRouteAlternativesShown(
+        destinationId: String,
+        shown: Boolean,
+    ) {
+        alternativesShown = if (shown) alternativesShown + destinationId else alternativesShown - destinationId
     }
 
     override fun reorderDestinationStations(stopIds: List<String>) {

@@ -471,34 +471,46 @@ private fun DestinationsSection(
                 shadowElevation = if (isDragging) 4.dp else 0.dp,
             ) {
                 val schedule = state.destinationSchedules[destination.id]
-                Row(
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = FjordDimens.touch)
-                            .clickable(onClickLabel = stringResource(Res.string.schedule_edit, destination.name)) { editingSchedule = destination }
-                            .padding(end = FjordDimens.space1),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (destinations.size > 1) {
-                        Box(modifier = dragHandle.size(FjordDimens.touch), contentAlignment = Alignment.Center) {
-                            Icon(PulseIcons.DragIndicator, contentDescription = stringResource(Res.string.drag_to_reorder), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column {
+                    Row(
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = FjordDimens.touch)
+                                .clickable(onClickLabel = stringResource(Res.string.schedule_edit, destination.name)) { editingSchedule = destination }
+                                .padding(end = FjordDimens.space1),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (destinations.size > 1) {
+                            Box(modifier = dragHandle.size(FjordDimens.touch), contentAlignment = Alignment.Center) {
+                                Icon(PulseIcons.DragIndicator, contentDescription = stringResource(Res.string.drag_to_reorder), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        } else {
+                            Spacer(Modifier.width(FjordDimens.space4))
                         }
-                    } else {
-                        Spacer(Modifier.width(FjordDimens.space4))
-                    }
-                    PlaceKindIcon(destination.kind)
-                    Spacer(Modifier.width(FjordDimens.space3))
-                    Column(modifier = Modifier.weight(1f).padding(vertical = FjordDimens.space2)) {
-                        Text(destination.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space1)) {
-                            val color = if (schedule != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                            Icon(PulseIcons.Schedule, contentDescription = null, modifier = Modifier.size(14.dp), tint = color)
-                            Text(scheduleSummary(schedule), style = MaterialTheme.typography.bodyMedium, color = color)
+                        PlaceKindIcon(destination.kind)
+                        Spacer(Modifier.width(FjordDimens.space3))
+                        Column(modifier = Modifier.weight(1f).padding(vertical = FjordDimens.space2)) {
+                            Text(destination.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(FjordDimens.space1)) {
+                                val color = if (schedule != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                Icon(PulseIcons.Schedule, contentDescription = null, modifier = Modifier.size(14.dp), tint = color)
+                                Text(scheduleSummary(schedule), style = MaterialTheme.typography.bodyMedium, color = color)
+                            }
+                        }
+                        IconButton(onClick = { viewModel.removeDestinationStation(destination.id) }) {
+                            Icon(PulseIcons.Delete, contentDescription = stringResource(Res.string.remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    IconButton(onClick = { viewModel.removeDestinationStation(destination.id) }) {
-                        Icon(PulseIcons.Delete, contentDescription = stringResource(Res.string.remove), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (isBoard) {
+                        // The same choice as the card's "N more" on the board, so a wall display can be
+                        // set up without touching it.
+                        SettingSwitch(
+                            title = stringResource(Res.string.show_alternatives_on_board),
+                            checked = destination.id in state.routeAlternativesShownIds,
+                            onCheckedChange = { viewModel.setRouteAlternativesShown(destination.id, it) },
+                            modifier = Modifier.padding(start = FjordDimens.touch),
+                        )
                     }
                 }
             }

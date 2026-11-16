@@ -708,9 +708,12 @@ private fun DestinationRoutesCard(
     }
 }
 
-/** One alternative: "19:41 in 4 min", the legs, then how long it takes and when it arrives. */
+/**
+ * One alternative: "19:41 in 4 min", the legs, then how long it takes and when it arrives. Also
+ * the rows of an expanded route card on the wall board.
+ */
 @Composable
-private fun TripOptionRow(
+internal fun TripOptionRow(
     trip: TripInfo,
     isFirst: Boolean,
     onClick: () -> Unit,

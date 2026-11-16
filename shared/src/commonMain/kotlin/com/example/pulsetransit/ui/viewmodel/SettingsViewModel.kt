@@ -119,6 +119,8 @@ class SettingsViewModel(
         val destinationStations: List<StopPlace> = emptyList(),
         /** When each destination is shown, by id; one without a schedule always is. */
         val destinationSchedules: Map<String, DestinationSchedule> = emptyMap(),
+        /** Board mode: the destinations whose card lists its alternatives on the board, by id. */
+        val routeAlternativesShownIds: Set<String> = emptySet(),
         val destinationQuery: String = "",
         val destinationResults: List<StopPlace> = emptyList(),
         val isSearchingDestination: Boolean = false,
@@ -197,6 +199,7 @@ class SettingsViewModel(
                 isAlwaysOnEnabled = settingsRepository.isAlwaysOnEnabled(),
                 destinationStations = settingsRepository.getDestinationStations(),
                 destinationSchedules = settingsRepository.getDestinationSchedules(),
+                routeAlternativesShownIds = settingsRepository.getRouteAlternativesShownIds(),
                 filteredLines = settingsRepository.getFilteredLines(),
             )
         }
@@ -666,8 +669,21 @@ class SettingsViewModel(
             it.copy(
                 destinationStations = settingsRepository.getDestinationStations(),
                 destinationSchedules = settingsRepository.getDestinationSchedules(),
+                routeAlternativesShownIds = settingsRepository.getRouteAlternativesShownIds(),
             )
         }
+    }
+
+    /**
+     * Board mode: whether [destinationId]'s card lists its alternatives on the board, the same
+     * choice as its "N more" / "Fewer" there, so a wall board can be set up from here.
+     */
+    fun setRouteAlternativesShown(
+        destinationId: String,
+        shown: Boolean,
+    ) {
+        settingsRepository.setRouteAlternativesShown(destinationId, shown)
+        _uiState.update { it.copy(routeAlternativesShownIds = settingsRepository.getRouteAlternativesShownIds()) }
     }
 
     /** Sets when [destinationId]'s route is shown; null shows it always. */

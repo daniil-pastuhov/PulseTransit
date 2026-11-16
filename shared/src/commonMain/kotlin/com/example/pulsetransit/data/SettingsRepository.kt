@@ -189,7 +189,7 @@ interface SettingsRepository {
 
     fun addDestinationStation(stopPlace: StopPlace)
 
-    /** Also forgets the destination's schedule. */
+    /** Also forgets the destination's schedule and whether its alternatives were shown. */
     fun removeDestinationStation(stopId: String)
 
     /**
@@ -198,6 +198,19 @@ interface SettingsRepository {
      * after the others, so a stale list can reorder but never drop one.
      */
     fun reorderDestinationStations(stopIds: List<String>)
+
+    /**
+     * Board mode: the saved destinations whose route card shows its alternatives below the banner
+     * ("N more" tapped, or the switch in Settings > Destinations). Empty unless chosen; a removed
+     * destination is dropped from it.
+     */
+    fun getRouteAlternativesShownIds(): Set<String>
+
+    /** Shows or hides [destinationId]'s alternatives on the board; see [getRouteAlternativesShownIds]. */
+    fun setRouteAlternativesShown(
+        destinationId: String,
+        shown: Boolean,
+    )
 
     /** Schedules by destination id; a destination without one is always shown. */
     fun getDestinationSchedules(): Map<String, DestinationSchedule>

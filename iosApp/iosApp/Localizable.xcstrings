@@ -5051,6 +5051,40 @@
         }
       }
     },
+    "route_fewer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fewer"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Færre"
+          }
+        }
+      }
+    },
+    "route_fewer_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show fewer routes to %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis færre reiser til %1$@"
+          }
+        }
+      }
+    },
     "route_from_board": {
       "extractionState": "manual",
       "localizations": {
@@ -5510,6 +5544,81 @@
         }
       }
     },
+    "route_more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld more"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld more"
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld til"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld til"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "route_more_description": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show more routes to %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis flere reiser til %1$@"
+          }
+        }
+      }
+    },
+    "route_more_in_details": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%1$lld in details"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+%1$lld i detaljer"
+          }
+        }
+      }
+    },
     "route_no_places_hint": {
       "extractionState": "manual",
       "localizations": {
@@ -5693,6 +5802,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rutesøk"
+          }
+        }
+      }
+    },
+    "route_then": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Then"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neste"
           }
         }
       }
@@ -7713,6 +7839,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Innstillinger"
+          }
+        }
+      }
+    },
+    "show_alternatives_on_board": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show alternatives on the board"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vis alternativer på tavla"
           }
         }
       }

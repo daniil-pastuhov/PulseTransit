@@ -322,25 +322,41 @@ private struct DestinationsSection: View {
         }) {
             ForEach(state.destinationStations, id: \.id) { destination in
                 let schedule = state.destinationSchedules[destination.id]
-                Button { editing = destination } label: {
-                    HStack {
-                        PlaceKindIcon(kind: destination.kind)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(destination.name).font(.pulse(.body)).foregroundColor(Palette.textPrimary)
-                            // An HStack rather than a Label: inside a Form, a Label's icon gets a
-                            // fixed-width column that pushes the text away from it.
-                            HStack(spacing: 4) {
-                                Image(systemName: "clock").accessibilityHidden(true)
-                                Text(scheduleSummary(schedule))
+                VStack(alignment: .leading, spacing: 0) {
+                    Button { editing = destination } label: {
+                        HStack {
+                            PlaceKindIcon(kind: destination.kind)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(destination.name).font(.pulse(.body)).foregroundColor(Palette.textPrimary)
+                                // An HStack rather than a Label: inside a Form, a Label's icon gets a
+                                // fixed-width column that pushes the text away from it.
+                                HStack(spacing: 4) {
+                                    Image(systemName: "clock").accessibilityHidden(true)
+                                    Text(scheduleSummary(schedule))
+                                }
+                                .font(.pulse(.footnote))
+                                .foregroundColor(schedule == nil ? Palette.textSecondary : Palette.primary)
                             }
-                            .font(.pulse(.footnote))
-                            .foregroundColor(schedule == nil ? Palette.textSecondary : Palette.primary)
+                            Spacer()
                         }
-                        Spacer()
+                        .contentShape(Rectangle())
                     }
-                    .contentShape(Rectangle())
+                    .accessibilityHint(L("schedule_edit", destination.name))
+                    // Borderless, so a tap on the switch below does not also open the schedule.
+                    .buttonStyle(.borderless)
+                    if isBoard {
+                        // The same choice as the card's "N more" on the board, so a wall display can be
+                        // set up without touching it.
+                        SettingToggle(
+                            title: L("show_alternatives_on_board"),
+                            isOn: state.routeAlternativesShownIds.contains(destination.id)
+                        ) { viewModel.setRouteAlternativesShown(destinationId: destination.id, shown: $0) }
+                        // In line with the destination's name, past its icon.
+                        .padding(.leading, FjordTokens.space8)
+                        .padding(.top, FjordTokens.space2)
+                        .accessibilityIdentifier("settings.destination.alternatives")
+                    }
                 }
-                .accessibilityHint(L("schedule_edit", destination.name))
                 .deleteDisabled(reordering != nil)
             }
             .onMove { sources, destination in

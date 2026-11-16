@@ -1,9 +1,9 @@
 import Shared
 import SwiftUI
 
-// The fastest-route cards above the stops, as on Android (RouteBanners.kt): "Leave 19:40 | Fastest
-// to X, walk 9 min → FLY2 from Oslo S | 28 min, arr. 20:08", in the `route` colours, which stay
-// dark on the wall at night. A route that failed or found nothing keeps its slot as a muted card.
+// The fastest-route cards above the stops, as on Android (RouteBanners.kt): "Leave 19:40, 28 min,
+// arr. 20:08 | Fastest to X, walk 9 min → FLY2 from Oslo S", the times in one narrow column so the
+// title and legs get the width, in the `route` colours, which stay dark on the wall at night. A route that failed or found nothing keeps its slot as a muted card.
 
 /// A route card's frame: the route colours (or muted), rounded, at least a touch target high.
 private struct RouteCardFrame: ViewModifier {
@@ -21,14 +21,21 @@ private struct RouteCardFrame: ViewModifier {
     }
 }
 
-/// The next fastest journey to one destination; tap to open its details.
+/// The next fastest journey to one destination; tap to open its details. On the wall board it may
+/// also name the next alternatives (`thenLine`, under the legs) and end with `toggle`, which opens
+/// or closes them below it, as on Android.
 struct FastestTripBanner: View {
     let trip: TripInfo
     var isRefreshing = false
+    var thenLine: [ThenLineEntry] = []
+    var toggle: RouteAlternativesToggle?
     let onTap: () -> Void
 
     /// The card's width, for whether it stacks its title (`BoardLayout.isCompactBanner`).
     @State private var width: CGFloat = .infinity
+    /// How much larger than the default the text is: larger text needs the width a narrower card
+    /// has, so past it the title goes under the times, as on Android with its font scale.
+    @ScaledMetric(relativeTo: .body) private var textScale: CGFloat = 1
 
     private var leave: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -48,13 +55,17 @@ struct FastestTripBanner: View {
                 .font(.pulse(.callout, weight: .semibold))
                 .lineLimit(2)
             TripLegs(trip: trip, color: Palette.onRoute, maxLines: 2)
+            if !thenLine.isEmpty {
+                RouteThenLine(entries: thenLine)
+            }
         }
         .foregroundColor(Palette.onRoute)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var duration: some View {
-        VStack(alignment: .trailing, spacing: 0) {
+    /// "28 min" over "arr. 20:08", under the leave clock or, stacked, across from it.
+    private func duration(alignment: HorizontalAlignment) -> some View {
+        VStack(alignment: alignment, spacing: 0) {
             Text(tripDuration(trip.durationMinutes))
                 .font(.pulse(.subheadline, weight: .semibold))
             if let arrival = TripArrivalKt.tripArrival(trip: trip) {
@@ -68,25 +79,39 @@ struct FastestTripBanner: View {
         .fixedSize()
     }
 
-    var body: some View {
-        Group {
-            if BoardLayout.shared.isCompactBanner(widthDp: Float(width)) {
-                // Too narrow for three columns: the title and legs go under the times.
-                VStack(alignment: .leading, spacing: FjordTokens.space2) {
-                    HStack(alignment: .top) {
-                        leave
-                        Spacer()
-                        duration
-                    }
-                    titleAndLegs
-                }
-            } else {
-                HStack(spacing: FjordTokens.space3) {
-                    leave
-                    titleAndLegs
-                    duration
-                }
+    /// A stacked banner's times: the leave clock and, across from it, the duration, or under it when
+    /// both do not fit (large text), so neither clock is cut short.
+    @ViewBuilder
+    private var stackedTimes: some View {
+        let aside = HStack(alignment: .top, spacing: 0) {
+            leave.fixedSize()
+            Spacer(minLength: FjordTokens.space3)
+            duration(alignment: .trailing)
+        }
+        let below = VStack(alignment: .leading, spacing: FjordTokens.space1) {
+            leave
+            duration(alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        if #available(iOS 16, *) {
+            ViewThatFits(in: .horizontal) {
+                aside
+                below
             }
+        } else {
+            aside
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: FjordTokens.space2) {
+            content
+                // Read as one button that opens the route's details, by VoiceOver and the UI tests;
+                // the toggle beside it is a button of its own.
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("fastestTrip")
+            toggle
         }
         .modifier(RouteCardFrame())
         .background(GeometryReader { geometry in
@@ -94,17 +119,189 @@ struct FastestTripBanner: View {
                 .onAppear { width = geometry.size.width }
                 .onChange(of: geometry.size.width) { width = $0 }
         })
+        // The whole card opens the details; the toggle's own taps go to the toggle.
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
-        // Read as one button that opens the route's details, by VoiceOver and the UI tests.
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityIdentifier("fastestTrip")
         .overlay(alignment: .bottom) {
             if isRefreshing {
                 RefreshBar(color: Palette.onRoute.opacity(0.6)).padding(.horizontal, FjordTokens.radiusLg)
             }
         }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        Group {
+            if BoardLayout.shared.isCompactBanner(widthDp: Float(width / max(1, textScale))) {
+                // Too narrow for three columns: the title and legs go under the times.
+                VStack(alignment: .leading, spacing: FjordTokens.space2) {
+                    stackedTimes
+                    titleAndLegs
+                }
+            } else {
+                // The times under the leave clock, so the title, legs and "Then" line get the width;
+                // the two columns start level, the toggle beside them stays centred.
+                HStack(alignment: .top, spacing: FjordTokens.space3) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        leave
+                        duration(alignment: .leading)
+                    }
+                    .fixedSize()
+                    titleAndLegs
+                }
+            }
+        }
+    }
+}
+
+/// The collapsed board banner's "Then 08:16 [3] · 08:19 [5]": the next alternatives
+/// (`UiState.routeThenLine`) by departure clock and the line of their first ride, on one line. As
+/// many entries as fit are shown, whole and in order, and none when not even the first fits: a
+/// clock is never cut short. Android does the same.
+struct RouteThenLine: View {
+    let entries: [ThenLineEntry]
+
+    var body: some View {
+        Group {
+            if #available(iOS 16, *) {
+                ViewThatFits(in: .horizontal) {
+                    ForEach(Array(stride(from: entries.count, to: 0, by: -1)), id: \.self) { count in
+                        ThenLineRow(entries: Array(entries.prefix(count)))
+                    }
+                    Color.clear.frame(width: 0, height: 0)
+                }
+            } else {
+                MeasuredThenLine(entries: entries)
+            }
+        }
+        .foregroundColor(Palette.onRoute)
+        // "Then 08:16 3, 08:19 5", read as part of the banner.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            L("route_then") + " " + entries.map { [$0.clock, $0.lineName].compactMap { $0 }.joined(separator: " ") }.joined(separator: ", ")
+        )
+    }
+}
+
+/// "Then" and `entries` at their natural width, never wrapped or truncated.
+private struct ThenLineRow: View {
+    let entries: [ThenLineEntry]
+
+    var body: some View {
+        HStack(spacing: FjordTokens.space1) {
+            Text(L("route_then")).font(.pulse(.caption))
+            ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                if index > 0 { Text("·").font(.pulse(.caption)) }
+                Text(entry.clock).font(.pulse(.subheadline, weight: .semibold))
+                if let line = entry.lineName {
+                    LinePill(line: line, mode: entry.mode, small: true)
+                }
+            }
+        }
+        .lineLimit(1)
+        .fixedSize()
+    }
+}
+
+/// iOS 15's `RouteThenLine`, which has no `ViewThatFits`: measures each prefix of `entries` out
+/// of sight and shows the longest that fits the width it has, or nothing.
+private struct MeasuredThenLine: View {
+    let entries: [ThenLineEntry]
+
+    @State private var available: CGFloat = 0
+    @State private var widths: [Int: CGFloat] = [:]
+
+    var body: some View {
+        let counts = Array(1 ... max(1, entries.count))
+        let fitting = counts.last { $0 <= entries.count && (widths[$0] ?? .infinity) <= available } ?? 0
+        ZStack(alignment: .leading) {
+            if fitting > 0 {
+                ThenLineRow(entries: Array(entries.prefix(fitting)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(GeometryReader { geometry in
+            Color.clear.preference(key: ThenLineAvailableKey.self, value: geometry.size.width)
+        })
+        .background(alignment: .leading) {
+            ZStack(alignment: .leading) {
+                ForEach(counts.filter { $0 <= entries.count }, id: \.self) { count in
+                    ThenLineRow(entries: Array(entries.prefix(count)))
+                        .background(GeometryReader { geometry in
+                            Color.clear.preference(key: ThenLineWidthsKey.self, value: [count: geometry.size.width])
+                        })
+                }
+            }
+            .hidden()
+            .accessibilityHidden(true)
+        }
+        .onPreferenceChange(ThenLineAvailableKey.self) { available = $0 }
+        .onPreferenceChange(ThenLineWidthsKey.self) { widths = $0 }
+    }
+}
+
+private struct ThenLineAvailableKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+private struct ThenLineWidthsKey: PreferenceKey {
+    static var defaultValue: [Int: CGFloat] = [:]
+    static func reduce(value: inout [Int: CGFloat], nextValue: () -> [Int: CGFloat]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+/// The board banner's "3 more" / "Fewer", in its trailing slot: opens or closes the alternatives
+/// below it. `count` is how many there are to open.
+struct RouteAlternativesToggle: View {
+    let count: Int
+    let expanded: Bool
+    let destinationName: String
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 0) {
+                Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                    .font(.pulse(.subheadline, weight: .semibold))
+                Text(expanded ? L("route_fewer") : L("route_more", count))
+                    .font(.pulse(.caption))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .foregroundColor(Palette.onRoute)
+            .frame(minWidth: FjordTokens.touch, minHeight: FjordTokens.touch)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L(expanded ? "route_fewer_description" : "route_more_description", destinationName))
+        .accessibilityIdentifier("routeAlternatives.toggle")
+    }
+}
+
+/// The last row of an expanded card short of room: "+2 in details", which opens the route search
+/// on that destination's routes, every one of them.
+struct RouteMoreInDetailsRow: View {
+    let hidden: Int
+    let onTap: () -> Void
+
+    var body: some View {
+        HStack {
+            Text(L("route_more_in_details", hidden))
+                .font(.pulse(.subheadline, weight: .semibold))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "chevron.right").font(.pulse(.subheadline)).accessibilityHidden(true)
+        }
+        .foregroundColor(Palette.onRoute)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .frame(minHeight: FjordTokens.touch)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityIdentifier("routeAlternatives.more")
     }
 }
 

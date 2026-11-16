@@ -696,6 +696,7 @@ class EnturRepositoryImpl(
         val now = clock.now().toEpochMilliseconds()
         val routeKey = routeKey(lat, lon, to.id) + options.cacheKeySuffix
         val wanted = count.coerceAtLeast(1)
+        val fetched = cachedRouteCount(wanted)
 
         val queryStr =
             """
@@ -718,7 +719,7 @@ class EnturRepositoryImpl(
                     put("lat", lat)
                     put("lon", lon)
                     put("to", to.toTripLocation())
-                    putRouteOptions(options, wanted, lineIdLookup.lineIds(options.bannedLines))
+                    putRouteOptions(options, fetched, lineIdLookup.lineIds(options.bannedLines))
                 }
             val response: GraphQLResponse<TripData> =
                 client
@@ -737,14 +738,14 @@ class EnturRepositoryImpl(
                     .notLeftBefore(now, options)
                     .withoutBeatenWalks(options.time.isArriveBy)
                     .rankedBy(options.preference, options.time.isArriveBy)
-                    .take(wanted)
+                    .take(fetched)
             if (trips.isEmpty()) {
                 return Sourced(emptyList())
             }
 
             tripCache.replaceRoute(routeKey, trips.mapIndexed { index, trip -> trip.toCacheEntity(routeKey, index, now) })
             tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
-            Sourced.live(trips)
+            Sourced.live(trips.take(wanted))
         } catch (e: Exception) {
             e.printStackTrace()
             val cached = tripCache.getUpcoming(routeKey, now)
@@ -756,18 +757,30 @@ class EnturRepositoryImpl(
         }
     }
 
-    // Length here is the inlined GraphQL query string, not branching logic.
-    @Suppress("LongMethod")
     override suspend fun getFastestTrip(
         fromIds: List<String>,
         to: StopPlace,
         options: RouteOptions,
     ): Sourced<TripInfo?> {
-        if (fromIds.isEmpty()) return Sourced(null)
+        val trips = getTripOptionsFromStops(fromIds = fromIds, to = to, count = 1, options = options)
+        return Sourced(trips.data.firstOrNull(), trips.fetchedAtMillis, trips.failed)
+    }
+
+    // Length here is the inlined GraphQL query string, not branching logic.
+    @Suppress("LongMethod")
+    override suspend fun getTripOptionsFromStops(
+        fromIds: List<String>,
+        to: StopPlace,
+        count: Int,
+        options: RouteOptions,
+    ): Sourced<List<TripInfo>> {
+        if (fromIds.isEmpty()) return Sourced(emptyList())
 
         val now = clock.now().toEpochMilliseconds()
         val routeKey = routeKey(fromIds, to.id) + options.cacheKeySuffix
-        // The best route from each origin that has one.
+        val wanted = count.coerceAtLeast(1)
+        val fetched = cachedRouteCount(wanted)
+        // The best [fetched] routes from each origin that has any, each origin's best first.
         val bestByOrigin = mutableListOf<TripInfo>()
         // Tracked so that "every origin failed" falls back to the cache, while "the API answered
         // but found no trips" is reported honestly as no trips.
@@ -794,7 +807,7 @@ class EnturRepositoryImpl(
                     buildJsonObject {
                         put("from", fromId)
                         put("to", to.toTripLocation())
-                        putRouteOptions(options, wanted = 1, lineIdLookup.lineIds(options.bannedLines))
+                        putRouteOptions(options, fetched, lineIdLookup.lineIds(options.bannedLines))
                     }
                 val response: GraphQLResponse<TripData> =
                     client
@@ -804,7 +817,7 @@ class EnturRepositoryImpl(
                             setBody(GraphQLRequest(queryStr, variables))
                         }.body()
 
-                val best =
+                bestByOrigin +=
                     response.data
                         ?.trip
                         ?.tripPatterns
@@ -813,8 +826,7 @@ class EnturRepositoryImpl(
                         .notLeftBefore(now, options)
                         .withoutBeatenWalks(options.time.isArriveBy)
                         .rankedBy(options.preference, options.time.isArriveBy)
-                        .firstOrNull() ?: continue
-                bestByOrigin += best
+                        .take(fetched)
             } catch (e: Exception) {
                 e.printStackTrace()
                 anyRequestFailed = true
@@ -823,22 +835,24 @@ class EnturRepositoryImpl(
 
         // One origin's walk may be its best, yet lose to the ride from another.
         val candidates = bestByOrigin.withoutBeatenWalks(options.time.isArriveBy)
-        val fastestTrip =
+        val ranked =
             when {
-                options.preference != RoutePreference.FASTEST ->
-                    candidates.rankedBy(options.preference, options.time.isArriveBy).firstOrNull()
+                options.preference != RoutePreference.FASTEST -> candidates.rankedBy(options.preference, options.time.isArriveBy)
                 // To arrive by a time, the best route is the one that lets you leave latest.
-                options.time.isArriveBy -> candidates.maxByOrNull { it.expectedStartTime }
-                else -> candidates.minByOrNull { it.expectedStartTime }
+                options.time.isArriveBy -> candidates.sortedByDescending { it.expectedStartTime }
+                else -> candidates.sortedBy { it.expectedStartTime }
             }
-        if (fastestTrip == null) {
+        // A route is whatever Entur returned, later departures of the same line included; only the
+        // very same departure found from two origins is listed once, as the better of the two.
+        val trips = ranked.distinctBy(::sameDeparture).take(fetched)
+        if (trips.isEmpty()) {
             // Only reach for the cache when the network is the reason we have nothing.
-            return if (anyRequestFailed) tripFromCache(routeKey, now) else Sourced(null)
+            return if (anyRequestFailed) tripsFromCache(routeKey, now, wanted) else Sourced(emptyList())
         }
 
-        tripCache.replaceRoute(routeKey, listOf(fastestTrip.toCacheEntity(routeKey, 0, now)))
+        tripCache.replaceRoute(routeKey, trips.mapIndexed { index, trip -> trip.toCacheEntity(routeKey, index, now) })
         tripCache.pruneStartedBefore(now - PRUNE_AFTER_MS)
-        return Sourced.live(fastestTrip)
+        return Sourced.live(trips.take(wanted))
     }
 
     /**
@@ -945,11 +959,28 @@ class EnturRepositoryImpl(
         return "$sign${scaled / COORDINATE_SCALE.toLong()}.$fraction"
     }
 
-    private suspend fun tripFromCache(
+    private suspend fun tripsFromCache(
         routeKey: String,
         nowMillis: Long,
-    ): Sourced<TripInfo?> {
-        val cached = tripCache.getUpcoming(routeKey, nowMillis).firstOrNull() ?: return Sourced.failed(null)
-        return Sourced.cached(cached.toTripInfo(), cached.fetchedAt)
+        wanted: Int,
+    ): Sourced<List<TripInfo>> {
+        val cached = tripCache.getUpcoming(routeKey, nowMillis).take(wanted)
+        if (cached.isEmpty()) return Sourced.failed(emptyList())
+        return Sourced.cached(cached.map { it.toTripInfo() }, cached.minOf { it.fetchedAt })
     }
 }
+
+/**
+ * How many routes to a destination are fetched and cached when [wanted] are asked for: never
+ * fewer than the board's [BoardRouteAlternatives.ROUTES_PER_DESTINATION]. The cache keeps one
+ * list per route key whoever asks, so a widget asking for one must not cut the board's
+ * alternatives to one; asking Entur for a few more patterns costs no extra request.
+ */
+private fun cachedRouteCount(wanted: Int): Int = maxOf(wanted, BoardRouteAlternatives.ROUTES_PER_DESTINATION)
+
+/**
+ * What makes two routes from different origins the same departure: the journeys they ride
+ * ([tripKey]), whatever the walk to them. A route that rides none (a walk, or one cached
+ * before journeys were kept) is only the same as an identical one.
+ */
+private fun sameDeparture(trip: TripInfo): Any = if (trip.legs.any { it.serviceJourneyId != null }) tripKey(trip) else trip

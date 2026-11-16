@@ -436,6 +436,16 @@
     <string name="route_earliest_body">Du kan tidligst være fremme %1$s, hvis du drar %2$s.</string>
     <string name="route_offline_body">Rutesøk trenger nett. De lagrede reisemålene dine vises fortsatt på tavla fra siste oppdatering.</string>
     <string name="route_saved">Lagret</string>
+    <string name="route_then">Neste</string>
+    <plurals name="route_more">
+        <item quantity="one">%1$d til</item>
+        <item quantity="other">%1$d til</item>
+    </plurals>
+    <string name="route_fewer">Færre</string>
+    <string name="route_more_description">Vis flere reiser til %1$s</string>
+    <string name="route_fewer_description">Vis færre reiser til %1$s</string>
+    <string name="route_more_in_details">+%1$d i detaljer</string>
+    <string name="show_alternatives_on_board">Vis alternativer på tavla</string>
     <string name="trip_time_today">I dag</string>
     <string name="trip_time_tomorrow_day">I morgen</string>
     <string name="trip_time_help_now">Ruter som går nå, med sanntid.</string>

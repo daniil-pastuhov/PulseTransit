@@ -31,6 +31,7 @@ class SettingsRepositoryImpl(
         const val FILTERED_LINES = "filtered_lines_json"
         const val EXCLUDED_ROUTE_MODES = "route_excluded_modes_json"
         const val DESTINATION_SCHEDULES = "destination_schedules_json"
+        const val ROUTE_ALTERNATIVES_SHOWN = "route_alternatives_shown_json"
         const val SAMPLE_PLACE = "sample_place"
 
         fun selectedQuays(stopId: String) = "quays_json_$stopId"
@@ -408,6 +409,18 @@ class SettingsRepositoryImpl(
         val current = getDestinationStations().filter { it.id != stopId }
         prefs.putString("destination_stations", json.encodeToString(current))
         setDestinationSchedule(stopId, null)
+        setRouteAlternativesShown(stopId, false)
+    }
+
+    override fun getRouteAlternativesShownIds(): Set<String> = getStringSet(Keys.ROUTE_ALTERNATIVES_SHOWN).orEmpty()
+
+    override fun setRouteAlternativesShown(
+        destinationId: String,
+        shown: Boolean,
+    ) {
+        val current = getRouteAlternativesShownIds()
+        val updated = if (shown) current + destinationId else current - destinationId
+        if (updated != current) putStringSet(Keys.ROUTE_ALTERNATIVES_SHOWN, updated)
     }
 
     override fun reorderDestinationStations(stopIds: List<String>) {
