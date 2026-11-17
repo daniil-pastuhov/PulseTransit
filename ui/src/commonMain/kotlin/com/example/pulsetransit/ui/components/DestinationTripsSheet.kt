@@ -148,7 +148,7 @@ internal fun DestinationTripsContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = FjordDimens.space2),
             )
-            StaleNote(list = list, isOnline = isOnline, nowMillis = nowMillis, onRetry = onRefresh)
+            StaleNote(list = list, isOnline = isOnline, onRetry = onRefresh)
         }
         when {
             trips.isNotEmpty() ->
@@ -181,7 +181,6 @@ internal fun DestinationTripsContent(
 private fun StaleNote(
     list: DestinationTrips,
     isOnline: Boolean,
-    nowMillis: Long,
     onRetry: () -> Unit,
 ) {
     val cachedAt = list.cachedAtMillis

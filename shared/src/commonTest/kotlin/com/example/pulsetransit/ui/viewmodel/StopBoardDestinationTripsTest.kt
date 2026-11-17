@@ -65,7 +65,8 @@ class StopBoardDestinationTripsTest : BoardTestBase() {
             assertFalse(list.isLoading)
             assertTrue(list.canLoadLater)
             assertEquals("Oslo S", list.trips.first().destinationName)
-            assertEquals(BoardRouteAlternatives.ROUTES_PER_DESTINATION, vm.uiState.value.fastestTrips[oslo.id]?.size, "the card keeps its own")
+            val cardTrips = vm.uiState.value.fastestTrips[oslo.id]
+            assertEquals(BoardRouteAlternatives.ROUTES_PER_DESTINATION, cardTrips?.size, "the card keeps its own")
         }
 
     @Test

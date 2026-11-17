@@ -26,15 +26,13 @@ data class DestinationTrips(
     val canLoadLater: Boolean = false,
 ) {
     /** The routes still to leave at [nowMillis]; one leaving this very minute is kept. */
-    fun upcoming(nowMillis: Long): List<TripInfo> =
-        trips.filter { trip -> parseIsoToMillis(trip.expectedStartTime)?.let { it >= nowMillis - DEPARTED_GRACE_MILLIS } ?: true }
+    fun upcoming(nowMillis: Long): List<TripInfo> = trips.filter { trip -> parseIsoToMillis(trip.expectedStartTime)?.let { it >= nowMillis - DEPARTED_GRACE_MILLIS } ?: true }
 
     /** Entur answered and found no route at all. */
     val hasNoRoutes: Boolean get() = hasLoaded && !isLoading && !failed && trips.isEmpty()
 
     /** When the next later page departs from: a minute after the last route listed. */
-    fun laterPageTime(): TripTime.DepartAt? =
-        trips.mapNotNull { parseIsoToMillis(it.expectedStartTime) }.maxOrNull()?.let { TripTime.DepartAt(it + LATER_PAGE_STEP_MILLIS) }
+    fun laterPageTime(): TripTime.DepartAt? = trips.mapNotNull { parseIsoToMillis(it.expectedStartTime) }.maxOrNull()?.let { TripTime.DepartAt(it + LATER_PAGE_STEP_MILLIS) }
 
     /**
      * After a first page [result]: its routes, then the ones listed after its last from later
