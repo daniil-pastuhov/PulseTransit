@@ -1055,6 +1055,115 @@
         }
       }
     },
+    "destination_trips_cached_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Showing routes saved at %1$@. They update when Entur can be reached again."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viser reiser lagret kl. %1$@. De oppdateres når Entur kan nås igjen."
+          }
+        }
+      }
+    },
+    "destination_trips_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later routes"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senere reiser"
+          }
+        }
+      }
+    },
+    "destination_trips_none_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur found no route there right now. Try again in a while."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entur fant ingen reise dit akkurat nå. Prøv igjen om litt."
+          }
+        }
+      }
+    },
+    "destination_trips_offline_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Showing the routes found last. They update when Entur can be reached again."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viser reisene som ble funnet sist. De oppdateres når Entur kan nås igjen."
+          }
+        }
+      }
+    },
+    "destination_trips_span": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld route · %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld routes · %2$@–%3$@"
+                }
+              }
+            }
+          }
+        },
+        "nb": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld reise · %2$@"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%1$lld reiser · %2$@–%3$@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "details_board_here": {
       "extractionState": "manual",
       "localizations": {

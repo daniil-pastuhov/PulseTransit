@@ -84,6 +84,7 @@ import com.example.pulsetransit.theme.type
 import com.example.pulsetransit.ui.components.AdaptiveSheet
 import com.example.pulsetransit.ui.components.Callout
 import com.example.pulsetransit.ui.components.DestinationTripSaver
+import com.example.pulsetransit.ui.components.DestinationTripsSheet
 import com.example.pulsetransit.ui.components.LoadingPlaceholderList
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.ScreenMessage
@@ -576,6 +577,21 @@ private fun RoutesSection(
             onFilterOutLine = viewModel::filterOutLine,
         )
     }
+    // A destination's own, longer list of routes, opened from its card's title.
+    uiState.destinationTrips?.let { list ->
+        DestinationTripsSheet(
+            list = list,
+            originLabel = stringResource(Res.string.route_from_here),
+            isOnline = uiState.isOnline,
+            showDelays = uiState.showDelays,
+            showMessages = uiState.showMessages,
+            onRefresh = viewModel::refreshDestinationTrips,
+            onLoadLater = viewModel::loadLaterDestinationTrips,
+            loadLegStops = viewModel::tripLegStops,
+            onFilterOutLine = viewModel::filterOutLine,
+            onDismiss = viewModel::closeDestinationTrips,
+        )
+    }
     BoxWithConstraints(modifier = modifier) {
         val density = LocalDensity.current
         val fontScale = density.fontScale
@@ -610,6 +626,7 @@ private fun RoutesSection(
                         noRouteTime = uiState.noRouteTime(destination.id),
                         isOnline = uiState.isOnline,
                         onTripClick = { detailsTrip = destination.id to it },
+                        onOpenAll = { viewModel.openDestinationTrips(destination.id) },
                         actions =
                             if (destination.id == uiState.temporaryDestination?.id) {
                                 {
@@ -631,7 +648,10 @@ private fun RoutesSection(
     }
 }
 
-/** One destination's next [count] route alternatives, best first, with [actions] beside its title. */
+/**
+ * One destination's next [count] route alternatives, best first, with [actions] beside its title.
+ * Its title opens [onOpenAll], the destination's longer list of routes.
+ */
 @Composable
 private fun DestinationRoutesCard(
     destination: StopPlace,
@@ -643,6 +663,7 @@ private fun DestinationRoutesCard(
     noRouteTime: TripTime?,
     isOnline: Boolean,
     onTripClick: (TripInfo) -> Unit,
+    onOpenAll: () -> Unit,
     actions: (@Composable () -> Unit)? = null,
 ) {
     Box(
@@ -671,14 +692,33 @@ private fun DestinationRoutesCard(
                 Box {
                     Column(modifier = Modifier.padding(vertical = 8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(Res.string.route_to, destination.name),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = PulseTheme.colors.onRoute,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 4.dp),
-                            )
+                            // The title, with a chevron, opens every route there; the routes below
+                            // keep their own taps, which open one route's details.
+                            Row(
+                                modifier =
+                                    Modifier
+                                        .weight(1f)
+                                        .clickable(
+                                            onClickLabel = stringResource(Res.string.route_more_description, destination.name),
+                                            onClick = onOpenAll,
+                                        ).padding(horizontal = 16.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.route_to, destination.name),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = PulseTheme.colors.onRoute,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                )
+                                Icon(
+                                    PulseIcons.ChevronRight,
+                                    contentDescription = null,
+                                    tint = PulseTheme.colors.onRoute,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
                             actions?.invoke()
                         }
                         // Alternatives come and go as the split or the setting changes.
