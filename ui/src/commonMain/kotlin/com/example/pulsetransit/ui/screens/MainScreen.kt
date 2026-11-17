@@ -133,6 +133,11 @@ fun MainScreen(
     var showRouteSearch by rememberSaveable { mutableStateOf(false) }
     // The saved destination whose routes the search opens on ("+N in details"); null to search.
     var routeSearchPlace by rememberSaveable(stateSaver = StopPlaceSaver) { mutableStateOf<StopPlace?>(null) }
+    // The header's search button and the on-spot route prompt: the search, on no place.
+    val openRouteSearch = {
+        routeSearchPlace = null
+        showRouteSearch = true
+    }
     // The followed journey's details, opened from its bar or a tap on a notification.
     var showFollowedJourney by rememberSaveable { mutableStateOf(false) }
 
@@ -208,10 +213,7 @@ fun MainScreen(
                                 uiState = uiState,
                                 wide = wide,
                                 onCycleDateStyle = viewModel::cycleDateStyle,
-                                onSearchRoute = {
-                                    routeSearchPlace = null
-                                    showRouteSearch = true
-                                },
+                                onSearchRoute = openRouteSearch,
                                 onOpenSettings = onNavigateToSettings,
                             )
 
@@ -246,6 +248,7 @@ fun MainScreen(
                                     viewModel = viewModel,
                                     isLandscape = isLandscape,
                                     onNavigateToSettings = onNavigateToSettings,
+                                    onSearchRoute = openRouteSearch,
                                     modifier = Modifier.fillMaxWidth().weight(1f),
                                 )
                             } else {

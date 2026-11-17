@@ -237,7 +237,7 @@ private fun SearchSectionLabel(text: String) {
 
 /** A place with its kind's icon, the part matching [query] in bold, and where it is. */
 @Composable
-private fun PlaceRow(
+internal fun PlaceRow(
     place: StopPlace,
     query: String,
     onPick: (StopPlace) -> Unit,

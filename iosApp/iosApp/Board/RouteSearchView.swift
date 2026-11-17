@@ -118,14 +118,7 @@ struct RouteSearchView: View {
             picked = place
             viewModel.showTemporaryDestination(place: place)
         } label: {
-            HStack(spacing: 12) {
-                if recent {
-                    Image(systemName: "clock.arrow.circlepath").foregroundColor(Palette.textSecondary)
-                } else {
-                    PlaceKindIcon(kind: place.kind)
-                }
-                PlaceLabel(place: place)
-            }
+            PlaceRowLabel(place: place, recent: recent)
         }
         .foregroundColor(.primary)
     }
@@ -213,6 +206,24 @@ struct RouteSearchView: View {
 }
 
 /// The board's temporary destination's time, save and close buttons; save is left out when it can't be.
+/// A place in a list of places to route to: a clock for a recent one, else its kind's icon, beside
+/// its name and locality. Also the route prompt's suggestions on the on-spot board.
+struct PlaceRowLabel: View {
+    let place: StopPlace
+    let recent: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if recent {
+                Image(systemName: "clock.arrow.circlepath").foregroundColor(Palette.textSecondary)
+            } else {
+                PlaceKindIcon(kind: place.kind)
+            }
+            PlaceLabel(place: place)
+        }
+    }
+}
+
 struct TemporaryRouteActions: View {
     let time: TripTime
     let onTimeChange: (TripTime) -> Void

@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
@@ -53,10 +54,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
@@ -64,6 +67,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -86,6 +90,7 @@ import com.example.pulsetransit.ui.components.Callout
 import com.example.pulsetransit.ui.components.DestinationTripSaver
 import com.example.pulsetransit.ui.components.DestinationTripsSheet
 import com.example.pulsetransit.ui.components.LoadingPlaceholderList
+import com.example.pulsetransit.ui.components.PlaceRow
 import com.example.pulsetransit.ui.components.RefreshingIndicator
 import com.example.pulsetransit.ui.components.ScreenMessage
 import com.example.pulsetransit.ui.components.StopBoardPanel
@@ -98,6 +103,8 @@ import com.example.pulsetransit.ui.platform.rememberLocationAccess
 import com.example.pulsetransit.ui.resources.*
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
 import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
+import com.example.pulsetransit.ui.viewmodel.OnSpotRoutePrompt
+import com.example.pulsetransit.ui.viewmodel.OnSpotRoutePromptLayout
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -122,6 +129,10 @@ private val SPLIT_HANDLE_SIZE = 20.dp
 
 private const val METRES_PER_KILOMETRE = 1000
 
+// The route prompt: its padding, and its search row's height, a text field's.
+private val PROMPT_PADDING = FjordDimens.space4
+private val PROMPT_SEARCH_MIN_HEIGHT = 56.dp
+
 /**
  * The on-spot board below the header: route alternatives to each destination from where the
  * device is, taking most of the space, and the nearest stop's departures beside or below them.
@@ -132,6 +143,7 @@ fun OnSpotContent(
     viewModel: StopBoardViewModel,
     isLandscape: Boolean,
     onNavigateToSettings: () -> Unit,
+    onSearchRoute: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val onRetryLocation = rememberLocationAccess(onGranted = viewModel::retryLocation)
@@ -143,7 +155,7 @@ fun OnSpotContent(
         location is OnSpotLocation.Located -> {
             val samplePlace = uiState.samplePlace
             if (samplePlace == null) {
-                LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, modifier)
+                LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, onSearchRoute, modifier)
             } else {
                 Column(modifier = modifier) {
                     SamplePlaceCallout(
@@ -151,7 +163,7 @@ fun OnSpotContent(
                         onUseDeviceLocation = viewModel::useDeviceLocation,
                         modifier = Modifier.padding(start = 6.dp, top = 6.dp, end = 6.dp),
                     )
-                    LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, Modifier.weight(1f))
+                    LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, onSearchRoute, Modifier.weight(1f))
                 }
             }
         }
@@ -218,6 +230,41 @@ private fun LocatedContent(
     viewModel: StopBoardViewModel,
     isLandscape: Boolean,
     onNavigateToSettings: () -> Unit,
+    onSearchRoute: () -> Unit,
+    modifier: Modifier,
+) {
+    OnSpotSplitBoard(
+        uiState = uiState,
+        isLandscape = isLandscape,
+        onSplitChange = viewModel::setOnSpotSplit,
+        routes = { countHeight, onContentHeight, sectionModifier ->
+            RoutesSection(
+                uiState = uiState,
+                viewModel = viewModel,
+                onNavigateToSettings = onNavigateToSettings,
+                onSearchRoute = onSearchRoute,
+                countHeight = countHeight,
+                onContentHeight = onContentHeight,
+                modifier = sectionModifier,
+            )
+        },
+        stop = { sectionModifier -> NearbyStopSection(uiState, viewModel, sectionModifier) },
+        modifier = modifier,
+    )
+}
+
+/**
+ * The routes and the stop sharing the board along the split the user drags, each folding to a bar
+ * below its minimum. [routes] gets the height its contents are counted for (null: its own, in
+ * landscape) and reports the height they take, so the stop gets what the routes leave.
+ */
+@Composable
+private fun OnSpotSplitBoard(
+    uiState: StopBoardViewModel.UiState,
+    isLandscape: Boolean,
+    onSplitChange: (Float) -> Unit,
+    routes: @Composable (countHeight: Dp?, onContentHeight: (Float?) -> Unit, modifier: Modifier) -> Unit,
+    stop: @Composable (modifier: Modifier) -> Unit,
     modifier: Modifier,
 ) {
     BoxWithConstraints(modifier = modifier.padding(6.dp)) {
@@ -266,11 +313,11 @@ private fun LocatedContent(
                 onDragStopped = {
                     isDragging = false
                     val split = OnSpotSplit.settle(routesSize.value, total, min)
-                    viewModel.setOnSpotSplit(split)
+                    onSplitChange(split)
                     routesSize.animateTo(fitted(split))
                 },
             )
-        val onExpand = { viewModel.setOnSpotSplit(OnSpotSplit.DEFAULT) }
+        val onExpand = { onSplitChange(OnSpotSplit.DEFAULT) }
 
         // A section dragged below its minimum shows the bar it will fold to.
         val routesFolded = routesSize.value < min
@@ -283,16 +330,22 @@ private fun LocatedContent(
                 isDragging -> routesSize.value.dp
                 else -> OnSpotSplit.routesSize(uiState.onSpotSplit, total, bar, min).dp
             }
-        val routes: @Composable (Modifier) -> Unit = { sectionModifier ->
+        val routesPart: @Composable (Modifier) -> Unit = { sectionModifier ->
             Box(modifier = sectionModifier.then(drag(enabled = routesFolded))) {
                 Crossfade(targetState = routesFolded, label = "routesFolded") { folded ->
                     if (folded) {
                         FoldedSection(
-                            // Says what it hides: "Show routes · 2 destinations".
+                            // Says what it hides: "Show routes · 2 destinations", or "Find a route"
+                            // when it hides the route prompt.
                             label =
                                 listOf(
                                     stringResource(Res.string.on_spot_show_routes),
-                                    pluralStringResource(Res.plurals.on_spot_destinations, uiState.routeDestinations.size, uiState.routeDestinations.size),
+                                    if (uiState.onSpotRoutePrompt.isShown) {
+                                        stringResource(Res.string.search_route)
+                                    } else {
+                                        val count = uiState.shownRouteDestinations.size
+                                        pluralStringResource(Res.plurals.on_spot_destinations, count, count)
+                                    },
                                 ).joinToString(" · "),
                             icon = PulseIcons.Directions,
                             expandLabel = stringResource(Res.string.on_spot_show_routes),
@@ -301,19 +354,12 @@ private fun LocatedContent(
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
-                        RoutesSection(
-                            uiState = uiState,
-                            viewModel = viewModel,
-                            onNavigateToSettings = onNavigateToSettings,
-                            countHeight = countHeight,
-                            onContentHeight = { routesContentHeight = it },
-                            modifier = Modifier.fillMaxSize(),
-                        )
+                        routes(countHeight, { routesContentHeight = it }, Modifier.fillMaxSize())
                     }
                 }
             }
         }
-        val stop: @Composable (Modifier) -> Unit = { sectionModifier ->
+        val stopPart: @Composable (Modifier) -> Unit = { sectionModifier ->
             Box(modifier = sectionModifier.then(drag(enabled = stopFolded))) {
                 Crossfade(targetState = stopFolded, label = "stopFolded") { folded ->
                     if (folded) {
@@ -334,22 +380,22 @@ private fun LocatedContent(
                             modifier = Modifier.fillMaxSize(),
                         )
                     } else {
-                        NearbyStopSection(uiState, viewModel, Modifier.fillMaxSize())
+                        stop(Modifier.fillMaxSize())
                     }
                 }
             }
         }
         if (isLandscape) {
             Row(modifier = Modifier.fillMaxSize()) {
-                routes(Modifier.width(routesSize.value.dp).fillMaxHeight())
+                routesPart(Modifier.width(routesSize.value.dp).fillMaxHeight())
                 SplitHandle(isVertical = true, modifier = Modifier.width(SPLIT_HANDLE_SIZE).fillMaxHeight().then(drag()))
-                stop(Modifier.weight(1f).fillMaxHeight())
+                stopPart(Modifier.weight(1f).fillMaxHeight())
             }
         } else {
             Column(modifier = Modifier.fillMaxSize()) {
-                routes(Modifier.height(routesSize.value.dp).fillMaxWidth())
+                routesPart(Modifier.height(routesSize.value.dp).fillMaxWidth())
                 SplitHandle(isVertical = false, modifier = Modifier.height(SPLIT_HANDLE_SIZE).fillMaxWidth().then(drag()))
-                stop(Modifier.weight(1f).fillMaxWidth())
+                stopPart(Modifier.weight(1f).fillMaxWidth())
             }
         }
     }
@@ -513,55 +559,20 @@ private fun LocationStatus(
 
 /**
  * The route alternatives, as many per destination as fit [countHeight] (or the section's own
- * height when null). The height of the cards goes to [onContentHeight], null while there are none.
+ * height when null), or the route prompt when there are none to show. The height of the cards or
+ * the prompt goes to [onContentHeight].
  */
 @Composable
 private fun RoutesSection(
     uiState: StopBoardViewModel.UiState,
     viewModel: StopBoardViewModel,
     onNavigateToSettings: () -> Unit,
+    onSearchRoute: () -> Unit,
     countHeight: Dp?,
     onContentHeight: (Float?) -> Unit,
     modifier: Modifier,
 ) {
     DisposableEffect(Unit) { onDispose { onContentHeight(null) } }
-    if (uiState.routeDestinations.isEmpty()) {
-        LaunchedEffect(Unit) { onContentHeight(null) }
-        // First use: teach the next step; the nearest stop's departures already work.
-        Box(
-            modifier =
-                modifier
-                    .clip(RoundedCornerShape(FjordDimens.radiusLg))
-                    .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center,
-        ) {
-            ScreenMessage(
-                title = stringResource(Res.string.on_spot_no_destinations_title),
-                body = stringResource(Res.string.routes_add_destination),
-                icon = PulseIcons.Flag,
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(FjordDimens.space2)) {
-                    Button(onClick = onNavigateToSettings) { Text(stringResource(Res.string.add_destination)) }
-                    Text(
-                        stringResource(Res.string.on_spot_one_off_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        return
-    }
-
-    // A destination with no route is left out once it has loaded, as on the wall board, except
-    // the searched-for one, which says so and keeps its buttons.
-    val destinations =
-        uiState.routeDestinations.filter {
-            it.id in uiState.fastestTrips ||
-                it.id in uiState.loadingTripDestinationIds ||
-                it.id in uiState.failedTripDestinationIds ||
-                it.id == uiState.temporaryDestination?.id
-        }
     // The tapped alternative, with its destination's id; the details follow its refreshes. Keyed by
     // name, since turning the device moves this section from a column to a row.
     var detailsTrip by rememberSaveable(key = "on_spot_trip_details", stateSaver = DestinationTripSaver) {
@@ -592,6 +603,24 @@ private fun RoutesSection(
             onDismiss = viewModel::closeDestinationTrips,
         )
     }
+    val prompt = uiState.onSpotRoutePrompt
+    if (prompt.isShown) {
+        RoutePrompt(
+            prompt = prompt,
+            suggestions = uiState.onSpotRouteSuggestions,
+            recentIds = remember(uiState.recentDestinations) { uiState.recentDestinations.map { it.id }.toSet() },
+            availableHeight = countHeight,
+            onSearch = onSearchRoute,
+            onPick = viewModel::showTemporaryDestination,
+            onAddDestination = onNavigateToSettings,
+            onContentHeight = onContentHeight,
+            modifier = modifier,
+        )
+        return
+    }
+    // A destination with no route is left out once it has loaded, as on the wall board, except
+    // the searched-for one, which says so and keeps its buttons.
+    val destinations = uiState.shownRouteDestinations
     BoxWithConstraints(modifier = modifier) {
         val density = LocalDensity.current
         val fontScale = density.fontScale
@@ -646,6 +675,212 @@ private fun RoutesSection(
             }
         }
     }
+}
+
+/**
+ * What the routes section shows when it has no route card ([prompt] says why): a row like a search
+ * field that opens the route search ([onSearch]), "Add destination" when none is saved, and below
+ * them as many [suggestions] as fit [availableHeight] (null: the section's own height), each routed
+ * to with one tap ([onPick]). Its height goes to [onContentHeight], so the stop gets the rest.
+ *
+ * [availableHeight] is the height the section is given, not the one it shrinks to around the
+ * prompt, or showing fewer rows would leave room for fewer still. Where even the title does not fit
+ * (the section's minimum, a large font), the suggestions go first, then the button, then the title:
+ * the search row always shows.
+ */
+@Composable
+private fun RoutePrompt(
+    prompt: OnSpotRoutePrompt,
+    suggestions: List<StopPlace>,
+    recentIds: Set<String>,
+    availableHeight: Dp?,
+    onSearch: () -> Unit,
+    onPick: (StopPlace) -> Unit,
+    onAddDestination: () -> Unit,
+    onContentHeight: (Float?) -> Unit,
+    modifier: Modifier,
+) {
+    val title =
+        when (prompt) {
+            OnSpotRoutePrompt.NO_DESTINATIONS -> Res.string.on_spot_no_destinations_title
+            OnSpotRoutePrompt.NONE_ACTIVE -> Res.string.on_spot_none_active_title
+            OnSpotRoutePrompt.NONE_FOUND, OnSpotRoutePrompt.NONE -> Res.string.on_spot_none_found_title
+        }
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier = modifier) {
+        val inner = (availableHeight ?: maxHeight) - PROMPT_PADDING * 2
+        Box(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Layout(
+                contents =
+                    listOf(
+                        {
+                            Text(
+                                stringResource(title),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        },
+                        { PromptSearchRow(onSearch) },
+                        {
+                            if (prompt.offersAddDestination) {
+                                OutlinedButton(onClick = onAddDestination) {
+                                    Icon(PulseIcons.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(FjordDimens.space2))
+                                    Text(stringResource(Res.string.add_destination))
+                                }
+                            }
+                        },
+                        {
+                            suggestions.forEach { place ->
+                                key(place.id) { PlaceRow(place, query = "", onPick = onPick, recent = place.id in recentIds) }
+                            }
+                        },
+                    ),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { onContentHeight(with(density) { it.height.toDp().value }) }
+                        .clip(RoundedCornerShape(FjordDimens.radiusLg))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(PROMPT_PADDING),
+            ) { parts, constraints ->
+                val child = Constraints(maxWidth = constraints.maxWidth)
+                val titlePlaceable = parts[0].first().measure(child)
+                val search = parts[1].first().measure(child)
+                val button = parts[2].firstOrNull()?.measure(child)
+                val rows = parts[3].map { it.measure(child) }
+                val gap = FjordDimens.space3.roundToPx()
+                val available = inner.roundToPx()
+
+                fun fixed(
+                    withTitle: Boolean,
+                    withButton: Boolean,
+                ) = search.height +
+                    (if (withTitle) titlePlaceable.height + gap else 0) +
+                    (if (withButton && button != null) button.height + gap else 0)
+                // The search row stays; the button goes before the title.
+                val shownButton = button?.takeIf { fixed(withTitle = true, withButton = true) <= available }
+                val showTitle = fixed(withTitle = true, withButton = shownButton != null) <= available
+                val fixedHeight = fixed(showTitle, shownButton != null)
+                val rowsGap = FjordDimens.space2.roundToPx()
+                val shownRows =
+                    OnSpotRoutePromptLayout.visibleSuggestionRows(
+                        availableHeight = available.toFloat(),
+                        fixedHeight = (fixedHeight + rowsGap).toFloat(),
+                        rowHeight = (rows.maxOfOrNull { it.height } ?: 0).toFloat(),
+                        suggestionCount = rows.size,
+                    )
+                val rowsHeight = if (shownRows > 0) rowsGap + rows.take(shownRows).sumOf { it.height } else 0
+                val height = (fixedHeight + rowsHeight).coerceIn(constraints.minHeight, constraints.maxHeight)
+                layout(constraints.maxWidth, height) {
+                    var y = 0
+                    if (showTitle) {
+                        titlePlaceable.place(0, y)
+                        y += titlePlaceable.height + gap
+                    }
+                    search.place(0, y)
+                    y += search.height
+                    shownButton?.let {
+                        y += gap
+                        it.place(0, y)
+                        y += it.height
+                    }
+                    if (shownRows > 0) y += rowsGap
+                    rows.take(shownRows).forEach {
+                        it.place(0, y)
+                        y += it.height
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A row drawn like a search field, "Where to?" over the hint, that opens the route search. */
+@Composable
+private fun PromptSearchRow(onSearch: () -> Unit) {
+    val shape = RoundedCornerShape(FjordDimens.radiusMd)
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = PROMPT_SEARCH_MIN_HEIGHT)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+                .clickable(onClickLabel = stringResource(Res.string.search_route), role = Role.Button, onClick = onSearch)
+                .padding(horizontal = FjordDimens.space4, vertical = FjordDimens.space2),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(FjordDimens.space3),
+    ) {
+        Icon(PulseIcons.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                stringResource(Res.string.on_spot_where_to),
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                stringResource(Res.string.search_destination_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+/**
+ * The on-spot board below the header as the offscreen gallery draws it (`GalleryOnSpot`): the
+ * real split, the route prompt and the stop's panel from [uiState] alone, nothing reacting to a tap.
+ * Only for states whose routes section shows the prompt.
+ */
+@Composable
+internal fun GalleryOnSpotContent(
+    uiState: StopBoardViewModel.UiState,
+    isLandscape: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    OnSpotSplitBoard(
+        uiState = uiState,
+        isLandscape = isLandscape,
+        onSplitChange = {},
+        routes = { countHeight, onContentHeight, sectionModifier ->
+            RoutePrompt(
+                prompt = uiState.onSpotRoutePrompt,
+                suggestions = uiState.onSpotRouteSuggestions,
+                recentIds = uiState.recentDestinations.map { it.id }.toSet(),
+                availableHeight = countHeight,
+                onSearch = {},
+                onPick = {},
+                onAddDestination = {},
+                onContentHeight = onContentHeight,
+                modifier = sectionModifier,
+            )
+        },
+        stop = { sectionModifier ->
+            val stop = uiState.favorites.first()
+            StopBoardPanel(
+                stopPlace = stop,
+                departureGroups = uiState.departures.find { it.stopId == stop.id }?.groups,
+                modifier = sectionModifier,
+                header = {
+                    StopPicker(
+                        selected = stop,
+                        approximate = false,
+                        isSearching = false,
+                        nearbyStops = uiState.nearbyStops,
+                        isPinned = false,
+                        onSelect = {},
+                        onFollowNearest = {},
+                    )
+                },
+            )
+        },
+        modifier = modifier,
+    )
 }
 
 /**

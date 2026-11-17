@@ -21,6 +21,8 @@ struct OnSpotView: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
     let onOpenSettings: () -> Void
+    /// Opens the route search, as the header's search button does.
+    let onSearchRoute: () -> Void
 
     var body: some View {
         if state.isOutsideNorway {
@@ -39,7 +41,7 @@ struct OnSpotView: View {
                     SamplePlaceCallout(place: place) { viewModel.useDeviceLocation() }
                         .padding([.horizontal, .top], 6)
                 }
-                SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings)
+                SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings, onSearchRoute: onSearchRoute)
                     .padding(6)
             }
         case let .locating(locating):
@@ -79,6 +81,7 @@ private struct SplitSections: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
     let onOpenSettings: () -> Void
+    let onSearchRoute: () -> Void
     @Environment(\.layoutDirection) private var layoutDirection
     /// The routes' size when the drag began, and now; nil while not dragged.
     @State private var dragStartSize: Float?
@@ -123,8 +126,9 @@ private struct SplitSections: View {
             let routes = Group {
                 if routesFolded {
                     FoldedSection(
-                        // Says what it hides: "Show routes · 2 destinations".
-                        label: "\(L("on_spot_show_routes")) · \(L("on_spot_destinations", state.routeDestinations.count))",
+                        // Says what it hides: "Show routes · 2 destinations", or the search the
+                        // route prompt offers when there is no card to show.
+                        label: "\(L("on_spot_show_routes")) · \(state.onSpotRoutePrompt.isShown ? L("search_route") : L("on_spot_destinations", state.routeDestinations.count))",
                         systemImage: "arrow.triangle.turn.up.right.diamond.fill",
                         expandLabel: L("on_spot_show_routes"),
                         edge: isLandscape ? .leading : .top,
@@ -136,6 +140,7 @@ private struct SplitSections: View {
                         state: state,
                         viewModel: viewModel,
                         onOpenSettings: onOpenSettings,
+                        onSearchRoute: onSearchRoute,
                         availableHeight: isLandscape ? geometry.size.height : CGFloat(allottedSize)
                     )
                     .transition(.opacity)
@@ -431,6 +436,7 @@ private struct RoutesSection: View {
     let state: StopBoardViewModel.UiState
     let viewModel: StopBoardViewModel
     let onOpenSettings: () -> Void
+    let onSearchRoute: () -> Void
     /// The height the alternatives are counted for: the routes' share, which the section may be
     /// shrunk below to fit what that count shows.
     let availableHeight: CGFloat
@@ -439,34 +445,21 @@ private struct RoutesSection: View {
     @EnvironmentObject private var journeyModel: JourneyAlertsModel
 
     var body: some View {
-        if state.routeDestinations.isEmpty {
-            // First use: teach the next step; the nearest stop's departures already work.
-            VStack(spacing: 12) {
-                Image(systemName: "flag").font(.system(size: 36)).foregroundColor(Palette.primary).accessibilityHidden(true)
-                Text(L("on_spot_no_destinations_title"))
-                    .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
-                Text(L("routes_add_destination"))
-                    .font(.pulse(.body))
-                    .foregroundColor(Palette.textSecondary)
-                    .multilineTextAlignment(.center)
-                Button(L("add_destination"), action: onOpenSettings)
-                    .buttonStyle(.borderedProminent)
-                Text(L("on_spot_one_off_hint")).font(.pulse(.subheadline)).foregroundColor(Palette.textSecondary)
-            }
-            .foregroundColor(Palette.textPrimary)
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(RoundedRectangle(cornerRadius: FjordTokens.radiusLg).fill(Palette.surface))
-            .padding(6)
+        if state.onSpotRoutePrompt.isShown {
+            // No card to show: search, or route to a recent or saved place with one tap.
+            RoutePrompt(
+                prompt: state.onSpotRoutePrompt,
+                suggestions: state.onSpotRouteSuggestions,
+                recentIds: Set(state.recentDestinations.map(\.id)),
+                availableHeight: availableHeight,
+                onSearchRoute: onSearchRoute,
+                onSuggestion: { viewModel.showTemporaryDestination(place: $0) },
+                onAddDestination: onOpenSettings
+            )
         } else {
             // A destination with no route is left out once it has loaded, as on the wall board,
             // except the searched-for one, which says so and keeps its buttons.
-            let destinations = state.routeDestinations.filter {
-                state.fastestTrips[$0.id] != nil ||
-                    state.loadingTripDestinationIds.contains($0.id) ||
-                    state.failedTripDestinationIds.contains($0.id) ||
-                    $0.id == state.temporaryDestination?.id
-            }
+            let destinations = state.shownRouteDestinations
             Group {
                 let autoCount = TripOptionLayoutKt.autoTripOptionCount(
                     availableHeight: Float(availableHeight),
@@ -527,6 +520,247 @@ private struct RoutesSection: View {
                 )
             }
         }
+    }
+}
+
+/// What the routes section shows when it has no route card, the counterpart of Android's
+/// RoutePrompt: a row like a search field that opens the route search, then recent and saved
+/// places to route to with one tap, as many as fit the height the section is given. Top-aligned,
+/// and its height reported like the cards', so the stop gets what it leaves over.
+private struct RoutePrompt: View {
+    let prompt: OnSpotRoutePrompt
+    let suggestions: [StopPlace]
+    /// Which suggestions are recent places rather than saved destinations; they come first.
+    let recentIds: Set<String>
+    /// The section's given height, from the split: what the suggestions are counted for.
+    let availableHeight: CGFloat
+    let onSearchRoute: () -> Void
+    let onSuggestion: (StopPlace) -> Void
+    let onAddDestination: () -> Void
+    /// Each part's height at this width and text size, measured by the probes.
+    @State private var heights: [RoutePromptPart: CGFloat] = [:]
+
+    private static let outerPadding: CGFloat = 6
+    private static let padding = FjordTokens.space3
+    private static let spacing = FjordTokens.space3
+    private static let labelSpacing = FjordTokens.space1
+
+    var body: some View {
+        let plan = self.plan
+        ScrollView {
+            content(plan)
+                .background(GeometryReader {
+                    Color.clear.preference(key: RoutesContentHeightKey.self, value: $0.size.height)
+                })
+                // Nothing shows before the parts are measured, so the rows don't pop in.
+                .opacity(heights.isEmpty ? 0 : 1)
+                .animation(.easeInOut(duration: 0.3), value: plan)
+        }
+        .background(probes)
+        .onPreferenceChange(RoutePromptHeightsKey.self) { heights = $0 }
+    }
+
+    private func content(_ plan: Plan) -> some View {
+        VStack(alignment: .leading, spacing: Self.spacing) {
+            if plan.showsTitle { title }
+            searchRow(compact: plan.compactSearch)
+            if plan.recentRows > 0 {
+                group(L("route_recent"), places: Array(suggestions.prefix(plan.recentRows)), recent: true)
+            }
+            if plan.savedRows > 0 {
+                group(
+                    L("route_saved_destinations"),
+                    places: Array(suggestions.dropFirst(recentCount).prefix(plan.savedRows)),
+                    recent: false
+                )
+            }
+            if plan.showsButton { addButton }
+        }
+        .padding(Self.padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: FjordTokens.radiusLg).fill(Palette.surface))
+        .padding(Self.outerPadding)
+    }
+
+    private var title: some View {
+        Text(L(titleKey))
+            .font(.pulse(role: FjordTokens.typeTitle, relativeTo: .title3))
+            .foregroundColor(Palette.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private var titleKey: String {
+        switch prompt {
+        case .noDestinations: return "on_spot_no_destinations_title"
+        case .noneActive: return "on_spot_none_active_title"
+        case .noneFound, .none: return "on_spot_none_found_title"
+        }
+    }
+
+    /// Looks like a search field, but opens the route search: no keyboard on the board. Compact,
+    /// it drops the hint line, for a section too short for both (the minimum, at large text).
+    private func searchRow(compact: Bool) -> some View {
+        Button(action: onSearchRoute) {
+            HStack(spacing: FjordTokens.space3) {
+                Image(systemName: "magnifyingglass")
+                    .font(.pulse(.title3, weight: .semibold))
+                    .foregroundColor(Palette.primary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L("on_spot_where_to"))
+                        .font(.pulse(.headline))
+                        .foregroundColor(Palette.textPrimary)
+                    if !compact {
+                        Text(L("search_destination_hint"))
+                            .font(.pulse(.subheadline))
+                            .foregroundColor(Palette.textSecondary)
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, FjordTokens.space4)
+            .padding(.vertical, compact ? FjordTokens.space2 : FjordTokens.space3)
+            .frame(maxWidth: .infinity, minHeight: compact ? 44 : 56, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: FjordTokens.radiusXl).fill(Palette.surfaceContainer))
+            .overlay(RoundedRectangle(cornerRadius: FjordTokens.radiusXl).stroke(Palette.outlineVariant))
+            .contentShape(RoundedRectangle(cornerRadius: FjordTokens.radiusXl))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(L("on_spot_where_to"))
+        .accessibilityValue(L("search_destination_hint"))
+        .accessibilityHint(L("search_route"))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private func group(_ label: String, places: [StopPlace], recent: Bool) -> some View {
+        VStack(alignment: .leading, spacing: Self.labelSpacing) {
+            groupLabel(label)
+            VStack(spacing: 0) {
+                ForEach(Array(places.enumerated()), id: \.element.id) { index, place in
+                    suggestionRow(place, recent: recent)
+                        .overlay(alignment: .top) { if index > 0 { Divider() } }
+                        .transition(.opacity)
+                }
+            }
+        }
+    }
+
+    private func groupLabel(_ label: String) -> some View {
+        Text(label)
+            .font(.pulse(.caption, weight: .semibold))
+            .foregroundColor(Palette.textSecondary)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func suggestionRow(_ place: StopPlace, recent: Bool) -> some View {
+        Button { onSuggestion(place) } label: {
+            HStack(spacing: FjordTokens.space3) {
+                PlaceRowLabel(place: place, recent: recent)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.forward")
+                    .font(.pulse(.footnote, weight: .semibold))
+                    .foregroundColor(Palette.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .font(.pulse(.body))
+            .foregroundColor(Palette.textPrimary)
+            .padding(.vertical, FjordTokens.space2)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var addButton: some View {
+        Button(L("add_destination"), action: onAddDestination)
+            .font(.pulse(.subheadline, weight: .semibold))
+            .buttonStyle(.bordered)
+            .tint(Palette.primary)
+    }
+
+    /// Every part laid out out of sight at the content's width, for its height.
+    private var probes: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            title.measured(.title)
+            searchRow(compact: false).measured(.search)
+            searchRow(compact: true).measured(.compactSearch)
+            addButton.measured(.button)
+            groupLabel(L("route_recent")).measured(.label)
+            if let place = suggestions.first { suggestionRow(place, recent: false).measured(.row) }
+        }
+        .padding(Self.padding + Self.outerPadding)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .opacity(0)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    /// How many of the suggestions lead the list as recent places.
+    private var recentCount: Int { suggestions.prefix { recentIds.contains($0.id) }.count }
+
+    private struct Plan: Equatable {
+        var compactSearch = false
+        var showsTitle = false
+        var showsButton = false
+        var recentRows = 0
+        var savedRows = 0
+    }
+
+    /// What fits the given height, the search row always: then the title, "Add destination", and
+    /// as many suggestion rows as are left room for.
+    private var plan: Plan {
+        func height(_ part: RoutePromptPart) -> CGFloat { heights[part] ?? 0 }
+        let available = availableHeight - 2 * (Self.outerPadding + Self.padding)
+        var plan = Plan()
+        var used = height(.search)
+        if used > available {
+            plan.compactSearch = true
+            return plan
+        }
+        if used + Self.spacing + height(.title) <= available {
+            plan.showsTitle = true
+            used += Self.spacing + height(.title)
+        }
+        if prompt.offersAddDestination, used + Self.spacing + height(.button) <= available {
+            plan.showsButton = true
+            used += Self.spacing + height(.button)
+        }
+        let groupHeight = Self.spacing + height(.label) + Self.labelSpacing
+        func rows(groups: Int) -> Int {
+            Int(OnSpotRoutePromptLayout.shared.visibleSuggestionRows(
+                availableHeight: Float(available),
+                fixedHeight: Float(used + CGFloat(groups) * groupHeight),
+                rowHeight: Float(height(.row)),
+                suggestionCount: Int32(suggestions.count)
+            ))
+        }
+        let recent = recentCount
+        var count = rows(groups: 1)
+        // Rows past the recent ones start a second group, with a label of its own.
+        if recent > 0, count > recent { count = max(recent, rows(groups: 2)) }
+        plan.recentRows = min(count, recent)
+        plan.savedRows = count - plan.recentRows
+        return plan
+    }
+}
+
+/// The parts of the route prompt whose heights decide what fits.
+private enum RoutePromptPart: Hashable { case title, search, compactSearch, button, label, row }
+
+private struct RoutePromptHeightsKey: PreferenceKey {
+    static var defaultValue: [RoutePromptPart: CGFloat] = [:]
+    static func reduce(value: inout [RoutePromptPart: CGFloat], nextValue: () -> [RoutePromptPart: CGFloat]) {
+        value.merge(nextValue()) { $1 }
+    }
+}
+
+private extension View {
+    func measured(_ part: RoutePromptPart) -> some View {
+        background(GeometryReader { Color.clear.preference(key: RoutePromptHeightsKey.self, value: [part: $0.size.height]) })
     }
 }
 

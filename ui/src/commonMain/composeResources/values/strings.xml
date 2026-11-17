@@ -219,7 +219,6 @@
     <string name="back_to_nearest">Back to nearest</string>
     <string name="choose_stop">Choose stop</string>
     <string name="no_stops_nearby">No stops within 1 km.</string>
-    <string name="routes_add_destination">Add a destination to see routes from where you are.</string>
     <string name="add_destination">Add destination</string>
     <string name="search_route">Find a route</string>
     <string name="search_route_no_results">No places found</string>
@@ -484,7 +483,9 @@
     <string name="norway_time">Norway time</string>
     <string name="distance_about">About %1$s</string>
     <string name="on_spot_no_destinations_title">No destinations yet</string>
-    <string name="on_spot_one_off_hint">For a one-off trip, tap Search.</string>
+    <string name="on_spot_where_to">Where to?</string>
+    <string name="on_spot_none_active_title">No destinations scheduled now</string>
+    <string name="on_spot_none_found_title">No routes found from here</string>
     <string name="on_spot_no_stops_body">Routes above include the walk to the nearest stop.</string>
     <string name="on_spot_stops_nearby">Stops within 1 km of you</string>
     <plurals name="on_spot_destinations">

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import com.example.pulsetransit.ui.screens.GalleryBoard
+import com.example.pulsetransit.ui.screens.GalleryOnSpot
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 import java.util.Locale
@@ -98,18 +99,34 @@ private fun render(options: GalleryOptions) {
     Locale.setDefault(Locale.forLanguageTag(options.locale))
     val now = galleryNow()
     val scenarios = galleryScenarios(now).filter { options.scenarios == null || it.name in options.scenarios }
+    val onSpot = galleryOnSpotScenarios().filter { options.scenarios == null || it.name in options.scenarios }
     val sizes = GALLERY_SIZES.filter { options.sizes == null || it.name in options.sizes }
-    require(scenarios.isNotEmpty()) { "No scenario matches: one of ${galleryScenarios(now).joinToString { it.name }}" }
+    val names = (galleryScenarios(now).map { it.name } + galleryOnSpotScenarios().map { it.name }).joinToString()
+    require(scenarios.isNotEmpty() || onSpot.isNotEmpty()) { "No scenario matches: one of $names" }
     require(sizes.isNotEmpty()) { "No size matches: one of ${GALLERY_SIZES.joinToString { it.name }}" }
     val suffix = if (options.fontScale == 1f) "" else "-fs${(options.fontScale * PERCENT).toInt()}"
     val started = System.nanoTime()
     var count = 0
     options.out.mkdirs()
-    val boards = scenarios.flatMap { scenario -> GalleryState.entries.map { state -> Triple(scenario, state, galleryUiState(scenario, state, now)) } }
-    for ((scenario, state, uiState) in boards) {
+    val boards =
+        scenarios.flatMap { scenario ->
+            GalleryState.entries.map { state ->
+                val uiState = galleryUiState(scenario, state, now)
+                val board: @Composable () -> Unit = { GalleryBoard(uiState) }
+                Triple(scenario.name, state.label, board)
+            }
+        } +
+            onSpot.flatMap { scenario ->
+                GalleryOnSpotState.entries.map { state ->
+                    val uiState = galleryOnSpotUiState(scenario, state, now)
+                    val board: @Composable () -> Unit = { GalleryOnSpot(uiState) }
+                    Triple(scenario.name, state.label, board)
+                }
+            }
+    for ((scenario, state, board) in boards) {
         for (size in sizes) {
-            val png = renderPng(size, options.fontScale) { GalleryBoard(uiState) }
-            val file = File(options.out, "${scenario.name}-${state.label}-${size.name}$suffix.png")
+            val png = renderPng(size, options.fontScale, board)
+            val file = File(options.out, "$scenario-$state-${size.name}$suffix.png")
             file.writeBytes(png)
             println(file.path)
             count++

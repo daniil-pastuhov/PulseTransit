@@ -218,7 +218,6 @@
     <string name="back_to_nearest">Tilbake til nærmeste</string>
     <string name="choose_stop">Velg stoppested</string>
     <string name="no_stops_nearby">Ingen stoppesteder innen 1 km.</string>
-    <string name="routes_add_destination">Legg til et reisemål for å se reiser herfra.</string>
     <string name="add_destination">Legg til reisemål</string>
     <string name="search_route">Finn en reise</string>
     <string name="search_route_no_results">Fant ingen steder</string>
@@ -482,7 +481,9 @@
     <string name="norway_time">Norsk tid</string>
     <string name="distance_about">Ca. %1$s</string>
     <string name="on_spot_no_destinations_title">Ingen reisemål ennå</string>
-    <string name="on_spot_one_off_hint">For en enkelt tur, trykk på Søk.</string>
+    <string name="on_spot_where_to">Hvor skal du?</string>
+    <string name="on_spot_none_active_title">Ingen reisemål akkurat nå</string>
+    <string name="on_spot_none_found_title">Fant ingen ruter herfra</string>
     <string name="on_spot_no_stops_body">Rutene over tar med gangen til nærmeste stopp.</string>
     <string name="on_spot_stops_nearby">Stopp innen 1 km fra deg</string>
     <plurals name="on_spot_destinations">

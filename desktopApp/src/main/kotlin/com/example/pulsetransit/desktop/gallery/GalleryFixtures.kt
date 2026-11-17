@@ -6,11 +6,15 @@ package com.example.pulsetransit.desktop.gallery
 import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
+import com.example.pulsetransit.data.OnSpotSplit
 import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.WeatherInfo
+import com.example.pulsetransit.platform.LocationAccuracy
+import com.example.pulsetransit.ui.viewmodel.NearbyStop
+import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
 import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import java.time.Duration
 import java.time.ZoneId
@@ -402,5 +406,71 @@ fun galleryUiState(
             },
         destinationStations = destinations,
         activeDestinationIds = destinations.map { it.id }.toSet(),
+    )
+}
+
+// On-spot mode, routes section showing the route prompt. Places searched for before, newest first.
+private val RECENT_PLACES =
+    listOf(
+        MAJORSTUEN,
+        BYGDOY,
+        StopPlace(id = "NSR:StopPlace:58404", name = "Dronningens gate", locality = "Oslo"),
+        StopPlace(id = "NSR:StopPlace:6505", name = "Frognerparken", locality = "Oslo"),
+        StopPlace(id = "NSR:StopPlace:58195", name = "Aker brygge", locality = "Oslo"),
+    )
+
+/** An on-spot scenario: which destinations are saved and active, and which found no route. */
+class GalleryOnSpotScenario(
+    val name: String,
+    val saved: List<StopPlace>,
+    val active: List<StopPlace>,
+    val recent: List<StopPlace>,
+)
+
+/** The splits each on-spot scenario is rendered at. */
+enum class GalleryOnSpotState(
+    val label: String,
+    val split: Float,
+) {
+    OPEN("open", OnSpotSplit.DEFAULT),
+    STOP_FOLDED("stopfolded", OnSpotSplit.STOP_COLLAPSED),
+
+    /** The routes at the smallest an open section may be. */
+    MIN("min", 0.01f),
+}
+
+/**
+ * spotnew: nothing saved (NO_DESTINATIONS); spotidle: saved, none scheduled now (NONE_ACTIVE);
+ * spotnone: the active one found no route (NONE_FOUND), the others offered beside the recent places.
+ */
+fun galleryOnSpotScenarios(): List<GalleryOnSpotScenario> =
+    listOf(
+        GalleryOnSpotScenario("spotnew", saved = emptyList(), active = emptyList(), recent = RECENT_PLACES.take(2)),
+        GalleryOnSpotScenario("spotidle", saved = listOf(LILLESTROM, GARDERMOEN), active = emptyList(), recent = RECENT_PLACES.take(1)),
+        GalleryOnSpotScenario("spotnone", saved = listOf(LILLESTROM, GARDERMOEN, DRAMMEN), active = listOf(LILLESTROM), recent = RECENT_PLACES),
+    )
+
+/** The on-spot board as the ViewModel leaves it at Oslo S for [scenario], split as [state] says. */
+fun galleryOnSpotUiState(
+    scenario: GalleryOnSpotScenario,
+    state: GalleryOnSpotState,
+    now: ZonedDateTime = galleryNow(),
+): StopBoardViewModel.UiState {
+    val board = galleryUiState(galleryScenarios(now).first(), GalleryState.COLLAPSED, now)
+    val (stop, lines) = STOPS.first { it.first.name == "Oslo S" }
+    return board.copy(
+        mode = AppMode.ON_SPOT,
+        favorites = listOf(stop),
+        departures = listOf(stopDepartures(stop, lines, now)),
+        location = OnSpotLocation.Located(59.911, 10.753, LocationAccuracy.PRECISE),
+        nearbyStops = listOf(NearbyStop(stop, 83)),
+        selectedStopId = stop.id,
+        onSpotSplit = state.split,
+        fastestTrips = emptyMap(),
+        routeAlternativesShownIds = emptySet(),
+        destinationStations = scenario.saved,
+        activeDestinationIds = scenario.active.map { it.id }.toSet(),
+        noRouteDestinationIds = scenario.active.map { it.id }.toSet(),
+        recentDestinations = scenario.recent,
     )
 }

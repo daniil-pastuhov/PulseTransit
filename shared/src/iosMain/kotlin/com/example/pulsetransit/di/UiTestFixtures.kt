@@ -56,16 +56,16 @@ private val gardermoen = StopPlace(id = "NSR:StopPlace:58211", name = "Oslo luft
 /**
  * Which board the fixtures seed, from the launch argument -PTUITestScenario: by default one
  * destination, Majorstuen; THREE also routes to Lillestrøm (a train) and Gardermoen (walk, bus 31,
- * walk, metro 5, tram 17, walk, FLY1), for looking at the route cards' layouts.
+ * walk, metro 5, tram 17, walk, FLY1), for looking at the route cards' layouts. ONSPOT is on-spot
+ * mode with no destination, for looking at the route prompt; ONSPOTRECENT the same with recent places
+ * to suggest. On-spot mode needs a location: set one on the simulator (Oslo S finds the fixtures' stop).
  */
-private enum class UiTestScenario { ONE, THREE }
+private enum class UiTestScenario { ONE, THREE, ONSPOT, ONSPOTRECENT }
 
-private fun uiTestScenario(): UiTestScenario =
-    if (NSUserDefaults.standardUserDefaults.stringForKey("PTUITestScenario").equals("three", ignoreCase = true)) {
-        UiTestScenario.THREE
-    } else {
-        UiTestScenario.ONE
-    }
+private fun uiTestScenario(): UiTestScenario {
+    val name = NSUserDefaults.standardUserDefaults.stringForKey("PTUITestScenario")
+    return UiTestScenario.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: UiTestScenario.ONE
+}
 
 /** What any place search finds, so a test can add a second destination. */
 private val nationaltheatret =
@@ -81,10 +81,20 @@ internal fun uiTestSettings(reset: Boolean): Settings {
 /** Seeds the board the tests expect, once per store. */
 internal fun seedUiTestSettings(settings: SettingsRepository) {
     if (settings.getAppMode() != null) return
+    val scenario = uiTestScenario()
+    if (scenario == UiTestScenario.ONSPOT || scenario == UiTestScenario.ONSPOTRECENT) {
+        settings.setAppMode(AppMode.ON_SPOT)
+        if (scenario == UiTestScenario.ONSPOTRECENT) {
+            // Added oldest first, so Majorstuen is the newest.
+            listOf(gardermoen, lillestrom, nationaltheatret, majorstuen).forEach { settings.addRecentDestination(it) }
+        }
+        settings.setShowWeather(false)
+        return
+    }
     settings.setAppMode(AppMode.BOARD)
     settings.addFavorite(osloS)
     settings.addDestinationStation(majorstuen)
-    if (uiTestScenario() == UiTestScenario.THREE) {
+    if (scenario == UiTestScenario.THREE) {
         settings.addDestinationStation(lillestrom)
         settings.addDestinationStation(gardermoen)
     }
