@@ -10,6 +10,7 @@ import com.example.pulsetransit.data.DateDisplayStyle
 import com.example.pulsetransit.data.Departure
 import com.example.pulsetransit.data.DepartureGroup
 import com.example.pulsetransit.data.DestinationSchedule
+import com.example.pulsetransit.data.DestinationTrips
 import com.example.pulsetransit.data.DimLevel
 import com.example.pulsetransit.data.DirectionSummary
 import com.example.pulsetransit.data.EnturRepository
@@ -34,6 +35,7 @@ import com.example.pulsetransit.data.directionSummary
 import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.earliestArriving
 import com.example.pulsetransit.data.hasPassed
+import com.example.pulsetransit.data.isArriveBy
 import com.example.pulsetransit.data.isArrivedFrom
 import com.example.pulsetransit.data.isInNorway
 import com.example.pulsetransit.data.legStops
@@ -279,6 +281,11 @@ class StopBoardViewModel(
         val samplePlace: SamplePlace? = null,
         /** On-spot mode: the device was found outside Norway, where there is nothing to show. */
         val isOutsideNorway: Boolean = false,
+        /**
+         * One destination's longer list of routes, while its sheet is open (a tap on its card's
+         * title); null when closed. Refreshed with the board. See [DestinationTrips].
+         */
+        val destinationTrips: DestinationTrips? = null,
     ) {
         /**
          * Every destination routes are shown for: the temporary one first, then the saved ones
@@ -405,6 +412,10 @@ class StopBoardViewModel(
     /** Load-more fetches in flight, one per stop; a full refresh supersedes them all. */
     private var loadMoreJobs: Map<String, Job> = emptyMap()
     private var tripsJob: Job? = null
+
+    /** The open [UiState.destinationTrips]' first page and its later page, each superseding the last. */
+    private var destinationTripsJob: Job? = null
+    private var laterTripsJob: Job? = null
 
     /**
      * On-spot: follows the device while the screen is showing (see [startLocationTracking]), or
@@ -1121,6 +1132,7 @@ class StopBoardViewModel(
     private fun refreshFastestTrip() {
         tripsJob?.cancel()
         expirePassedTripTime()
+        refreshDestinationTrips()
         val onSpot = isOnSpot
         val fix = follower.latestFix
         val lat = if (onSpot) fix?.latitude else settingsRepository.getSavedLatitude()
@@ -1166,6 +1178,83 @@ class StopBoardViewModel(
                     }
                 }
             }
+    }
+
+    /**
+     * Opens [destinationId]'s own list of routes ([UiState.destinationTrips]), starting from the
+     * routes its card already has, and fetches [DestinationTrips.FIRST_PAGE] of them.
+     */
+    fun openDestinationTrips(destinationId: String) {
+        val state = _uiState.value
+        val destination = state.routeDestinations.firstOrNull { it.id == destinationId } ?: return
+        val seed = DestinationTrips.chronological(state.fastestTrips[destinationId].orEmpty())
+        _uiState.update { it.copy(destinationTrips = DestinationTrips(destination, trips = seed)) }
+        refreshDestinationTrips()
+    }
+
+    fun closeDestinationTrips() {
+        destinationTripsJob?.cancel()
+        laterTripsJob?.cancel()
+        _uiState.update { it.copy(destinationTrips = null) }
+    }
+
+    /**
+     * Fetches the open list's first page again, from where the board routes from and as the board
+     * does (a searched-for place at its own time); later pages already listed are kept past it.
+     * Runs with every refresh of the board's routes, and on the sheet's refresh button.
+     */
+    fun refreshDestinationTrips() {
+        val open = _uiState.value.destinationTrips ?: return
+        destinationTripsJob?.cancel()
+        laterTripsJob?.cancel()
+        val destination = open.destination
+        val onSpot = isOnSpot
+        val lat = if (onSpot) follower.latestFix?.latitude else settingsRepository.getSavedLatitude()
+        val lon = if (onSpot) follower.latestFix?.longitude else settingsRepository.getSavedLongitude()
+        val options = destinationTripOptions(destination)
+        val hasOrigin = hasRouteOrigin(onSpot, lat, lon)
+        _uiState.update { it.copy(destinationTrips = it.destinationTrips?.copy(isLoading = true, isLoadingLater = false)) }
+        destinationTripsJob =
+            viewModelScope.launch {
+                val result =
+                    if (hasOrigin) fetchTrips(destination, lat, lon, DestinationTrips.FIRST_PAGE, options) else Sourced(emptyList<TripInfo>())
+                currentCoroutineContext().ensureActive() // see fetchStopDepartures
+                val named = result.copy(data = result.data.map { it.copy(destinationName = destination.name) })
+                _uiState.update { state ->
+                    val current = state.destinationTrips?.takeIf { it.destination.id == destination.id } ?: return@update state
+                    state.copy(destinationTrips = current.withFirstPage(named, laterAllowed = !options.time.isArriveBy))
+                }
+            }
+    }
+
+    /** Adds [DestinationTrips.LATER_PAGE] routes leaving after the open list's last one. */
+    fun loadLaterDestinationTrips() {
+        val open = _uiState.value.destinationTrips ?: return
+        if (!open.canLoadLater || open.isLoading || open.isLoadingLater) return
+        val time = open.laterPageTime() ?: return
+        val destination = open.destination
+        val onSpot = isOnSpot
+        val lat = if (onSpot) follower.latestFix?.latitude else settingsRepository.getSavedLatitude()
+        val lon = if (onSpot) follower.latestFix?.longitude else settingsRepository.getSavedLongitude()
+        val options = destinationTripOptions(destination).copy(time = time)
+        _uiState.update { it.copy(destinationTrips = it.destinationTrips?.copy(isLoadingLater = true)) }
+        laterTripsJob =
+            viewModelScope.launch {
+                val result = fetchTrips(destination, lat, lon, DestinationTrips.LATER_PAGE, options)
+                currentCoroutineContext().ensureActive()
+                val named = result.copy(data = result.data.map { it.copy(destinationName = destination.name) })
+                _uiState.update { state ->
+                    val current = state.destinationTrips?.takeIf { it.destination.id == destination.id } ?: return@update state
+                    state.copy(destinationTrips = current.withLaterPage(named))
+                }
+            }
+    }
+
+    /** How the board routes to [destination]: the searched-for place at its own time, the rest now. */
+    private fun destinationTripOptions(destination: StopPlace): RouteOptions {
+        val state = _uiState.value
+        val options = routeOptions()
+        return if (destination.id == state.temporaryDestination?.id) options.copy(time = state.temporaryTripTime) else options
     }
 
     /**

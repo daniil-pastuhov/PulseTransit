@@ -451,6 +451,16 @@
     <string name="route_alternatives_expanded">Expanded</string>
     <string name="route_alternatives_collapsed">Collapsed</string>
     <string name="route_no_later">No later routes</string>
+    <!-- One destination's routes, opened from its card -->
+    <plurals name="destination_trips_span">
+        <item quantity="one">%1$d route · %2$s</item>
+        <item quantity="other">%1$d routes · %2$s–%3$s</item>
+    </plurals>
+    <string name="destination_trips_later">Later routes</string>
+    <string name="destination_trips_offline_body">Showing the routes found last. They update when Entur can be reached again.</string>
+    <string name="destination_trips_failed_body">Couldn’t load routes right now. They show when Entur can be reached again.</string>
+    <string name="destination_trips_cached_body">Showing routes saved at %1$s. They update when Entur can be reached again.</string>
+    <string name="destination_trips_none_body">Entur found no route there right now. Try again in a while.</string>
     <string name="route_show_all_description">Show all routes to %1$s</string>
     <string name="show_alternatives_on_board">Show alternatives on the board</string>
     <string name="trip_time_today">Today</string>

@@ -449,6 +449,16 @@
     <string name="route_alternatives_expanded">Utvidet</string>
     <string name="route_alternatives_collapsed">Skjult</string>
     <string name="route_no_later">Ingen senere reiser</string>
+    <!-- One destination's routes, opened from its card -->
+    <plurals name="destination_trips_span">
+        <item quantity="one">%1$d reise · %2$s</item>
+        <item quantity="other">%1$d reiser · %2$s–%3$s</item>
+    </plurals>
+    <string name="destination_trips_later">Senere reiser</string>
+    <string name="destination_trips_offline_body">Viser reisene som ble funnet sist. De oppdateres når Entur kan nås igjen.</string>
+    <string name="destination_trips_failed_body">Kunne ikke hente reiser akkurat nå. De vises når Entur kan nås igjen.</string>
+    <string name="destination_trips_cached_body">Viser reiser lagret kl. %1$s. De oppdateres når Entur kan nås igjen.</string>
+    <string name="destination_trips_none_body">Entur fant ingen reise dit akkurat nå. Prøv igjen om litt.</string>
     <string name="route_show_all_description">Vis alle reiser til %1$s</string>
     <string name="show_alternatives_on_board">Vis alternativer på tavla</string>
     <string name="trip_time_today">I dag</string>
