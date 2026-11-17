@@ -162,7 +162,7 @@ internal fun DestinationTripsContent(
             list.failed ->
                 ScreenMessage(
                     title = stringResource(if (isOnline) Res.string.stale_entur_title else Res.string.stale_no_internet_title),
-                    body = stringResource(Res.string.destination_trips_offline_body),
+                    body = stringResource(Res.string.destination_trips_failed_body),
                     icon = loadFailureIcon(isOnline),
                 ) { OutlinedButton(onClick = onRefresh) { Text(stringResource(Res.string.try_again)) } }
             list.hasNoRoutes ->

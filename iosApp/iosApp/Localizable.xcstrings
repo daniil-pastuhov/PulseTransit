@@ -1072,6 +1072,23 @@
         }
       }
     },
+    "destination_trips_failed_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn’t load routes right now. They show when Entur can be reached again."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunne ikke hente reiser akkurat nå. De vises når Entur kan nås igjen."
+          }
+        }
+      }
+    },
     "destination_trips_later": {
       "extractionState": "manual",
       "localizations": {

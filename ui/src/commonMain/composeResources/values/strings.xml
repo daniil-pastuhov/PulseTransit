@@ -458,6 +458,7 @@
     </plurals>
     <string name="destination_trips_later">Later routes</string>
     <string name="destination_trips_offline_body">Showing the routes found last. They update when Entur can be reached again.</string>
+    <string name="destination_trips_failed_body">Couldn’t load routes right now. They show when Entur can be reached again.</string>
     <string name="destination_trips_cached_body">Showing routes saved at %1$s. They update when Entur can be reached again.</string>
     <string name="destination_trips_none_body">Entur found no route there right now. Try again in a while.</string>
     <string name="route_show_all_description">Show all routes to %1$s</string>
