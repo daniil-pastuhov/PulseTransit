@@ -1,0 +1,4 @@
+• Når stedstavlen ikke har ruter å vise, får du «Hvor skal du?» med nylige og lagrede steder, ett trykk unna.
+• Trykk på et reisemåls tittel på stedstavlen for å se de neste rutene dit i én liste, med senere ruter ett trykk unna.
+• Rutelisten følger tavlens oppdateringer og beholder de siste rutene hvis Entur ikke kan nås.
+• Et sammenslått rutekort strekker seg ikke lenger for å matche et utvidet kort ved siden av.

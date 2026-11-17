@@ -1,0 +1,4 @@
+• When the on-spot board has no routes to show, a "Where to?" prompt offers your recent and saved places, one tap each.
+• Tap a destination's title on the on-spot board to see its next routes in one list, with later routes a tap away.
+• The routes list follows the board's refreshes and keeps the last routes up if Entur cannot be reached.
+• A collapsed route card no longer stretches to match an expanded one beside it.
