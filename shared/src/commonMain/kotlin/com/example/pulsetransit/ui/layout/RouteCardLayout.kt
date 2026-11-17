@@ -168,8 +168,9 @@ data class NextEntriesFit(
  *    [com.example.pulsetransit.data.BoardRouteAlternatives.visibleRows] lets fit in what is left
  *    (row height: the tallest alternative row measured), else their toggle names them as when
  *    collapsed. At other densities the setting is kept but no rows show.
- * 6. Every card in a grid row is as tall as the tallest ([rowHeights]); how a shorter card fills
- *    the difference is [stretch].
+ * 6. Every card in a grid row is as tall as the tallest ([rowHeights]), except that a card
+ *    showing no alternative rows beside one that does is only as tall as the grid row would be
+ *    without rows ([cardHeights]), at its top; how a shorter card fills the difference is [stretch].
  */
 object RouteCardLayout {
     /** Narrowest a route card gets (times the font scale) before the grid uses fewer columns. */
@@ -250,6 +251,29 @@ object RouteCardLayout {
         columns: Int,
     ): List<Float> = cardHeights.chunked(columns.coerceAtLeast(1)).map { it.max() }
 
+    /**
+     * Each card's height (any one unit), [columns] to a grid row: a card showing alternative rows
+     * ([hasRows]) is as tall as its grid row ([rowHeights] of [natural], the cards as shown); one
+     * without is as tall as the grid row would be with no card showing rows ([rowHeights] of
+     * [collapsed], the cards measured collapsed), and sits at the row's top. So a collapsed card
+     * beside an expanded one keeps its own height instead of growing a tall, empty band, while a
+     * row of collapsed cards, or of expanded ones, stays as tall as its tallest, as before.
+     */
+    fun cardHeights(
+        natural: List<Float>,
+        collapsed: List<Float>,
+        hasRows: List<Boolean>,
+        columns: Int,
+    ): List<Float> {
+        val full = rowHeights(natural, columns)
+        val bare = rowHeights(collapsed, columns)
+        val perRow = columns.coerceAtLeast(1)
+        return natural.indices.map { index ->
+            val row = index / perRow
+            if (hasRows[index]) full[row] else minOf(bare[row], full[row])
+        }
+    }
+
     /** The grid's height: its [rowHeights] and a [gap] between grid rows. */
     fun gridHeight(
         cardHeights: List<Float>,
@@ -280,8 +304,9 @@ object RouteCardLayout {
      *   centred in it, so the clocks side by side line up;
      * - what is left goes to the rows, shared equally, each centred in its share;
      * - with no rows, to the band, which grows upwards while its content stays at its bottom,
-     *   level with the neighbours' bands: a collapsed card beside open ones gets a taller toggle
-     *   (all of it the target), a card without alternatives a taller "No later routes" band;
+     *   level with the neighbours' bands: a collapsed card beside a taller collapsed one gets a
+     *   taller toggle (all of it the target), a card without alternatives a taller "No later
+     *   routes" band (beside an expanded card neither is as tall as the row: [cardHeights]);
      * - with neither, to the journey.
      * The band always ends at the card's bottom, level with its neighbours'.
      */

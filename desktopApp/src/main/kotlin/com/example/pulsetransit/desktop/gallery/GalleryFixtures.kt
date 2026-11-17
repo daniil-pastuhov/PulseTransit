@@ -47,6 +47,9 @@ enum class GalleryState(
 ) {
     COLLAPSED("collapsed"),
     EXPANDED("expanded"),
+
+    /** Only the last card expanded, so a collapsed card shows beside an expanded one. */
+    MIXED("mixed"),
 }
 
 // The pieces of a route, laid end to end from its leaving time.
@@ -391,7 +394,12 @@ fun galleryUiState(
         loadingTripDestinationIds = scenario.loading.map { it.id }.toSet(),
         failedTripDestinationIds = scenario.failed.map { it.id }.toSet(),
         temporaryDestination = scenario.temporary?.first,
-        routeAlternativesShownIds = if (state == GalleryState.EXPANDED) destinations.map { it.id }.toSet() else emptySet(),
+        routeAlternativesShownIds =
+            when (state) {
+                GalleryState.COLLAPSED -> emptySet()
+                GalleryState.EXPANDED -> destinations.map { it.id }.toSet()
+                GalleryState.MIXED -> destinations.takeLast(1).map { it.id }.toSet()
+            },
         destinationStations = destinations,
         activeDestinationIds = destinations.map { it.id }.toSet(),
     )

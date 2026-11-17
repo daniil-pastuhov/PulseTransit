@@ -52,7 +52,8 @@ import kotlin.time.Clock
  * width; all cards take the richest [RouteCardDensity] whose collapsed cards fit above the panels'
  * [BoardLayout.MIN_PANEL_HEIGHT_DP], measured as drawn, and scroll only when not even one line
  * each fits; expanded cards list the alternatives that fit
- * ([BoardRouteAlternatives.visibleRows]); and a grid row's cards are as tall as its tallest.
+ * ([BoardRouteAlternatives.visibleRows]); and a grid row's cards are as tall as its tallest
+ * (a collapsed card beside an expanded one only as tall as the row collapsed, at its top).
  * Departed alternatives drop off on a [ROUTE_CARDS_TICK_MILLIS] tick, as the cache drops them.
  */
 @Composable
@@ -141,7 +142,8 @@ fun BoardBody(
  * until all fit [maxHeight] ([RouteCardLayout.fits]), and at the last one otherwise (the area
  * around scrolls then). At [RouteCardDensity.FULL] the expanded cards' alternative rows are
  * measured too, the tallest standing for every row in [BoardRouteAlternatives.visibleRows]. Then
- * the cards are drawn at the density chosen, each as tall as its grid row.
+ * the cards are drawn at the density chosen, each as tall as its grid row
+ * ([RouteCardLayout.cardHeights]).
  */
 @Composable
 private fun RouteCardGrid(
@@ -243,10 +245,19 @@ private fun RouteCardGrid(
             }
         val natural = specs.indices.map { heads[it] + shownRows[it].sum() }
         val gridRowHeights = RouteCardLayout.rowHeights(natural.map { it.toFloat() }, columns).map { it.toInt() }
+        // A card without rows beside one with them keeps its collapsed height, at the row's top.
+        val cardHeights =
+            RouteCardLayout
+                .cardHeights(
+                    natural = natural.map { it.toFloat() },
+                    collapsed = heads.map { it.toFloat() },
+                    hasRows = shownRows.map { it.isNotEmpty() },
+                    columns = columns,
+                ).map { it.toInt() }
         val headMax = RouteCardLayout.rowHeights(parts.map { it.head.toFloat() }, columns)
         val cards =
             specs.indices.map { index ->
-                val height = gridRowHeights[index / columns]
+                val height = cardHeights[index]
                 val stretch =
                     RouteCardLayout.stretch(
                         head = parts[index].head.toFloat(),
