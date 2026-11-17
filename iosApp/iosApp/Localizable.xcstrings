@@ -4718,19 +4718,36 @@
         }
       }
     },
-    "on_spot_one_off_hint": {
+    "on_spot_none_active_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For a one-off trip, tap Search."
+            "value": "No destinations scheduled now"
           }
         },
         "nb": {
           "stringUnit": {
             "state": "translated",
-            "value": "For en enkelt tur, trykk på Søk."
+            "value": "Ingen reisemål akkurat nå"
+          }
+        }
+      }
+    },
+    "on_spot_none_found_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No routes found from here"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fant ingen ruter herfra"
           }
         }
       }
@@ -4833,6 +4850,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sjekk at posisjonstjenester er på. Innendørs hjelper det å gå nærmere et vindu."
+          }
+        }
+      }
+    },
+    "on_spot_where_to": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where to?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvor skal du?"
           }
         }
       }
@@ -6064,23 +6098,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Til"
-          }
-        }
-      }
-    },
-    "routes_add_destination": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a destination to see routes from where you are."
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Legg til et reisemål for å se reiser herfra."
           }
         }
       }

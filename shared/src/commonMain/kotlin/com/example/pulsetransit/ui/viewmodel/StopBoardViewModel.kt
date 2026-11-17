@@ -251,6 +251,11 @@ class StopBoardViewModel(
         val failedTripDestinationIds: Set<String> = emptySet(),
         /** Destinations Entur answered for but found no route to, e.g. none arrives by the time asked. */
         val noRouteDestinationIds: Set<String> = emptySet(),
+        /**
+         * Shown destinations that were not asked for because the origin is already there (see
+         * `isArrivedFrom`); they come back once it moves away.
+         */
+        val arrivedDestinationIds: Set<String> = emptySet(),
         /** Whether the device has a working connection; explains failures, never gates requests. */
         val isOnline: Boolean = true,
         /** The last change that can still be taken back, shown with Undo; null when there is none. */
@@ -343,6 +348,50 @@ class StopBoardViewModel(
         ): Boolean =
             isBoardRouteCard(destinationId) &&
                 BoardRouteAlternatives.alternatives(fastestTrips[destinationId], nowMillis).isNotEmpty()
+
+        /**
+         * The [routeDestinations] that get a route card: those with routes, loading or failed, and
+         * the searched-for one always. One answered with no route, or arrived at, is left out.
+         */
+        val shownRouteDestinations: List<StopPlace>
+            get() =
+                routeDestinations.filter {
+                    it.id in fastestTrips ||
+                        it.id in loadingTripDestinationIds ||
+                        it.id in failedTripDestinationIds ||
+                        it.id == temporaryDestination?.id
+                }
+
+        /**
+         * On-spot mode: what the routes section shows instead of cards when it has none; see
+         * [OnSpotRoutePrompt]. [OnSpotRoutePrompt.NONE] whenever a card shows, while routes load
+         * or failed, and while some shown destination has not been answered for yet (no fix).
+         */
+        val onSpotRoutePrompt: OnSpotRoutePrompt
+            get() =
+                when {
+                    mode != AppMode.ON_SPOT || shownRouteDestinations.isNotEmpty() -> OnSpotRoutePrompt.NONE
+                    destinationStations.isEmpty() -> OnSpotRoutePrompt.NO_DESTINATIONS
+                    routeDestinations.isEmpty() -> OnSpotRoutePrompt.NONE_ACTIVE
+                    routeDestinations.all { it.id in noRouteDestinationIds || it.id in arrivedDestinationIds } ->
+                        OnSpotRoutePrompt.NONE_FOUND
+                    else -> OnSpotRoutePrompt.NONE
+                }
+
+        /**
+         * The places the route prompt offers, in order: [recentDestinations] (newest first), then
+         * the saved destinations, each once. Left out are those already shown or tried now, i.e.
+         * the [activeDestinationIds] and the temporary destination, since a tap on one would change
+         * nothing. Each goes to [StopBoardViewModel.showTemporaryDestination]. Empty unless
+         * [onSpotRoutePrompt] is shown.
+         */
+        val onSpotRouteSuggestions: List<StopPlace>
+            get() {
+                if (!onSpotRoutePrompt.isShown) return emptyList()
+                return (recentDestinations + destinationStations)
+                    .distinctBy { it.id }
+                    .filter { it.id !in activeDestinationIds && it.id != temporaryDestination?.id }
+            }
 
         /** True while any part of the transit board is missing or stale because a fetch failed. */
         val hasLoadFailure: Boolean
@@ -657,6 +706,7 @@ class StopBoardViewModel(
                 failedStopIds = emptySet(),
                 failedTripDestinationIds = emptySet(),
                 noRouteDestinationIds = emptySet(),
+                arrivedDestinationIds = emptySet(),
                 staleSinceMillis = null,
                 staleAgeMinutes = null,
                 location = OnSpotLocation.Idle,
@@ -1145,6 +1195,10 @@ class StopBoardViewModel(
         val hasOrigin = hasRouteOrigin(onSpot, lat, lon)
 
         val destinationIds = destinations.map { it.id }.toSet()
+        val arrivedIds =
+            _uiState.value.routeDestinations
+                .map { it.id }
+                .toSet() - destinationIds
         // On-spot mode has nowhere to route from until the device is found.
         if (destinations.isEmpty() || (onSpot && fix == null)) {
             _uiState.update {
@@ -1155,6 +1209,7 @@ class StopBoardViewModel(
                     loadingTripDestinationIds = emptySet(),
                     failedTripDestinationIds = emptySet(),
                     noRouteDestinationIds = it.noRouteDestinationIds.intersect(destinationIds),
+                    arrivedDestinationIds = arrivedIds,
                 )
             }
             return
@@ -1166,6 +1221,7 @@ class StopBoardViewModel(
                 loadingTripDestinationIds = destinationIds,
                 failedTripDestinationIds = it.failedTripDestinationIds.intersect(destinationIds),
                 noRouteDestinationIds = it.noRouteDestinationIds.intersect(destinationIds),
+                arrivedDestinationIds = arrivedIds,
             )
         }
 
@@ -1626,6 +1682,7 @@ class StopBoardViewModel(
                 loadingTripDestinationIds = it.loadingTripDestinationIds - destinationId,
                 failedTripDestinationIds = it.failedTripDestinationIds - destinationId,
                 noRouteDestinationIds = it.noRouteDestinationIds - destinationId,
+                arrivedDestinationIds = it.arrivedDestinationIds - destinationId,
             )
         }
     }
@@ -1687,6 +1744,7 @@ class StopBoardViewModel(
                         failedStopIds = emptySet(),
                         failedTripDestinationIds = emptySet(),
                         noRouteDestinationIds = emptySet(),
+                        arrivedDestinationIds = emptySet(),
                     )
                 } else {
                     it

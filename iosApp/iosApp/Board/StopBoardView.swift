@@ -145,7 +145,12 @@ struct StopBoardView: View {
                     )
                 }
                 if state.mode == .onSpot {
-                    OnSpotView(state: state, viewModel: viewModel, onOpenSettings: { showSettings = true })
+                    OnSpotView(
+                        state: state,
+                        viewModel: viewModel,
+                        onOpenSettings: { showSettings = true },
+                        onSearchRoute: { openRouteSearch(on: nil) }
+                    )
                 } else {
                     boardBody(state: state, viewModel: viewModel)
                 }

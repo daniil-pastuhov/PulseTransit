@@ -27,7 +27,8 @@ Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Modules
   address (`IpLocationProvider`, approximate only; `-Dpulsetransit.location=lat,lon` pins one).
   `:desktopApp:renderGallery` draws the board-mode board (`GalleryBoard`) offscreen from fixtures, no
   network, one PNG per scenario, state and size: `<out>/<scenario>-<state>-<size>[-fs150].png`
-  (scenarios `simple`, `long`, `two`, `three`, `five`, `states`; states collapsed/expanded/mixed (only the last card open); sizes
+  (scenarios `simple`, `long`, `two`, `three`, `five`, `states`; states collapsed/expanded/mixed (only the last card open);
+  on-spot route prompt (`GalleryOnSpot`): `spotnew`, `spotidle`, `spotnone` in states open/stopfolded/min; sizes
   `phone`, `tabP`, `tabL`, `tv`, `tvdp`; `-Pscenarios=`, `-Psizes=`, `-PfontScale=1.5`,
   `-Plocale=nb`, `-Pout=`). Look at the images after changing the board's layout.
 - `iosApp/` — the iOS app (SwiftUI, iOS 15+), an Xcode project, not a Gradle module. Its
@@ -141,6 +142,9 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   tour the App Store previews are recorded from (see "Store screenshots and previews" in README).
   `-PTUITest YES` swaps in fixed data (a board at Oslo S with one route to Majorstuen, no network) and
   a settings store of its own, which `-PTUITestReset YES` empties first (`di/UiTestFixtures.kt`).
+  `-PTUITestScenario onspot` seeds on-spot mode with no destination instead (the route prompt), and
+  `onspotrecent` the same with four recent places to suggest; set a simulator location for them
+  (`xcrun simctl location booted set 59.9111,10.7528`, Oslo S).
   The XCUITest target `iosAppUITests` checks journey alerts on it up to the notification prompt:
   on a fresh simulator (CI's) `requestAuthorization` never answers, so following a journey is not
   UI-tested on iOS. It runs with `scripts/run-ios-ui-tests.sh`, which CI's ios-build job runs on
