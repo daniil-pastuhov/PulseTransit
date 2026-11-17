@@ -238,11 +238,18 @@ private struct GridPlan {
         }
         let natural = specs.indices.map { totals[$0] + shownRows[$0].reduce(0, +) }
         let gridRowHeights = RouteCardLayout.shared.rowHeights(cardHeights: natural.kotlin, columns: Int32(columns)).points
+        // A card without rows beside one with them keeps its collapsed height, at the row's top.
+        let cardHeights = RouteCardLayout.shared.cardHeights(
+            natural: natural.kotlin,
+            collapsed: totals.kotlin,
+            hasRows: shownRows.map { KotlinBoolean(bool: !$0.isEmpty) },
+            columns: Int32(columns)
+        ).points
         let headMax = RouteCardLayout.shared.rowHeights(cardHeights: heads.kotlin, columns: Int32(columns)).points
         density = chosen
         self.visible = visible
         fills = specs.indices.map { index in
-            let height = gridRowHeights[index / columns]
+            let height = cardHeights[index]
             let stretch = RouteCardLayout.shared.stretch(
                 head: Float(heads[index]),
                 rowHeadMax: Float(headMax[index / columns]),

@@ -122,6 +122,39 @@ class RouteCardLayoutTest {
     }
 
     @Test
+    fun `a collapsed card beside an expanded one keeps the collapsed row's height`() {
+        // Grid row 1: the second card expanded (its rows 200 tall); grid row 2: both collapsed.
+        val heights =
+            RouteCardLayout.cardHeights(
+                natural = listOf(160f, 380f, 150f, 170f),
+                collapsed = listOf(160f, 180f, 150f, 170f),
+                hasRows = listOf(false, true, false, false),
+                columns = 2,
+            )
+        assertEquals(listOf(180f, 380f, 170f, 170f), heights)
+    }
+
+    @Test
+    fun `cards all expanded or all collapsed are as tall as their grid row`() {
+        val expanded =
+            RouteCardLayout.cardHeights(
+                natural = listOf(300f, 380f),
+                collapsed = listOf(160f, 180f),
+                hasRows = listOf(true, true),
+                columns = 2,
+            )
+        assertEquals(listOf(380f, 380f), expanded)
+        val collapsed =
+            RouteCardLayout.cardHeights(
+                natural = listOf(160f, 180f),
+                collapsed = listOf(160f, 180f),
+                hasRows = listOf(false, false),
+                columns = 2,
+            )
+        assertEquals(listOf(180f, 180f), collapsed)
+    }
+
+    @Test
     fun `a shorter card lines its journey up and gives the rest to its rows`() {
         val stretch = RouteCardLayout.stretch(head = 100f, rowHeadMax = 120f, rows = 2, rowsHeight = 100f, footer = 52f, rowHeight = 312f)
         assertEquals(CardStretch(headBand = 120f, rowExtra = 20f, footerBand = 52f), stretch)
