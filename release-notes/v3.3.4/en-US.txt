@@ -1,0 +1,3 @@
+• Walking speed that fits you: on the on-spot board, the app now learns how fast you walk and can suggest a better Walking speed setting
+• You choose whether to accept the suggestion. Nothing changes unless you do
+• Your walking data stays on your device and is never shared or backed up
