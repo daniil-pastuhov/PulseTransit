@@ -1,15 +1,19 @@
 package com.example.pulsetransit.ui.viewmodel
 
 import androidx.lifecycle.viewModelScope
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.CoordinateProblem
 import com.example.pulsetransit.data.Quay
 import com.example.pulsetransit.data.RouteModeGroup
 import com.example.pulsetransit.data.RouteTransportMode
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TypedCoordinates
+import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
+import com.example.pulsetransit.data.pace.WalkingPaceRecord
+import com.example.pulsetransit.data.pace.WalkingPaceSample
 import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationResult
@@ -488,4 +492,93 @@ class SettingsViewModelTest {
             vm.removeDestinationStation(oslo.id)
             assertEquals(emptySet(), vm.uiState.value.routeAlternativesShownIds)
         }
+
+    private val today = 1_793_174_400_000L / 86_400_000L
+
+    /** Enough walks, on two days, at 1.55 m/s (5.6 km/h): Fast. */
+    private val fastWalker =
+        WalkingPaceRecord(
+            samples = (0 until 6).map { WalkingPaceSample(1.55, 180, today - it % 2) },
+            boutCount = 6,
+        )
+
+    @Test
+    fun `settings show the measured pace and the walking speed it proposes`() {
+        settings.mode = AppMode.ON_SPOT
+        settings.pace = fastWalker
+        settingsTest { vm ->
+            val state = vm.uiState.value
+            assertEquals(56, state.measuredWalkingPace?.kmhTenths)
+            assertEquals(WalkingSpeed.FAST, state.walkingSpeedProposal?.speed)
+            assertTrue(state.hasWalkingPaceData)
+
+            vm.acceptWalkingSpeedProposal()
+            runCurrent()
+
+            assertEquals(WalkingSpeed.FAST, vm.uiState.value.walkingSpeed)
+            assertEquals(WalkingSpeed.FAST, settings.walking)
+            assertNull(vm.uiState.value.walkingSpeedProposal)
+            assertEquals(
+                56,
+                vm.uiState.value.measuredWalkingPace
+                    ?.kmhTenths,
+                "the pace still shows",
+            )
+        }
+    }
+
+    @Test
+    fun `a wall board's settings show the pace but propose nothing`() {
+        settings.pace = fastWalker
+        settingsTest { vm ->
+            assertEquals(
+                56,
+                vm.uiState.value.measuredWalkingPace
+                    ?.kmhTenths,
+            )
+            assertNull(vm.uiState.value.walkingSpeedProposal)
+        }
+    }
+
+    @Test
+    fun `switching Settings to the wall board drops the proposal`() {
+        settings.mode = AppMode.ON_SPOT
+        settings.pace = fastWalker
+        settingsTest { vm ->
+            vm.updateAppMode(AppMode.BOARD)
+            runCurrent()
+
+            assertNull(vm.uiState.value.walkingSpeedProposal)
+            assertTrue(vm.uiState.value.hasWalkingPaceData, "the pace is still there to forget")
+        }
+    }
+
+    @Test
+    fun `choosing another walking speed by hand declines the proposal`() {
+        settings.mode = AppMode.ON_SPOT
+        settings.pace = fastWalker
+        settingsTest { vm ->
+            vm.updateWalkingSpeed(WalkingSpeed.SLOW)
+            runCurrent()
+
+            assertNull(vm.uiState.value.walkingSpeedProposal)
+            assertEquals(WalkingSpeed.FAST.name, settings.pace.declined?.speed)
+        }
+    }
+
+    @Test
+    fun `forgetting the measured pace clears it`() {
+        settings.mode = AppMode.ON_SPOT
+        settings.pace = fastWalker
+        settingsTest { vm ->
+            vm.clearWalkingPace()
+            runCurrent()
+
+            val state = vm.uiState.value
+            assertNull(state.measuredWalkingPace)
+            assertNull(state.walkingSpeedProposal)
+            assertFalse(state.hasWalkingPaceData)
+            assertEquals(WalkingPaceRecord(), settings.pace)
+        }
+    }
 }

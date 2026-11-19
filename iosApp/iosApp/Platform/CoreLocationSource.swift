@@ -139,7 +139,14 @@ final class CoreLocationSource: NSObject, LocationSource, CLLocationManagerDeleg
 
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
-        let fix = LocationResultFix(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude)
+        // Time, accuracy and speed feed the walking pace; CoreLocation marks an unknown one negative.
+        let fix = LocationResultFix(
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude,
+            timeMillis: KotlinLong(value: Int64(location.timestamp.timeIntervalSince1970 * 1000)),
+            accuracyMeters: location.horizontalAccuracy >= 0 ? KotlinDouble(value: location.horizontalAccuracy) : nil,
+            speedMetersPerSecond: location.speed >= 0 ? KotlinDouble(value: location.speed) : nil
+        )
         updates?(fix)
         finish(fix)
     }

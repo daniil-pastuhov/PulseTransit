@@ -34,7 +34,7 @@ class FusedLocationProvider(
                     .getCurrentLocation(accuracy.toPriority(), cts.token)
                     .addOnSuccessListener { location ->
                         continuation.resume(
-                            location?.let { LocationResult.Fix(it.latitude, it.longitude) }
+                            location?.toFix()
                                 ?: LocationResult.Unavailable,
                         )
                     }.addOnFailureListener {
@@ -54,7 +54,7 @@ class FusedLocationProvider(
             val callback =
                 object : LocationCallback() {
                     override fun onLocationResult(result: FusedLocationResult) {
-                        result.lastLocation?.let { trySend(LocationResult.Fix(it.latitude, it.longitude)) }
+                        result.lastLocation?.let { trySend(it.toFix()) }
                     }
 
                     override fun onLocationAvailability(availability: LocationAvailability) {

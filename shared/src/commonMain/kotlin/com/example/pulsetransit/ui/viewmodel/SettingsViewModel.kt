@@ -20,6 +20,10 @@ import com.example.pulsetransit.data.distanceMeters
 import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
+import com.example.pulsetransit.data.pace.MeasuredWalkingPace
+import com.example.pulsetransit.data.pace.WalkingPace
+import com.example.pulsetransit.data.pace.WalkingPaceRecorder
+import com.example.pulsetransit.data.pace.WalkingSpeedProposal
 import com.example.pulsetransit.data.parseTypedCoordinates
 import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
@@ -36,6 +40,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+@Suppress("LongParameterList") // the constructor is the DI seam, so Settings runs on the JVM in tests
 class SettingsViewModel(
     private val enturRepository: EnturRepository,
     private val settingsRepository: SettingsRepository,
@@ -43,6 +48,8 @@ class SettingsViewModel(
     private val locationProvider: LocationProvider,
     private val journeyStore: JourneyStore,
     private val journeyPermissions: JourneyPermissions,
+    // One per app in production (Koin), shared with the board and the journey tracker.
+    private val walkingPace: WalkingPaceRecorder = WalkingPaceRecorder(settingsRepository),
 ) : ViewModel() {
     /** Where the location lookup stands. Each platform turns this into its own localized text. */
     sealed interface LocationStatus {
@@ -75,6 +82,15 @@ class SettingsViewModel(
         val routePreference: RoutePreference = RoutePreference.FASTEST,
         val excludedRouteModes: Set<RouteTransportMode> = emptySet(),
         val walkingSpeed: WalkingSpeed = WalkingSpeed.NORMAL,
+        /**
+         * How fast the user was measured to walk on this device ("Measured on this device: about
+         * 5.4 km/h"); null until there is enough evidence. See [WalkingPace].
+         */
+        val measuredWalkingPace: MeasuredWalkingPace? = null,
+        /** On-spot mode: a walking speed that fits [measuredWalkingPace] better than [walkingSpeed]; null when none. */
+        val walkingSpeedProposal: WalkingSpeedProposal? = null,
+        /** Anything measured at all, even too little for [measuredWalkingPace]: what [clearWalkingPace] forgets. */
+        val hasWalkingPaceData: Boolean = false,
         /** Whether this platform has journey alerts at all, and so their setting. */
         val journeyAlertsSupported: Boolean = false,
         /** How "Notify me about this journey" follows a journey; null until first chosen. */
@@ -157,6 +173,17 @@ class SettingsViewModel(
     init {
         loadSettings()
         viewModelScope.launch {
+            walkingPace.state.collect { pace ->
+                _uiState.update {
+                    it.copy(
+                        measuredWalkingPace = pace.measured,
+                        walkingSpeedProposal = pace.proposal,
+                        hasWalkingPaceData = pace.hasData,
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
             sensorManager.getLightFlow().collect { lux ->
                 _uiState.update { it.copy(currentLux = lux) }
             }
@@ -164,6 +191,7 @@ class SettingsViewModel(
     }
 
     fun loadSettings() {
+        walkingPace.refresh()
         val favs = settingsRepository.getFavorites()
         val quaysMap = favs.associateBy({ it.id }) { settingsRepository.getSelectedQuays(it.id) ?: emptySet() }
 
@@ -283,6 +311,7 @@ class SettingsViewModel(
     fun updateAppMode(mode: AppMode) {
         settingsRepository.setAppMode(mode)
         _uiState.update { it.copy(appMode = mode) }
+        walkingPace.refresh() // only on-spot mode proposes a walking speed
     }
 
     fun updateTripOptionsCount(count: Int) {
@@ -316,7 +345,19 @@ class SettingsViewModel(
     fun updateWalkingSpeed(speed: WalkingSpeed) {
         settingsRepository.setWalkingSpeed(speed)
         _uiState.update { it.copy(walkingSpeed = speed) }
+        walkingPace.onWalkingSpeedChosen(speed)
     }
+
+    /** "Use Fast" under the picker: sets [UiState.walkingSpeedProposal]'s speed. */
+    fun acceptWalkingSpeedProposal() {
+        if (walkingPace.accept()) _uiState.update { it.copy(walkingSpeed = settingsRepository.getWalkingSpeed()) }
+    }
+
+    /** Declines [UiState.walkingSpeedProposal]; its level is not proposed again until much more is measured. */
+    fun dismissWalkingSpeedProposal() = walkingPace.dismiss()
+
+    /** Forgets the measured pace, so the app learns it again from scratch. */
+    fun clearWalkingPace() = walkingPace.clear()
 
     /**
      * Allows or excludes [mode] for routes. The last allowed kind cannot be excluded: with no

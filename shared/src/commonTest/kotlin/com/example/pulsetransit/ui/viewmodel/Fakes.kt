@@ -22,6 +22,7 @@ import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.data.pace.WalkingPaceRecord
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ClockText
 import com.example.pulsetransit.platform.ConnectivityMonitor
@@ -384,6 +385,14 @@ class FakeSettingsRepository : SettingsRepository {
 
     override fun setWalkingSpeed(speed: WalkingSpeed) {
         walking = speed
+    }
+
+    var pace = WalkingPaceRecord()
+
+    override fun getWalkingPace() = pace
+
+    override fun setWalkingPace(record: WalkingPaceRecord) {
+        pace = record
     }
 
     override fun getRoutePreference() = preference

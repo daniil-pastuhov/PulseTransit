@@ -22,12 +22,17 @@ import kotlin.time.Duration.Companion.milliseconds
  * where it last did, and at most once per [MOVE_THROTTLE_MILLIS] (with the latest fix by then), so
  * walking doesn't hammer Entur.
  */
+@Suppress("LongParameterList") // the callbacks are how the board hears of each state, move and fix
 internal class DeviceFollower(
     private val locationProvider: LocationProvider,
     private val clock: Clock,
     private val scope: CoroutineScope,
     private val onLocation: (OnSpotLocation) -> Unit,
     private val onMoved: (LocationResult.Fix) -> Unit,
+    /** Every fix as it comes, moved far enough or not (the walking pace reads them). */
+    private val onFix: (LocationResult.Fix) -> Unit = {},
+    /** Following stopped, by [stop] or [reset]. */
+    private val onStopped: () -> Unit = {},
 ) {
     companion object {
         const val MIN_MOVE_METERS = 20.0
@@ -55,6 +60,7 @@ internal class DeviceFollower(
         followJob = null
         moveJob?.cancel()
         moveJob = null
+        onStopped()
     }
 
     /** Stops and forgets every fix, so the next start reports its first fix as a move. */
@@ -127,6 +133,7 @@ internal class DeviceFollower(
         accuracy: LocationAccuracy,
     ) {
         latestFix = fix
+        onFix(fix)
         onLocation(OnSpotLocation.Located(fix.latitude, fix.longitude, accuracy))
         val last = lastMovedFix
         val moved = last == null || distanceMeters(last.latitude, last.longitude, fix.latitude, fix.longitude) >= MIN_MOVE_METERS

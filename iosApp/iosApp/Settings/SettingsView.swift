@@ -446,6 +446,7 @@ private struct RouteSearchSection: View {
                 selection: state.walkingSpeed,
                 onSelect: { model.viewModel.updateWalkingSpeed(speed: $0) }
             )
+            WalkingPaceRows(state: state, viewModel: model.viewModel)
             if showsAlternatives {
                 OptionPicker(
                     title: L("trip_options_title"),
@@ -457,6 +458,33 @@ private struct RouteSearchSection: View {
                     onSelect: { model.viewModel.updateTripOptionsCount(count: $0) }
                 )
             }
+        }
+    }
+}
+
+/// Under the walking speed: the pace measured on this device, the speed it fits when that differs
+/// from the one set (on the spot only, as the state says), the privacy note and the way to forget it.
+private struct WalkingPaceRows: View {
+    let state: SettingsViewModel.UiState
+    let viewModel: SettingsViewModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(WalkingPaceText.measured(state.measuredWalkingPace))
+                .font(.pulse(.footnote))
+                .foregroundColor(Palette.textPrimary)
+                .accessibilityIdentifier("settings.walkingPace.measured")
+            Text(L("walking_pace_privacy")).font(.pulse(.footnote)).foregroundColor(Palette.textSecondary)
+        }
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+        if let proposal = state.walkingSpeedProposal {
+            Button(WalkingPaceText.use(proposal.speed)) { viewModel.acceptWalkingSpeedProposal() }
+                .accessibilityIdentifier("settings.walkingPace.accept")
+        }
+        if state.hasWalkingPaceData {
+            Button(L("walking_pace_forget"), role: .destructive) { viewModel.clearWalkingPace() }
+                .accessibilityIdentifier("settings.walkingPace.forget")
         }
     }
 }

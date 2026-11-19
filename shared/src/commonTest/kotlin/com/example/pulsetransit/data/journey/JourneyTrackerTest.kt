@@ -1,5 +1,6 @@
 package com.example.pulsetransit.data.journey
 
+import com.example.pulsetransit.data.AppMode
 import com.example.pulsetransit.data.Sourced
 import com.example.pulsetransit.data.journey.JourneyFixtures.BUS_JOURNEY
 import com.example.pulsetransit.data.journey.JourneyFixtures.METRO_JOURNEY
@@ -8,11 +9,13 @@ import com.example.pulsetransit.data.journey.JourneyFixtures.at
 import com.example.pulsetransit.data.journey.JourneyFixtures.journey
 import com.example.pulsetransit.data.journey.JourneyFixtures.liveStops
 import com.example.pulsetransit.data.journey.JourneyFixtures.tramOn
+import com.example.pulsetransit.data.pace.WalkingPaceRecorder
 import com.example.pulsetransit.platform.JourneyNotifier
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationResult
 import com.example.pulsetransit.ui.viewmodel.FakeEnturRepository
 import com.example.pulsetransit.ui.viewmodel.FakeLocationProvider
+import com.example.pulsetransit.ui.viewmodel.FakeSettingsRepository
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -97,13 +100,14 @@ class JourneyTrackerTest {
     private fun TestScope.track(
         journey: TrackedJourney,
         startAt: Long,
+        walkingPace: WalkingPaceRecorder? = null,
     ): TrackerHarness {
         store.start(journey)
         val clock =
             object : Clock {
                 override fun now() = Instant.fromEpochMilliseconds(startAt + testScheduler.currentTime)
             }
-        val tracker = JourneyTracker(store, entur, notifier, location, clock)
+        val tracker = JourneyTracker(store, entur, notifier, location, clock, walkingPace = walkingPace)
         val job = launch { tracker.run() }
         runCurrent()
         return TrackerHarness(tracker, job)
@@ -115,6 +119,47 @@ class JourneyTrackerTest {
     }
 
     private val shownIds get() = notifier.shown.map { it.id }
+
+    /** Nine fixes 15 s apart from [from], heading north at 1.4 m/s from Jernbanetorget, advancing time with them. */
+    private suspend fun TestScope.walkFixes(from: Long) {
+        val (_, lat, lon) = JourneyFixtures.jernbanetorget
+        (0..8).forEach { i ->
+            if (i > 0) advanceTimeBy(15_000)
+            location.updates.getValue(LocationAccuracy.PRECISE).emit(
+                LocationResult.Fix(lat + (i * 21.0 - 168.0) / 111_195.0, lon, timeMillis = from + i * 15_000L, accuracyMeters = 5.0),
+            )
+            runCurrent()
+        }
+    }
+
+    @Test
+    fun `the walk to the first ride measures the walking pace`() =
+        trackerTest {
+            val settings = FakeSettingsRepository().apply { mode = AppMode.ON_SPOT }
+            val harness = track(journey(JourneyTrackingMode.LOCATION), startAt = at(0), walkingPace = WalkingPaceRecorder(settings))
+
+            walkFixes(from = at(0))
+            harness.job.cancel()
+            runCurrent()
+
+            val sample = settings.pace.samples.single()
+            assertEquals(1.4, sample.metersPerSecond)
+            assertEquals(120, sample.seconds)
+        }
+
+    @Test
+    fun `fixes on a ride never measure the walking pace`() =
+        trackerTest {
+            val settings = FakeSettingsRepository().apply { mode = AppMode.ON_SPOT }
+            // At T0+7 the metro is under way: a crawl in it is not a walk.
+            val harness = track(journey(JourneyTrackingMode.LOCATION), startAt = at(7), walkingPace = WalkingPaceRecorder(settings))
+
+            walkFixes(from = at(7))
+            harness.job.cancel()
+            runCurrent()
+
+            assertTrue(settings.pace.samples.isEmpty())
+        }
 
     @Test
     fun `time-only alerts come at their times and never read the location`() =

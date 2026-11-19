@@ -15,6 +15,7 @@ import com.example.pulsetransit.data.journey.JourneyOpenRequests
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTracker
+import com.example.pulsetransit.data.pace.WalkingPaceRecorder
 import com.example.pulsetransit.data.widget.BoardWidgetSource
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
@@ -62,6 +63,7 @@ val sharedModule =
         single { BoardWidgetSource(enturRepository = get(), weatherRepository = get(), settingsRepository = get()) }
         single<JourneyStore> { JourneyStoreImpl(prefs = get()) }
         single { JourneyOpenRequests() }
+        single { WalkingPaceRecorder(settings = get()) }
         single {
             val settings = get<SettingsRepository>()
             JourneyTracker(
@@ -78,6 +80,7 @@ val sharedModule =
                         walkingSpeed = settings.getWalkingSpeed(),
                     )
                 },
+                walkingPace = get(),
             )
         }
 
@@ -91,6 +94,7 @@ val sharedModule =
                 clockFormatter = get(),
                 connectivityMonitor = get(),
                 locationProvider = get(),
+                walkingPace = get(),
             )
         }
         viewModel { ModeSelectionViewModel(settingsRepository = get()) }
@@ -107,6 +111,7 @@ val sharedModule =
                 locationProvider = get(),
                 journeyStore = get(),
                 journeyPermissions = get(),
+                walkingPace = get(),
             )
         }
     }

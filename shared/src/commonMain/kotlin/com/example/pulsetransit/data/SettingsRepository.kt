@@ -1,5 +1,6 @@
 package com.example.pulsetransit.data
 
+import com.example.pulsetransit.data.pace.WalkingPaceRecord
 import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
@@ -54,6 +55,16 @@ interface SettingsRepository {
     fun getWalkingSpeed(): WalkingSpeed
 
     fun setWalkingSpeed(speed: WalkingSpeed)
+
+    /**
+     * The walking pace measured on this device (see [com.example.pulsetransit.data.pace.WalkingPace]):
+     * per-walk speeds with a day stamp, never a coordinate. Like where the device last was, it is
+     * kept out of backups and never leaves the device; on a platform without such a store it lasts
+     * only while the app runs. Empty until something was measured.
+     */
+    fun getWalkingPace(): WalkingPaceRecord
+
+    fun setWalkingPace(record: WalkingPaceRecord)
 
     /** Transit kinds routes to the destinations may not use; empty allows all. */
     fun getExcludedRouteModes(): Set<RouteTransportMode>

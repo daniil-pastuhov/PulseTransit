@@ -1,5 +1,6 @@
 package com.example.pulsetransit.data
 
+import com.example.pulsetransit.data.pace.WalkingPaceRecord
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,7 @@ class SettingsRepositoryImpl(
         const val DESTINATION_SCHEDULES = "destination_schedules_json"
         const val ROUTE_ALTERNATIVES_SHOWN = "route_alternatives_shown_json"
         const val SAMPLE_PLACE = "sample_place"
+        const val WALKING_PACE = "walking_pace_json"
 
         fun selectedQuays(stopId: String) = "quays_json_$stopId"
     }
@@ -143,6 +145,31 @@ class SettingsRepositoryImpl(
 
     override fun setWalkingSpeed(speed: WalkingSpeed) {
         prefs.putString("walking_speed", speed.name)
+    }
+
+    /** The measured pace when there is no [deviceState] to keep it in: this run only, never backed up. */
+    private var walkingPaceInMemory = WalkingPaceRecord()
+
+    // In deviceState, never in prefs: prefs are backed up, and the pace must stay on the device.
+    override fun getWalkingPace(): WalkingPaceRecord {
+        val store = deviceState ?: return walkingPaceInMemory
+        val jsonStr = store.getStringOrNull(Keys.WALKING_PACE) ?: return WalkingPaceRecord()
+        return try {
+            json.decodeFromString<WalkingPaceRecord>(jsonStr)
+        } catch (_: Exception) {
+            WalkingPaceRecord()
+        }
+    }
+
+    override fun setWalkingPace(record: WalkingPaceRecord) {
+        val store = deviceState
+        if (store == null) {
+            walkingPaceInMemory = record
+        } else if (record == WalkingPaceRecord()) {
+            store.remove(Keys.WALKING_PACE)
+        } else {
+            store.putString(Keys.WALKING_PACE, json.encodeToString(record))
+        }
     }
 
     // A name this build does not know (from a newer one) is dropped, and so is a set excluding

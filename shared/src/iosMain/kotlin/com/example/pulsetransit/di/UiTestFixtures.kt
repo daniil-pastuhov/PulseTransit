@@ -15,6 +15,8 @@ import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
 import com.example.pulsetransit.data.WeatherInfo
 import com.example.pulsetransit.data.WeatherRepository
+import com.example.pulsetransit.data.pace.WalkingPaceRecord
+import com.example.pulsetransit.data.pace.WalkingPaceSample
 import com.example.pulsetransit.platform.AppUpdate
 import com.example.pulsetransit.platform.AppUpdateChecker
 import com.russhwolf.settings.NSUserDefaultsSettings
@@ -58,14 +60,28 @@ private val gardermoen = StopPlace(id = "NSR:StopPlace:58211", name = "Oslo luft
  * destination, Majorstuen; THREE also routes to Lillestrøm (a train) and Gardermoen (walk, bus 31,
  * walk, metro 5, tram 17, walk, FLY1), for looking at the route cards' layouts. ONSPOT is on-spot
  * mode with no destination, for looking at the route prompt; ONSPOTRECENT the same with recent places
- * to suggest. On-spot mode needs a location: set one on the simulator (Oslo S finds the fixtures' stop).
+ * to suggest; ONSPOTPACE the same with a measured walking pace (about 5.6 km/h, on three days) that
+ * proposes Fast walking speed over the Normal one set, for looking at the proposal on the board and
+ * in Settings. On-spot mode needs a location: set one on the simulator (Oslo S finds the fixtures' stop).
  */
-private enum class UiTestScenario { ONE, THREE, ONSPOT, ONSPOTRECENT }
+private enum class UiTestScenario { ONE, THREE, ONSPOT, ONSPOTRECENT, ONSPOTPACE }
 
 private fun uiTestScenario(): UiTestScenario {
     val name = NSUserDefaults.standardUserDefaults.stringForKey("PTUITestScenario")
     return UiTestScenario.entries.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: UiTestScenario.ONE
 }
+
+/** Eight walks on three days with a median of 1.55 m/s (5.6 km/h): enough to propose Fast over Normal. */
+private fun fastWalkerPace(): WalkingPaceRecord {
+    val today = Clock.System.now().toEpochMilliseconds() / DAY_MILLIS
+    val speeds = listOf(1.52, 1.58, 1.49, 1.61, 1.55, 1.50, 1.57, 1.55)
+    return WalkingPaceRecord(
+        samples = speeds.mapIndexed { i, speed -> WalkingPaceSample(metersPerSecond = speed, seconds = 240, day = today - 2 + i / 3) },
+        boutCount = speeds.size,
+    )
+}
+
+private const val DAY_MILLIS = 86_400_000L
 
 /** What any place search finds, so a test can add a second destination. */
 private val nationaltheatret =
@@ -78,16 +94,29 @@ internal fun uiTestSettings(reset: Boolean): Settings {
     return NSUserDefaultsSettings(defaults)
 }
 
+/**
+ * The tests' own store for what stays on the device (where it last was, the measured walking pace),
+ * so a seeded pace never reaches the user's.
+ */
+internal fun uiTestDeviceState(reset: Boolean): Settings {
+    val defaults = NSUserDefaults(suiteName = DEVICE_SUITE)
+    if (reset) defaults.removePersistentDomainForName(DEVICE_SUITE)
+    return NSUserDefaultsSettings(defaults)
+}
+
+private const val DEVICE_SUITE = "$SUITE.device"
+
 /** Seeds the board the tests expect, once per store. */
 internal fun seedUiTestSettings(settings: SettingsRepository) {
     if (settings.getAppMode() != null) return
     val scenario = uiTestScenario()
-    if (scenario == UiTestScenario.ONSPOT || scenario == UiTestScenario.ONSPOTRECENT) {
+    if (scenario == UiTestScenario.ONSPOT || scenario == UiTestScenario.ONSPOTRECENT || scenario == UiTestScenario.ONSPOTPACE) {
         settings.setAppMode(AppMode.ON_SPOT)
         if (scenario == UiTestScenario.ONSPOTRECENT) {
             // Added oldest first, so Majorstuen is the newest.
             listOf(gardermoen, lillestrom, nationaltheatret, majorstuen).forEach { settings.addRecentDestination(it) }
         }
+        if (scenario == UiTestScenario.ONSPOTPACE) settings.setWalkingPace(fastWalkerPace())
         settings.setShowWeather(false)
         return
     }

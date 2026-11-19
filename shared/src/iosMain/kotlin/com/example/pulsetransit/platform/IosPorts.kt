@@ -30,6 +30,8 @@ interface LocationSource {
      * Starts continuous updates: [onResult] gets a fix each time the device has moved
      * [distanceFilterMeters], and the other [LocationResult]s as described on
      * [LocationProvider.locationUpdates]. Runs until [stopUpdates]; a new call replaces the last.
+     * Each [LocationResult.Fix] should carry the fix's time, horizontal accuracy and speed where
+     * CoreLocation knows them (the walking pace needs them; a fix without accuracy is not used).
      */
     fun startUpdates(
         accuracy: LocationAccuracy,

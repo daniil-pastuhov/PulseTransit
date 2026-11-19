@@ -11,7 +11,10 @@ import com.example.pulsetransit.data.StopDepartures
 import com.example.pulsetransit.data.StopPlace
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.TripLeg
+import com.example.pulsetransit.data.WalkingSpeed
 import com.example.pulsetransit.data.WeatherInfo
+import com.example.pulsetransit.data.pace.MeasuredWalkingPace
+import com.example.pulsetransit.data.pace.WalkingSpeedProposal
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.ui.viewmodel.NearbyStop
 import com.example.pulsetransit.ui.viewmodel.OnSpotLocation
@@ -425,6 +428,8 @@ class GalleryOnSpotScenario(
     val saved: List<StopPlace>,
     val active: List<StopPlace>,
     val recent: List<StopPlace>,
+    /** A walking speed proposal on the board, as after the pace was measured. */
+    val walkingSpeedProposal: WalkingSpeedProposal? = null,
 )
 
 /** The splits each on-spot scenario is rendered at. */
@@ -441,13 +446,22 @@ enum class GalleryOnSpotState(
 
 /**
  * spotnew: nothing saved (NO_DESTINATIONS); spotidle: saved, none scheduled now (NONE_ACTIVE);
- * spotnone: the active one found no route (NONE_FOUND), the others offered beside the recent places.
+ * spotnone: the active one found no route (NONE_FOUND), the others offered beside the recent places;
+ * spotpace: spotidle with a walking speed proposal (Fast, measured about 5.6 km/h, Normal set).
  */
 fun galleryOnSpotScenarios(): List<GalleryOnSpotScenario> =
     listOf(
         GalleryOnSpotScenario("spotnew", saved = emptyList(), active = emptyList(), recent = RECENT_PLACES.take(2)),
         GalleryOnSpotScenario("spotidle", saved = listOf(LILLESTROM, GARDERMOEN), active = emptyList(), recent = RECENT_PLACES.take(1)),
         GalleryOnSpotScenario("spotnone", saved = listOf(LILLESTROM, GARDERMOEN, DRAMMEN), active = listOf(LILLESTROM), recent = RECENT_PLACES),
+        GalleryOnSpotScenario(
+            "spotpace",
+            saved = listOf(LILLESTROM, GARDERMOEN),
+            active = emptyList(),
+            recent = RECENT_PLACES.take(1),
+            walkingSpeedProposal =
+                WalkingSpeedProposal(WalkingSpeed.FAST, WalkingSpeed.NORMAL, MeasuredWalkingPace(metersPerSecond = 1.55, bouts = 8)),
+        ),
     )
 
 /** The on-spot board as the ViewModel leaves it at Oslo S for [scenario], split as [state] says. */
@@ -472,5 +486,6 @@ fun galleryOnSpotUiState(
         activeDestinationIds = scenario.active.map { it.id }.toSet(),
         noRouteDestinationIds = scenario.active.map { it.id }.toSet(),
         recentDestinations = scenario.recent,
+        walkingSpeedProposal = scenario.walkingSpeedProposal,
     )
 }

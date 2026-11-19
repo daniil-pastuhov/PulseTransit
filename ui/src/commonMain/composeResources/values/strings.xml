@@ -267,6 +267,20 @@
     <string name="walking_speed_slow">Slow</string>
     <string name="walking_speed_normal">Normal</string>
     <string name="walking_speed_fast">Fast</string>
+    <!-- Walking pace measured on the device, and the walking speed it proposes. %1$s is km/h with one decimal. -->
+    <string name="walking_pace_proposal_title_faster">You walk faster than the app assumes</string>
+    <string name="walking_pace_proposal_title_slower">You walk slower than the app assumes</string>
+    <string name="walking_pace_proposal_body_slow">Measured on this device: about %1$s km/h. Use Slow walking speed for routes?</string>
+    <string name="walking_pace_proposal_body_normal">Measured on this device: about %1$s km/h. Use Normal walking speed for routes?</string>
+    <string name="walking_pace_proposal_body_fast">Measured on this device: about %1$s km/h. Use Fast walking speed for routes?</string>
+    <string name="walking_pace_use_slow">Use Slow</string>
+    <string name="walking_pace_use_normal">Use Normal</string>
+    <string name="walking_pace_use_fast">Use Fast</string>
+    <string name="walking_pace_not_now">Not now</string>
+    <string name="walking_pace_measured">Measured on this device: about %1$s km/h</string>
+    <string name="walking_pace_not_measured">Not measured yet. The app learns your pace while it follows you on foot.</string>
+    <string name="walking_pace_forget">Forget measured pace</string>
+    <string name="walking_pace_privacy">Your pace is measured from the location the app already uses, and kept on this device only.</string>
     <string name="update_available">A new version of PulseTransit is available</string>
     <string name="update_app">Update</string>
     <string name="dismiss_update">Not now</string>

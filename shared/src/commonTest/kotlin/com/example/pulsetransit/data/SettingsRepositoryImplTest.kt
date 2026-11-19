@@ -1,5 +1,7 @@
 package com.example.pulsetransit.data
 
+import com.example.pulsetransit.data.pace.WalkingPaceRecord
+import com.example.pulsetransit.data.pace.WalkingPaceSample
 import com.russhwolf.settings.MapSettings
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -22,6 +24,38 @@ class SettingsRepositoryImplTest {
         assertEquals(59.9111 to 10.7523, withDevice.getDeviceLocation())
         assertTrue(store.keys.isEmpty(), "nothing in the backed-up store")
         assertEquals(59.9111 to 10.7523, SettingsRepositoryImpl(MapSettings(), deviceState).getDeviceLocation())
+    }
+
+    @Test
+    fun `the walking pace is kept with the device state and never in the backed-up settings`() {
+        val deviceState = MapSettings()
+        val record = WalkingPaceRecord(listOf(WalkingPaceSample(1.42, 150, 20_000)), boutCount = 3)
+
+        SettingsRepositoryImpl(store, deviceState).setWalkingPace(record)
+
+        assertTrue(store.keys.isEmpty(), "nothing in the backed-up store")
+        assertEquals(record, SettingsRepositoryImpl(MapSettings(), deviceState).getWalkingPace())
+        SettingsRepositoryImpl(store, deviceState).setWalkingPace(WalkingPaceRecord())
+        assertTrue(deviceState.keys.isEmpty(), "forgetting removes it")
+    }
+
+    @Test
+    fun `without a device store the walking pace lasts only while the app runs`() {
+        val record = WalkingPaceRecord(listOf(WalkingPaceSample(1.42, 150, 20_000)), boutCount = 1)
+
+        repo.setWalkingPace(record)
+
+        assertEquals(record, repo.getWalkingPace())
+        assertTrue(store.keys.isEmpty())
+        assertEquals(WalkingPaceRecord(), SettingsRepositoryImpl(store).getWalkingPace())
+    }
+
+    @Test
+    fun `a walking pace it cannot read is empty`() {
+        val deviceState = MapSettings()
+        deviceState.putString(SettingsRepositoryImpl.Keys.WALKING_PACE, "not json")
+
+        assertEquals(WalkingPaceRecord(), SettingsRepositoryImpl(store, deviceState).getWalkingPace())
     }
 
     @Test
