@@ -39,6 +39,8 @@ import com.example.pulsetransit.data.isArriveBy
 import com.example.pulsetransit.data.isArrivedFrom
 import com.example.pulsetransit.data.isInNorway
 import com.example.pulsetransit.data.legStops
+import com.example.pulsetransit.data.pace.WalkingPaceRecorder
+import com.example.pulsetransit.data.pace.WalkingSpeedProposal
 import com.example.pulsetransit.data.stopsAhead
 import com.example.pulsetransit.platform.ClockFormatter
 import com.example.pulsetransit.platform.ConnectivityMonitor
@@ -81,6 +83,8 @@ class StopBoardViewModel(
     private val timeZone: () -> TimeZone = { NorwayTimeZone },
     // Read on each tick, so the "Norway time" label follows the device into another time zone.
     private val deviceTimeZone: () -> TimeZone = { TimeZone.currentSystemDefault() },
+    // One per app in production (Koin), shared with Settings and the journey tracker.
+    private val walkingPace: WalkingPaceRecorder = WalkingPaceRecorder(settingsRepository, clock),
 ) : ViewModel() {
     private companion object {
         // Auto theme hysteresis thresholds (lux). At/below DARK -> dark, at/above LIGHT -> light,
@@ -291,6 +295,12 @@ class StopBoardViewModel(
          * title); null when closed. Refreshed with the board. See [DestinationTrips].
          */
         val destinationTrips: DestinationTrips? = null,
+        /**
+         * On-spot mode: a walking speed for routes that fits how the user was measured to walk, to
+         * accept ([acceptWalkingSpeedProposal]) or decline ([dismissWalkingSpeedProposal]); null
+         * when there is none, and always in board mode.
+         */
+        val walkingSpeedProposal: WalkingSpeedProposal? = null,
     ) {
         /**
          * Every destination routes are shown for: the temporary one first, then the saved ones
@@ -477,6 +487,9 @@ class StopBoardViewModel(
             viewModelScope,
             onLocation = ::showLocation,
             onMoved = ::onDeviceMoved,
+            // A sample place is not where the device is; its fixes carry no accuracy anyway.
+            onFix = { fix -> if (_uiState.value.samplePlace == null) walkingPace.onFix(WalkingPaceRecorder.Source.ON_SPOT, fix) },
+            onStopped = { walkingPace.endBout(WalkingPaceRecorder.Source.ON_SPOT) },
         )
     private var isTrackingRequested = false
     private var nearbyJob: Job? = null
@@ -492,6 +505,9 @@ class StopBoardViewModel(
         startClock()
         startAutoRefresh()
         observeSettings()
+        walkingPace.state
+            .onEach { pace -> _uiState.update { it.copy(walkingSpeedProposal = shownProposal(it, pace.proposal)) } }
+            .launchIn(viewModelScope)
 
         var wasOnline = true
         connectivityMonitor
@@ -638,7 +654,21 @@ class StopBoardViewModel(
         applyWeatherSetting(showWeather, weatherTurnedOn)
         setupSensors()
         updateDirectionSummaries(favs)
+        // The mode or the walking speed may have changed in Settings.
+        walkingPace.refresh()
+        val proposal = walkingPace.state.value.proposal
+        _uiState.update { it.copy(walkingSpeedProposal = shownProposal(it, proposal)) }
     }
+
+    /**
+     * The walking speed proposal [state] shows: only on the on-spot board (the recorder makes none
+     * in board mode anyway), and not at a sample place, whose notice takes the place and which says
+     * nothing about how the device walks.
+     */
+    private fun shownProposal(
+        state: UiState,
+        proposal: WalkingSpeedProposal?,
+    ): WalkingSpeedProposal? = proposal.takeIf { state.mode == AppMode.ON_SPOT && state.samplePlace == null }
 
     /**
      * Summarises each favorite's picked directions, and looks up the quays of those that have a
@@ -1688,6 +1718,17 @@ class StopBoardViewModel(
     }
 
     /**
+     * Uses [UiState.walkingSpeedProposal]'s walking speed for routes, and searches the routes again
+     * with it, as changing it in Settings does.
+     */
+    fun acceptWalkingSpeedProposal() {
+        if (walkingPace.accept()) refreshFastestTrip()
+    }
+
+    /** "Not now": the proposal goes, and its level is not proposed again until much more is measured. */
+    fun dismissWalkingSpeedProposal() = walkingPace.dismiss()
+
+    /**
      * Starts following the device in on-spot mode; in board mode it only remembers that the
      * screen is showing, so switching to on-spot starts it. Stays on until
      * [stopLocationTracking], so the screen calls the pair from its start/stop lifecycle events.
@@ -1751,6 +1792,7 @@ class StopBoardViewModel(
                 }
             cleared.copy(
                 samplePlace = place,
+                walkingSpeedProposal = shownProposal(cleared.copy(samplePlace = place), walkingPace.state.value.proposal),
                 isOutsideNorway = false,
                 location = OnSpotLocation.Idle,
                 nearbyStops = emptyList(),

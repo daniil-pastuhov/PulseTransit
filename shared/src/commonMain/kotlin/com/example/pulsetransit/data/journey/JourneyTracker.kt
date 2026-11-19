@@ -5,6 +5,7 @@ import com.example.pulsetransit.data.RouteOptions
 import com.example.pulsetransit.data.TripInfo
 import com.example.pulsetransit.data.isTransit
 import com.example.pulsetransit.data.legStops
+import com.example.pulsetransit.data.pace.WalkingPaceRecorder
 import com.example.pulsetransit.platform.JourneyNotifier
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationProvider
@@ -33,6 +34,7 @@ import kotlin.time.Clock
  * Run [run] on the main thread (see [JourneyStore]). It returns when no journey is active: after
  * arrival, or when the journey is stopped from the app or a notification.
  */
+@Suppress("LongParameterList") // the constructor is the DI seam, so the tracker runs in tests
 class JourneyTracker(
     private val store: JourneyStore,
     private val enturRepository: EnturRepository,
@@ -40,6 +42,8 @@ class JourneyTracker(
     private val locationProvider: LocationProvider,
     private val clock: Clock = Clock.System,
     private val routeOptions: () -> RouteOptions = { RouteOptions() },
+    /** Learns the walking pace from the fixes this already reads, on the journey's walk legs only. */
+    private val walkingPace: WalkingPaceRecorder? = null,
 ) {
     private val _locationLost = MutableStateFlow(false)
 
@@ -275,19 +279,44 @@ class JourneyTracker(
         wanted.collectLatest { on ->
             lastFix = null
             if (!on) return@collectLatest
-            locationProvider.locationUpdates(LocationAccuracy.PRECISE, MIN_DISTANCE_METERS).collect { result ->
-                when (result) {
-                    is LocationResult.Fix -> {
-                        _locationLost.value = false
-                        lastFix = Fix(result.latitude, result.longitude)
+            walkingPace?.setJourneyFollowing(true)
+            try {
+                locationProvider.locationUpdates(LocationAccuracy.PRECISE, MIN_DISTANCE_METERS).collect { result ->
+                    when (result) {
+                        is LocationResult.Fix -> {
+                            _locationLost.value = false
+                            lastFix = Fix(result.latitude, result.longitude)
+                            feedWalkingPace(result)
+                        }
+                        LocationResult.PermissionDenied -> {
+                            _locationLost.value = true
+                            lastFix = null
+                        }
+                        LocationResult.Unavailable -> Unit
                     }
-                    LocationResult.PermissionDenied -> {
-                        _locationLost.value = true
-                        lastFix = null
-                    }
-                    LocationResult.Unavailable -> Unit
                 }
+            } finally {
+                walkingPace?.endBout(WalkingPaceRecorder.Source.JOURNEY_WALK)
+                walkingPace?.setJourneyFollowing(false)
             }
+        }
+    }
+
+    /**
+     * Gives [fix] to the walking pace while the journey is on a walk leg by its times, and ends the
+     * walk there otherwise (waiting at the stop, riding), or once the journey was missed.
+     */
+    private fun feedWalkingPace(fix: LocationResult.Fix) {
+        val pace = walkingPace ?: return
+        val journey = store.active.value
+        val walking =
+            journey != null &&
+                JourneyAlert.MissedJourney.id !in journey.firedAlertIds &&
+                JourneyPosition.progress(journey, now(), locationLost = false).phase == JourneyPhase.WALKING
+        if (walking) {
+            pace.onFix(WalkingPaceRecorder.Source.JOURNEY_WALK, fix)
+        } else {
+            pace.endBout(WalkingPaceRecorder.Source.JOURNEY_WALK)
         }
     }
 

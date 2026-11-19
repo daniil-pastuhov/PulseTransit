@@ -265,6 +265,20 @@
     <string name="walking_speed_slow">Rolig</string>
     <string name="walking_speed_normal">Normal</string>
     <string name="walking_speed_fast">Rask</string>
+    <!-- Gangfart målt på enheten, og gangfarten den foreslår. %1$s er km/t med én desimal. -->
+    <string name="walking_pace_proposal_title_faster">Du går fortere enn appen regner med</string>
+    <string name="walking_pace_proposal_title_slower">Du går saktere enn appen regner med</string>
+    <string name="walking_pace_proposal_body_slow">Målt på denne enheten: omtrent %1$s km/t. Vil du bruke rolig gangfart for reiser?</string>
+    <string name="walking_pace_proposal_body_normal">Målt på denne enheten: omtrent %1$s km/t. Vil du bruke normal gangfart for reiser?</string>
+    <string name="walking_pace_proposal_body_fast">Målt på denne enheten: omtrent %1$s km/t. Vil du bruke rask gangfart for reiser?</string>
+    <string name="walking_pace_use_slow">Bruk rolig</string>
+    <string name="walking_pace_use_normal">Bruk normal</string>
+    <string name="walking_pace_use_fast">Bruk rask</string>
+    <string name="walking_pace_not_now">Ikke nå</string>
+    <string name="walking_pace_measured">Målt på denne enheten: omtrent %1$s km/t</string>
+    <string name="walking_pace_not_measured">Ikke målt ennå. Appen lærer farten din mens den følger deg til fots.</string>
+    <string name="walking_pace_forget">Glem målt gangfart</string>
+    <string name="walking_pace_privacy">Farten din måles ut fra posisjonen appen allerede bruker, og lagres bare på denne enheten.</string>
     <string name="update_available">En ny versjon av PulseTransit er tilgjengelig</string>
     <string name="update_app">Oppdater</string>
     <string name="dismiss_update">Ikke nå</string>

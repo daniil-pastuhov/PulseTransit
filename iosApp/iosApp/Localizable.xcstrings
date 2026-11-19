@@ -8986,6 +8986,227 @@
         }
       }
     },
+    "walking_pace_forget": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forget measured pace"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glem målt gangfart"
+          }
+        }
+      }
+    },
+    "walking_pace_measured": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured on this device: about %1$@ km/h"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Målt på denne enheten: omtrent %1$@ km/t"
+          }
+        }
+      }
+    },
+    "walking_pace_not_measured": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not measured yet. The app learns your pace while it follows you on foot."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke målt ennå. Appen lærer farten din mens den følger deg til fots."
+          }
+        }
+      }
+    },
+    "walking_pace_not_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nå"
+          }
+        }
+      }
+    },
+    "walking_pace_privacy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your pace is measured from the location the app already uses, and kept on this device only."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Farten din måles ut fra posisjonen appen allerede bruker, og lagres bare på denne enheten."
+          }
+        }
+      }
+    },
+    "walking_pace_proposal_body_fast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured on this device: about %1$@ km/h. Use Fast walking speed for routes?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Målt på denne enheten: omtrent %1$@ km/t. Vil du bruke rask gangfart for reiser?"
+          }
+        }
+      }
+    },
+    "walking_pace_proposal_body_normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured on this device: about %1$@ km/h. Use Normal walking speed for routes?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Målt på denne enheten: omtrent %1$@ km/t. Vil du bruke normal gangfart for reiser?"
+          }
+        }
+      }
+    },
+    "walking_pace_proposal_body_slow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Measured on this device: about %1$@ km/h. Use Slow walking speed for routes?"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Målt på denne enheten: omtrent %1$@ km/t. Vil du bruke rolig gangfart for reiser?"
+          }
+        }
+      }
+    },
+    "walking_pace_proposal_title_faster": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You walk faster than the app assumes"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du går fortere enn appen regner med"
+          }
+        }
+      }
+    },
+    "walking_pace_proposal_title_slower": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You walk slower than the app assumes"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du går saktere enn appen regner med"
+          }
+        }
+      }
+    },
+    "walking_pace_use_fast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Fast"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk rask"
+          }
+        }
+      }
+    },
+    "walking_pace_use_normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Normal"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk normal"
+          }
+        }
+      }
+    },
+    "walking_pace_use_slow": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use Slow"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bruk rolig"
+          }
+        }
+      }
+    },
     "walking_speed": {
       "extractionState": "manual",
       "localizations": {

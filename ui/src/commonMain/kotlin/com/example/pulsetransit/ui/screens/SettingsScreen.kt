@@ -613,6 +613,13 @@ private fun RouteSearchSection(
             selected = state.walkingSpeed,
             onSelect = viewModel::updateWalkingSpeed,
         )
+        WalkingPaceRow(
+            measured = state.measuredWalkingPace,
+            proposal = state.walkingSpeedProposal,
+            hasData = state.hasWalkingPaceData,
+            onAccept = viewModel::acceptWalkingSpeedProposal,
+            onForget = viewModel::clearWalkingPace,
+        )
         if (showsAlternatives) {
             SettingsDivider()
             SettingSegmented(

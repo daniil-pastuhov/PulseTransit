@@ -154,15 +154,26 @@ fun OnSpotContent(
         uiState.isOutsideNorway -> OutsideNorway(onTrySamplePlace = viewModel::useSamplePlace, modifier = modifier)
         location is OnSpotLocation.Located -> {
             val samplePlace = uiState.samplePlace
-            if (samplePlace == null) {
+            val proposal = uiState.walkingSpeedProposal
+            if (samplePlace == null && proposal == null) {
                 LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, onSearchRoute, modifier)
             } else {
                 Column(modifier = modifier) {
-                    SamplePlaceCallout(
-                        place = samplePlace,
-                        onUseDeviceLocation = viewModel::useDeviceLocation,
-                        modifier = Modifier.padding(start = 6.dp, top = 6.dp, end = 6.dp),
-                    )
+                    if (samplePlace != null) {
+                        SamplePlaceCallout(
+                            place = samplePlace,
+                            onUseDeviceLocation = viewModel::useDeviceLocation,
+                            modifier = Modifier.padding(start = 6.dp, top = 6.dp, end = 6.dp),
+                        )
+                    }
+                    if (proposal != null) {
+                        WalkingPaceProposalCallout(
+                            proposal = proposal,
+                            onAccept = viewModel::acceptWalkingSpeedProposal,
+                            onDismiss = viewModel::dismissWalkingSpeedProposal,
+                            modifier = Modifier.padding(start = 6.dp, top = 6.dp, end = 6.dp),
+                        )
+                    }
                     LocatedContent(uiState, viewModel, isLandscape, onNavigateToSettings, onSearchRoute, Modifier.weight(1f))
                 }
             }
@@ -843,44 +854,54 @@ internal fun GalleryOnSpotContent(
     isLandscape: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    OnSpotSplitBoard(
-        uiState = uiState,
-        isLandscape = isLandscape,
-        onSplitChange = {},
-        routes = { countHeight, onContentHeight, sectionModifier ->
-            RoutePrompt(
-                prompt = uiState.onSpotRoutePrompt,
-                suggestions = uiState.onSpotRouteSuggestions,
-                recentIds = uiState.recentDestinations.map { it.id }.toSet(),
-                availableHeight = countHeight,
-                onSearch = {},
-                onPick = {},
-                onAddDestination = {},
-                onContentHeight = onContentHeight,
-                modifier = sectionModifier,
+    Column(modifier = modifier) {
+        uiState.walkingSpeedProposal?.let { proposal ->
+            WalkingPaceProposalCallout(
+                proposal = proposal,
+                onAccept = {},
+                onDismiss = {},
+                modifier = Modifier.padding(start = 6.dp, top = 6.dp, end = 6.dp),
             )
-        },
-        stop = { sectionModifier ->
-            val stop = uiState.favorites.first()
-            StopBoardPanel(
-                stopPlace = stop,
-                departureGroups = uiState.departures.find { it.stopId == stop.id }?.groups,
-                modifier = sectionModifier,
-                header = {
-                    StopPicker(
-                        selected = stop,
-                        approximate = false,
-                        isSearching = false,
-                        nearbyStops = uiState.nearbyStops,
-                        isPinned = false,
-                        onSelect = {},
-                        onFollowNearest = {},
-                    )
-                },
-            )
-        },
-        modifier = modifier,
-    )
+        }
+        OnSpotSplitBoard(
+            uiState = uiState,
+            isLandscape = isLandscape,
+            onSplitChange = {},
+            routes = { countHeight, onContentHeight, sectionModifier ->
+                RoutePrompt(
+                    prompt = uiState.onSpotRoutePrompt,
+                    suggestions = uiState.onSpotRouteSuggestions,
+                    recentIds = uiState.recentDestinations.map { it.id }.toSet(),
+                    availableHeight = countHeight,
+                    onSearch = {},
+                    onPick = {},
+                    onAddDestination = {},
+                    onContentHeight = onContentHeight,
+                    modifier = sectionModifier,
+                )
+            },
+            stop = { sectionModifier ->
+                val stop = uiState.favorites.first()
+                StopBoardPanel(
+                    stopPlace = stop,
+                    departureGroups = uiState.departures.find { it.stopId == stop.id }?.groups,
+                    modifier = sectionModifier,
+                    header = {
+                        StopPicker(
+                            selected = stop,
+                            approximate = false,
+                            isSearching = false,
+                            nearbyStops = uiState.nearbyStops,
+                            isPinned = false,
+                            onSelect = {},
+                            onFollowNearest = {},
+                        )
+                    },
+                )
+            },
+            modifier = Modifier.weight(1f),
+        )
+    }
 }
 
 /**

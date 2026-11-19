@@ -33,6 +33,12 @@ sealed interface LocationResult {
     data class Fix(
         val latitude: Double,
         val longitude: Double,
+        /** When the platform took the fix, epoch millis; null when it did not say. */
+        val timeMillis: Long? = null,
+        /** Horizontal accuracy (radius) in metres; null when unknown. */
+        val accuracyMeters: Double? = null,
+        /** The platform's own ground speed in m/s; null when it has none. */
+        val speedMetersPerSecond: Double? = null,
     ) : LocationResult
 
     /** The platform answered, but had no location at this accuracy. */

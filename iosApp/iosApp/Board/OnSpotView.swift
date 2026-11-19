@@ -41,6 +41,15 @@ struct OnSpotView: View {
                     SamplePlaceCallout(place: place) { viewModel.useDeviceLocation() }
                         .padding([.horizontal, .top], 6)
                 }
+                // Never beside the sample place's notice: the shared state drops it there.
+                if let proposal = state.walkingSpeedProposal {
+                    WalkingSpeedProposalCallout(
+                        proposal: proposal,
+                        onAccept: { viewModel.acceptWalkingSpeedProposal() },
+                        onDismiss: { viewModel.dismissWalkingSpeedProposal() }
+                    )
+                    .padding([.horizontal, .top], 6)
+                }
                 SplitSections(state: state, viewModel: viewModel, onOpenSettings: onOpenSettings, onSearchRoute: onSearchRoute)
                     .padding(6)
             }
@@ -429,6 +438,26 @@ private struct SamplePlaceCallout: View {
         ) {
             Button(L("sample_place_use_mine"), action: onUseDeviceLocation)
         }
+    }
+}
+
+/// Proposes the walking speed the measured pace fits, the counterpart of Android's
+/// WalkingSpeedProposalCallout: accepting sets it for routes, "Not now" declines it.
+private struct WalkingSpeedProposalCallout: View {
+    let proposal: WalkingSpeedProposal
+    let onAccept: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        Callout(WalkingPaceText.body(proposal), title: WalkingPaceText.title(proposal), symbol: "figure.walk") {
+            Button(WalkingPaceText.use(proposal.speed), action: onAccept)
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("walkingPace.accept")
+            Button(L("walking_pace_not_now"), action: onDismiss)
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("walkingPace.dismiss")
+        }
+        .accessibilityIdentifier("walkingPace.proposal")
     }
 }
 

@@ -28,7 +28,7 @@ Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Modules
   `:desktopApp:renderGallery` draws the board-mode board (`GalleryBoard`) offscreen from fixtures, no
   network, one PNG per scenario, state and size: `<out>/<scenario>-<state>-<size>[-fs150].png`
   (scenarios `simple`, `long`, `two`, `three`, `five`, `states`; states collapsed/expanded/mixed (only the last card open);
-  on-spot route prompt (`GalleryOnSpot`): `spotnew`, `spotidle`, `spotnone` in states open/stopfolded/min; sizes
+  on-spot route prompt (`GalleryOnSpot`): `spotnew`, `spotidle`, `spotnone`, `spotpace` (spotidle with a walking speed proposal) in states open/stopfolded/min; sizes
   `phone`, `tabP`, `tabL`, `tv`, `tvdp`; `-Pscenarios=`, `-Psizes=`, `-PfontScale=1.5`,
   `-Plocale=nb`, `-Pout=`). Look at the images after changing the board's layout.
 - `iosApp/` — the iOS app (SwiftUI, iOS 15+), an Xcode project, not a Gradle module. Its
@@ -143,7 +143,8 @@ sealed or enum types into exhaustive Swift enums (`onEnum(of:)`).
   `-PTUITest YES` swaps in fixed data (a board at Oslo S with one route to Majorstuen, no network) and
   a settings store of its own, which `-PTUITestReset YES` empties first (`di/UiTestFixtures.kt`).
   `-PTUITestScenario onspot` seeds on-spot mode with no destination instead (the route prompt), and
-  `onspotrecent` the same with four recent places to suggest; set a simulator location for them
+  `onspotrecent` the same with four recent places to suggest, `onspotpace` with a measured walking pace
+  that proposes Fast (seeded in a device-state store of the tests' own); set a simulator location for them
   (`xcrun simctl location booted set 59.9111,10.7528`, Oslo S).
   The XCUITest target `iosAppUITests` checks journey alerts on it up to the notification prompt:
   on a fresh simulator (CI's) `requestAuthorization` never answers, so following a journey is not
@@ -194,6 +195,17 @@ app's bundle, and `sync-ios-strings.py` also writes the extension a `widget_*` c
 configuration titles. Widgets have a ~30 MB memory limit, so keep the extension's Kotlin path lean.
 
 **Modes** (`AppMode`, chosen on first launch by `ModeSelectionViewModel`, changeable in Settings): `BOARD` is the wall display described below; `ON_SPOT` follows the device. Both run through the same `StopBoardViewModel` and departures pipeline: in on-spot mode `favorites` holds the one selected nearby stop, routes come from the live fix via `getTripOptions` (several alternatives per destination, `fastestTrips` is a list per destination), and the wall-board features (pixel shift, auto-dim, camera wake, full screen, always-on, night refresh stretch) are off. `DeviceFollower` does the following: precise then approximate fix, acting only after 20 m of movement and at most every 15 s. Settings screens show only the sections for the current mode. An install from before modes with stops or destinations counts as `BOARD`, so wall displays are not stopped by the first-launch prompt.
+
+**Walking pace** (`data/pace/`, on-spot mode only). The app learns how fast the user walks from fixes it
+already gets: the on-spot board's `DeviceFollower` and a followed journey's walk legs (`JourneyTracker`,
+preferred while it runs). `LocationResult.Fix` carries the fix's time, accuracy and speed for it.
+`WalkingBoutDetector` turns fixes into walking bouts and `WalkingPace` holds the proposal rule (enough
+bouts on several days, the median mapped to a `WalkingSpeed` with dead zones, declines remembered);
+`WalkingPaceRecorder` (a Koin single) feeds both ViewModels' `walkingSpeedProposal`. Only per-bout
+speeds with a day stamp are kept, as JSON in the never-backed-up device-state store
+(`SettingsRepository.getWalkingPace`), in memory only without one; nothing leaves the device and the
+setting changes only when the user accepts. Board mode measures and proposes nothing, and nor does a
+sample place.
 
 **Board route alternatives** (`data/BoardRouteAlternatives.kt`, board mode only). Each saved destination is fetched as `ROUTES_PER_DESTINATION` routes (the first and 3 alternatives), from the saved location (`getTripOptions`) or, without one, from the favourite stops (`getTripOptionsFromStops`, one request per origin as for one route, the same departure from two origins listed once by `tripKey`). Both repository calls always fetch and cache at least that many and return what was asked, since the cache keeps one list per route key: the widget asking for 1 must not cut the board's cached alternatives. Which cards are expanded is a setting (`getRouteAlternativesShownIds`, also a switch in Settings > Destinations), never collapsed by the app; the control hides while a card has no alternatives left (`UiState.showsRouteAlternatives`/`canToggleRouteAlternatives`). Both apps draw them as the route cards below describe.
 

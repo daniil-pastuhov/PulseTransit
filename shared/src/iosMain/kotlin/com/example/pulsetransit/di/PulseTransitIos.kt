@@ -90,7 +90,10 @@ object PulseTransitIos : KoinComponent {
             if (uiTest) {
                 modules(
                     uiTestModule(launchMillis = Clock.System.now().toEpochMilliseconds()),
-                    module { single<Settings> { uiTestSettings(reset = uiTestReset) } },
+                    module {
+                        single<Settings> { uiTestSettings(reset = uiTestReset) }
+                        single<Settings>(named(DEVICE_STATE)) { uiTestDeviceState(reset = uiTestReset) }
+                    },
                 )
             }
         }
