@@ -1,0 +1,2 @@
+• Journey alerts on your Garmin watch: follow a journey and see it on a fēnix 8, with the watch app (in testing)
+• Journey notifications now offer Stop following instead of Skip next alerts

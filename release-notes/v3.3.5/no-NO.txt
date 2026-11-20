@@ -1,0 +1,2 @@
+• Reisevarsler på Garmin-klokken: følg en reise og se den på en fēnix 8, med klokkeappen (under testing)
+• Reisevarsler har nå Slutt å følge i stedet for Hopp over neste varsler
