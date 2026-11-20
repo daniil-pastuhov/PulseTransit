@@ -139,6 +139,16 @@ class WatchJourneyNotifierTest {
         }
 
     @Test
+    fun `a watch found just after the journey started is asked then`() =
+        watchTest { notifier ->
+            link.availability.value = WatchAvailability.NONE
+            notifier.tick(followed())
+            assertEquals(0, link.opened)
+            link.availability.value = WatchAvailability.READY
+            assertEquals(1, link.opened)
+        }
+
+    @Test
     fun `a journey followed for a while does not ask again`() =
         watchTest { notifier ->
             val journey = followed()

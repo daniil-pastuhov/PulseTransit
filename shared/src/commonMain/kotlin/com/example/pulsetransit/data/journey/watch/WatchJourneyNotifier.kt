@@ -64,6 +64,8 @@ class WatchJourneyNotifier(
     init {
         scope.launch { for (task in queue) task() }
         scope.launch { link.incoming.collect { message -> WatchMessages.parse(message)?.let(::onEvent) } }
+        // A watch found a moment after the journey started (the link was still connecting) is asked then.
+        scope.launch { link.availability.collect { latest?.let { askToOpen(it.journey) } } }
     }
 
     private fun now() = clock.now().toEpochMilliseconds()

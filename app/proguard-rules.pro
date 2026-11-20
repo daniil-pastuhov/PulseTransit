@@ -30,3 +30,7 @@
 
 # Koin
 -keep class org.koin.** { *; }
+
+# Garmin Connect IQ companion SDK: its classes cross a binder to the Garmin Connect app and are
+# parcelled by name.
+-keep class com.garmin.android.connectiq.** { *; }

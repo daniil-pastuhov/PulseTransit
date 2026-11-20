@@ -3,6 +3,8 @@ package com.example.pulsetransit.journey
 import com.example.pulsetransit.platform.JourneyLauncher
 import com.example.pulsetransit.platform.JourneyNotifier
 import com.example.pulsetransit.platform.JourneyPermissions
+import com.example.pulsetransit.platform.WatchLink
+import com.example.pulsetransit.platform.WatchWording
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -16,4 +18,6 @@ val journeyModule =
         single<JourneyNotifier> { get<AndroidJourneyNotifier>() }
         single<JourneyPermissions> { AndroidJourneyPermissions(context = androidContext(), settings = get()) }
         single<JourneyLauncher> { JourneyTrackingService.Launcher(context = androidContext()) }
+        single<WatchLink> { GarminWatchLink(context = androidContext()) }
+        single<WatchWording> { AndroidWatchWording(clockFormatter = get()) }
     }
