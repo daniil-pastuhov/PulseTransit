@@ -15,8 +15,13 @@ import com.example.pulsetransit.data.journey.JourneyOpenRequests
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTracker
+import com.example.pulsetransit.data.journey.watch.WatchJourneyNotifier
 import com.example.pulsetransit.data.pace.WalkingPaceRecorder
 import com.example.pulsetransit.data.widget.BoardWidgetSource
+import com.example.pulsetransit.platform.JourneyLauncher
+import com.example.pulsetransit.platform.JourneyNotifier
+import com.example.pulsetransit.platform.WatchLink
+import com.example.pulsetransit.platform.WatchWording
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
 import com.example.pulsetransit.ui.viewmodel.JourneyAlertsViewModel
@@ -26,6 +31,7 @@ import com.example.pulsetransit.ui.viewmodel.StopBoardViewModel
 import io.ktor.client.engine.HttpClientEngineFactory
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
+import org.koin.core.scope.Scope
 import org.koin.dsl.module
 
 /** Names the `LocationProvider` journey alerts use, where it differs from the board's (iOS). */
@@ -44,6 +50,7 @@ const val DEVICE_STATE = "deviceState"
  * - `JourneyNotifier`, `JourneyPermissions` and `JourneyLauncher`, for journey alerts, and
  *   optionally a `LocationProvider` named [JOURNEY_LOCATION] where the journey's location must not
  *   share one with the board's (iOS, whose location source serves one caller at a time)
+ * - optionally a `WatchLink` and a `WatchWording`, to show a followed journey on a watch too
  * - optionally a `Settings` named [DEVICE_STATE], never backed up, where the widgets need to know
  *   where the device last was (Android)
  */
@@ -69,7 +76,7 @@ val sharedModule =
             JourneyTracker(
                 store = get(),
                 enturRepository = get(),
-                notifier = get(),
+                notifier = watchAware(phone = get()),
                 locationProvider = getOrNull(named(JOURNEY_LOCATION)) ?: get(),
                 // As the board plans routes, so a faster way on avoids what the board's routes avoid.
                 routeOptions = {
@@ -115,3 +122,21 @@ val sharedModule =
             )
         }
     }
+
+/**
+ * The [phone]'s notifier, also showing the journey on a watch where the platform registers a
+ * [WatchLink] and a [WatchWording]; just the phone's where it has none.
+ */
+private fun Scope.watchAware(phone: JourneyNotifier): JourneyNotifier {
+    val link = getOrNull<WatchLink>() ?: return phone
+    val wording = getOrNull<WatchWording>() ?: return phone
+    val koin = getKoin()
+    return WatchJourneyNotifier(
+        phone = phone,
+        link = link,
+        wording = wording,
+        store = get(),
+        // Looked up when used: on iOS the launcher holds the tracker this notifier is built for.
+        stopFollowing = { koin.get<JourneyLauncher>().stop() },
+    )
+}
