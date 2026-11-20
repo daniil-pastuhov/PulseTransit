@@ -2531,23 +2531,6 @@
         }
       }
     },
-    "journey_action_skip": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Skip next alerts"
-          }
-        },
-        "nb": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hopp over neste varsler"
-          }
-        }
-      }
-    },
     "journey_action_switch": {
       "extractionState": "manual",
       "localizations": {

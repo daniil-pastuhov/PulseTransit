@@ -89,13 +89,13 @@ class JourneyTracker(
         finishedId = null
         try {
             while (step(id)) {
-                // Woken early by any change to the store: a stop or skip from a notification.
+                // Woken early by any change to the store: a stop or switch from a notification.
                 withTimeoutOrNull(TICK_MILLIS) { store.active.drop(1).first() }
             }
         } finally {
             // Only a journey that ran to its end keeps its alerts in sight: the last one says it has
             // arrived. One the user stopped, or that another replaced, is no longer followed, so
-            // nothing of it may stay, not even an alert offering to skip what is left of it. A stop
+            // nothing of it may stay, not even an alert offering to stop what is left of it. A stop
             // usually comes as a cancellation (the platform stops the service or coroutine), which
             // runs this too.
             notifier.end(journey, clearAlerts = finishedId != id)
@@ -158,7 +158,7 @@ class JourneyTracker(
         val search = dueFasterSearch(id, now) ?: return
         lastFasterSearchMillis = now
         val found = searchRoutesOn(search) ?: return
-        // The journey may have changed while the search ran: a stop, skip or newer live times.
+        // The journey may have changed while the search ran: a stop, switch or newer live times.
         val latest = store.active.value?.takeIf { it.id == id } ?: return
         val faster = FasterRoutes.fasterOf(latest, found)
         val alert = faster?.let { FasterRoutes.alert(latest, search.rideIndex, it) }

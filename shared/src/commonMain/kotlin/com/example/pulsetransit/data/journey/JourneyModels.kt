@@ -34,7 +34,7 @@ data class TrackedJourney(
     val legStops: Map<Int, List<JourneyStop>> = emptyMap(),
     /** [JourneyAlert.id]s already shown, so a restart never repeats one. */
     val firedAlertIds: Set<String> = emptySet(),
-    /** Set by "Skip next alerts": the journey stays followed and saved, but shows nothing more. */
+    /** Set once the ride is missed: the journey stays followed and saved, but shows nothing more. */
     val muted: Boolean = false,
     /** When the journey ended (arrived or stopped); null while it is being followed. */
     val endedAtMillis: Long? = null,
@@ -341,7 +341,7 @@ sealed interface JourneyDetail {
     /** Location was wanted but is off, so the journey follows times only. */
     data object LocationLost : JourneyDetail
 
-    /** "Skip next alerts" was chosen. */
+    /** The journey is [TrackedJourney.muted]: no more alerts will come. */
     data object Muted : JourneyDetail
 }
 

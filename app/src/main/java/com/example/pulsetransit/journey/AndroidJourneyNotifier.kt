@@ -163,7 +163,7 @@ class AndroidJourneyNotifier(
                 .setStyle(NotificationCompat.BigTextStyle().bigText(expanded))
                 .setProgress(max, (progress.elapsedFraction * max).toInt(), false)
         }
-        if (!progress.muted) builder.addAction(0, getString(Res.string.journey_action_skip), skipIntent())
+        builder.addAction(0, getString(Res.string.journey_stop_button), stopIntent())
         return builder.build()
     }
 
@@ -183,7 +183,7 @@ class AndroidJourneyNotifier(
             builder.addAction(0, getString(Res.string.journey_action_switch), switchIntent())
         }
         if (alert !is JourneyAlert.MissedJourney && alert !is JourneyAlert.Arrived) {
-            builder.addAction(0, getString(Res.string.journey_action_skip), skipIntent())
+            builder.addAction(0, getString(Res.string.journey_stop_button), stopIntent())
         }
         directionsTo(alert)?.let { (latitude, longitude) ->
             navigateIntent(latitude, longitude)?.let { navigate ->
@@ -260,11 +260,11 @@ class AndroidJourneyNotifier(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-    private fun skipIntent(): PendingIntent =
+    private fun stopIntent(): PendingIntent =
         PendingIntent.getBroadcast(
             context,
-            REQUEST_SKIP,
-            Intent(context, JourneyActionReceiver::class.java).setAction(JourneyActionReceiver.ACTION_SKIP),
+            REQUEST_STOP,
+            Intent(context, JourneyActionReceiver::class.java).setAction(JourneyActionReceiver.ACTION_STOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
@@ -312,7 +312,7 @@ class AndroidJourneyNotifier(
         private const val ALERTS_CHANNEL = "journey_alerts"
         const val PROGRESS_CHANNEL = "journey_progress"
         private const val REQUEST_SHOW = 1
-        private const val REQUEST_SKIP = 2
+        private const val REQUEST_STOP = 2
         private const val REQUEST_NAVIGATE = 3
         private const val REQUEST_SWITCH = 4
     }
