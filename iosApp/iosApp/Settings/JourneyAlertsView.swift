@@ -7,6 +7,7 @@ import SwiftUI
 /// updates as these change.
 struct JourneyAlertsView: View {
     @ObservedObject var model: SettingsModel
+    @ObservedObject private var watch = GarminWatch.shared
 
     /// Every kind of journey alert, in the order Android lists them, with its label.
     static let kinds: [(JourneyAlertKind, String)] = [
@@ -66,9 +67,34 @@ struct JourneyAlertsView: View {
                 }
                 .textCase(nil)
             }
+            watchSection
         }
         .navigationTitle(L("journey_rationale_title"))
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// The Garmin watch a followed journey also shows on: choosing one, and how it is doing.
+    @ViewBuilder private var watchSection: some View {
+        Section {
+            switch watch.status {
+            case .none:
+                Button(L("settings_watch_connect")) { watch.choose() }
+                    .accessibilityIdentifier("settings.watch.connect")
+            case let .ready(name):
+                Label(L("settings_watch_ready", name), systemImage: "applewatch.radiowaves.left.and.right")
+            case let .notConnected(name):
+                Label(L("settings_watch_not_connected", name), systemImage: "applewatch.slash")
+            case let .appMissing(name):
+                Label(L("settings_watch_app_missing", name), systemImage: "exclamationmark.triangle")
+            }
+            if watch.status != .none {
+                Button(L("settings_watch_remove"), role: .destructive) { watch.remove() }
+            }
+        } header: {
+            Text(L("settings_watch_title"))
+        } footer: {
+            Text(L("settings_watch_connect_hint"))
+        }
     }
 
     private func choice(_ mode: JourneyTrackingMode, title: String, detail: String) -> some View {

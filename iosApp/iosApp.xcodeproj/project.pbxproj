@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000090 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000091 /* FirebaseCrashlytics */; };
+		A100000000000000000000A0 /* ConnectIQ in Frameworks */ = {isa = PBXBuildFile; productRef = A100000000000000000000A1 /* ConnectIQ */; };
 		A10000000000000000000102 /* JourneyActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A10000000000000000000101 /* JourneyActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -82,6 +83,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000090 /* FirebaseCrashlytics in Frameworks */,
+				A100000000000000000000A0 /* ConnectIQ in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -161,6 +163,7 @@
 			name = iosApp;
 			packageProductDependencies = (
 				A10000000000000000000091 /* FirebaseCrashlytics */,
+				A100000000000000000000A1 /* ConnectIQ */,
 			);
 			productName = PulseTransit;
 			productReference = A10000000000000000000001 /* PulseTransit.app */;
@@ -235,6 +238,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A10000000000000000000092 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A100000000000000000000A2 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000032 /* Products */;
@@ -419,6 +423,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth shows a journey you follow on the Garmin watch you chose.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The front camera wakes the screen when someone walks by. No images are stored or sent anywhere.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -433,6 +438,7 @@
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
+					"-ObjC",
 					"-framework",
 					Shared,
 				);
@@ -461,6 +467,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth shows a journey you follow on the Garmin watch you chose.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The front camera wakes the screen when someone walks by. No images are stored or sent anywhere.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -475,6 +482,7 @@
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
+					"-ObjC",
 					"-framework",
 					Shared,
 				);
@@ -633,6 +641,14 @@
 				minimumVersion = 12.19.2;
 			};
 		};
+		A100000000000000000000A2 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/garmin/connectiq-companion-app-sdk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -640,6 +656,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000092 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		A100000000000000000000A1 /* ConnectIQ */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A100000000000000000000A2 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */;
+			productName = ConnectIQ;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

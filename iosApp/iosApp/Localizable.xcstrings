@@ -8054,6 +8054,125 @@
         }
       }
     },
+    "settings_watch_app_missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit is not installed on %1$@"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PulseTransit er ikke installert på %1$@"
+          }
+        }
+      }
+    },
+    "settings_watch_connect": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect Garmin watch"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koble til Garmin-klokke"
+          }
+        }
+      }
+    },
+    "settings_watch_connect_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Garmin Connect to choose your watch. A journey you follow then shows on it, with its alerts, when PulseTransit is installed on the watch."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åpner Garmin Connect for å velge klokken. En reise du følger, vises da på den, med varslene, når PulseTransit er installert på klokken."
+          }
+        }
+      }
+    },
+    "settings_watch_not_connected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is not connected"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ er ikke tilkoblet"
+          }
+        }
+      }
+    },
+    "settings_watch_ready": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is connected"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ er tilkoblet"
+          }
+        }
+      }
+    },
+    "settings_watch_remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove watch"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjern klokken"
+          }
+        }
+      }
+    },
+    "settings_watch_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garmin watch"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Garmin-klokke"
+          }
+        }
+      }
+    },
     "show_alternatives_on_board": {
       "extractionState": "manual",
       "localizations": {

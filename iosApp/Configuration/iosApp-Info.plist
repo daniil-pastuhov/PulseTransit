@@ -4,16 +4,32 @@
      INFOPLIST_KEY_* settings (GENERATE_INFOPLIST_FILE). The location background mode lets a
      journey followed with "Also notice if I miss my ride" keep reading it with the app closed.
      The queried scheme lets walking directions open in Google Maps when it is installed.
+     For a Garmin watch (Platform/GarminWatch.swift): gcm-ciq opens Garmin Connect to choose the watch,
+     which answers on the pulsetransit-ciq URL scheme, and the Bluetooth background mode keeps a
+     followed journey reaching the watch with the app in the background.
      UIAppFonts registers the bundled Public Sans (Fonts/, see JourneyActivityShared/PulseFont.swift). -->
 <plist version="1.0">
 <dict>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<string>bluetooth-central</string>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>
+		<string>gcm-ciq</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.homieapps.pulsetransit.garmin</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pulsetransit-ciq</string>
+			</array>
+		</dict>
 	</array>
 	<key>UIAppFonts</key>
 	<array>

@@ -9,18 +9,23 @@ struct PulseTransitApp: App {
         #if DEBUG
         seedSettingsFromOwnDefaults()
         #endif
+        let clockFormatter = SystemClockFormatter()
         PulseTransitIos.shared.start(
             crashReporting: CrashReporting.start(),
-            clockFormatter: SystemClockFormatter(),
+            clockFormatter: clockFormatter,
             locationSource: CoreLocationSource(),
             lightSource: EstimatedLightSource(),
             cameraFrameSource: FrontCamera.shared,
             journeyLocationSource: CoreLocationSource(backgroundUpdates: true),
             journeyNotifier: JourneyNotifications.shared,
             journeyPermissions: JourneyPermissionsSource.shared,
+            watchSource: GarminWatch.shared,
+            watchWording: GarminWatchWording(clock: clockFormatter),
             uiTest: Self.launchFlag("PTUITest"),
             uiTestReset: Self.launchFlag("PTUITestReset")
         )
+        // The UI tests have no watch, and must not be asked for Bluetooth.
+        if !Self.launchFlag("PTUITest") { GarminWatch.shared.activate() }
     }
 
     /// A debug-only launch argument (`-PTUITest YES`); always false in release builds.
@@ -35,6 +40,8 @@ struct PulseTransitApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
+                // Garmin Connect's answer to "Connect Garmin watch".
+                .onOpenURL { GarminWatch.shared.handle(url: $0) }
         }
     }
 }
