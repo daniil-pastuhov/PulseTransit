@@ -105,6 +105,9 @@ multiplatform-settings-test = { module = "com.russhwolf:multiplatform-settings-t
 # java.time on API < 26, which kotlinx-datetime needs on the JVM
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 
+# Garmin Connect IQ companion SDK (Android only)
+garmin-connectiq = { module = "com.garmin.connectiq:ciq-companion-app-sdk", version = "2.4.0" }
+
 # Play Services Location
 play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "playServicesLocation" }
 

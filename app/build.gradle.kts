@@ -190,6 +190,9 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
 
+    // Garmin Connect IQ: shows a followed journey on a Garmin watch (journey/GarminWatchLink)
+    implementation(libs.garmin.connectiq)
+
     // Kotlinx Serialization (navigation keys)
     implementation(libs.kotlinx.serialization.json)
 
