@@ -233,7 +233,7 @@ class JourneyTrackerTest {
         }
 
     @Test
-    fun `skipping alerts silences the rest but keeps following`() =
+    fun `a muted journey shows no more alerts but keeps following`() =
         trackerTest {
             val harness = track(journey(), startAt = at(3))
             store.update(journey().id) { it.copy(muted = true) }

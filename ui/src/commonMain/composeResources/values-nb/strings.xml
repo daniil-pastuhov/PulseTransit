@@ -327,7 +327,6 @@
     <string name="journey_alert_faster_walk">Raskere til fots</string>
     <string name="journey_alert_faster_detail">Fremme kl. %1$s, %2$d min før</string>
     <string name="journey_action_switch">Bytt til den</string>
-    <string name="journey_action_skip">Hopp over neste varsler</string>
     <string name="journey_action_open_map">Åpne kart</string>
     <string name="journey_progress_title">Reise til %1$s</string>
     <string name="journey_progress_waiting">%1$s fra %2$s</string>

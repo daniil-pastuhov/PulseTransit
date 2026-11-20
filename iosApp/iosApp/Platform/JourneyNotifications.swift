@@ -3,7 +3,7 @@ import Shared
 import UIKit
 import UserNotifications
 
-/// Journey alerts as iOS notifications, and their actions: "Skip next alerts", on a walk (to the
+/// Journey alerts as iOS notifications, and their actions: "Stop following", on a walk (to the
 /// first stop, to another stop at a change, to the destination) "Open map", and on a faster route found at a transfer "Switch to it"; a tap opens
 /// the journey. The progress goes to the Live Activity.
 ///
@@ -23,7 +23,7 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     }
 
     private enum Action {
-        static let skip = "JOURNEY_SKIP"
+        static let stop = "JOURNEY_STOP"
         static let navigate = "JOURNEY_NAVIGATE"
         static let switchRoute = "JOURNEY_SWITCH"
     }
@@ -41,13 +41,13 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
     /// Call at launch, before the app finishes launching, so a tap that launched it is delivered.
     func register() {
         center.delegate = self
-        let skip = UNNotificationAction(identifier: Action.skip, title: L("journey_action_skip"))
+        let stop = UNNotificationAction(identifier: Action.stop, title: L("journey_stop_button"))
         let openMap = UNNotificationAction(identifier: Action.navigate, title: L("journey_action_open_map"), options: [.foreground])
         let switchRoute = UNNotificationAction(identifier: Action.switchRoute, title: L("journey_action_switch"))
         center.setNotificationCategories([
-            UNNotificationCategory(identifier: Category.alert, actions: [skip], intentIdentifiers: []),
-            UNNotificationCategory(identifier: Category.walk, actions: [openMap, skip], intentIdentifiers: []),
-            UNNotificationCategory(identifier: Category.fasterRoute, actions: [switchRoute, skip], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.alert, actions: [stop], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.walk, actions: [openMap, stop], intentIdentifiers: []),
+            UNNotificationCategory(identifier: Category.fasterRoute, actions: [switchRoute, stop], intentIdentifiers: []),
             UNNotificationCategory(identifier: Category.info, actions: [], intentIdentifiers: []),
         ])
     }
@@ -223,8 +223,8 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
         let info = response.notification.request.content.userInfo
         DispatchQueue.main.async {
             switch response.actionIdentifier {
-            case Action.skip:
-                PulseTransitIos.shared.skipJourneyAlerts()
+            case Action.stop:
+                PulseTransitIos.shared.stopFollowingJourney()
             case Action.switchRoute:
                 PulseTransitIos.shared.switchToFasterRoute()
             case Action.navigate:
