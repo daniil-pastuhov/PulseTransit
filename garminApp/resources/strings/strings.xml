@@ -1,0 +1,11 @@
+<strings>
+    <string id="AppName">PulseTransit</string>
+    <string id="NoJourney">No journey followed</string>
+    <string id="NoJourneyHint">Choose “Notify me about this journey” in PulseTransit on your phone</string>
+    <string id="Minutes">min</string>
+    <string id="Now">Now</string>
+    <string id="StopFollowing">Stop following</string>
+    <string id="Upcoming">Coming up</string>
+    <string id="PhoneUnreachable">Could not reach your phone</string>
+    <string id="UpdateNeeded">Update PulseTransit on your watch</string>
+</strings>

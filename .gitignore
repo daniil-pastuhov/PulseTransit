@@ -17,3 +17,6 @@ local.properties
 pulsetransit-*.json
 # Staged by scripts/stage-release-notes.sh from release-notes/vX.Y.Z/ in CI
 /app/src/main/play/release-notes/
+
+# Garmin watch app build output
+/garminApp/build/

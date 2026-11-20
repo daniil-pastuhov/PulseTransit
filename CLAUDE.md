@@ -31,6 +31,16 @@ Requires JDK 17 (Gradle toolchain resolves it automatically via foojay). Modules
   on-spot route prompt (`GalleryOnSpot`): `spotnew`, `spotidle`, `spotnone`, `spotpace` (spotidle with a walking speed proposal) in states open/stopfolded/min; sizes
   `phone`, `tabP`, `tabL`, `tv`, `tvdp`; `-Pscenarios=`, `-Psizes=`, `-PfontScale=1.5`,
   `-Plocale=nb`, `-Pout=`). Look at the images after changing the board's layout.
+- `garminApp/` — the Garmin watch app (Monkey C, Connect IQ; fēnix 8 so far), not a Gradle module
+  and not built by CI: the Connect IQ SDK only installs through Garmin's SDK Manager with a login.
+  `scripts/build-garmin-app.sh [device]` builds `garminApp/build/PulseTransit-<device>.prg` with the
+  developer key in `~/.garmin/` (never in the repo; store updates need the same key). Add
+  `--unit-test` and run the result with `monkeydo <prg> <device> -t` for its tests
+  (`JourneyPlanTest.mc`), and `-f monkey-demo.jungle` for a build that opens on a made-up journey,
+  since the simulator cannot receive a phone's messages. It shows what the phone sends
+  (`WatchMessages` in `:shared` is the format; `JourneyPlan.mc` reads it) and has no wording of its
+  own beyond a few labels in `resources*/strings`. Lay out from `dc`'s size: the same code runs on
+  454 px AMOLED and 260 px memory-in-pixel screens. Look at both in the simulator after changing a view.
 - `iosApp/` — the iOS app (SwiftUI, iOS 15+), an Xcode project, not a Gradle module. Its
   "Compile Kotlin Framework" build phase runs `scripts/build-shared-framework.sh`, which builds
   `Shared` with `:shared:embedAndSignAppleFrameworkForXcode`.
