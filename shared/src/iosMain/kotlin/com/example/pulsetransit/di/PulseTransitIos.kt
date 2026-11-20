@@ -104,11 +104,10 @@ object PulseTransitIos : KoinComponent {
     /** A tap on a journey notification: the board opens the followed journey's details. */
     fun requestOpenJourney() = get<JourneyOpenRequests>().request()
 
-    /** "Skip next alerts" from a notification: the journey stays followed, silently. */
-    fun skipJourneyAlerts() {
-        val store = get<JourneyStore>()
-        val journey = store.active.value ?: return
-        store.update(journey.id) { it.copy(muted = true) }
+    /** "Stop following" from a notification: ends the journey, as the button in the app does. */
+    fun stopFollowingJourney() {
+        get<JourneyStore>().finish(Clock.System.now().toEpochMilliseconds())
+        get<JourneyLauncher>().stop()
     }
 
     /** "Switch to it" on a faster route found at a transfer: that route is followed instead. */
