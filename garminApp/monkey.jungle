@@ -1,0 +1,4 @@
+project.manifest = manifest.xml
+
+# The demo journey (source/Demo.mc) is only in builds made with monkey-demo.jungle.
+base.excludeAnnotations = demo

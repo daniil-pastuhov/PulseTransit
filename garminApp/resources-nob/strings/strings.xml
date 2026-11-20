@@ -1,0 +1,11 @@
+<strings>
+    <string id="AppName">PulseTransit</string>
+    <string id="NoJourney">Ingen reise følges</string>
+    <string id="NoJourneyHint">Velg «Varsle meg om denne reisen» i PulseTransit på telefonen</string>
+    <string id="Minutes">min</string>
+    <string id="Now">Nå</string>
+    <string id="StopFollowing">Slutt å følge</string>
+    <string id="Upcoming">Videre</string>
+    <string id="PhoneUnreachable">Fikk ikke kontakt med telefonen</string>
+    <string id="UpdateNeeded">Oppdater PulseTransit på klokken</string>
+</strings>
