@@ -329,7 +329,6 @@
     <string name="journey_alert_faster_walk">Faster on foot</string>
     <string name="journey_alert_faster_detail">Arrives %1$s, %2$d min sooner</string>
     <string name="journey_action_switch">Switch to it</string>
-    <string name="journey_action_skip">Skip next alerts</string>
     <string name="journey_action_open_map">Open map</string>
     <string name="journey_progress_title">Journey to %1$s</string>
     <string name="journey_progress_waiting">%1$s from %2$s</string>
