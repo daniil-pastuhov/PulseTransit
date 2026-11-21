@@ -1,11 +1,18 @@
 package com.example.pulsetransit.platform
 
 import com.example.pulsetransit.data.SettingsRepository
+import com.example.pulsetransit.data.journey.JourneyAlert
+import com.example.pulsetransit.data.journey.JourneyProgress
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.MotionFrameDiff
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -59,6 +66,76 @@ interface CameraFrameSource {
     fun start(onFrame: (ByteArray) -> Unit)
 
     fun stop()
+}
+
+/**
+ * The watch the user chose and its PulseTransit app, in Swift (Garmin's Connect IQ SDK). After
+ * [start], [onAvailability] is called with the state now and at every change, and [onMessage] with
+ * each dictionary the watch app sends; both on the main thread.
+ */
+interface WatchSource {
+    fun start(
+        onAvailability: (WatchAvailability) -> Unit,
+        onMessage: (Map<String, Any?>) -> Unit,
+    )
+
+    /** See [WatchLink.openApp]. */
+    fun openApp()
+
+    /** Calls [onResult] exactly once, on the main thread: whether the message reached the watch app. */
+    fun send(
+        message: Map<String, Any>,
+        onResult: (Boolean) -> Unit,
+    )
+}
+
+/** [WatchWording] in Swift, which words the notifications and the Live Activity there. */
+interface WatchWordingSource {
+    fun title(progress: JourneyProgress): String
+
+    fun progress(progress: JourneyProgress): WatchText
+
+    fun alert(alert: JourneyAlert): WatchText
+}
+
+internal class WatchSourceLink(
+    private val source: WatchSource,
+) : WatchLink {
+    private val _availability = MutableStateFlow(WatchAvailability.NONE)
+    override val availability: StateFlow<WatchAvailability> = _availability.asStateFlow()
+
+    private val _incoming = MutableSharedFlow<Map<String, Any?>>(extraBufferCapacity = INCOMING_BUFFER)
+    override val incoming: Flow<Map<String, Any?>> = _incoming.asSharedFlow()
+
+    init {
+        source.start(
+            onAvailability = { _availability.value = it },
+            onMessage = { _incoming.tryEmit(it) },
+        )
+    }
+
+    override fun openApp() = source.openApp()
+
+    override suspend fun send(message: Map<String, Any>): Boolean =
+        suspendCancellableCoroutine { continuation ->
+            source.send(message) { reached ->
+                if (continuation.isActive) continuation.resume(reached)
+            }
+        }
+
+    private companion object {
+        const val INCOMING_BUFFER = 16
+    }
+}
+
+internal class WatchSourceWording(
+    private val source: WatchWordingSource,
+) : WatchWording {
+    override suspend fun title(progress: JourneyProgress): String = source.title(progress)
+
+    override suspend fun progress(progress: JourneyProgress): WatchText = source.progress(progress)
+
+    override suspend fun alert(alert: JourneyAlert): WatchText = source.alert(alert)
 }
 
 internal class LocationSourceProvider(
