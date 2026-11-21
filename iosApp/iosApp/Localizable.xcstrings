@@ -8071,6 +8071,23 @@
         }
       }
     },
+    "settings_watch_app_missing_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install PulseTransit on the watch from the Connect IQ Store to see a journey you follow on it."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installer PulseTransit på klokken fra Connect IQ Store for å se en reise du følger, på den."
+          }
+        }
+      }
+    },
     "settings_watch_connect": {
       "extractionState": "manual",
       "localizations": {
@@ -8135,6 +8152,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ er tilkoblet"
+          }
+        }
+      }
+    },
+    "settings_watch_ready_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A journey you follow shows on the watch, with its alerts. The watch asks before it opens PulseTransit."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En reise du følger, vises på klokken, med varslene. Klokken spør før den åpner PulseTransit."
           }
         }
       }

@@ -29,6 +29,8 @@ import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.LocationResult
+import com.example.pulsetransit.platform.WatchAvailability
+import com.example.pulsetransit.platform.WatchLink
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -50,6 +52,8 @@ class SettingsViewModel(
     private val journeyPermissions: JourneyPermissions,
     // One per app in production (Koin), shared with the board and the journey tracker.
     private val walkingPace: WalkingPaceRecorder = WalkingPaceRecorder(settingsRepository),
+    /** The watch a followed journey also shows on; null where the platform has none. */
+    private val watchLink: WatchLink? = null,
 ) : ViewModel() {
     /** Where the location lookup stands. Each platform turns this into its own localized text. */
     sealed interface LocationStatus {
@@ -97,6 +101,8 @@ class SettingsViewModel(
         val journeyMode: JourneyTrackingMode? = null,
         /** The kinds of journey alert turned off; empty when all are on, the default. */
         val disabledJourneyAlerts: Set<JourneyAlertKind> = emptySet(),
+        /** How the watch a followed journey also shows on is doing; [WatchAvailability.NONE] without one. */
+        val watchAvailability: WatchAvailability = WatchAvailability.NONE,
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -181,6 +187,11 @@ class SettingsViewModel(
                         hasWalkingPaceData = pace.hasData,
                     )
                 }
+            }
+        }
+        watchLink?.let { link ->
+            viewModelScope.launch {
+                link.availability.collect { availability -> _uiState.update { it.copy(watchAvailability = availability) } }
             }
         }
         viewModelScope.launch {

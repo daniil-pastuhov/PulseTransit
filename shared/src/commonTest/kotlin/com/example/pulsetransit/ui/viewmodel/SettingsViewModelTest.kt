@@ -18,11 +18,15 @@ import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.LocationAccuracy
 import com.example.pulsetransit.platform.LocationResult
 import com.example.pulsetransit.platform.PermissionState
+import com.example.pulsetransit.platform.WatchAvailability
+import com.example.pulsetransit.platform.WatchLink
 import com.example.pulsetransit.ui.viewmodel.SettingsViewModel.LocationStatus
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
@@ -59,6 +63,28 @@ class SettingsViewModelTest {
             ) = Unit
         }
 
+    private val watch =
+        object : WatchLink {
+            override val availability = MutableStateFlow(WatchAvailability.NONE)
+            override val incoming = emptyFlow<Map<String, Any?>>()
+
+            override fun openApp() = Unit
+
+            override suspend fun send(message: Map<String, Any>) = false
+        }
+
+    @Test
+    fun `the watch state follows the link`() =
+        settingsTest { vm ->
+            assertEquals(WatchAvailability.NONE, vm.uiState.value.watchAvailability)
+            watch.availability.value = WatchAvailability.APP_MISSING
+            runCurrent()
+            assertEquals(WatchAvailability.APP_MISSING, vm.uiState.value.watchAvailability)
+            watch.availability.value = WatchAvailability.READY
+            runCurrent()
+            assertEquals(WatchAvailability.READY, vm.uiState.value.watchAvailability)
+        }
+
     @BeforeTest
     fun setUp() = Dispatchers.setMain(dispatcher)
 
@@ -68,7 +94,7 @@ class SettingsViewModelTest {
     /** Like `boardTest`: the light-sensor collector never ends, so the scope must be cancelled. */
     private fun settingsTest(body: suspend TestScope.(SettingsViewModel) -> Unit) =
         runTest(dispatcher) {
-            val vm = SettingsViewModel(entur, settings, FakeSystemSensorManager(), location, journeyStore, journeyPermissions)
+            val vm = SettingsViewModel(entur, settings, FakeSystemSensorManager(), location, journeyStore, journeyPermissions, watchLink = watch)
             try {
                 runCurrent()
                 body(vm)

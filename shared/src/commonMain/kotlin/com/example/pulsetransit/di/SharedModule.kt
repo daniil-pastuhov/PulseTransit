@@ -119,6 +119,7 @@ val sharedModule =
                 journeyStore = get(),
                 journeyPermissions = get(),
                 walkingPace = get(),
+                watchLink = getOrNull(),
             )
         }
     }
