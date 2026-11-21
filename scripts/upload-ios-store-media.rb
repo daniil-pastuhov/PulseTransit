@@ -8,7 +8,8 @@
 # Files are named <device>_<n>_<scene>.jpg (with a -<pose> suffix for another iPhone Duo pose) and
 # <device>_preview.mp4, device being iphone (6.9"), ipad (13"), duo (iPhone Duo, screenshots
 # only) or watch (the Apple Watch app, 416×496, screenshots only), in one folder per App Store
-# locale. They go up in name order. ASC_VERSION=X.Y.Z creates that version when none is in preparation.
+# locale. They go up in name order. ASC_VERSION=X.Y.Z creates that version when none is in preparation,
+# and ASC_MEDIA="watch duo" replaces only those devices' media, leaving the others as they are.
 require "base64"
 require "digest"
 require "json"
@@ -22,6 +23,10 @@ APP_ID = "6819282127"
 SCREENSHOT_TYPES = { "iphone" => "APP_IPHONE_67", "ipad" => "APP_IPAD_PRO_3GEN_129", "duo" => "APP_IPHONE_DUO",
                      "watch" => "APP_WATCH_SERIES_10" }.freeze
 PREVIEW_TYPES = { "iphone" => "IPHONE_67", "ipad" => "IPAD_PRO_3GEN_129" }.freeze
+ONLY = ENV["ASC_MEDIA"].to_s.split(/[\s,]+/).reject(&:empty?)
+unknown = ONLY - SCREENSHOT_TYPES.keys
+abort "ASC_MEDIA: unknown device #{unknown.join(', ')} (#{SCREENSHOT_TYPES.keys.join(', ')})" unless unknown.empty?
+wanted = ->(types) { ONLY.empty? ? types : types.slice(*ONLY) }
 
 def token
   key = OpenSSL::PKey::EC.new(ENV.fetch("ASC_KEY_P8"))
@@ -94,7 +99,7 @@ def editable_version
 end
 
 # Checked before anything is replaced, so an oversized set leaves the version's media as it was.
-SCREENSHOT_TYPES.each_key do |device|
+wanted.(SCREENSHOT_TYPES).each_key do |device|
   Dir[File.join(ROOT, "iosApp/fastlane/screenshots", "*", "#{device}_*.{jpg,png}")].group_by { |f| File.dirname(f) }.each do |dir, files|
     abort "#{File.basename(dir)}: #{files.size} #{device} screenshots, App Store Connect takes at most 10" if files.size > 10
   end
@@ -106,13 +111,13 @@ localizations = api(:get, "/v1/appStoreVersions/#{version['id']}/appStoreVersion
 
 localizations.each do |locale, localization_id|
   puts "#{locale} (version #{version['attributes']['versionString']}):"
-  SCREENSHOT_TYPES.each do |device, display_type|
+  wanted.(SCREENSHOT_TYPES).each do |device, display_type|
     files = Dir[File.join(ROOT, "iosApp/fastlane/screenshots", locale, "#{device}_*.{jpg,png}")].sort
     next if files.empty?
     set_id = fresh_set(localization_id, "appScreenshotSets", "appScreenshotSets", "screenshotDisplayType", display_type, "appScreenshots")
     files.each { |file| upload("appScreenshots", :appScreenshotSet, set_id, file) }
   end
-  PREVIEW_TYPES.each do |device, preview_type|
+  wanted.(PREVIEW_TYPES).each do |device, preview_type|
     files = Dir[File.join(ROOT, "iosApp/fastlane/app_previews", locale, "#{device}_*.mp4")].sort
     next if files.empty?
     set_id = fresh_set(localization_id, "appPreviewSets", "appPreviewSets", "previewType", preview_type, "appPreviews")
