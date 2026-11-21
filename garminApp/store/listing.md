@@ -3,6 +3,8 @@
 The texts for the watch app's page on the Connect IQ Store (apps.garmin.com/developer), which has
 no API: paste them into the upload form (which refuses the characters < and > in a description) with `garminApp/build/PulseTransit.iq`
 (`scripts/build-garmin-app.sh store`). Category: Travel. The app needs the PulseTransit phone app.
+`hero-en.jpg` and `hero-nb.jpg` are the form's 1440×720 image "optimized for mobile devices": the
+app's gradient with the demo build's journey and alert on a fēnix 8, captured from the simulator.
 
 ## English
 
