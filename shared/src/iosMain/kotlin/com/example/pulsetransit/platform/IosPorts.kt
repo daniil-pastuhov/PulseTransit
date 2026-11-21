@@ -6,6 +6,7 @@ import com.example.pulsetransit.data.journey.JourneyProgress
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.MotionFrameDiff
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -96,6 +98,32 @@ interface WatchWordingSource {
     fun progress(progress: JourneyProgress): WatchText
 
     fun alert(alert: JourneyAlert): WatchText
+}
+
+/**
+ * The Apple Watch in Swift (WatchConnectivity). [start] gives the callback for what the watch app
+ * sends; messages that came before it was called must be kept and handed over then.
+ */
+interface WatchMirrorSource {
+    fun start(onMessage: (Map<String, Any?>) -> Unit)
+
+    /** See [WatchMirror.update]. */
+    fun update(message: Map<String, Any>)
+}
+
+internal class WatchMirrorSourceMirror(
+    private val source: WatchMirrorSource,
+) : WatchMirror {
+    // A channel, not a shared flow: a "Stop following" that woke the app is delivered once, to
+    // whoever starts listening after it came.
+    private val messages = Channel<Map<String, Any?>>(Channel.UNLIMITED)
+    override val incoming: Flow<Map<String, Any?>> = messages.receiveAsFlow()
+
+    init {
+        source.start { messages.trySend(it) }
+    }
+
+    override fun update(message: Map<String, Any>) = source.update(message)
 }
 
 internal class WatchSourceLink(

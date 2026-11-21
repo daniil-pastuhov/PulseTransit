@@ -13,6 +13,7 @@ import com.example.pulsetransit.data.journey.TrackedJourney
 import com.example.pulsetransit.platform.JourneyNotifier
 import com.example.pulsetransit.platform.WatchAvailability
 import com.example.pulsetransit.platform.WatchLink
+import com.example.pulsetransit.platform.WatchMirror
 import com.example.pulsetransit.platform.WatchText
 import com.example.pulsetransit.platform.WatchWording
 import com.russhwolf.settings.MapSettings
@@ -91,6 +92,19 @@ class WatchJourneyNotifierTest {
         override suspend fun alert(alert: JourneyAlert) = WatchText(alert.id, null)
     }
 
+    private class FakeMirror : WatchMirror {
+        override val incoming = MutableSharedFlow<Map<String, Any?>>(extraBufferCapacity = 16)
+        val updates = mutableListOf<Map<String, Any>>()
+
+        override fun update(message: Map<String, Any>) {
+            updates += message
+        }
+
+        fun types() = updates.map { it[WatchMessages.TYPE] }
+    }
+
+    private val mirror = FakeMirror()
+
     private var now = at(0)
     private val clock =
         object : Clock {
@@ -106,7 +120,7 @@ class WatchJourneyNotifierTest {
 
     private fun watchTest(body: suspend TestScope.(WatchJourneyNotifier) -> Unit) =
         runTest(UnconfinedTestDispatcher()) {
-            val notifier = WatchJourneyNotifier(phone, link, Wording, store, { stopped++ }, clock, backgroundScope)
+            val notifier = WatchJourneyNotifier(phone, link, Wording, store, { stopped++ }, mirror, clock, backgroundScope)
             body(notifier)
         }
 
@@ -275,6 +289,57 @@ class WatchJourneyNotifierTest {
             assertEquals(listOf(false), phone.ended)
             assertEquals(WatchMessages.TYPE_END, link.sent.last()[WatchMessages.TYPE])
             assertEquals(1, link.sent.last()[WatchMessages.KEY_ARRIVED])
+        }
+
+    @Test
+    fun `the mirror gets the plan without alerts whether or not a watch app is open`() =
+        watchTest { notifier ->
+            val journey = followed()
+            notifier.tick(journey)
+            assertEquals(listOf<Any?>(WatchMessages.TYPE_PLAN), mirror.types())
+            assertEquals(emptyList<Any>(), mirror.updates.single()[WatchMessages.KEY_ALERTS])
+            // The phone keeps its alerts: the mirror takes nothing over.
+            assertTrue(phone.scheduled.last().isNotEmpty())
+            notifier.show(journey, JourneyAlert.MissedJourney)
+            assertEquals(1, phone.shown.size)
+            // The same journey a tick later is not sent again; changed times are.
+            now += 15_000
+            notifier.tick(journey)
+            assertEquals(1, mirror.updates.size)
+            notifier.tick(journey.copy(legStops = liveStops(metroDelay = 2)))
+            assertEquals(2, mirror.updates.size)
+        }
+
+    @Test
+    fun `the mirror is told when the journey ends`() =
+        watchTest { notifier ->
+            val journey = followed()
+            notifier.tick(journey)
+            notifier.end(journey, clearAlerts = true)
+            assertEquals(WatchMessages.TYPE_END, mirror.updates.last()[WatchMessages.TYPE])
+            assertEquals(0, mirror.updates.last()[WatchMessages.KEY_ARRIVED])
+        }
+
+    @Test
+    fun `stop on the mirror stops following`() =
+        watchTest { notifier ->
+            val journey = followed()
+            store.start(journey)
+            notifier.tick(journey)
+            assertTrue(mirror.incoming.tryEmit(mapOf(WatchMessages.TYPE to WatchMessages.TYPE_STOP, WatchMessages.KEY_JOURNEY to journey.id)))
+            assertEquals(1, stopped)
+            assertNull(store.active.value)
+        }
+
+    @Test
+    fun `a mirror saying it started does not take the alerts`() =
+        watchTest { notifier ->
+            val journey = followed()
+            notifier.tick(journey)
+            assertTrue(mirror.incoming.tryEmit(mapOf(WatchMessages.TYPE to WatchMessages.TYPE_STARTED)))
+            notifier.tick(journey)
+            assertTrue(phone.scheduled.last().isNotEmpty())
+            assertTrue(link.sent.isEmpty())
         }
 
     @Test

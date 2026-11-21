@@ -1,0 +1,62 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "no_journey" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No journey followed" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "Ingen reise følges" } }
+      }
+    },
+    "no_journey_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Choose “Notify me about this journey” in PulseTransit on your iPhone" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "Velg «Varsle meg om denne reisen» i PulseTransit på iPhone" } }
+      }
+    },
+    "minutes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "min" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "min" } }
+      }
+    },
+    "now" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Now" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "Nå" } }
+      }
+    },
+    "coming_up" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Coming up" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "Videre" } }
+      }
+    },
+    "nothing_more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Nothing more before you arrive" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "Ikke noe mer før du er framme" } }
+      }
+    },
+    "stop_following" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stop following" } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "Slutt å følge" } }
+      }
+    },
+    "stop_sent_later" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your iPhone is out of reach. It will stop following when it is back." } },
+        "nb" : { "stringUnit" : { "state" : "translated", "value" : "iPhone er utenfor rekkevidde. Den slutter å følge når den er tilbake." } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

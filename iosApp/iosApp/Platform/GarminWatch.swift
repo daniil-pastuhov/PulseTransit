@@ -199,7 +199,7 @@ final class GarminWatch: NSObject, ObservableObject, WatchSource, IQDeviceEventD
 }
 
 /// Words a journey for the watch as the notifications and the Live Activity word it.
-final class GarminWatchWording: WatchWordingSource {
+final class JourneyWatchWording: WatchWordingSource {
     private let clock: ClockFormatter
 
     init(clock: ClockFormatter) {

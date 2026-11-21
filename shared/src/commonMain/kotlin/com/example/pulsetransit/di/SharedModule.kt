@@ -15,12 +15,14 @@ import com.example.pulsetransit.data.journey.JourneyOpenRequests
 import com.example.pulsetransit.data.journey.JourneyStore
 import com.example.pulsetransit.data.journey.JourneyStoreImpl
 import com.example.pulsetransit.data.journey.JourneyTracker
+import com.example.pulsetransit.data.journey.watch.NoWatchLink
 import com.example.pulsetransit.data.journey.watch.WatchJourneyNotifier
 import com.example.pulsetransit.data.pace.WalkingPaceRecorder
 import com.example.pulsetransit.data.widget.BoardWidgetSource
 import com.example.pulsetransit.platform.JourneyLauncher
 import com.example.pulsetransit.platform.JourneyNotifier
 import com.example.pulsetransit.platform.WatchLink
+import com.example.pulsetransit.platform.WatchMirror
 import com.example.pulsetransit.platform.WatchWording
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
 import com.example.pulsetransit.ui.viewmodel.DataSourcesViewModel
@@ -50,7 +52,8 @@ const val DEVICE_STATE = "deviceState"
  * - `JourneyNotifier`, `JourneyPermissions` and `JourneyLauncher`, for journey alerts, and
  *   optionally a `LocationProvider` named [JOURNEY_LOCATION] where the journey's location must not
  *   share one with the board's (iOS, whose location source serves one caller at a time)
- * - optionally a `WatchLink` and a `WatchWording`, to show a followed journey on a watch too
+ * - optionally a `WatchWording` with a `WatchLink` and/or a `WatchMirror`, to show a followed
+ *   journey on a watch too
  * - optionally a `Settings` named [DEVICE_STATE], never backed up, where the widgets need to know
  *   where the device last was (Android)
  */
@@ -126,18 +129,21 @@ val sharedModule =
 
 /**
  * The [phone]'s notifier, also showing the journey on a watch where the platform registers a
- * [WatchLink] and a [WatchWording]; just the phone's where it has none.
+ * [WatchWording] with a [WatchLink], a [WatchMirror] or both; just the phone's where it has none.
  */
 private fun Scope.watchAware(phone: JourneyNotifier): JourneyNotifier {
-    val link = getOrNull<WatchLink>() ?: return phone
-    val wording = getOrNull<WatchWording>() ?: return phone
+    val link = getOrNull<WatchLink>()
+    val mirror = getOrNull<WatchMirror>()
+    val wording = getOrNull<WatchWording>()
+    if (wording == null || (link == null && mirror == null)) return phone
     val koin = getKoin()
     return WatchJourneyNotifier(
         phone = phone,
-        link = link,
+        link = link ?: NoWatchLink,
         wording = wording,
         store = get(),
         // Looked up when used: on iOS the launcher holds the tracker this notifier is built for.
         stopFollowing = { koin.get<JourneyLauncher>().stop() },
+        mirror = mirror,
     )
 }
