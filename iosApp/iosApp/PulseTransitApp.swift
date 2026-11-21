@@ -20,12 +20,16 @@ struct PulseTransitApp: App {
             journeyNotifier: JourneyNotifications.shared,
             journeyPermissions: JourneyPermissionsSource.shared,
             watchSource: GarminWatch.shared,
-            watchWording: GarminWatchWording(clock: clockFormatter),
+            watchWording: JourneyWatchWording(clock: clockFormatter),
+            watchMirror: AppleWatch.shared,
             uiTest: Self.launchFlag("PTUITest"),
             uiTestReset: Self.launchFlag("PTUITestReset")
         )
         // The UI tests have no watch, and must not be asked for Bluetooth.
-        if !Self.launchFlag("PTUITest") { GarminWatch.shared.activate() }
+        if !Self.launchFlag("PTUITest") {
+            GarminWatch.shared.activate()
+            AppleWatch.shared.activate()
+        }
     }
 
     /// A debug-only launch argument (`-PTUITest YES`); always false in release builds.
