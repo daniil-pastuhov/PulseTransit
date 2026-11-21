@@ -21,7 +21,7 @@ Your public-transport journey on your wrist. PulseTransit for Garmin shows the j
 
 Start by choosing "Notify me about this journey" on a route in PulseTransit on your phone; the watch asks to open the app. The journey keeps running on the watch by its own clock when the phone is out of reach.
 
-Requires the PulseTransit app for Android (Norwegian public transport, data from Entur) and the Garmin Connect app. Nothing is sent anywhere: the watch only talks to your phone.
+Requires the PulseTransit app for Android or iPhone (Norwegian public transport, data from Entur) and the Garmin Connect app. On iPhone, choose the watch once under Settings > Journey alerts. Nothing is sent anywhere: the watch only talks to your phone.
 
 ## Norsk bokmål
 
@@ -40,4 +40,4 @@ Kollektivreisen din på håndleddet. PulseTransit for Garmin viser reisen du fø
 
 Start med å velge «Varsle meg om denne reisen» på en rute i PulseTransit på telefonen; klokken spør om den skal åpne appen. Reisen går videre på klokken etter dens egen klokke når telefonen er utenfor rekkevidde.
 
-Krever PulseTransit-appen for Android (norsk kollektivtrafikk, data fra Entur) og Garmin Connect-appen. Ingenting sendes noe sted: klokken snakker bare med telefonen din.
+Krever PulseTransit-appen for Android eller iPhone (norsk kollektivtrafikk, data fra Entur) og Garmin Connect-appen. På iPhone velger du klokken én gang under Innstillinger > Reisevarsler. Ingenting sendes noe sted: klokken snakker bare med telefonen din.
