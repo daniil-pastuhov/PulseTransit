@@ -2,6 +2,10 @@
 # Builds the Garmin watch app (garminApp/) for one device with the Connect IQ SDK.
 #
 #   scripts/build-garmin-app.sh [device] [extra monkeyc flags]     # device defaults to fenix847mm
+#   scripts/build-garmin-app.sh store                              # the package to upload to the Connect IQ Store
+#
+# "store" builds garminApp/build/PulseTransit.iq: a release build for every device in the manifest,
+# which is what the Connect IQ Store's upload form takes (apps.garmin.com/developer).
 #
 # Needs the SDK and that device's files, installed with Garmin's SDK Manager, and a developer key
 # (GARMIN_DEVELOPER_KEY, default ~/.garmin/pulsetransit_developer_key.der). The key is not in the
@@ -25,5 +29,10 @@ if [ ! -f "$key" ]; then
 fi
 
 mkdir -p build
+if [ "$device" = "store" ]; then
+  "${sdk%/}/bin/monkeyc" -e -r -f monkey.jungle -o build/PulseTransit.iq -y "$key" -w -l 2 "$@"
+  echo "build/PulseTransit.iq"
+  exit 0
+fi
 "${sdk%/}/bin/monkeyc" -d "$device" -f monkey.jungle -o "build/PulseTransit-$device.prg" -y "$key" -w -l 2 "$@"
 echo "build/PulseTransit-$device.prg"
