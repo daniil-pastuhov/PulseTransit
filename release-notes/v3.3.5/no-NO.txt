@@ -1,2 +1,3 @@
-• Reisevarsler på Garmin-klokken: følg en reise og se den på en fēnix 8, med klokkeappen (under testing)
+• Følg en reise på Garmin-klokken: nedtelling i sanntid, varsler på håndleddet og Slutt å følge (fēnix 8, med PulseTransit-klokkeappen)
+• Ny Apple Watch-app som viser reisen du følger, og en tydeligere direkteaktivitet på klokken
 • Reisevarsler har nå Slutt å følge i stedet for Hopp over neste varsler

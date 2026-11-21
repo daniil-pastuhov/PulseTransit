@@ -1,2 +1,3 @@
-• Journey alerts on your Garmin watch: follow a journey and see it on a fēnix 8, with the watch app (in testing)
+• Follow a journey on your Garmin watch: live countdown, alerts on your wrist and Stop following (fēnix 8, with the PulseTransit watch app)
+• New Apple Watch app that shows the journey you follow, and a clearer Live Activity on the watch
 • Journey notifications now offer Stop following instead of Skip next alerts
