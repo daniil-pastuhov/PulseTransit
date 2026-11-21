@@ -1,8 +1,9 @@
 <?xml version="1.0"?>
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
-    <iq:application id="4748155f3aa5402685a2b17d28ebbfe4" type="watch-app" name="@Strings.AppName" entry="PulseTransitApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0">
-        <!-- Round watches with Connect IQ 5 or later. Not yet: the square ones (Venu Sq 2, Venu X1) and
-             the two-colour Instincts, whose screens the views are not laid out for. -->
+    <iq:application id="4748155f3aa5402685a2b17d28ebbfe4" type="watch-app" name="@Strings.AppName" entry="PulseTransitApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.4.0">
+        <!-- Round watches with Connect IQ 5 or later, the square Venus (Sq 2, X1) and the two-colour
+             Instincts with a corner window (2, 3 Solar, E), the oldest of which sets minApiLevel. A
+             watch of another shape or colour depth needs a look in the simulator before it joins. -->
         <iq:products>
             <iq:product id="enduro3"/>
             <iq:product id="enduro4"/>
@@ -50,6 +51,12 @@
             <iq:product id="instinct3amoled45mm"/>
             <iq:product id="instinct3amoled50mm"/>
             <iq:product id="instinctcrossoveramoled"/>
+            <iq:product id="instinct2"/>
+            <iq:product id="instinct2s"/>
+            <iq:product id="instinct2x"/>
+            <iq:product id="instinct3solar45mm"/>
+            <iq:product id="instincte40mm"/>
+            <iq:product id="instincte45mm"/>
             <iq:product id="marq2"/>
             <iq:product id="marq2aviator"/>
             <iq:product id="marq3"/>
@@ -60,6 +67,9 @@
             <iq:product id="venu3s"/>
             <iq:product id="venu441mm"/>
             <iq:product id="venu445mm"/>
+            <iq:product id="venusq2"/>
+            <iq:product id="venusq2m"/>
+            <iq:product id="venux1"/>
             <iq:product id="vivoactive5"/>
             <iq:product id="vivoactive6"/>
         </iq:products>
