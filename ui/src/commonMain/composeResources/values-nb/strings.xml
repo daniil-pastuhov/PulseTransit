@@ -307,6 +307,11 @@
     <string name="settings_watch_ready_hint">En reise du følger, vises på klokken, med varslene. Klokken spør før den åpner PulseTransit.</string>
     <string name="settings_watch_app_missing_hint">Installer PulseTransit på klokken fra Connect IQ Store for å se en reise du følger, på den.</string>
     <string name="settings_watch_remove">Fjern klokken</string>
+    <string name="settings_watch_get_app">Hent klokkeappen</string>
+    <string name="journey_watch_offer_title">Se reisen på Garmin-klokken</string>
+    <string name="journey_watch_offer_body">Med PulseTransit på klokken vises reisen og varslene på håndleddet.</string>
+    <string name="journey_watch_offer_body_no_store">Installer PulseTransit på klokken fra Connect IQ Store, så vises reisen og varslene på håndleddet.</string>
+    <string name="journey_watch_offer_dismiss">Ikke nå</string>
     <string name="journey_rationale_cancel">Ikke nå</string>
     <string name="journey_tracking_title">Følge reisen</string>
     <string name="journey_alerts_all">Alle varsler</string>

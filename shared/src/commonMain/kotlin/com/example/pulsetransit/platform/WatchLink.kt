@@ -33,6 +33,22 @@ interface WatchLink {
 
     /** False when the message did not reach the watch app. */
     suspend fun send(message: Map<String, Any>): Boolean
+
+    /** Whether [openStore] has a page to open. */
+    val storeAvailable: Boolean get() = false
+
+    /** Opens the watch app's page in the watch maker's store, where it is installed on the watch. */
+    fun openStore() = Unit
+}
+
+/** The Garmin watch app (`garminApp/`) in the Connect IQ Store. */
+object GarminWatchApp {
+    /**
+     * The app's id in the store: the last part of its page's address, apps.garmin.com/apps/<id>,
+     * which the store gives an app when it is first uploaded (not the manifest's id). Empty until
+     * the app is listed: the apps then offer no button to a page that is not there.
+     */
+    const val STORE_ID = ""
 }
 
 /**

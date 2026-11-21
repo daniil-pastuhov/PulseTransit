@@ -24,6 +24,16 @@ struct JourneyNotifyButton: View {
                 }
                 .buttonStyle(.bordered)
                 .accessibilityIdentifier("journey.stop")
+                // A Garmin watch without the watch app: offered until it is there or turned down.
+                if model.state.watchAppOffered {
+                    let store = model.state.watchStoreAvailable
+                    Callout(L(store ? "journey_watch_offer_body" : "journey_watch_offer_body_no_store"), title: L("journey_watch_offer_title"), symbol: "applewatch") {
+                        if store {
+                            Button(L("settings_watch_get_app")) { model.viewModel.onGetWatchApp() }.buttonStyle(.borderless)
+                        }
+                        Button(L("journey_watch_offer_dismiss")) { model.viewModel.onDismissWatchOffer() }.buttonStyle(.borderless)
+                    }
+                }
             }
         } else if model.state.notificationsDenied {
             // Alerts can't be offered; say why and where to change it, rather than hiding the button.

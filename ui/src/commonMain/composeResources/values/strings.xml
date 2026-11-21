@@ -309,6 +309,11 @@
     <string name="settings_watch_ready_hint">A journey you follow shows on the watch, with its alerts. The watch asks before it opens PulseTransit.</string>
     <string name="settings_watch_app_missing_hint">Install PulseTransit on the watch from the Connect IQ Store to see a journey you follow on it.</string>
     <string name="settings_watch_remove">Remove watch</string>
+    <string name="settings_watch_get_app">Get the watch app</string>
+    <string name="journey_watch_offer_title">See this journey on your Garmin watch</string>
+    <string name="journey_watch_offer_body">With PulseTransit on the watch, the journey and its alerts show on your wrist.</string>
+    <string name="journey_watch_offer_body_no_store">Install PulseTransit on the watch from the Connect IQ Store, and the journey and its alerts show on your wrist.</string>
+    <string name="journey_watch_offer_dismiss">Not now</string>
     <string name="journey_rationale_cancel">Not now</string>
     <string name="journey_tracking_title">Following the trip</string>
     <string name="journey_alerts_all">All alerts</string>

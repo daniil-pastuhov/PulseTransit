@@ -152,6 +152,8 @@ fun MainScreen(
             trip = trip,
             onNotify = { journeyViewModel.onNotifyClick(trip) },
             onStop = journeyViewModel::onStopClick,
+            onGetWatchApp = journeyViewModel::onGetWatchApp,
+            onDismissWatchOffer = journeyViewModel::onDismissWatchOffer,
         )
     }
 

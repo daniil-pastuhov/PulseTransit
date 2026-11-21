@@ -11,6 +11,8 @@ import com.example.pulsetransit.data.tripKey
 import com.example.pulsetransit.platform.JourneyLauncher
 import com.example.pulsetransit.platform.JourneyPermissions
 import com.example.pulsetransit.platform.PermissionState
+import com.example.pulsetransit.platform.WatchAvailability
+import com.example.pulsetransit.platform.WatchLink
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,12 +30,16 @@ import kotlin.time.Clock
  *   system prompts the choice needs ([UiState.permissionRequest]) and reports back.
  * - Location denied: time-only alerts.
  * - Otherwise: the mode chosen last time.
+ *
+ * With a watch connected that lacks the watch app ([watchLink]), a followed journey also offers
+ * the app, until it is installed or the offer is turned down.
  */
 class JourneyAlertsViewModel(
     private val store: JourneyStore,
     private val permissions: JourneyPermissions,
     private val launcher: JourneyLauncher,
     private val openRequests: JourneyOpenRequests,
+    private val watchLink: WatchLink? = null,
     private val clock: Clock = Clock.System,
 ) : ViewModel() {
     /** System prompts to show: [notifications] and/or [location]. The screen answers with [onPermissionsResult]. */
@@ -62,6 +68,13 @@ class JourneyAlertsViewModel(
          * denied, so it follows live times only. Cleared when the journey ends.
          */
         val followingWithoutLocation: Boolean = false,
+        /**
+         * A watch is connected without the watch app, and the offer of it was not turned down:
+         * the followed journey's details offer it.
+         */
+        val watchAppOffered: Boolean = false,
+        /** The offer can open the app's store page; without one it only says where to find it. */
+        val watchStoreAvailable: Boolean = false,
     ) {
         fun isFollowing(trip: TripInfo): Boolean = activeJourney?.id == journeyId(trip)
     }
@@ -78,6 +91,15 @@ class JourneyAlertsViewModel(
                 // A journey that ends by itself (arrived, expired) takes its fallback note with it.
                 _uiState.update {
                     it.copy(activeJourney = journey, followingWithoutLocation = journey != null && it.followingWithoutLocation)
+                }
+            }
+        }
+        watchLink?.let { link ->
+            _uiState.update { it.copy(watchStoreAvailable = link.storeAvailable) }
+            viewModelScope.launch {
+                link.availability.collect { availability ->
+                    val offered = availability == WatchAvailability.APP_MISSING && !store.watchOfferDismissed()
+                    _uiState.update { it.copy(watchAppOffered = offered) }
                 }
             }
         }
@@ -162,6 +184,17 @@ class JourneyAlertsViewModel(
         if (trip == null || !notificationsGranted) return
         val mode = if (request.mode.usesLocation && !locationGranted) JourneyTrackingMode.TIME_ONLY else request.mode
         start(trip, mode, fellBack = mode != request.mode)
+    }
+
+    /** "Get the watch app" in the offer. It stays until the app is there, as the store may be left without installing. */
+    fun onGetWatchApp() {
+        watchLink?.openStore()
+    }
+
+    /** "Not now" in the offer: it is not made again. Settings still says the app is missing. */
+    fun onDismissWatchOffer() {
+        store.dismissWatchOffer()
+        _uiState.update { it.copy(watchAppOffered = false) }
     }
 
     fun onStopClick() {

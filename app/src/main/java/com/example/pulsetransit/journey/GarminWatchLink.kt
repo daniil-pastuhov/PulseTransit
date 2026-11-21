@@ -2,6 +2,7 @@ package com.example.pulsetransit.journey
 
 import android.content.Context
 import android.util.Log
+import com.example.pulsetransit.platform.GarminWatchApp
 import com.example.pulsetransit.platform.WatchAvailability
 import com.example.pulsetransit.platform.WatchLink
 import com.garmin.android.connectiq.ConnectIQ
@@ -155,6 +156,14 @@ internal class GarminWatchLink(
                 }
             if (!sent && continuation.isActive) continuation.resume(false)
         }
+    }
+
+    override val storeAvailable: Boolean = GarminWatchApp.STORE_ID.isNotEmpty()
+
+    /** The app's page in Garmin Connect's Connect IQ Store, which installs it on the watch. */
+    override fun openStore() {
+        if (!storeAvailable) return
+        guarded { connectIq.openStore(GarminWatchApp.STORE_ID) }
     }
 
     /** Runs an SDK call, which throws when Garmin Connect's service is not bound. False when it did. */

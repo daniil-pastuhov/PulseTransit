@@ -36,6 +36,11 @@ interface JourneyStore {
 
     fun setPreferredMode(mode: JourneyTrackingMode)
 
+    /** Whether the offer of the watch app, shown with a followed journey, was turned down. */
+    fun watchOfferDismissed(): Boolean
+
+    fun dismissWatchOffer()
+
     /** The kinds of alert turned off in Settings; empty, so every alert is shown, until one is. */
     fun disabledAlerts(): Set<JourneyAlertKind>
 
@@ -57,6 +62,7 @@ class JourneyStoreImpl(
         const val HISTORY = "journey_history_json"
         const val PREFERRED_MODE = "journey_preferred_mode"
         const val DISABLED_ALERTS = "journey_disabled_alerts_json"
+        const val WATCH_OFFER_DISMISSED = "journey_watch_offer_dismissed"
     }
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -114,6 +120,12 @@ class JourneyStoreImpl(
 
     override fun setPreferredMode(mode: JourneyTrackingMode) {
         prefs.putString(Keys.PREFERRED_MODE, mode.name)
+    }
+
+    override fun watchOfferDismissed(): Boolean = prefs.getBoolean(Keys.WATCH_OFFER_DISMISSED, false)
+
+    override fun dismissWatchOffer() {
+        prefs.putBoolean(Keys.WATCH_OFFER_DISMISSED, true)
     }
 
     // By name, so a kind a later version drops is skipped rather than failing the whole set.

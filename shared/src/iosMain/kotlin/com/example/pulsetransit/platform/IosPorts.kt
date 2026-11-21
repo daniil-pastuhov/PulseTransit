@@ -89,6 +89,9 @@ interface WatchSource {
         message: Map<String, Any>,
         onResult: (Boolean) -> Unit,
     )
+
+    /** See [WatchLink.openStore]; only called with a [GarminWatchApp.STORE_ID]. */
+    fun openStore()
 }
 
 /** [WatchWording] in Swift, which words the notifications and the Live Activity there. */
@@ -143,6 +146,12 @@ internal class WatchSourceLink(
     }
 
     override fun openApp() = source.openApp()
+
+    override val storeAvailable: Boolean = GarminWatchApp.STORE_ID.isNotEmpty()
+
+    override fun openStore() {
+        if (storeAvailable) source.openStore()
+    }
 
     override suspend fun send(message: Map<String, Any>): Boolean =
         suspendCancellableCoroutine { continuation ->

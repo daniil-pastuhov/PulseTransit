@@ -1,6 +1,7 @@
 import ConnectIQ
 import Foundation
 import Shared
+import UIKit
 
 /// The Garmin watch the user chose in Settings, and the PulseTransit watch app on it (`garminApp/`),
 /// through Garmin's Connect IQ SDK.
@@ -40,9 +41,21 @@ final class GarminWatch: NSObject, ObservableObject, WatchSource, IQDeviceEventD
     private var onAvailability: ((WatchAvailability) -> Void)?
     private var onMessage: (([String: Any]) -> Void)?
 
+    /// The app's id in the Connect IQ Store, once it is listed (`GarminWatchApp.STORE_ID`).
+    private static let storeId = UUID(uuidString: GarminWatchApp.shared.STORE_ID)
+
     private var app: IQApp? {
-        device.map { IQApp(uuid: Self.appId, store: Self.appId, device: $0) }
+        device.map { IQApp(uuid: Self.appId, store: Self.storeId ?? Self.appId, device: $0) }
     }
+
+    /// Whether Garmin Connect is on this iPhone (its URL scheme is in LSApplicationQueriesSchemes).
+    /// Without it there is no watch to choose, so Settings offers none.
+    var isGarminConnectInstalled: Bool {
+        URL(string: "gcm-ciq://").map(UIApplication.shared.canOpenURL) ?? false
+    }
+
+    /// Whether "Get the watch app" has a store page to open.
+    var canOpenStore: Bool { Self.storeId != nil }
 
     /// Call at launch: takes up the watch chosen before, if any.
     func activate() {
@@ -173,6 +186,12 @@ final class GarminWatch: NSObject, ObservableObject, WatchSource, IQDeviceEventD
     func openApp() {
         guard installed == true, let app else { return }
         ConnectIQ.sharedInstance()?.openAppRequest(app) { _ in }
+    }
+
+    /// The watch app's page in Garmin Connect's Connect IQ Store, which installs it on the watch.
+    func openStore() {
+        guard canOpenStore, let app else { return }
+        ConnectIQ.sharedInstance()?.showStore(for: app)
     }
 
     func send(message: [String: Any], onResult: @escaping (KotlinBoolean) -> Void) {
