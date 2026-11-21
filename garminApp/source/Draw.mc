@@ -81,8 +81,8 @@ module Draw {
             var line = words[next] as String;
             var fits = dc.getTextWidthInPixels(line, font) <= width;
             next++;
-            while (fits && next < words.size() && dc.getTextWidthInPixels(line + " " + words[next], font) <= width) {
-                line = line + " " + words[next];
+            while (fits && next < words.size() && dc.getTextWidthInPixels(line + " " + (words[next] as String), font) <= width) {
+                line = line + " " + (words[next] as String);
                 next++;
             }
             lines.add(line);
