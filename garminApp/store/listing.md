@@ -16,7 +16,7 @@ Your public-transport journey on your wrist. PulseTransit for Garmin shows the j
 • Platform, direction and stops left
 • The whole journey as a ring around the screen
 • A buzz at the moments that matter: your ride is about to leave, your stop is next, time to change, you have arrived
-• What comes next, one press down
+• What comes next, one press down or a swipe up
 • Stop following from the watch
 
 Start by choosing "Notify me about this journey" on a route in PulseTransit on your phone; the watch asks to open the app. The journey keeps running on the watch by its own clock when the phone is out of reach.
@@ -35,7 +35,7 @@ Kollektivreisen din på håndleddet. PulseTransit for Garmin viser reisen du fø
 • Spor, retning og antall stopp igjen
 • Hele reisen som en ring rundt skjermen
 • Et støt når det gjelder: avgangen går snart, neste stopp er ditt, tid for å bytte, du er framme
-• Hva som kommer etterpå, ett trykk ned
+• Hva som kommer etterpå, ett trykk ned eller et sveip opp
 • Slutt å følge fra klokken
 
 Start med å velge «Varsle meg om denne reisen» på en rute i PulseTransit på telefonen; klokken spør om den skal åpne appen. Reisen går videre på klokken etter dens egen klokke når telefonen er utenfor rekkevidde.
