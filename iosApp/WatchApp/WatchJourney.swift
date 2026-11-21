@@ -57,6 +57,12 @@ final class WatchJourney: NSObject, ObservableObject, WCSessionDelegate {
                 guard let new = JourneyPlan(message: context) else { return }
                 if new.id != plan?.id { stopQueued = false }
                 plan = new
+                #if DEBUG
+                // -PTStop YES: "Stop following" as soon as a journey arrives, to check the way back
+                // to the iPhone between paired simulators, where a script cannot tap the button.
+                // A few seconds in, as a tap would be: the session is not reachable the moment it activates.
+                if UserDefaults.standard.bool(forKey: "PTStop") { DispatchQueue.main.asyncAfter(deadline: .now() + 5) { self.stopFollowing() } }
+                #endif
             case "end":
                 guard context["id"] as? String == plan?.id else { return }
                 // A journey that arrived stays to say so; one that was stopped goes.
@@ -73,18 +79,32 @@ final class WatchJourney: NSObject, ObservableObject, WCSessionDelegate {
 
     #if DEBUG
     /// The Garmin demo's journey (garminApp/source/Demo.mc): a walk, metro 5, bus 20 and the walk home.
+    /// Worded here in the watch's language, as the iPhone would have, for the store screenshots.
     private static func demoPlan(now: Int) -> [String: Any] {
         let m = 60
+        let norwegian = Locale.preferredLanguages.first?.hasPrefix("nb") == true
+        func t(_ english: String, _ norwegian_: String) -> String { norwegian ? norwegian_ : english }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        func clock(_ minutes: Int) -> String { formatter.string(from: Date(timeIntervalSince1970: TimeInterval(now + minutes * m))) }
+        let (metro, bus, arrival) = (clock(4), clock(16), clock(29))
         return [
-            "t": "plan", "v": 1, "id": "demo", "title": "Journey to Home", "arr": now + 29 * m,
+            "t": "plan", "v": 1, "id": "demo", "title": t("Journey to Home", "Reise til Hjem"), "arr": now + 29 * m,
             "f": [
-                [now, 2, "Walking to Jernbanetorget", "Then 5 at 09:06, platform 2 · Arrives 09:31", now + 4 * m],
-                [now + 2 * m, 0, "5 towards Vestli", "Leaves 09:06, 2 min late · Platform 2 · From Jernbanetorget · Arrives 09:31", now + 4 * m],
-                [now + 4 * m, 1, "On 5 to Majorstuen", "Next stop: Stortinget · 3 stops left · Then 20 at 09:18, platform B", now + 12 * m],
-                [now + 12 * m, 0, "20 towards Skøyen", "Leaves 09:18 · Platform B · Arrives 09:31", now + 16 * m],
-                [now + 16 * m, 1, "On 20 to Skøyen", "2 stops left · Arrives 09:31", now + 24 * m],
-                [now + 24 * m, 2, "Walking to Home", "Arrives 09:31", now + 29 * m],
-                [now + 29 * m, 3, "Arrived at Home", "Arrived 09:31", 0],
+                [now, 2, t("Walking to Jernbanetorget", "Går til Jernbanetorget"),
+                 t("Then 5 at \(metro), platform 2 · Arrives \(arrival)", "Så 5 kl. \(metro), plattform 2 · Ankomst \(arrival)"), now + 4 * m],
+                [now + 2 * m, 0, t("5 towards Vestli", "5 mot Vestli"),
+                 t("Leaves \(metro), 2 min late · Platform 2 · From Jernbanetorget · Arrives \(arrival)",
+                   "Går \(metro), 2 min forsinket · Plattform 2 · Fra Jernbanetorget · Ankomst \(arrival)"), now + 4 * m],
+                [now + 4 * m, 1, t("On 5 to Majorstuen", "Med 5 til Majorstuen"),
+                 t("Next stop: Stortinget · 3 stops left · Then 20 at \(bus), platform B",
+                   "Neste stopp: Stortinget · 3 stopp igjen · Så 20 kl. \(bus), plattform B"), now + 12 * m],
+                [now + 12 * m, 0, t("20 towards Skøyen", "20 mot Skøyen"),
+                 t("Leaves \(bus) · Platform B · Arrives \(arrival)", "Går \(bus) · Plattform B · Ankomst \(arrival)"), now + 16 * m],
+                [now + 16 * m, 1, t("On 20 to Skøyen", "Med 20 til Skøyen"),
+                 t("2 stops left · Arrives \(arrival)", "2 stopp igjen · Ankomst \(arrival)"), now + 24 * m],
+                [now + 24 * m, 2, t("Walking to Home", "Går til Hjem"), t("Arrives \(arrival)", "Ankomst \(arrival)"), now + 29 * m],
+                [now + 29 * m, 3, t("Arrived at Home", "Fremme ved Hjem"), t("Arrived \(arrival)", "Fremme \(arrival)"), 0],
             ],
             "s": [[0, now - 2 * m, now + 2 * m], [1, now + 2 * m, now + 4 * m], [2, now + 4 * m, now + 12 * m],
                   [1, now + 12 * m, now + 16 * m], [2, now + 16 * m, now + 24 * m], [0, now + 24 * m, now + 29 * m]],

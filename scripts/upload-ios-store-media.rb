@@ -6,8 +6,9 @@
 #   ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_P8="$(cat AuthKey.p8)" scripts/upload-ios-store-media.rb
 #
 # Files are named <device>_<n>_<scene>.jpg (with a -<pose> suffix for another iPhone Duo pose) and
-# <device>_preview.mp4, device being iphone (6.9"), ipad (13") or duo (iPhone Duo, screenshots
-# only), in one folder per App Store locale. They go up in name order.
+# <device>_preview.mp4, device being iphone (6.9"), ipad (13"), duo (iPhone Duo, screenshots
+# only) or watch (the Apple Watch app, 416×496, screenshots only), in one folder per App Store
+# locale. They go up in name order. ASC_VERSION=X.Y.Z creates that version when none is in preparation.
 require "base64"
 require "digest"
 require "json"
@@ -18,7 +19,8 @@ ROOT = File.expand_path("..", __dir__)
 APP_ID = "6819282127"
 # APP_IPHONE_DUO is not in Apple's API reference yet, but works: one set of up to 10 screenshots,
 # taking both the inner and the outer display's sizes.
-SCREENSHOT_TYPES = { "iphone" => "APP_IPHONE_67", "ipad" => "APP_IPAD_PRO_3GEN_129", "duo" => "APP_IPHONE_DUO" }.freeze
+SCREENSHOT_TYPES = { "iphone" => "APP_IPHONE_67", "ipad" => "APP_IPAD_PRO_3GEN_129", "duo" => "APP_IPHONE_DUO",
+                     "watch" => "APP_WATCH_SERIES_10" }.freeze
 PREVIEW_TYPES = { "iphone" => "IPHONE_67", "ipad" => "IPAD_PRO_3GEN_129" }.freeze
 
 def token
@@ -79,6 +81,18 @@ def fresh_set(localization_id, sets_path, set_type, type_attribute, type_value, 
     relationships: { appStoreVersionLocalization: { data: { type: "appStoreVersionLocalizations", id: localization_id } } } } })["data"]["id"]
 end
 
+# The version being prepared. With ASC_VERSION set and none in preparation, that version is created,
+# as the release would on its merge, so the listing can be made ready before the release is submitted.
+def editable_version
+  found = api(:get, "/v1/apps/#{APP_ID}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"].first
+  return found if found
+  wanted = ENV["ASC_VERSION"].to_s
+  abort "No editable App Store version (set ASC_VERSION to create one)" if wanted.empty?
+  puts "Creating App Store version #{wanted}"
+  api(:post, "/v1/appStoreVersions", { data: { type: "appStoreVersions", attributes: { platform: "IOS", versionString: wanted },
+    relationships: { app: { data: { type: "apps", id: APP_ID } } } } })["data"]
+end
+
 # Checked before anything is replaced, so an oversized set leaves the version's media as it was.
 SCREENSHOT_TYPES.each_key do |device|
   Dir[File.join(ROOT, "iosApp/fastlane/screenshots", "*", "#{device}_*.{jpg,png}")].group_by { |f| File.dirname(f) }.each do |dir, files|
@@ -86,8 +100,7 @@ SCREENSHOT_TYPES.each_key do |device|
   end
 end
 
-version = api(:get, "/v1/apps/#{APP_ID}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"].first
-abort "No editable App Store version" unless version
+version = editable_version
 localizations = api(:get, "/v1/appStoreVersions/#{version['id']}/appStoreVersionLocalizations")["data"]
   .to_h { |l| [l["attributes"]["locale"], l["id"]] }
 

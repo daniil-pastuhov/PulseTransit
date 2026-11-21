@@ -1,0 +1,50 @@
+# Pushes the App Store listing kept in the repo to App Store Connect: the texts and App Review notes
+# (iosApp/fastlane/metadata) and the screenshots and previews (iosApp/fastlane/{screenshots,app_previews}),
+# onto the version in preparation. Run by hand, from the branch that holds what should go up, before
+# the release PR is merged: its merge submits the version for review with the listing as it then is.
+name: App Store listing
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (X.Y.Z) to create when none is in preparation yet"
+        required: false
+      texts:
+        description: "Texts and App Review notes"
+        type: boolean
+        default: true
+      media:
+        description: "Screenshots and previews (replaces those there)"
+        type: boolean
+        default: true
+
+concurrency:
+  group: app-store-listing
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  listing:
+    name: Update the App Store listing
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: Release
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      ASC_VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ruby/setup-ruby@7f797815d8adceb1c412e7abefdd1ab4abc47a5f # v1.335.0
+        with:
+          ruby-version: '3.3'
+      - name: Texts and App Review notes
+        if: inputs.texts
+        run: scripts/update-ios-store-text.rb
+      - name: Screenshots and previews
+        if: inputs.media
+        run: scripts/upload-ios-store-media.rb

@@ -1,11 +1,11 @@
 1. SCREEN RECORDING
-Attached, recorded on an iPhone 13 Pro Max. It starts at the Home Screen, launches the app on a fresh install and shows the typical flow: adding stops, a fastest-route destination, location and camera permissions, the live board, line filtering, themes and the automatic dim/wake. The app has no accounts, login, user-generated content, in-app purchases or paid features.
+Attached, recorded on an iPhone 13 Pro Max. From the Home Screen and a fresh install it shows the typical flow: adding stops, a fastest-route destination, location and camera permissions, the live board, line filtering, themes and the automatic dim/wake. The app has no accounts, user-generated content or purchases.
 
 2. PURPOSE AND AUDIENCE
-PulseTransit shows live public transport departures and routes in Norway, for commuters who want to see at a glance when their next bus, tram, metro, train or ferry leaves without opening a journey planner every time. It has two modes. "On the spot" follows the device: routes to saved destinations from the current location, and departures from the nearest stop. "Wall board" turns an iPhone or iPad, typically a spare one by the front door or in a kitchen or office, into an always-on board for chosen stops. Both show real-time departures with delays, cancellations and service messages, the fastest route to saved destinations (optionally on a schedule), route search and local weather. For wall use it can keep the screen on, wake when someone walks by (front camera, frames analysed on device only, never stored or sent), dim when nobody is around, switch day/night theme, shift pixels against OLED burn-in, refresh less often at night, and keep showing the last data when offline.
+PulseTransit shows live public transport departures and routes in Norway, for commuters who want to see at a glance when their next bus, tram, metro, train or ferry leaves. It has two modes. "On the spot" follows the device: routes to saved destinations from the current location, and departures from the nearest stop. "Wall board" turns an iPhone or iPad, typically a spare one by the front door or in a kitchen or office, into an always-on board for chosen stops. Both show real-time departures with delays, cancellations and service messages, the fastest route to saved destinations (optionally on a schedule), route search and local weather. For wall use it can keep the screen on, wake when someone walks by (front camera, frames analysed on device only, never stored or sent), dim when nobody is around and shift pixels against OLED burn-in.
 
 3. HOW TO USE IT
-No login, credentials or sample files are needed.
+No login or sample files are needed.
 - On first launch the app asks "How will you use PulseTransit?". Choose "On the spot" to follow the device, or "Wall board" for a wall display. It can be changed later under "Mode" in Settings, which shows only the current mode's sections.
 On the spot:
 - Allow location when asked. The screen shows routes to the saved destinations (add one with "Add destination") and departures from the nearest stop; drag the grip between them to resize either part.
@@ -13,9 +13,9 @@ Wall board:
 - Tap "Open Settings to Add Stops".
 - Under "Add Stop Places", search for a Norwegian stop (e.g. "Jernbanetorget") and tap Add. Close Settings with Back: the board shows its live departures.
 - Optional: under "Fastest Route Destinations", add a place (e.g. "Oslo lufthavn") to see the quickest trip there. Tap a saved destination to choose when its route is shown.
-- Optional: "Detect Location Automatically" (or manual coordinates) enables weather and nearby stops.
-- Optional, for wall use: under "Power & Refresh", turn on "Wake screen by front camera motion" and "Always on display", and set the auto-dim delay. Theme and pixel shift have their own sections.
-- Tap a departure to see its details and upcoming departures; "Filter out line" there hides that line. Tap a route to see its legs.
+- Optional: "Detect Location Automatically" enables weather and nearby stops.
+- Optional, for wall use: under "Power & Refresh", turn on "Wake screen by front camera motion" and "Always on display".
+- Tap a departure for its details; "Filter out line" there hides that line. Tap a route to see its legs.
 Location and camera are requested only when the user turns those features on (location also when "On the spot" is chosen); the wall board works fully without them.
 
 4. EXTERNAL SERVICES
@@ -26,7 +26,10 @@ Location and camera are requested only when the user turns those features on (lo
 No authentication, payment, advertising, analytics or AI services.
 
 5. REGIONAL DIFFERENCES
-The app and its features behave the same in every region. Its departure data covers public transport in Norway only, since Entur is Norway's national provider; weather works for any location. The app is in English and Norwegian.
+The app behaves the same in every region. Departure data covers Norway only (Entur is Norway's national provider); weather works anywhere. The app is in English and Norwegian.
 
 6. REGULATED INDUSTRY / PROTECTED MATERIAL
-Not applicable. The app shows only public open data from Entur and MET Norway, under their open licences and with the required attribution in the app ("Data from Entur", "Weather from MET Norway"). It contains no protected third-party material.
+Not applicable. The app shows only public open data from Entur and MET Norway, under their open licences, with attribution in the app.
+
+7. WATCHES AND BLUETOOTH (NEW IN 3.3.5)
+The Apple Watch app shows the journey followed on the iPhone ("Notify me about this journey" in a route's details) and offers "Stop following". The bluetooth-central background mode is for Garmin watches only: Garmin's Connect IQ SDK sends the followed journey to the user's Garmin watch while the app is in the background. Bluetooth is requested only after "Connect Garmin watch" in Settings > Journey alerts, which needs a Garmin watch and the Garmin Connect app.
