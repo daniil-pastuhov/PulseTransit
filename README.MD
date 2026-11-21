@@ -199,7 +199,12 @@ once fail.
 5. `scripts/record-ios-preview.sh <udid> <out.mp4> <locale> <886x1920|1200x1600>` records the
    scripted tour (`-PTDemo YES`), from On the spot to the wall board, as a 29-second preview.
 6. `scripts/upload-ios-store-media.rb` (with the `ASC_*` variables) replaces the media on the
-   editable App Store version, the iPhone Duo set included. Duo screenshots are optional until
+   editable App Store version, the iPhone Duo set included, and the Apple Watch app's
+   (`watch_*`, 416×496: the watch simulator of a Series 10 or 11, 46 mm, running a Debug build
+   with `-PTDemo YES` and `-PTPage 0`, `1`, `2`, in each language with `-AppleLanguages`; they
+   are not framed). The "App Store listing" workflow (`.github/workflows/store-listing.yml`, run
+   by hand) runs it and `update-ios-store-text.rb` with the repository's key, and can create the
+   version first; do it before merging a release PR whose listing changed. Duo screenshots are optional until
    April 2027, when apps built with the iOS 27.1 SDK must include them; until then they earn the
    "optimized for iPhone Duo" badge.
 7. `swift scripts/render-ios-store-header.swift <raw-dir> iosApp/fastlane/creative_assets` renders
