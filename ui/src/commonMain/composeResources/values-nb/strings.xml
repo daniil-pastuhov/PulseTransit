@@ -304,6 +304,8 @@
     <string name="settings_watch_ready">%1$s er tilkoblet</string>
     <string name="settings_watch_not_connected">%1$s er ikke tilkoblet</string>
     <string name="settings_watch_app_missing">PulseTransit er ikke installert på %1$s</string>
+    <string name="settings_watch_ready_hint">En reise du følger, vises på klokken, med varslene. Klokken spør før den åpner PulseTransit.</string>
+    <string name="settings_watch_app_missing_hint">Installer PulseTransit på klokken fra Connect IQ Store for å se en reise du følger, på den.</string>
     <string name="settings_watch_remove">Fjern klokken</string>
     <string name="journey_rationale_cancel">Ikke nå</string>
     <string name="journey_tracking_title">Følge reisen</string>

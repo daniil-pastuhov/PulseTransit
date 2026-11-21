@@ -306,6 +306,8 @@
     <string name="settings_watch_ready">%1$s is connected</string>
     <string name="settings_watch_not_connected">%1$s is not connected</string>
     <string name="settings_watch_app_missing">PulseTransit is not installed on %1$s</string>
+    <string name="settings_watch_ready_hint">A journey you follow shows on the watch, with its alerts. The watch asks before it opens PulseTransit.</string>
+    <string name="settings_watch_app_missing_hint">Install PulseTransit on the watch from the Connect IQ Store to see a journey you follow on it.</string>
     <string name="settings_watch_remove">Remove watch</string>
     <string name="journey_rationale_cancel">Not now</string>
     <string name="journey_tracking_title">Following the trip</string>
