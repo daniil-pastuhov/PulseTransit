@@ -40,7 +40,8 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * "Notify me about this journey" in a route's details, or "Stop following" while it is the journey
  * being followed. With notifications denied, a note with the way to the system settings instead;
- * absent where alerts are unavailable.
+ * absent where alerts are unavailable. A followed journey also offers the watch app to a rider
+ * whose watch lacks it.
  */
 @Composable
 fun JourneyNotifyButton(
@@ -48,6 +49,8 @@ fun JourneyNotifyButton(
     trip: TripInfo,
     onNotify: () -> Unit,
     onStop: () -> Unit,
+    onGetWatchApp: () -> Unit,
+    onDismissWatchOffer: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val openSettings = rememberOpenAppSettings()
@@ -64,6 +67,15 @@ fun JourneyNotifyButton(
             OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth()) {
                 Icon(PulseIcons.NotificationsOff, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(Res.string.journey_stop_button), modifier = Modifier.padding(start = 8.dp))
+            }
+            if (state.watchAppOffered) {
+                val body = if (state.watchStoreAvailable) Res.string.journey_watch_offer_body else Res.string.journey_watch_offer_body_no_store
+                Callout(title = stringResource(Res.string.journey_watch_offer_title), body = stringResource(body)) {
+                    if (state.watchStoreAvailable) {
+                        TextButton(onClick = onGetWatchApp) { Text(stringResource(Res.string.settings_watch_get_app)) }
+                    }
+                    TextButton(onClick = onDismissWatchOffer) { Text(stringResource(Res.string.journey_watch_offer_dismiss)) }
+                }
             }
         }
     } else if (state.notificationsDenied) {

@@ -109,7 +109,7 @@ val sharedModule =
         }
         viewModel { ModeSelectionViewModel(settingsRepository = get()) }
         viewModel { DataSourcesViewModel(repository = get(), settingsRepository = get()) }
-        viewModel { JourneyAlertsViewModel(store = get(), permissions = get(), launcher = get(), openRequests = get()) }
+        viewModel { JourneyAlertsViewModel(store = get(), permissions = get(), launcher = get(), openRequests = get(), watchLink = getOrNull()) }
         viewModel {
             AppUpdateViewModel(checker = get(), settingsRepository = get(), connectivityMonitor = get())
         }

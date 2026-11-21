@@ -11,10 +11,14 @@ import com.example.pulsetransit.platform.PermissionState
 import com.example.pulsetransit.platform.PermissionState.DENIED
 import com.example.pulsetransit.platform.PermissionState.GRANTED
 import com.example.pulsetransit.platform.PermissionState.NOT_ASKED
+import com.example.pulsetransit.platform.WatchAvailability
+import com.example.pulsetransit.platform.WatchLink
 import com.russhwolf.settings.MapSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
@@ -66,7 +70,23 @@ class JourneyAlertsViewModelTest {
         }
     }
 
+    private class FakeWatch : WatchLink {
+        override val availability = MutableStateFlow(WatchAvailability.NONE)
+        override val incoming = emptyFlow<Map<String, Any?>>()
+        override val storeAvailable = true
+        var storeOpened = 0
+
+        override fun openApp() = Unit
+
+        override suspend fun send(message: Map<String, Any>) = false
+
+        override fun openStore() {
+            storeOpened++
+        }
+    }
+
     private val dispatcher = StandardTestDispatcher()
+    private val watch = FakeWatch()
     private val store = JourneyStoreImpl(MapSettings())
     private val launcher = FakeLauncher()
     private val openRequests = JourneyOpenRequests()
@@ -89,7 +109,7 @@ class JourneyAlertsViewModelTest {
         permissions: FakePermissions,
         body: suspend TestScope.(JourneyAlertsViewModel) -> Unit,
     ) = runTest(dispatcher) {
-        val vm = JourneyAlertsViewModel(store, permissions, launcher, openRequests, clock)
+        val vm = JourneyAlertsViewModel(store, permissions, launcher, openRequests, watch, clock)
         runCurrent()
         try {
             body(vm)
@@ -392,5 +412,42 @@ class JourneyAlertsViewModelTest {
             vm.onJourneyOpened()
             runCurrent()
             assertFalse(vm.uiState.value.openJourneyRequested)
+        }
+
+    @Test
+    fun `a watch without the watch app is offered it until it is installed`() =
+        vmTest(FakePermissions(GRANTED, GRANTED)) { vm ->
+            assertFalse(vm.uiState.value.watchAppOffered)
+
+            watch.availability.value = WatchAvailability.APP_MISSING
+            runCurrent()
+            assertTrue(vm.uiState.value.watchAppOffered)
+            assertTrue(vm.uiState.value.watchStoreAvailable)
+
+            vm.onGetWatchApp()
+            assertEquals(1, watch.storeOpened)
+            // Back from the store without installing: still offered.
+            assertTrue(vm.uiState.value.watchAppOffered)
+
+            watch.availability.value = WatchAvailability.READY
+            runCurrent()
+            assertFalse(vm.uiState.value.watchAppOffered)
+        }
+
+    @Test
+    fun `an offer turned down is not made again`() =
+        vmTest(FakePermissions(GRANTED, GRANTED)) { vm ->
+            watch.availability.value = WatchAvailability.APP_MISSING
+            runCurrent()
+            vm.onDismissWatchOffer()
+            assertFalse(vm.uiState.value.watchAppOffered)
+
+            // The watch reconnects, or the app starts again: the answer was kept.
+            watch.availability.value = WatchAvailability.NONE
+            runCurrent()
+            watch.availability.value = WatchAvailability.APP_MISSING
+            runCurrent()
+            assertFalse(vm.uiState.value.watchAppOffered)
+            assertTrue(store.watchOfferDismissed())
         }
 }

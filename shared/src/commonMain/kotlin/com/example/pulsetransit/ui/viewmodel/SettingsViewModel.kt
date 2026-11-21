@@ -103,6 +103,8 @@ class SettingsViewModel(
         val disabledJourneyAlerts: Set<JourneyAlertKind> = emptySet(),
         /** How the watch a followed journey also shows on is doing; [WatchAvailability.NONE] without one. */
         val watchAvailability: WatchAvailability = WatchAvailability.NONE,
+        /** Whether "Get the watch app" has a store page to open. */
+        val watchStoreAvailable: Boolean = false,
         val query: String = "",
         val searchResults: List<StopPlace> = emptyList(),
         val isSearching: Boolean = false,
@@ -190,6 +192,7 @@ class SettingsViewModel(
             }
         }
         watchLink?.let { link ->
+            _uiState.update { it.copy(watchStoreAvailable = link.storeAvailable) }
             viewModelScope.launch {
                 link.availability.collect { availability -> _uiState.update { it.copy(watchAvailability = availability) } }
             }
@@ -342,6 +345,11 @@ class SettingsViewModel(
     fun updateJourneyMode(mode: JourneyTrackingMode) {
         journeyStore.setPreferredMode(mode)
         _uiState.update { it.copy(journeyMode = mode) }
+    }
+
+    /** "Get the watch app": the watch app's page in the Connect IQ Store. */
+    fun openWatchStore() {
+        watchLink?.openStore()
     }
 
     /** Turns one kind of journey alert on or off, also for the journey followed now. */

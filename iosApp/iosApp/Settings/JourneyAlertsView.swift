@@ -67,7 +67,10 @@ struct JourneyAlertsView: View {
                 }
                 .textCase(nil)
             }
-            watchSection
+            // Nothing about a Garmin watch on an iPhone without Garmin Connect: there is none to choose.
+            if watch.status != .none || watch.isGarminConnectInstalled {
+                watchSection
+            }
         }
         .navigationTitle(L("journey_rationale_title"))
         .navigationBarTitleDisplayMode(.inline)
@@ -86,6 +89,10 @@ struct JourneyAlertsView: View {
                 Label(L("settings_watch_not_connected", name), systemImage: "applewatch.slash")
             case let .appMissing(name):
                 Label(L("settings_watch_app_missing", name), systemImage: "exclamationmark.triangle")
+                if watch.canOpenStore {
+                    Button(L("settings_watch_get_app")) { watch.openStore() }
+                        .accessibilityIdentifier("settings.watch.getApp")
+                }
             }
             if watch.status != .none {
                 Button(L("settings_watch_remove"), role: .destructive) { watch.remove() }

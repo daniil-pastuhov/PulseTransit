@@ -3728,6 +3728,74 @@
         }
       }
     },
+    "journey_watch_offer_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "With PulseTransit on the watch, the journey and its alerts show on your wrist."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Med PulseTransit på klokken vises reisen og varslene på håndleddet."
+          }
+        }
+      }
+    },
+    "journey_watch_offer_body_no_store": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Install PulseTransit on the watch from the Connect IQ Store, and the journey and its alerts show on your wrist."
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Installer PulseTransit på klokken fra Connect IQ Store, så vises reisen og varslene på håndleddet."
+          }
+        }
+      }
+    },
+    "journey_watch_offer_dismiss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikke nå"
+          }
+        }
+      }
+    },
+    "journey_watch_offer_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See this journey on your Garmin watch"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se reisen på Garmin-klokken"
+          }
+        }
+      }
+    },
     "leg_from": {
       "extractionState": "manual",
       "localizations": {
@@ -8118,6 +8186,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Åpner Garmin Connect for å velge klokken. En reise du følger, vises da på den, med varslene, når PulseTransit er installert på klokken."
+          }
+        }
+      }
+    },
+    "settings_watch_get_app": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get the watch app"
+          }
+        },
+        "nb": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hent klokkeappen"
           }
         }
       }

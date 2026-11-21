@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -157,7 +158,7 @@ fun JourneyAlertsScreen(
                             )
                         }
                     }
-                    WatchSection(uiState.watchAvailability)
+                    WatchSection(uiState.watchAvailability, storeAvailable = uiState.watchStoreAvailable, onGetApp = viewModel::openWatchStore)
                 }
             }
         }
@@ -169,7 +170,11 @@ fun JourneyAlertsScreen(
  * it lacks the watch app. Nothing without a watch, so a rider who has none never reads about one.
  */
 @Composable
-private fun WatchSection(availability: WatchAvailability) {
+private fun WatchSection(
+    availability: WatchAvailability,
+    storeAvailable: Boolean,
+    onGetApp: () -> Unit,
+) {
     val (title, hint) =
         when (availability) {
             WatchAvailability.NONE -> return
@@ -184,6 +189,9 @@ private fun WatchSection(availability: WatchAvailability) {
         ) {
             Text(stringResource(title, watch), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
             Text(stringResource(hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (availability == WatchAvailability.APP_MISSING && storeAvailable) {
+                TextButton(onClick = onGetApp) { Text(stringResource(Res.string.settings_watch_get_app)) }
+            }
         }
     }
 }
