@@ -6,7 +6,8 @@
 #
 #   ASC_KEY_ID=… ASC_ISSUER_ID=… ASC_KEY_P8="$(cat AuthKey.p8)" scripts/update-ios-store-text.rb
 #
-# URLs, categories and copyright are left as App Store Connect has them.
+# URLs, categories and copyright are left as App Store Connect has them. ASC_VERSION=X.Y.Z creates
+# that version when none is in preparation.
 require "base64"
 require "json"
 require "net/http"
@@ -50,8 +51,19 @@ def update(type, id, attributes)
   api(:patch, "/v1/#{type}/#{id}", { data: { type: type, id: id, attributes: attributes } })
 end
 
-version = api(:get, "/v1/apps/#{APP_ID}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"].first
-abort "No editable App Store version" unless version
+# The version being prepared. With ASC_VERSION set and none in preparation, that version is created,
+# as the release would on its merge, so the listing can be made ready before the release is submitted.
+def editable_version
+  found = api(:get, "/v1/apps/#{APP_ID}/appStoreVersions?filter[appStoreState]=PREPARE_FOR_SUBMISSION,DEVELOPER_REJECTED,REJECTED,METADATA_REJECTED")["data"].first
+  return found if found
+  wanted = ENV["ASC_VERSION"].to_s
+  abort "No editable App Store version (set ASC_VERSION to create one)" if wanted.empty?
+  puts "Creating App Store version #{wanted}"
+  api(:post, "/v1/appStoreVersions", { data: { type: "appStoreVersions", attributes: { platform: "IOS", versionString: wanted },
+    relationships: { app: { data: { type: "apps", id: APP_ID } } } } })["data"]
+end
+
+version = editable_version
 puts "Version #{version['attributes']['versionString']}:"
 
 api(:get, "/v1/appStoreVersions/#{version['id']}/appStoreVersionLocalizations")["data"].each do |localization|
