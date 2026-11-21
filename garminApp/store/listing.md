@@ -5,6 +5,8 @@ no API: paste them into the upload form (which refuses the characters < and > in
 (`scripts/build-garmin-app.sh store`). Category: Travel. The app needs the PulseTransit phone app.
 `hero-en.jpg` and `hero-nb.jpg` are the form's 1440×720 image "optimized for mobile devices": the
 app's gradient with the demo build's journey and alert on a fēnix 8, captured from the simulator.
+`cover.jpg` is the 500×500 cover image and `screen-*.jpg` the screen images (each under the form's
+150 KB), cut from simulator captures of the demo build.
 
 ## English
 
