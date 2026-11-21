@@ -34,6 +34,7 @@ import com.example.pulsetransit.data.journey.JourneyAlertKind
 import com.example.pulsetransit.data.journey.JourneyTrackingMode
 import com.example.pulsetransit.data.journey.appliesTo
 import com.example.pulsetransit.data.journey.journeyAlertCount
+import com.example.pulsetransit.platform.WatchAvailability
 import com.example.pulsetransit.theme.FjordDimens
 import com.example.pulsetransit.theme.PulseIcons
 import com.example.pulsetransit.theme.PulseTransitTheme
@@ -156,8 +157,33 @@ fun JourneyAlertsScreen(
                             )
                         }
                     }
+                    WatchSection(uiState.watchAvailability)
                 }
             }
+        }
+    }
+}
+
+/**
+ * The Garmin watch a followed journey also shows on, while one is connected: that it is, or that
+ * it lacks the watch app. Nothing without a watch, so a rider who has none never reads about one.
+ */
+@Composable
+private fun WatchSection(availability: WatchAvailability) {
+    val (title, hint) =
+        when (availability) {
+            WatchAvailability.NONE -> return
+            WatchAvailability.READY -> Res.string.settings_watch_ready to Res.string.settings_watch_ready_hint
+            WatchAvailability.APP_MISSING -> Res.string.settings_watch_app_missing to Res.string.settings_watch_app_missing_hint
+        }
+    val watch = stringResource(Res.string.settings_watch_title)
+    SettingsSection(title = watch) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = FjordDimens.space4, vertical = FjordDimens.space3),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(stringResource(title, watch), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+            Text(stringResource(hint), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

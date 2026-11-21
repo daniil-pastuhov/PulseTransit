@@ -137,7 +137,8 @@ final class JourneyNotifications: NSObject, JourneyNotifier, UNUserNotificationC
 
     // MARK: Content
 
-    private func content(for alert: any JourneyAlert) -> UNMutableNotificationContent {
+    /// An alert's title and body; the watch says the same.
+    func content(for alert: any JourneyAlert) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.sound = .default
         content.categoryIdentifier = Category.alert

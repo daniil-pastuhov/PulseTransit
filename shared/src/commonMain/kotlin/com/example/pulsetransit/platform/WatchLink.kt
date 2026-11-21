@@ -35,6 +35,23 @@ interface WatchLink {
     suspend fun send(message: Map<String, Any>): Boolean
 }
 
+/**
+ * A watch that shows a followed journey beside the phone without taking anything over from it: the
+ * Apple Watch. Its app is suspended when the wrist drops, so it cannot show alerts of its own; the
+ * system brings the phone's notifications to the wrist instead. It is simply kept up to date.
+ */
+interface WatchMirror {
+    /** What the watch app sends: "Stop following". Each message is delivered once, also when it came before anyone listened. */
+    val incoming: Flow<Map<String, Any?>>
+
+    /**
+     * The journey's state now, replacing what was sent before: a plan, or that the journey ended
+     * (see [com.example.pulsetransit.data.journey.watch.WatchMessages]). It reaches the watch when
+     * the watch next can take it; only the latest matters.
+     */
+    fun update(message: Map<String, Any>)
+}
+
 /** A title and the line under it. */
 data class WatchText(
     val title: String,

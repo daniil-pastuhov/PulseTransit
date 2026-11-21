@@ -23,6 +23,15 @@ import com.example.pulsetransit.platform.LightSourceSensorManager
 import com.example.pulsetransit.platform.LocationProvider
 import com.example.pulsetransit.platform.LocationSource
 import com.example.pulsetransit.platform.LocationSourceProvider
+import com.example.pulsetransit.platform.WatchLink
+import com.example.pulsetransit.platform.WatchMirror
+import com.example.pulsetransit.platform.WatchMirrorSource
+import com.example.pulsetransit.platform.WatchMirrorSourceMirror
+import com.example.pulsetransit.platform.WatchSource
+import com.example.pulsetransit.platform.WatchSourceLink
+import com.example.pulsetransit.platform.WatchSourceWording
+import com.example.pulsetransit.platform.WatchWording
+import com.example.pulsetransit.platform.WatchWordingSource
 import com.example.pulsetransit.ui.sensors.CameraMotionDetector
 import com.example.pulsetransit.ui.sensors.SystemSensorManager
 import com.example.pulsetransit.ui.viewmodel.AppUpdateViewModel
@@ -48,7 +57,7 @@ object PulseTransitIos : KoinComponent {
      *
      * [journeyLocationSource] is a second location source of its own for journey alerts, which may
      * run in the background alongside the board's. A journey saved before the app was closed is
-     * followed again at once.
+     * followed again at once. [watchSource] (Garmin) and [watchMirror] (Apple Watch) show a followed journey on a watch, worded by [watchWording].
      *
      * One parameter per service Swift implements, as Swift calls it once, by name.
      *
@@ -65,6 +74,9 @@ object PulseTransitIos : KoinComponent {
         journeyLocationSource: LocationSource,
         journeyNotifier: JourneyNotifier,
         journeyPermissions: JourneyPermissions,
+        watchSource: WatchSource,
+        watchWording: WatchWordingSource,
+        watchMirror: WatchMirrorSource,
         uiTest: Boolean,
         uiTestReset: Boolean,
     ) {
@@ -85,6 +97,9 @@ object PulseTransitIos : KoinComponent {
                     single<JourneyNotifier> { journeyNotifier }
                     single<JourneyPermissions> { journeyPermissions }
                     single<JourneyLauncher> { IosJourneyLauncher(tracker = get()) }
+                    single<WatchLink> { WatchSourceLink(watchSource) }
+                    single<WatchWording> { WatchSourceWording(watchWording) }
+                    single<WatchMirror> { WatchMirrorSourceMirror(watchMirror) }
                 },
             )
             if (uiTest) {

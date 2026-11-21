@@ -31,9 +31,13 @@ struct JourneyActivityBundle: WidgetBundle {
 struct JourneyActivityWidget: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: JourneyActivityAttributes.self) { context in
-            LockScreenView(title: context.attributes.title, state: context.state)
-                .padding(16)
-                .activityBackgroundTint(Color(.systemBackground).opacity(0.85))
+            if #available(iOS 18.0, *) {
+                FamilyView(title: context.attributes.title, state: context.state)
+            } else {
+                LockScreenView(title: context.attributes.title, state: context.state)
+                    .padding(16)
+                    .activityBackgroundTint(Color(.systemBackground).opacity(0.85))
+            }
         } dynamicIsland: { context in
             DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
@@ -69,6 +73,64 @@ struct JourneyActivityWidget: Widget {
             } minimal: {
                 Image(systemName: context.state.symbol)
             }
+        }
+        .withSmallFamily()
+    }
+}
+
+private extension WidgetConfiguration {
+    /// From iOS 18 the activity also has a small form of its own, which is what an Apple Watch
+    /// shows in the Smart Stack (watchOS 11) and CarPlay on its dashboard. Without it they get the
+    /// Dynamic Island's two compact corners, a symbol and a countdown with no word of what for.
+    func withSmallFamily() -> some WidgetConfiguration {
+        if #available(iOS 18.0, *) {
+            return supplementalActivityFamilies([.small])
+        } else {
+            return self
+        }
+    }
+}
+
+/// The activity in the form the place showing it asks for: the Lock Screen's, or the small one.
+@available(iOS 18.0, *)
+private struct FamilyView: View {
+    @Environment(\.activityFamily) private var family
+    let title: String
+    let state: JourneyActivityAttributes.ContentState
+
+    var body: some View {
+        if family == .small {
+            SmallView(state: state)
+        } else {
+            LockScreenView(title: title, state: state)
+                .padding(16)
+                .activityBackgroundTint(Color(.systemBackground).opacity(0.85))
+        }
+    }
+}
+
+/// The journey on a watch face's width: what to do now, the countdown to it, the first of its
+/// facts (the list is ordered most important first) and the journey's bar.
+private struct SmallView: View {
+    let state: JourneyActivityAttributes.ContentState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Image(systemName: state.symbol)
+                Text(state.headline)
+                    .font(.headline)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 4)
+                Countdown(to: state.nextAt)
+                    .font(.headline.monospacedDigit())
+            }
+            Text(state.detail)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+            JourneyBar(start: state.startAt, end: state.endAt, segments: state.segments)
         }
     }
 }

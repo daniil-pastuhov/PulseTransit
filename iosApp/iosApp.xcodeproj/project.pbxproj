@@ -8,7 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000090 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000000091 /* FirebaseCrashlytics */; };
+		A100000000000000000000A0 /* ConnectIQ in Frameworks */ = {isa = PBXBuildFile; productRef = A100000000000000000000A1 /* ConnectIQ */; };
 		A10000000000000000000102 /* JourneyActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A10000000000000000000101 /* JourneyActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A10000000000000000000302 /* PulseTransitWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A10000000000000000000301 /* PulseTransitWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -26,6 +28,13 @@
 			remoteGlobalIDString = A10000000000000000000140;
 			remoteInfo = JourneyActivity;
 		};
+		A10000000000000000000331 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10000000000000000000060 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000340;
+			remoteInfo = PulseTransitWatch;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,6 +49,17 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000320 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				A10000000000000000000302 /* PulseTransitWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -51,6 +71,7 @@
 		A10000000000000000000104 /* iosApp-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "iosApp-Info.plist"; sourceTree = "<group>"; };
 		A10000000000000000000105 /* iosApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iosApp.entitlements; sourceTree = "<group>"; };
 		A10000000000000000000106 /* JourneyActivity.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = JourneyActivity.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000301 /* PulseTransitWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PulseTransitWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -74,6 +95,11 @@
 			path = JourneyActivityShared;
 			sourceTree = "<group>";
 		};
+		A10000000000000000000310 /* WatchApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WatchApp;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -82,6 +108,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000090 /* FirebaseCrashlytics in Frameworks */,
+				A100000000000000000000A0 /* ConnectIQ in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +126,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000342 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -108,6 +142,7 @@
 				A10000000000000000000010 /* iosApp */,
 				A10000000000000000000110 /* JourneyActivity */,
 				A10000000000000000000111 /* JourneyActivityShared */,
+				A10000000000000000000310 /* WatchApp */,
 				A10000000000000000000210 /* iosAppUITests */,
 				A10000000000000000000031 /* Configuration */,
 				A10000000000000000000032 /* Products */,
@@ -132,6 +167,7 @@
 				A10000000000000000000001 /* PulseTransit.app */,
 				A10000000000000000000101 /* JourneyActivity.appex */,
 				A10000000000000000000201 /* iosAppUITests.xctest */,
+				A10000000000000000000301 /* PulseTransitWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -148,11 +184,13 @@
 				A10000000000000000000020 /* Frameworks */,
 				A10000000000000000000052 /* Resources */,
 				A10000000000000000000120 /* Embed Foundation Extensions */,
+				A10000000000000000000320 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				A10000000000000000000130 /* PBXTargetDependency */,
+				A10000000000000000000330 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A10000000000000000000010 /* iosApp */,
@@ -161,6 +199,7 @@
 			name = iosApp;
 			packageProductDependencies = (
 				A10000000000000000000091 /* FirebaseCrashlytics */,
+				A100000000000000000000A1 /* ConnectIQ */,
 			);
 			productName = PulseTransit;
 			productReference = A10000000000000000000001 /* PulseTransit.app */;
@@ -213,6 +252,28 @@
 			productReference = A10000000000000000000201 /* iosAppUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		A10000000000000000000340 /* PulseTransitWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10000000000000000000350 /* Build configuration list for PBXNativeTarget "PulseTransitWatch" */;
+			buildPhases = (
+				A10000000000000000000341 /* Sources */,
+				A10000000000000000000342 /* Frameworks */,
+				A10000000000000000000343 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A10000000000000000000310 /* WatchApp */,
+			);
+			name = PulseTransitWatch;
+			packageProductDependencies = (
+			);
+			productName = PulseTransitWatch;
+			productReference = A10000000000000000000301 /* PulseTransitWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -235,6 +296,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A10000000000000000000092 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A100000000000000000000A2 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A10000000000000000000032 /* Products */;
@@ -244,6 +306,7 @@
 				A10000000000000000000040 /* iosApp */,
 				A10000000000000000000140 /* JourneyActivity */,
 				A10000000000000000000240 /* iosAppUITests */,
+				A10000000000000000000340 /* PulseTransitWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -264,6 +327,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A10000000000000000000243 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000343 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -335,6 +405,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10000000000000000000341 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -347,6 +424,11 @@
 			isa = PBXTargetDependency;
 			target = A10000000000000000000040 /* iosApp */;
 			targetProxy = A10000000000000000000231 /* PBXContainerItemProxy */;
+		};
+		A10000000000000000000330 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000340 /* PulseTransitWatch */;
+			targetProxy = A10000000000000000000331 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -419,6 +501,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth shows a journey you follow on the Garmin watch you chose.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The front camera wakes the screen when someone walks by. No images are stored or sent anywhere.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -433,6 +516,7 @@
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
+					"-ObjC",
 					"-framework",
 					Shared,
 				);
@@ -461,6 +545,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Bluetooth shows a journey you follow on the Garmin watch you chose.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The front camera wakes the screen when someone walks by. No images are stored or sent anywhere.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Your location is used to find nearby stops, to show the weather where you are and to follow a journey you asked to be alerted about. A followed journey's location never leaves this device.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -475,6 +560,7 @@
 				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
+					"-ObjC",
 					"-framework",
 					Shared,
 				);
@@ -583,6 +669,46 @@
 			};
 			name = Release;
 		};
+		A10000000000000000000351 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.homieapps.pulsetransit;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		A10000000000000000000352 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PulseTransit;
+				INFOPLIST_KEY_WKApplication = YES;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.homieapps.pulsetransit;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(inherited).watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -622,6 +748,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		A10000000000000000000350 /* Build configuration list for PBXNativeTarget "PulseTransitWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10000000000000000000351 /* Debug */,
+				A10000000000000000000352 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -633,6 +768,14 @@
 				minimumVersion = 12.19.2;
 			};
 		};
+		A100000000000000000000A2 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/garmin/connectiq-companion-app-sdk-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.8.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -640,6 +783,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10000000000000000000092 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		A100000000000000000000A1 /* ConnectIQ */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A100000000000000000000A2 /* XCRemoteSwiftPackageReference "connectiq-companion-app-sdk-ios" */;
+			productName = ConnectIQ;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

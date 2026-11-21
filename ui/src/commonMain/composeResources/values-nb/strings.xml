@@ -298,6 +298,15 @@
     <string name="journey_ios_time_limit">Uten posisjon setter iOS PulseTransit på pause kort tid etter at du forlater appen. Varslene kommer da til tidene som var kjent sist appen var åpen, så senere forsinkelser og raskere ruter fanges ikke opp.</string>
     <string name="journey_mode_location">Merk også om jeg går glipp av avgangen</string>
     <string name="journey_mode_location_detail">Bruker posisjonen din under reisen, også med skjermen av.</string>
+    <string name="settings_watch_title">Garmin-klokke</string>
+    <string name="settings_watch_connect">Koble til Garmin-klokke</string>
+    <string name="settings_watch_connect_hint">Åpner Garmin Connect for å velge klokken. En reise du følger, vises da på den, med varslene, når PulseTransit er installert på klokken.</string>
+    <string name="settings_watch_ready">%1$s er tilkoblet</string>
+    <string name="settings_watch_not_connected">%1$s er ikke tilkoblet</string>
+    <string name="settings_watch_app_missing">PulseTransit er ikke installert på %1$s</string>
+    <string name="settings_watch_ready_hint">En reise du følger, vises på klokken, med varslene. Klokken spør før den åpner PulseTransit.</string>
+    <string name="settings_watch_app_missing_hint">Installer PulseTransit på klokken fra Connect IQ Store for å se en reise du følger, på den.</string>
+    <string name="settings_watch_remove">Fjern klokken</string>
     <string name="journey_rationale_cancel">Ikke nå</string>
     <string name="journey_tracking_title">Følge reisen</string>
     <string name="journey_alerts_all">Alle varsler</string>

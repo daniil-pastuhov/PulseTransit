@@ -1,0 +1,5 @@
+project.manifest = manifest.xml
+
+# A build that opens on a made-up journey, to look at the screens in the simulator, which cannot
+# receive a phone's messages: scripts/build-garmin-app.sh fenix847mm -f monkey-demo.jungle
+base.excludeAnnotations = nodemo
