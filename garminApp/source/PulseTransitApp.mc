@@ -26,6 +26,8 @@ class PulseTransitApp extends Application.AppBase {
     private var _shown as Dictionary = {};
     //! The phone app's messages are newer than this app reads.
     private var _outdated as Boolean = false;
+    //! The demo build: it has no phone, and says nothing to one (the simulator answers each try with an error box).
+    private var _demo as Boolean = false;
     private var _timer as Timer.Timer?;
     private var _ticks as Number = 0;
     private var _alertOpen as Boolean = false;
@@ -38,6 +40,7 @@ class PulseTransitApp extends Application.AppBase {
         restore();
         var demo = demoPlan(now());
         if (demo != null) {
+            _demo = true;
             _plan = new JourneyPlan(demo);
             _shown = {};
         }
@@ -96,6 +99,9 @@ class PulseTransitApp extends Application.AppBase {
     }
 
     private function say(type as String) as Void {
+        if (_demo) {
+            return;
+        }
         Communications.transmit({ "t" => type }, null, new QuietListener());
     }
 
