@@ -20,7 +20,9 @@ kotlin {
 
     android {
         namespace = "com.example.pulsetransit.shared"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 24
         // kotlinx-datetime is built on java.time, which only exists natively from API 26.
         enableCoreLibraryDesugaring = true

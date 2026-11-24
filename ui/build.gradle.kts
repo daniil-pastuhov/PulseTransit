@@ -19,7 +19,9 @@ kotlin {
 
     android {
         namespace = "com.example.pulsetransit.ui"
-        compileSdk = 37
+        compileSdk {
+            version = release(37) { minorApiLevel = 1 }
+        }
         minSdk = 24
         enableCoreLibraryDesugaring = true
         // Compose resources (the strings) are packaged as Android assets.
