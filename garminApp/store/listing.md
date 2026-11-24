@@ -1,6 +1,7 @@
 # Connect IQ Store listing
 
-The texts for the watch app's page on the Connect IQ Store (apps.garmin.com/developer), which has
+The texts for the watch app's page on the Connect IQ Store
+(https://apps.garmin.com/apps/64bdeb93-f5d9-45c1-9f2e-0b4c4e3ecc08; edited from apps.garmin.com/developer/dashboard), which has
 no API: paste them into the upload form (which refuses the characters < and > in a description) with `garminApp/build/PulseTransit.iq`
 (`scripts/build-garmin-app.sh store`). Category: Travel. The app needs the PulseTransit phone app.
 `hero-en.jpg` and `hero-nb.jpg` are the form's 1440×720 image "optimized for mobile devices": the
