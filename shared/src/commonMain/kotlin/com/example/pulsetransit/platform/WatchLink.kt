@@ -45,10 +45,10 @@ interface WatchLink {
 object GarminWatchApp {
     /**
      * The app's id in the store: the last part of its page's address, apps.garmin.com/apps/<id>,
-     * which the store gives an app when it is first uploaded (not the manifest's id). Empty until
-     * the app is listed: the apps then offer no button to a page that is not there.
+     * which the store gives an app when it is first uploaded (not the manifest's id). Left empty,
+     * the apps offer no button to the page.
      */
-    const val STORE_ID = ""
+    const val STORE_ID = "64bdeb93-f5d9-45c1-9f2e-0b4c4e3ecc08"
 }
 
 /**
